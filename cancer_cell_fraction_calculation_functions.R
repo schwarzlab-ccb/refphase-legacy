@@ -89,9 +89,9 @@ generateAllSamplesByChromIntCPNUnderlyingRawValuesLists <- function(all.pw.cn.he
                   sample.chr.int.cpn.raw.vals.list[[samp]][[as.character(samp.seg.int.cpnB.val)]][[chr]]$all_seg_cpnB_vec <- c(
                         sample.chr.int.cpn.raw.vals.list[[samp]][[as.character(samp.seg.int.cpnB.val)]][[chr]]$all_seg_cpnB_vec, 
                         all.pw.cn.het.comp.lists$sample_comparison_list[[samp]][[seg.name]]$ph_cpnB_vec)
-            }
+            }#end for ( seg.name in seg.name.vec ) {
 
-      }
+      }#end  for ( samp in sample.vec ) {
 
       return(samps.chr.int.cpn.raw.vals.list)
 }#end generateAllSamplesChromsIntCpnAvgRawValuesList <- function()
@@ -189,7 +189,7 @@ getSegObsExpCPNBySampleDF <- function(all.pw.cn.het.comp.lists, sample.vec, seg.
             }
             if (  all.pw.cn.het.comp.lists$sample_comparison_list[[samp]][[seg.name]]$mean_ph_cpnB < 0 ) {
 
-                  s.samps.obs.exp.cpn.df[samp, "obs_mean_cpnB"] <-  0)
+                  s.samps.obs.exp.cpn.df[samp, "obs_mean_cpnB"] <-  0
 
             } else {
 
@@ -428,6 +428,91 @@ updateSegCCFValList <- function(seg.CCF.val.list,
 }#end calculateWhetherSegCPNDiffFromIntegerExpectedAndAllMatchingSampCPN <- function(
 
 
+
+
+##
+##Params:
+##
+##Returns:
+##
+calculateTwoValueDiffFlag <- function(s.samps.int.ob.xp.cpn.df, seg.cpnA.cnpB.diff.exp.list, cpnX.string, min.CCF.to.consider.val, confidence.interval.threshold) {
+
+  two.value.diff.flag <- TRUE
+  mean.cpnX.vec <- s.samps.int.ob.xp.cpn.df[, paste0("mean_obs_", cpnX.string)]
+  low.int.mean.cpnX <- min(floor(mean.cpnX.vec))
+  top.int.mean.cpnX <- max(ceiling(mean.cpnX.vec))
+
+  if (abs(min(top.int.mean.cpnX - mean.cpnX.vec)) >= abs(max(low.int.mean.cpnX - mean.cpnX.vec))) {
+
+      ss.poss.sc.cpnX.low <- low.int.mean.cpnX
+      ss.poss.sc.cpnX.high <- top.int.mean.cpnX
+
+      #sis this choice of ss.poss.sc.cpnX.high, too conservative?
+      samps.poss.more.than.sc.cnpX.high.vec  <- rownames(s.samps.int.ob.xp.cpn.df[s.samps.int.ob.xp.cpn.df[, paste0("mean_obs_", cpnX.string)] >= ss.poss.sc.cpnX.high, ])
+
+      for ( samp in samps.poss.more.than.sc.cnpX.high.vec ) {
+
+        samp.max.CCF <- abs(ss.poss.sc.cpnX.high - samps.int.ob.xp.cpn.df[samp, paste0("mean_obs_", cpnX.string)])
+        raw.diff.from.int.cpnX.pval <- seg.cpnA.cnpB.diff.exp.list[[samp]][[paste0(cpnX.string, "_pval_vs_round_int_cpn")]]
+        diff.from.int.flag <- raw.diff.from.int.cpnX.pval < (1 - confidence.interval.threshold)
+
+        diff.from.other.chrs.flag <- TRUE
+        if (length(seg.cpnA.cnpB.diff.exp.list[[samp]][[paste0(cpnX.string, "_chrs_w_match_int_cpn_vec")]]) > min.num.other.chrs) {
+
+          diff.from.other.chrs.flag <- seg.cpnA.cnpB.diff.exp.list[[samp]][[paste0(cpnX.string, "_pval_vs_oth_cpn_match_chrs_raw_cpn")]] < (1 - confidence.interval.threshold)
+
+        }#end if (length(seg.cpnA.cnpB.diff.exp.list[[samp]][[paste0(cpnX.string, "_chrs_w_match_int_cpn_vec")]]) > min.num.other.chrs) {
+
+        if (diff.from.int.flag == TRUE & diff.from.other.chrs.flag == TRUE & samp.max.CCF >= min.CCF.to.consider.val) {
+
+          two.value.diff.flag <- FALSE
+
+        }
+
+      }#end for ( samp in sample.vec ) {
+
+  }#end if(abs(min(top.int.mean.cpnX - mean.cpnX.vec)) >= abs(max(low.int.mean.cpnX - mean.cpnX.vec))) {
+
+  if (abs(min(top.int.mean.cpnX - mean.cpnX.vec)) < abs(max(low.int.mean.cpnX - mean.cpnX.vec))) {
+
+    ss.poss.sc.cpnX.low  <- round(mean.cpnX.vec)[1]
+    ss.poss.sc.cpnX.high  <- max(unique(ceiling(s.samps.int.ob.xp.cpn.df[, paste0("mean_obs_", cpnX.string)])))
+
+    # is this choice of nA1, too conservative
+    samps.poss.less.than.sc.cnpX.low.vec <- rownames(s.samps.int.ob.xp.cpn.df[s.samps.int.ob.xp.cpn.df[, paste0("mean_obs_", cpnX.string)] <= ss.poss.sc.cpnX.low, ])
+    for (samp in samps.poss.less.than.sc.cnpX.low.vec) {
+      
+      samp.max.CCF      <-  abs(ss.poss.sc.cpnX.low - samps.int.ob.xp.cpn.df[samp, paste0("mean_obs_", cpnX.string)])
+      raw.diff.from.int.cpnX.pval <- seg.cpnA.cnpB.diff.exp.list[[samp]][[paste0(cpnX.string, "_pval_vs_round_int_cpn")]]
+      diff.from.other.chrs.flag <- TRUE
+      if (length(seg.cpnA.cnpB.diff.exp.list[[samp]][[paste0(cpnX.string, "_chrs_w_match_int_cpn_vec")]]) > min.num.other.chrs) { 
+
+        diff.from.other.chrs.flag <- seg.cpnA.cnpB.diff.exp.list[[samp]][[paste0(cpnX.string, "_pval_vs_oth_cpn_match_chrs_raw_cpn")]] < (1 - confidence.interval.threshold)
+
+      }#end if (length(seg.cpnA.cnpB.diff.exp.list[[samp]][[paste0(cpnX.string, "_chrs_w_match_int_cpn_vec")]]) > min.num.other.chrs) { 
+      
+      if (diff.from.int.flag == TRUE & diff.from.other.chrs.flag == TRUE & samp.max.CCF >= min.CCF.to.consider.val) {
+
+        two.value.diff.flag <- FALSE
+
+      }#end if (diff.from.int.flag == TRUE & diff.from.other.chrs.flag == TRUE & samp.max.CCF >= min.CCF.to.consider.val) {
+
+    }#end for (samp in samps.poss.less.than.sc.cnpX.low.vec) {
+
+  }#end if (abs(min(top.int.mean.cpnX - mean.cpnX.vec)) < abs(max(low.int.mean.cpnX - mean.cpnX.vec))) {
+
+  return(two.value.diff.flag)
+
+}
+
+
+
+
+
+
+
+
+
 getIndividualCCFestimates_withPvals <- function(seg.name,
                                                 sample.vec,
                                                 all.pw.cn.het.comp.lists,
@@ -436,7 +521,7 @@ getIndividualCCFestimates_withPvals <- function(seg.name,
                                                 max.cpn.val = 5,
                                                 min.CCF.to.consider.val = 0.15,
                                                 chrs.can.use.for.ccf.comp = c(1:22),
-                                                confidence.interval.theshold = 0.9999,
+                                                confidence.interval.threshold = 0.9999,
                                                 min.num.other.chrs = 3) {
 
       if (is.na(all.pw.cn.het.comp.lists$sample_comparison_list[[samp]][[seg.name]]$ph_cpnA_vec)) {
@@ -445,9 +530,7 @@ getIndividualCCFestimates_withPvals <- function(seg.name,
       }
       chr <- strsplit(seg.name, split=":")[1]
       s.samps.int.ob.xp.cpn.df <- getSegObsExpCPNBySampleDF(all.pw.cn.het.comp.lists, sample.vec, seg.name)
-      chrs.for.ccf.comp <- chrs.can.use.for.ccf.comp[ ! chrs.can.use.for.ccf.comp%in% chr] #Going to be used to assess CCFs across the each sample
-
-      chrs.for.ccf.comp.list
+      chrs.for.ccf.comp.vec <- chrs.can.use.for.ccf.comp[ ! chrs.can.use.for.ccf.comp%in% chr] #Going to be used to assess CCFs across the each sample
 
       seg.CCF.val.list <- list()
 
@@ -457,7 +540,7 @@ getIndividualCCFestimates_withPvals <- function(seg.name,
                                                                                                               all.pw.cn.het.comp.lists,
                                                                                                               s.samps.int.ob.xp.cpn.df,
                                                                                                               seg.name,
-                                                                                                              chrs.for.ccf.comp,
+                                                                                                              chrs.for.ccf.comp.vec,
                                                                                                               samps.int.cpn.raw.cpn.by.chr.list,
                                                                                                               cpnA.or.cpnB=cpnX.string)
             #setup what we're going to use for all the potential conditions here and tests here so we can pass it to the 
