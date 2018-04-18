@@ -401,6 +401,56 @@ getMixturePhasingResultsForSegment <- function(sample.to.phase.seg.list,
 
 
 
+#This is used to generate CCF values so needs to be added to the sample.to.phase.seg.list
+createAllSegsPhasedBAFDataFrame <- function(asas.lr.baf.lists, sample.to.phase.seg.list, sample.vec) {
+
+  sample.vec <- names(asas.lr.baf.lists)
+  chr.start.end.string.vec <- paste(min.cons.segs.df[ ,1], min.cons.segs.df[ ,2], min.cons.segs.df[ ,3], sep=":")
+  all.samp.ph.BAF.df.list <- list()
+
+  for ( i in 1:length(chr.start.end.string.vec) ) {
+
+    seg.name <- chr.start.end.string.vec[seg.idx]
+
+    for ( samp in sample.vec ) {
+
+      samp.BAF.df <- asas.lr.baf.lists[[samp]][[seg.name]]
+      #initialise new columns
+      samp.BAF.df$samp <- samp
+      samp.BAF.df$sample_phased_by_this_sample <-  sample.to.phase.seg.list[[seg.name]]$samp_chosen_to_phase_seg
+      samp.BAF.df$maj_is_cpnA_logic_vec <- 0
+      samp.BAF.df$maj_is_cpnB_logic_vec <- 0
+
+      if (length(sample.to.phase.seg.list[[seg.name]]$maj_is_cpnA_idx_vec) > 1) {
+
+        samp.BAF.df[sample.to.phase.seg.list[[seg.name]]$maj_is_cpnA_idx_vec,]$maj_is_cpnA_logic_vec <- 1 
+
+      }#end if (length(sample.to.phase.seg.list[[seg.name]]$maj_is_cpnA_idx_vec) > 1) {
+
+      if (length(sample.to.phase.seg.list[[seg.name]]$maj_is_cpnB_idx_vec) > 1) {
+
+        samp.BAF.df[sample.to.phase.seg.list[[seg.name]]$maj_is_cpnB_idx_vec,]$maj_is_cpnB_logic_vec <- 1 
+
+      }#end if (length(sample.to.phase.seg.list[[seg.name]]$maj_is_cpnB_idx_vec) > 1) {
+
+      if (nrow(samp.BAF.df[is.na(samp.BAF.df$maj_is_cpnA_idx_vec), ,drop=FALSE])>0)){
+
+        stop("Check error in sample BAF df generation")
+        
+      }#end if (nrow(sample.BAF.df[is.na(sample.BAF.df$maj_is_cpnA_idx_vec), ,drop=FALSE])>0)){
+
+      samp.BAF.df$ph_median_segmented_BAF <- min(median(samp.BAF.df[samp.BAF.df$maj_is_cpnB_idx_vec==1,]$BAF),
+                                           median(samp.BAF.df[samp.BAF.df$maj_is_cpnB_idx_vec==0,]$BAF))
+
+      all.samp.BAF.df.list[[samp]]$ph_samp_BAF_df <- rbind(all.samp.BAF.df.list[[samp]]$ph_samp_BAF_df, samp.BAF.df)
+
+    }#end for ( samp in sample.vec ) {
+
+  }#end for ( i in 1:length(chr.start.end.string.vec) ) {
+
+  return(all.samp.ph.BAF.df.list) 
+
+}#end createSegPhasedBAFTable <- function(....)
 
 
 

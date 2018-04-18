@@ -56,142 +56,130 @@ source("/home/camp/watkint/working/watkint/scripts/modified_ascat/CN_heterogenei
 source("/home/camp/watkint/working/watkint/scripts/modified_ascat/CN_heterogeneity_package_scripts/data_input_and_QC_functions.R")
 source("/home/camp/watkint/working/watkint/scripts/modified_ascat/CN_heterogeneity_package_scripts/allelic_imbalance_phasing_functions.R")
 
-  f.joint.segs.df <- read.table(full.joint.segs.file.path, stringsAsFactors=FALSE, sep="\t", header=TRUE)
-      f.joint.segs.df$sample <- gsub("\\.", "-", gsub("_LogR", "", f.joint.segs.df$sample))
-      f.joint.segs.df$callState <- NULL
-      f.joint.segs.df$patient <- patient
-      f.joint.segs.df$sample_name <- paste(patient,sapply(f.joint.segs.df$sample, function(x) strsplit(x, split="-")[[1]][2]), sep=":")
+f.joint.segs.df <- read.table(full.joint.segs.file.path, stringsAsFactors=FALSE, sep="\t", header=TRUE)
+    f.joint.segs.df$sample <- gsub("\\.", "-", gsub("_LogR", "", f.joint.segs.df$sample))
+    f.joint.segs.df$callState <- NULL
+    f.joint.segs.df$patient <- patient
+    f.joint.segs.df$sample_name <- paste(patient,sapply(f.joint.segs.df$sample, function(x) strsplit(x, split="-")[[1]][2]), sep=":")
 
 
-  #The patient is supposed to match what's in the segs:
+#The patient is supposed to match what's in the segs:
 
-  #full.patient <- paste("B_", patient, sep="")
-  array.type <- "exome"
-  pt.id <- patient
-  full.pt <- paste("B_",patient, sep="")
-  orig.cpn.segs.df <- f.joint.segs.df
+#full.patient <- paste("B_", patient, sep="")
+array.type <- "exome"
+pt.id <- patient
+full.pt <- paste("B_",patient, sep="")
+orig.cpn.segs.df <- f.joint.segs.df
 
-  print(head(orig.cpn.segs.df))
-  print(pt.id)
-  processed.orig.cpn.segs.df <- processOriginalCopyNumberSegments(pt.id, orig.cpn.segs.df)
-  print(head(processed.orig.cpn.segs.df))
+print(head(orig.cpn.segs.df))
+print(pt.id)
+processed.orig.cpn.segs.df <- processOriginalCopyNumberSegments(pt.id, orig.cpn.segs.df)
+print(head(processed.orig.cpn.segs.df))
+
+ploidy.est.vec <- processed.orig.cpn.segs.df[!duplicated(processed.orig.cpn.segs.df$sample),'Ploidy']
+names(ploidy.est.vec) <- unique(processed.orig.cpn.segs.df$sample)
+purity.est.vec <- processed.orig.cpn.segs.df[!duplicated(processed.orig.cpn.segs.df$sample),'ACF']
+names(purity.est.vec) <- unique(processed.orig.cpn.segs.df$sample)
+
+
+
+
+#Todo accept precomputed mininmum consistent segmentation
+min.cons.segs.df <- generateMinimumConsistentSegmentation(processed.orig.cpn.segs.df, chroms=1:22, col.to.use="ploidy_adj_tot_cpn")
+print(head(min.cons.segs.df))
+
+min.cons.segs.df <- cleanAndErrorCheckMinConsSegs(processed.orig.cpn.segs.df)
+print(head(min.cons.segs.df))
+#Todo might need to add column names so looks like below:?
+
+#Clean and check the SNP data, removing NAs from the segments and SNPs files.
+#      Chr     Start       End B_MET002_MT-M1 B_MET002_T1-R1
+# [1,]   1    762496  23885674      0.1993419     0.05387792
+
+
+#This needs to be refactored further to take a dataframe of region names and ascat.bc object paths
+#We should also rework the WGS to be put into ascat.bc objects or work out another data format but move on from here...
+if(array.type=="WGS"){
+
+  all.samp.SNP.list <- getSNPDataFromTRACERxFormatBAFLogRData(pt.id = full.pt, release.dir = workDir, array.type = array.type)
+
+} else if(array.type%in%c("snp_array", "exome")){
   
-  ploidy.est.vec <- processed.orig.cpn.segs.df[!duplicated(processed.orig.cpn.segs.df$sample),'Ploidy']
-  names(ploidy.est.vec) <- unique(processed.orig.cpn.segs.df$sample)
-  purity.est.vec <- processed.orig.cpn.segs.df[!duplicated(processed.orig.cpn.segs.df$sample),'ACF']
-  names(purity.est.vec) <- unique(processed.orig.cpn.segs.df$sample)
+  all.samp.SNP.list <- getSNPDataTRACERxFormatASCATBC(pt.id = full.pt, release.dir = workDir, array.type = array.type)
+
+}
+str(all.samp.SNP.list)
+STOP
+#all sample all seg logr baf lists is asas.lr.baf
+#All SNPs in these lists must have both a logr and baf value
+asas.SNPs.w.both.lr.baf.lists <- cleanAndErrorCheckSNPs(all.samp.SNP.list, min.cons.segs.df, allow.logr.only.flag=FALSE)
+#Todo, is it necessary to keep both lists of SNPs like this?
+#SNPs that only have LogR are permitted in these lists, but it also contains all the SNPs with both BAF and LogR
+source("/home/camp/watkint/working/watkint/scripts/modified_ascat/CN_heterogeneity_package_scripts/data_input_and_QC_functions.R")
+asas.SNPS.lr.and.or.baf.lists <- cleanAndErrorCheckSNPs(all.samp.SNP.list, min.cons.segs.df, allow.logr.only.flag=TRUE)
+
+
+# options(scipen=999);
+# library(compiler)
+# library(parallel)
+# library(data.table)
+# library(mclust)
+# library(GenomicRanges)
+# library(Rsamtools)
+# library(gtools)
+# library(diptest)
+# library(gplots)
+source("/home/camp/watkint/working/watkint/scripts/modified_ascat/CN_heterogeneity_package_scripts/allelic_imbalance_phasing_functions.R")
+
+#Todo, further refactor code so that everything is done at the level of a segment
+#Todo, add options to phase using baf dip test not just ascat regions
+#Todo, reduce the number of parameters per function
+#Todo, Add function definitions documentaiton
+#Todo, clarify the loops and next statements that are controlling what happens when there are less than 5 hz snps in a sample.
+#Todo, check if the mixture phasing is ever being selected... in the example with B_MET002 no mixture phasing called.
+all.seg.phasing.info.list <- getCombinedBAFDipTestPhasing(asas.lr.baf.lists = asas.SNPs.w.both.lr.baf.snp.lists,
+                                            min.cons.segs.df = min.cons.segs.df,
+                                            ploidy.est.vec = ploidy.est.vec,
+                                            purity.est.vec = purity.est.vec,
+                                            gamma.val = 1)
+
+#Todo add another function call to get the new phased baf table.
+
+
+print(min.cons.segs.df)
+#Todo check wha happens to the missing rows, are these segments that contained less than 5 snps and thus didn't have something created?
+#what's going on.
+
+sample.vec <- names(asas.lr.baf.lists)
+
+for (i in 1:(length(sample.vec) - 1)) {
+
+  for(j in (i + 1):length(sample.vec)) {
+
+    samp.one <- sample.vec[i]
+    samp.two <- sample.vec[j]
+
+
+    pairwise.samp.comparison <- calculatePairwiseCNHeterogeneity(samp.one = samp.one,
+                                                                  samp.two = samp.two,
+                                                                  asas.both.lr.baf.lists = asas.SNPs.w.both.lr.baf.snp.lists,
+                                                                  asas.lr.and.or.baf.lists = asas.SNPS.lr.and.or.baf.lists,
+                                                                  min.cons.segs.df = min.cons.segs.df,
+                                                                  ploidy.est.vec = ploidy.est.vec,
+                                                                  purity.est.vec = purity.est.vec,
+                                                                  all.seg.phasing.info.list = all.seg.phasing.info.list,
+                                                                  gamma.val = gamma.val
+                                                                  )
 
 
 
+  }#end for (i in 1:(length(sample.vec) - 1)) {
 
-  #Todo accept precomputed mininmum consistent segmentation
-  min.cons.segs.df <- generateMinimumConsistentSegmentation(processed.orig.cpn.segs.df, chroms=1:22, col.to.use="ploidy_adj_tot_cpn")
-  print(head(min.cons.segs.df))
+}#end for(j in (i + 1):length(sample.vec)) {
 
-  min.cons.segs.df <- cleanAndErrorCheckMinConsSegs(processed.orig.cpn.segs.df)
-  print(head(min.cons.segs.df))
-  #Todo might need to add column names so looks like below:?
-  
-  #Clean and check the SNP data, removing NAs from the segments and SNPs files.
-  #      Chr     Start       End B_MET002_MT-M1 B_MET002_T1-R1
-  # [1,]   1    762496  23885674      0.1993419     0.05387792
+#We also need to
 
 
-  #This needs to be refactored further to take a dataframe of region names and ascat.bc object paths
-  #We should also rework the WGS to be put into ascat.bc objects or work out another data format but move on from here...
-  if(array.type=="WGS"){
+#Let's get the CCF 
 
-    all.samp.SNP.list <- getSNPDataFromTRACERxFormatBAFLogRData(pt.id = full.pt, release.dir = workDir, array.type = array.type)
-
-  } else if(array.type%in%c("snp_array", "exome")){
-    
-    all.samp.SNP.list <- getSNPDataTRACERxFormatASCATBC(pt.id = full.pt, release.dir = workDir, array.type = array.type)
-
-  }
-  str(all.samp.SNP.list)
-  STOP
-  #all sample all seg logr baf lists is asas.lr.baf
-  #All SNPs in these lists must have both a logr and baf value
-  asas.SNPs.w.both.lr.baf.lists <- cleanAndErrorCheckSNPs(all.samp.SNP.list, min.cons.segs.df, allow.logr.only.flag=FALSE)
-  #Todo, is it necessary to keep both lists of SNPs like this?
-  #SNPs that only have LogR are permitted in these lists, but it also contains all the SNPs with both BAF and LogR
-  source("/home/camp/watkint/working/watkint/scripts/modified_ascat/CN_heterogeneity_package_scripts/data_input_and_QC_functions.R")
-  asas.SNPS.lr.and.or.baf.lists <- cleanAndErrorCheckSNPs(all.samp.SNP.list, min.cons.segs.df, allow.logr.only.flag=TRUE)
-
-
-  # options(scipen=999);
-  # library(compiler)
-  # library(parallel)
-  # library(data.table)
-  # library(mclust)
-  # library(GenomicRanges)
-  # library(Rsamtools)
-  # library(gtools)
-  # library(diptest)
-  # library(gplots)
-  source("/home/camp/watkint/working/watkint/scripts/modified_ascat/CN_heterogeneity_package_scripts/allelic_imbalance_phasing_functions.R")
-
-  #Todo, further refactor code so that everything is done at the level of a segment
-  #Todo, add options to phase using baf dip test not just ascat regions
-  #Todo, reduce the number of parameters per function
-  #Todo, Add function definitions documentaiton
-  #Todo, clarify the loops and next statements that are controlling what happens when there are less than 5 hz snps in a sample.
-  #Todo, check if the mixture phasing is ever being selected... in the example with B_MET002 no mixture phasing called.
-  all.seg.phasing.info.list <- getCombinedBAFDipTestPhasing(asas.lr.baf.lists = asas.SNPs.w.both.lr.baf.snp.lists,
-                                              min.cons.segs.df = min.cons.segs.df,
-                                              ploidy.est.vec = ploidy.est.vec,
-                                              purity.est.vec = purity.est.vec,
-                                              gamma.val = 1)
-
-
-  print(min.cons.segs.df)
-  #Todo check wha happens to the missing rows, are these segments that contained less than 5 snps and thus didn't have something created?
-  #what's going on.
-
-  sample.vec <- names(asas.lr.baf.lists)
-
-  for (i in 1:(length(sample.vec) - 1)) {
-
-    for(j in (i + 1):length(sample.vec)) {
-
-      samp.one <- sample.vec[i]
-      samp.two <- sample.vec[j]
-
-
-      pairwise.samp.comparison <- calculatePairwiseCNHeterogeneity(samp.one = samp.one,
-                                                                    samp.two = samp.two,
-                                                                    asas.both.lr.baf.lists = asas.SNPs.w.both.lr.baf.snp.lists,
-                                                                    asas.lr.and.or.baf.lists = asas.SNPS.lr.and.or.baf.lists,
-                                                                    min.cons.segs.df = min.cons.segs.df,
-                                                                    ploidy.est.vec = ploidy.est.vec,
-                                                                    purity.est.vec = purity.est.vec,
-                                                                    all.seg.phasing.info.list = all.seg.phasing.info.list,
-                                                                    gamma.val = gamma.val
-                                                                    )
-
-
-      pair.wise.samp.comparison <- calcDiffBetweenTwoRegions_withLogR( regionOne = regionOne
-                                                    ,regionTwo = regionTwo
-                                                    ,bigList = bigList
-                                                    ,bigListLogR = bigListLogR
-                                                    ,gammaToUse = gammaToUse 
-                                                    ,min.cons.seg = patientmin.cons.CPN
-                                                    ,plotting = plotting
-                                                    ,minYaxis = (-4)
-                                                    ,maxYaxis = 4
-                                                    ,purityEstimates=purityEstimates
-                                                    ,ploidyEstimates=ploidyEstimates
-                                                    ,whichRegionToPhaseFrom = whichRegionToPhaseFrom
-                                                    )
-
-
-    }#end for (i in 1:(length(sample.vec) - 1)) {
-
-  }#end for(j in (i + 1):length(sample.vec)) {
-
-  # pt.cn.heterogeneity.output <- evaluateCopyNumberHeterogeneity(pt.id = patient,
-  #                                                               orig.cpn.segs.df = f.joint.segs.df,
-  #                                                               dataset.release.dir = workDir,
-  #                                                               array.type = "exome",
-  #                                                               gamma.val = 1)#'combinedBAF'
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                
