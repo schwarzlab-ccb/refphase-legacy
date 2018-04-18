@@ -507,12 +507,9 @@ calculateTwoValueDiffFlag <- function(s.samps.int.ob.xp.cpn.df, seg.cpnA.cnpB.di
 
 
 
-
-
-
-
-
-
+#We can refactor this whole function into one which generates a set of tuples (perhaps stored in a dataframe or as two vectors equal length) of 
+#possible low sc CPN and high sc CPN that can be passed to a function that updates the returned list.
+#No need to call the function when each logical state is reached..., do it once at the end in a loop.
 getIndividualCCFestimates_withPvals <- function(seg.name,
                                                 sample.vec,
                                                 all.pw.cn.het.comp.lists,
@@ -744,6 +741,8 @@ getIndividualCCFestimates_withPvals <- function(seg.name,
     
       }#end for ( cpnX.string in c("cpnA", "cpnB") )
 
+      return(seg.CCF.val.list)
+
 }#end getIndividualCCFestimates_withPvals <- function(...)
 
 #Todo break this up into multiple functions.
@@ -778,13 +777,25 @@ getSegNewCCFEstimate <- function( all.pw.cn.het.comp.lists
       #next assess for each chromosome and region, what are the different raw-values
       samps.int.cpn.raw.cpn.by.chr.list <- generateAllSamplesByChromIntCPNUnderlyingRawValuesLists(all.pw.cn.het.comp.lists, sample.vec, seg.name.vec)
 
-      max.CCF.vals.list <- list()
-      max.cpn <- highest.cpn.trusted
+      all.seg.CCF.vals.list <- list()
+
+      # also create a table with the output
+      #simpleOutPut <- c()
+      for (seg.name in seg.name.vec) {
+        #all.samp.ph.BAF.df.list used to be in the all.pw.cn.het.comp.lists but was refactored out, need to add a call or pass it to this function.
+        seg.CCF.vals <- getIndividualCCFestimates_withPvals(seg.name = seg.name,
+                                                sample.vec = sample.vec,
+                                                all.pw.cn.het.comp.lists = all.pw.cn.het.comp.lists,
+                                                seg.r.cpn.same.diff.across.samps.list = seg.r.cpn.same.diff.across.samps.list,
+                                                all.samp.ph.BAF.df.list = ?,
+                                                max.cpn.val = highest.cpn.trusted,
+                                                min.CCF.to.consider.val = 0.15,
+                                                chrs.can.use.for.ccf.comp = c(1:22),
+                                                confidence.interval.threshold = 0.9999,
+                                                min.num.other.chrs = 3)
+        all.seg.CCF.vals.list[[seg.name]] <- seg.CCF.vals 
+      }
 
 
 
-
-
-
-
-}#end getSegNewCCFEstimate           <- function(
+}#end getSegNewCCFEstimate           <- function(   
