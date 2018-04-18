@@ -752,8 +752,6 @@ getSegNewCCFEstimate <- function( all.pw.cn.het.comp.lists
                                  ,highest.cpn.trusted = 10
                                  ,pval.threshold = 0.01
                                  ,pval.to.separate = 0.001
-                                 ,gain.pval.to.use = 'gainPval'
-                                 ,loss.pval.to.use = 'lossPval'
                                  ,min.CCF.to.consider = 0.15
                                  ,confidence.interval = 0.99999
 ) {   
@@ -772,7 +770,7 @@ getSegNewCCFEstimate <- function( all.pw.cn.het.comp.lists
             seg.name.vec <- intersect(seg.name.vec, names((all.pw.cn.het.comp.lists$sample_comparison_list[[samp]]))
 
       }#end for ( samp in sample.vec ) {     
-      #todo change these to preallocated dataframes if possible      
+      #todo change these to preallocated dataframes if possible, this doesn't seem to be used? we can probably remove
       seg.r.cpn.same.diff.across.samps.list <- generateAllSegsRoundedCPNSameOrDifferentAcrossSamplesLists(all.pw.cn.het.comp.lists, sample.vec, seg.name.vec)
       #next assess for each chromosome and region, what are the different raw-values
       samps.int.cpn.raw.cpn.by.chr.list <- generateAllSamplesByChromIntCPNUnderlyingRawValuesLists(all.pw.cn.het.comp.lists, sample.vec, seg.name.vec)
