@@ -69,7 +69,7 @@ generateAllSegsRoundedCPNSameOrDifferentAcrossSamplesLists <- function(all.pw.cn
 ##
 ##Returns:
 ##
-generateAllSamplesByChromIntCPNUnderlyingRawValuesLists <- function(all.pw.cn.het.comp.lists, sample.vec, seg.names, cpnX.string) {
+generateAllSamplesByChromIntCPNUnderlyingRawValuesLists <- function(all.pw.cn.het.comp.lists, sample.vec, seg.names) {
 
       samps.chr.int.cpn.raw.vals.list <- list()
       #s.samps.obs.exp.cpn.df <- data.frame()
@@ -78,29 +78,82 @@ generateAllSamplesByChromIntCPNUnderlyingRawValuesLists <- function(all.pw.cn.he
 
             for ( seg.name in seg.name.vec ) {
 
-                  samp.seg.int.cpnX.val <- round(all.pw.cn.het.comp.lists[[samp]][[seg.name]][[paste0("mean_ph_", cpnX.string)]]
+                  samp.seg.int.cpnA.val <- round(all.pw.cn.het.comp.lists[[samp]][[seg.name]]$mean_ph_cpnA)
+                  samp.seg.int.cpnB.val <- round(all.pw.cn.het.comp.lists[[samp]][[seg.name]]$mean_ph_cpnB)
                   chr <- unlist(strsplit(seg.name, split=":"))[1]
 
-                  sample.chr.int.cpn.raw.vals.list[[samp]][[as.character(samp.seg.int.cpnA.val)]][[chr]][[paste0("all_seg_", cpnX.string, "_vec")]] <- c(
-                        sample.chr.int.cpn.raw.vals.list[[samp]][[as.character(samp.seg.int.cpnX.val)]][[chr]][[paste0("all_seg_", cpnX,string, "_vec")]], 
-                        all.pw.cn.het.comp.lists$sample_comparison_list[[samp]][[seg.name]][[paste0("ph_", cpnX.string, "_vec")]])
+                  sample.chr.int.cpn.raw.vals.list[[samp]][[as.character(samp.seg.int.cpnA.val)]][[chr]]$all_seg_cpnA_vec <- c(
+                        sample.chr.int.cpn.raw.vals.list[[samp]][[as.character(samp.seg.int.cpnA.val)]][[chr]]$all_seg_cpnA_vec, 
+                        all.pw.cn.het.comp.lists$sample_comparison_list[[samp]][[seg.name]]$ph_cpnA_vec)
 
+                  sample.chr.int.cpn.raw.vals.list[[samp]][[as.character(samp.seg.int.cpnB.val)]][[chr]]$all_seg_cpnB_vec <- c(
+                        sample.chr.int.cpn.raw.vals.list[[samp]][[as.character(samp.seg.int.cpnB.val)]][[chr]]$all_seg_cpnB_vec, 
+                        all.pw.cn.het.comp.lists$sample_comparison_list[[samp]][[seg.name]]$ph_cpnB_vec)
             }
 
       }
 
-
-      TtestAs             <- tTestWithErrorHandling(rawAs,fullAs)
-      
-      # also check whether it differs significantly from the integer number
-      TtestDiffFromIntA   <- tTestWithErrorHandling(rawAs,mu=intNumA)
-      greaterThanOtherAs <- median(rawAs) > median(fullAs)
-      greaterThanIntAs   <- median(rawAs) > intNumA
-
-      regionPvalsDiffFromExp
-
       return(samps.chr.int.cpn.raw.vals.list)
 }#end generateAllSamplesChromsIntCpnAvgRawValuesList <- function()
+
+
+
+
+
+##
+##Params:
+##
+##Returns:
+##
+#Todo no sure this is well written...
+calculateWhetherSegCPNDiffFromIntegerExpectedAndAllMatchingSampCPN <- function(samp.pvals.diff.from.exp.list,
+                                                                              all.pw.cn.het.comp.lists,
+                                                                              s.samps.int.ob.xp.cpn.df,
+                                                                              seg.name,
+                                                                              chrs.for.ccf.comp,
+                                                                              samps.int.cpn.raw.cpn.by.chr.list,
+                                                                              cpnA.or.cpnB){
+
+      sample.vec <- rownames(s.samps.obs.exp.cpn.df)
+      all.match.cpn.vals.vec <- c()
+      chrs.w.same.cpn.vec <- c()
+      #Todo, perhapsrefactor into a returnable dataframe...
+      for ( samp in sample.vec ) {
+            
+            for ( chr in chrs.for.ccf.comp ) {
+
+                  s.chr.cpn.vec <- samps.int.cpn.raw.cpn.by.chr.list[[samp]][[chr]][[s.samps.int.ob.xp.cpn.df[samp, paste0("round_int_", cpnA.or.cpnB)]]][[paste0("all_seg_", cpnA.or.cpnB, "_vec")]]
+                  if ( length(s.chr.cpn.vec) != 0 ) {
+
+                        chrs.w.same.cpn.vec <- c(chrs.w.same.cpn.vec, as.character(chr))
+                        all.match.cpn.vals.vec <- c(all.match.cpn.vals.vec, s.chr.cpn.vec)
+
+                  }#end if ( length(s.chr.cpn.vec) != 0 )
+
+            }#endfor ( chr in chrs.for.ccf.comp ) {
+
+            seg.raw.cpn.vals <- all.pw.cn.het.comp.lists$sample_comparison_list[[samp]][[seg.name]][[paste0("ph_",cpnA.or.cpnB,"_vec"]]
+
+            t.test.raw.seg.cpn.vs.all.matching.cpn.raw <- tTestWithErrorHandling(seg.raw.cpn.vals, all.match.cpn.vals.vec)
+            t.test.raw.seg.vs.cpn.int <- tTestWithErrorHandling(seg.raw.cpn.vals, s.samps.int.ob.xp.cpn.df[samp, paste0("round_int_", cpnA.or.cpnB)])
+            median.seg.raw.cpn.greater.than.matched.cpn <- median(seg.raw.cpn.vals) > median(all.match.cpn.vals.vec)
+            median.seg.raw.cpn.greater.seg.int.cpn   <- median(seg.raw.cpn.vals) > s.samps.int.ob.xp.cpn.df[samp, paste0("round_int_", cpnA.or.cpnB)]
+
+            samp.pvals.diff.from.exp.list[[samp]][[paste0("round_int_", cpnA.or.cpnB)]] <- s.samps.int.ob.xp.cpn.df[samp, paste0("round_int_", cpnA.or.cpnB)]
+            samp.pvals.diff.from.exp.list[[samp]][[paste0(cpnA.or.cpnB, "_pval_vs_oth_cpn_match_chrs_raw_cpn")]] <- t.test.raw.seg.cpn.vs.all.matching.cpn.raw$p.value
+            samp.pvals.diff.from.exp.list[[samp]][[paste0(cpnA.or.cpnB, "_pval_vs_round_int_cpn")]] <- t.test.raw.seg.vs.cpn.int$p.value
+            samp.pvals.diff.from.exp.list[[samp]][[paste0(cpnA.or.cpnB, "_num_chrs_w_match_int_cpn")]]  <- chrs.w.same.cpn.vec
+            samp.pvals.diff.from.exp.list[[samp]][[paste0("median_", cpnA.or.cpnB, "_greater_than_match_raw_cpn")]] <- median.seg.raw.cpn.greater.than.matched.cpn
+            samp.pvals.diff.from.exp.list[[samp]][[paste0("median_", cpnA.or.cpnB, "_greater_than_match_int_cpn")]] <- median.seg.raw.cpn.greater.seg.int.cpn
+
+      }#end for ( samp in sample.vec ) {
+
+      return(samp.pvals.diff.from.exp.list)
+
+}
+
+
+
 
 
 ##
@@ -112,7 +165,7 @@ getSegObsExpCPNBySampleDF <- function(all.pw.cn.het.comp.lists, sample.vec, seg.
 
       num.samples <- length(sample.vec)
       s.samps.obs.exp.cpn.df <- data.frame(round_int_cpnA = numeric(num.samples),
-                                          round_int_cpnB =numeric(num.samples),
+                                          round_int_cpnB = numeric(num.samples),
                                           mean_obs_cpnA = numeric(num.samples),
                                           mean_obs_cpnB = numeric(num.samples),
                                           exp_cpnA = numeric(num.samples),
