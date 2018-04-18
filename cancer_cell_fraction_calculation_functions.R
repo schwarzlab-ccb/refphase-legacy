@@ -576,33 +576,40 @@ getIndividualCCFestimates_withPvals <- function(seg.name,
                                             purity.est.vec = purity.est.vec,
                                             min.CCF.to.consider.val = min.CCF.to.consider.val)
 
-
                         if (all.clonal.flag == TRUE) {
 
-                          #add these things to the segCCFvalues
-                          seg.CCF.val.list <- updateSegCCFValList(seg.CCF.val.list = seg.CCF.val.list, sample.vec = sample.vec, s.samps.obs.exp.cpn.df = s.samps.int.ob.xp.cpn.df, 
+                              #add these things to the segCCFvalues
+                              seg.CCF.val.list <- updateSegCCFValList(seg.CCF.val.list = seg.CCF.val.list, sample.vec = sample.vec, s.samps.obs.exp.cpn.df = s.samps.int.ob.xp.cpn.df, 
                                                                   all.pw.cn.het.comp.lists = all.pw.cn.het.comp.lists, cpnX.string = cpnX.string,
                                                                   ###These parameters vary:
                                                                   ss.poss.sc.cpnX.low =  round(s.samps.obs.exp.cpn.df[ 1 , paste0("mean_obs_", cpnX.string)]),
                                                                   ss.poss.sc.cpnX.high = round(s.samps.obs.exp.cpn.df[ 1 , paste0("mean_obs_", cpnX.string)]),
                                                                   use.preset.mean.frac.cpnX.low.high = FALSE) 
 
-                        } else {
+                        } else {#if not all clonal: 
 
-                          #add these things to the segCCFvalues
-                          seg.CCF.val.list <- updateSegCCFValList(seg.CCF.val.list = seg.CCF.val.list, sample.vec = sample.vec, s.samps.obs.exp.cpn.df = s.samps.int.ob.xp.cpn.df, 
+                              #add these things to the segCCFvalues
+                              seg.CCF.val.list <- updateSegCCFValList(seg.CCF.val.list = seg.CCF.val.list, sample.vec = sample.vec, s.samps.obs.exp.cpn.df = s.samps.int.ob.xp.cpn.df, 
                                                                   all.pw.cn.het.comp.lists = all.pw.cn.het.comp.lists, cpnX.string = cpnX.string,
                                                                   ###These parameters vary:
-                                                                  ss.poss.sc.cpnX.low =  round(s.samps.obs.exp.cpn.df[ 1 , paste0("mean_obs_", cpnX.string)]),
-                                                                  ss.poss.sc.cpnX.high = round(s.samps.obs.exp.cpn.df[ 1 , paste0("mean_obs_", cpnX.string)]),
+                                                                  ss.poss.sc.cpnX.low =  min(unique(floor(s.samps.obs.exp.cpn.df[ , paste0("mean_obs_", cpnX.string)]))),
+                                                                  ss.poss.sc.cpnX.high = max(unique(ceiling(s.samps.obs.exp.cpn.df[ , paste0("mean_obs_", cpnX.string)]))),
                                                                   use.preset.mean.frac.cpnX.low.high = FALSE) 
 
-                        }
+                        }#end if (all.clonal.flag == TRUE) {
 
                   }#end if (length(unique(round(s.samps.int.ob.xp.cpn.df[, paste0("mean_obs_", cpnX.string)]))) == 1) {
 
                   if (length(unique(round(s.samps.int.ob.xp.cpn.df[, paste0("mean_obs_", cpnX.string)]))) != 1) {
 
+
+                        #add these things to the segCCFvalues
+                        seg.CCF.val.list <- updateSegCCFValList(seg.CCF.val.list = seg.CCF.val.list, sample.vec = sample.vec, s.samps.obs.exp.cpn.df = s.samps.int.ob.xp.cpn.df, 
+                                                            all.pw.cn.het.comp.lists = all.pw.cn.het.comp.lists, cpnX.string = cpnX.string,
+                                                            ###These parameters vary:
+                                                            ss.poss.sc.cpnX.low =  min(unique(floor(s.samps.obs.exp.cpn.df[ , paste0("mean_obs_", cpnX.string)]))),
+                                                            ss.poss.sc.cpnX.high = max(unique(ceiling(s.samps.obs.exp.cpn.df[ , paste0("mean_obs_", cpnX.string)]))),
+                                                            use.preset.mean.frac.cpnX.low.high = FALSE) 
 
 
                   }#end if (length(unique(round(s.samps.int.ob.xp.cpn.df[, paste0("mean_obs_", cpnX.string)]))) != 1) {
@@ -618,13 +625,104 @@ getIndividualCCFestimates_withPvals <- function(seg.name,
                   #check whether there is ony one state when rounding
                   if (length(unique(round(s.samps.int.ob.xp.cpn.df[, paste0("mean_obs_", cpnX.string)]))) == 1) {
 
+                        all.clonal.flag <- determineCCFClonalityOfSegment(s.samps.int.ob.xp.cpn.df = s.samps.int.ob.xp.cpn.df,
+                                            sample.vec = sample.vec,
+                                            seg.name = seg.name,
+                                            all.samp.ph.BAF.df.list= all.samp.ph.BAF.df.list,
+                                            ploidy.est.vec = ploidy.est.vec,
+                                            purity.est.vec = purity.est.vec,
+                                            min.CCF.to.consider.val = min.CCF.to.consider.val)
 
+                        if (all.clonal.flag == TRUE) {
+
+                              seg.CCF.val.list <- updateSegCCFValList(seg.CCF.val.list = seg.CCF.val.list, sample.vec = sample.vec, s.samps.obs.exp.cpn.df = s.samps.int.ob.xp.cpn.df, 
+                                                                  all.pw.cn.het.comp.lists = all.pw.cn.het.comp.lists, cpnX.string = cpnX.string,
+                                                                  ###These parameters vary:
+                                                                  ss.poss.sc.cpnX.low =  round(s.samps.obs.exp.cpn.df[ 1 , paste0("mean_obs_", cpnX.string)]),
+                                                                  ss.poss.sc.cpnX.high = round(s.samps.obs.exp.cpn.df[ 1 , paste0("mean_obs_", cpnX.string)]),
+                                                                  use.preset.mean.frac.cpnX.low.high = FALSE) 
+
+                        } else {#end if (all.clonal.flag == TRUE) {
+
+                              two.value.diff.flag <- calculateTwoValueDiffFlag(s.samps.int.ob.xp.cpn.df,
+                                                                              seg.cpnA.cnpB.diff.exp.list,
+                                                                              cpnX.string,
+                                                                              min.CCF.to.consider.val,
+                                                                              confidence.interval.threshold)
+
+
+                              if (two.value.diff.flag == TRUE) {
+
+                                    mean.cpnX.vec <- s.samps.int.ob.xp.cpn.df[, paste0("mean_obs_", cpnX.string)]
+                                    #Do we twist up or do we twist down
+                                    if (abs(min(max(ceiling(mean.cpnX.vec - mean.cpnX.vec)) < abs(max(min(floor(mean.cpnX.vec)) - mean.cpnX.vec))){
+                                          #take the ceiling
+                                          seg.CCF.val.list <- updateSegCCFValList(seg.CCF.val.list = seg.CCF.val.list, sample.vec = sample.vec, s.samps.obs.exp.cpn.df = s.samps.int.ob.xp.cpn.df, 
+                                                                             all.pw.cn.het.comp.lists = all.pw.cn.het.comp.lists, cpnX.string = cpnX.string,
+                                                                             ###These parameters vary:
+                                                                             ss.poss.sc.cpnX.low =  round(s.samps.obs.exp.cpn.df[ 1 , paste0("mean_obs_", cpnX.string)]),
+                                                                             ss.poss.sc.cpnX.high = max(unique(ceiling(s.samps.obs.exp.cpn.df[ , paste0("mean_obs_", cpnX.string)]))),
+                                                                             use.preset.mean.frac.cpnX.low.high = FALSE)  
+
+
+                                    }#end if (abs(min(max(ceiling(mean.cpnX.vec - mean.cpnX.vec)) < abs(max(min(floor(mean.cpnX.vec)) - mean.cpnX.vec))){
+
+                                    if (abs(min(max(ceiling(mean.cpnX.vec - mean.cpnX.vec)) >= abs(max(min(floor(mean.cpnX.vec)) - mean.cpnX.vec))) {      
+
+                                          # take the floor
+                                          seg.CCF.val.list <- updateSegCCFValList(seg.CCF.val.list = seg.CCF.val.list, sample.vec = sample.vec, s.samps.obs.exp.cpn.df = s.samps.int.ob.xp.cpn.df, 
+                                                                             all.pw.cn.het.comp.lists = all.pw.cn.het.comp.lists, cpnX.string = cpnX.string,
+                                                                             ###These parameters vary:
+                                                                             ss.poss.sc.cpnX.low =  min(unique(floor(s.samps.obs.exp.cpn.df[ 1 , paste0("mean_obs_", cpnX.string)]))),
+                                                                             ss.poss.sc.cpnX.high = max(unique(round(s.samps.obs.exp.cpn.df[ , paste0("mean_obs_", cpnX.string)]))),
+                                                                             use.preset.mean.frac.cpnX.low.high = FALSE)  
+
+
+
+                                    }#end if(abs(min(max(ceiling(mean.cpnX.vec - mean.cpnX.vec)) >= abs(max(min(floor(mean.cpnX.vec)) - mean.cpnX.vec))) { 
+
+
+                              } else {#end: if (two.value.diff.flag == TRUE)# start of: two.value.diff.flag==FALSE
+
+                                    mean.cpnX.vec <- s.samps.int.ob.xp.cpn.df[, paste0("mean_obs_", cpnX.string)]
+                                    # do we twist up or down
+                                    if ((abs(min(max(ceiling(mean.cpnX.vec - mean.cpnX.vec)) < abs(max(min(floor(mean.cpnX.vec)) - mean.cpnX.vec)))) {
+                                          #take the ceiling
+                                          seg.CCF.val.list <- updateSegCCFValList(seg.CCF.val.list = seg.CCF.val.list, sample.vec = sample.vec, s.samps.obs.exp.cpn.df = s.samps.int.ob.xp.cpn.df, 
+                                                                             all.pw.cn.het.comp.lists = all.pw.cn.het.comp.lists, cpnX.string = cpnX.string,
+                                                                             ###These parameters vary:
+                                                                             ss.poss.sc.cpnX.low =  min(unique(floor(s.samps.obs.exp.cpn.df[ , paste0("mean_obs_", cpnX.string)]))),
+                                                                             ss.poss.sc.cpnX.high = max(unique(ceiling(s.samps.obs.exp.cpn.df[ , paste0("mean_obs_", cpnX.string)]))),
+                                                                             use.preset.mean.frac.cpnX.low.high = FALSE)  
+
+                                    }
+                                    if (abs(min(max(ceiling(mean.cpnX.vec)) - mean.cpnX.vec)) >= abs(max(min(floor(mean.cpnX.vec)) - mean.cpnX.vec))) {
+                                          #take the floor #TODO, check with Nicky but these values are the same as the < than, BUG?
+                                          seg.CCF.val.list <- updateSegCCFValList(seg.CCF.val.list = seg.CCF.val.list, sample.vec = sample.vec, s.samps.obs.exp.cpn.df = s.samps.int.ob.xp.cpn.df, 
+                                                                             all.pw.cn.het.comp.lists = all.pw.cn.het.comp.lists, cpnX.string = cpnX.string,
+                                                                             ###These parameters vary:
+                                                                             ss.poss.sc.cpnX.low =  min(unique(floor(s.samps.obs.exp.cpn.df[ , paste0("mean_obs_", cpnX.string)]))),
+                                                                             ss.poss.sc.cpnX.high = max(unique(ceiling(s.samps.obs.exp.cpn.df[ , paste0("mean_obs_", cpnX.string)]))),
+                                                                             use.preset.mean.frac.cpnX.low.high = FALSE)  
+
+
+                                    }#end if (abs(min(max(ceiling(mean.cpnX.vec)) - mean.cpnX.vec)) >= abs(max(min(floor(mean.cpnX.vec)) - mean.cpnX.vec))) {
+
+                              }#end  two.value.diff.flag==FALSE
+
+                        }#end  else {#end if (all.clonal.flag == FALSE) {
 
                   }#end if (length(unique(round(s.samps.int.ob.xp.cpn.df[, paste0("mean_obs_", cpnX.string)]))) == 1){
 
                   #check whether there are only two states when rounding
                   if (length(unique(round(s.samps.int.ob.xp.cpn.df[, paste0("mean_obs_", cpnX.string)]))) == 2) {
 
+                        seg.CCF.val.list <- updateSegCCFValList(seg.CCF.val.list = seg.CCF.val.list, sample.vec = sample.vec, s.samps.obs.exp.cpn.df = s.samps.int.ob.xp.cpn.df, 
+                                                           all.pw.cn.het.comp.lists = all.pw.cn.het.comp.lists, cpnX.string = cpnX.string,
+                                                           ###These parameters vary:
+                                                           ss.poss.sc.cpnX.low =  min(round(s.samps.obs.exp.cpn.df[, paste0("mean_obs_", cpnX.string)])),
+                                                           ss.poss.sc.cpnX.high = max(round(s.samps.obs.exp.cpn.df[ , paste0("mean_obs_", cpnX.string)])),
+                                                           use.preset.mean.frac.cpnX.low.high = FALSE)      
 
 
                   }#end if (length(unique(round(s.samps.int.ob.xp.cpn.df[, paste0("mean_obs_", cpnX.string)]))) == 2){
@@ -632,7 +730,12 @@ getIndividualCCFestimates_withPvals <- function(seg.name,
                   #check whether there are more than two states when rounding
                   if (length(unique(round(s.samps.int.ob.xp.cpn.df[, paste0("mean_obs_", cpnX.string)]))) > 2) {
 
-
+                        seg.CCF.val.list <- updateSegCCFValList(seg.CCF.val.list = seg.CCF.val.list, sample.vec = sample.vec, s.samps.obs.exp.cpn.df = s.samps.int.ob.xp.cpn.df, 
+                                                           all.pw.cn.het.comp.lists = all.pw.cn.het.comp.lists, cpnX.string = cpnX.string,
+                                                           ###These parameters vary:
+                                                           ss.poss.sc.cpnX.low =  min(unique(floor(s.samps.obs.exp.cpn.df[, paste0("mean_obs_", cpnX.string)] + min.CCF.to.consider))),
+                                                           ss.poss.sc.cpnX.high = max(unique(ceiling(s.samps.obs.exp.cpn.df[ , paste0("mean_obs_", cpnX.string)] + min.CCF.to.consider))),
+                                                           use.preset.mean.frac.cpnX.low.high = FALSE)      
 
                   }#end if (length(unique(round(s.samps.int.ob.xp.cpn.df[, paste0("mean_obs_", cpnX.string)]))) == 2){
 
@@ -640,7 +743,6 @@ getIndividualCCFestimates_withPvals <- function(seg.name,
                   #ceiling(s.samps.int.ob.xp.cpn.df[, paste0("mean_obs_", cpnX.string)]))) > 2) {
     
       }#end for ( cpnX.string in c("cpnA", "cpnB") )
-
 
 }#end getIndividualCCFestimates_withPvals <- function(...)
 
