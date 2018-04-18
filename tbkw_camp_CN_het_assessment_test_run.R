@@ -144,9 +144,13 @@ all.seg.phasing.info.list <- getCombinedBAFDipTestPhasing(asas.lr.baf.lists = as
                                             gamma.val = 1)
 
 
-#Todo add another function call to get the new phased baf table.
+#Todo unsure of what to do with the baf logr lists which have positions that only have logr here, at the moment exclude them but how
+#does that affect later run
 patient.phased.BAF.df <- createAllSegsPhasedBAFDataFrame(asas.lr.baf.lists = asas.SNPs.w.both.lr.baf.lists,
                                                          sample.to.phase.seg.list = all.seg.phasing.info.list)
+
+#Add in plotting functions
+
 
 #Todo check wha happens to the missing rows, are these segments that contained less than 5 snps and thus didn't have something created?
 #what's going on.
@@ -155,7 +159,7 @@ soure("/home/camp/watkint/working/watkint/scripts/modified_ascat/CN_heterogeneit
 sample.vec <- names(asas.lr.baf.lists)
 
 #
-
+all.pw.cn.het.comp.lists <- list()
 for (i in 1:(length(sample.vec) - 1)) {
 
   for(j in (i + 1):length(sample.vec)) {
@@ -182,18 +186,31 @@ for (i in 1:(length(sample.vec) - 1)) {
 
 }#end for(j in (i + 1):length(sample.vec)) {
 
-#Let's get the CCF
+#Todo, add in plotting functions
 
+#Let's get the CCF
 
 soure("/home/camp/watkint/working/watkint/scripts/modified_ascat/CN_heterogeneity_package_scripts/cancer_cell_fraction_calculation_functions.R")
 
-all.segs.CCF.est.lists <- getSegsCCFEstimate(all.pw.cn.het.comp.lists
-                                            ,ploidy.est.vec
-                                            ,purity.est.vec
-                                            ,all.samp.ph.BAF.df.list
+all.segs.CCF.est.lists <- getSegsCCFEstimate(all.pw.cn.het.comp.lists = all.pw.cn.het.comp.lists
+                                            ,ploidy.est.vec = ploidy.est.vec
+                                            ,purity.est.vec = purity.est.vec
+                                            ,all.samp.ph.BAF.df.list = patient.phased.BAF.df
                                             ,highest.cpn.trusted = 10
                                             ,pval.to.separate = 0.001
                                             ,min.CCF.to.consider = 0.15
+                                            ,confidence.interval = 0.99999)
+
+
+#Todo, rewrite the plotting functions for the CCFs..
+
+#Todo, rewrite functions to get the ASCAT style copy number segmentation
+
+#Todo plot how much of the original segmentation actually comes all the way through the code.
+
+
+
+
 
 
 
