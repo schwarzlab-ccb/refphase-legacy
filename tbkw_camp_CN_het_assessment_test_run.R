@@ -143,14 +143,18 @@ all.seg.phasing.info.list <- getCombinedBAFDipTestPhasing(asas.lr.baf.lists = as
                                             purity.est.vec = purity.est.vec,
                                             gamma.val = 1)
 
+
 #Todo add another function call to get the new phased baf table.
+patient.phased.BAF.df <- createAllSegsPhasedBAFDataFrame(asas.lr.baf.lists = asas.SNPs.w.both.lr.baf.lists,
+                                                         sample.to.phase.seg.list = all.seg.phasing.info.list)
 
-
-print(min.cons.segs.df)
 #Todo check wha happens to the missing rows, are these segments that contained less than 5 snps and thus didn't have something created?
 #what's going on.
 
+soure("/home/camp/watkint/working/watkint/scripts/modified_ascat/CN_heterogeneity_package_scripts/pairwise_CN_heterogeneity_comparison_functions.R")
 sample.vec <- names(asas.lr.baf.lists)
+
+#
 
 for (i in 1:(length(sample.vec) - 1)) {
 
@@ -172,14 +176,25 @@ for (i in 1:(length(sample.vec) - 1)) {
                                                                   )
 
 
+    #Todo work ou if we need to put into list in this loop or not...
 
   }#end for (i in 1:(length(sample.vec) - 1)) {
 
 }#end for(j in (i + 1):length(sample.vec)) {
 
-#We also need to
+#Let's get the CCF
 
 
-#Let's get the CCF 
+soure("/home/camp/watkint/working/watkint/scripts/modified_ascat/CN_heterogeneity_package_scripts/cancer_cell_fraction_calculation_functions.R")
 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               
+all.segs.CCF.est.lists <- getSegsCCFEstimate(all.pw.cn.het.comp.lists
+                                            ,ploidy.est.vec
+                                            ,purity.est.vec
+                                            ,all.samp.ph.BAF.df.list
+                                            ,highest.cpn.trusted = 10
+                                            ,pval.to.separate = 0.001
+                                            ,min.CCF.to.consider = 0.15
+
+
+
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 

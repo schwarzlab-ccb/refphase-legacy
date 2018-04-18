@@ -510,10 +510,13 @@ calculateTwoValueDiffFlag <- function(s.samps.int.ob.xp.cpn.df, seg.cpnA.cnpB.di
 #We can refactor this whole function into one which generates a set of tuples (perhaps stored in a dataframe or as two vectors equal length) of 
 #possible low sc CPN and high sc CPN that can be passed to a function that updates the returned list.
 #No need to call the function when each logical state is reached..., do it once at the end in a loop.
+
+#removed this parameter as doesn't seem to be being used: seg.r.cpn.same.diff.across.samps.list,
+
+
 getIndividualCCFestimates_withPvals <- function(seg.name,
                                                 sample.vec,
                                                 all.pw.cn.het.comp.lists,
-                                                seg.r.cpn.same.diff.across.samps.list,
                                                 all.samp.ph.BAF.df.list,
                                                 max.cpn.val = 5,
                                                 min.CCF.to.consider.val = 0.15,
@@ -746,11 +749,15 @@ getIndividualCCFestimates_withPvals <- function(seg.name,
 }#end getIndividualCCFestimates_withPvals <- function(...)
 
 #Todo break this up into multiple functions.
-getSegNewCCFEstimate <- function( all.pw.cn.het.comp.lists
+#Removed this parameter as it doesn't seem to be being used:pval.threshold
+
+#We can actually remove this whole function as it is essentially a wrapper around the for loop generating CCF values for each segmentation
+#The oher function calls before it seem to be remnants from and old version of the plotting.
+getSegsCCFEstimate <- function( all.pw.cn.het.comp.lists
                                  ,ploidy.est.vec
                                  ,purity.est.vec
+                                 ,all.samp.ph.BAF.df.list
                                  ,highest.cpn.trusted = 10
-                                 ,pval.threshold = 0.01
                                  ,pval.to.separate = 0.001
                                  ,min.CCF.to.consider = 0.15
                                  ,confidence.interval = 0.99999
@@ -776,16 +783,13 @@ getSegNewCCFEstimate <- function( all.pw.cn.het.comp.lists
       samps.int.cpn.raw.cpn.by.chr.list <- generateAllSamplesByChromIntCPNUnderlyingRawValuesLists(all.pw.cn.het.comp.lists, sample.vec, seg.name.vec)
 
       all.seg.CCF.vals.list <- list()
-
-      # also create a table with the output
-      #simpleOutPut <- c()
       for (seg.name in seg.name.vec) {
         #all.samp.ph.BAF.df.list used to be in the all.pw.cn.het.comp.lists but was refactored out, need to add a call or pass it to this function.
         seg.CCF.vals <- getIndividualCCFestimates_withPvals(seg.name = seg.name,
                                                 sample.vec = sample.vec,
                                                 all.pw.cn.het.comp.lists = all.pw.cn.het.comp.lists,
                                                 seg.r.cpn.same.diff.across.samps.list = seg.r.cpn.same.diff.across.samps.list,
-                                                all.samp.ph.BAF.df.list = ?,
+                                                all.samp.ph.BAF.df.list = all.samp.ph.BAF.df.list,
                                                 max.cpn.val = highest.cpn.trusted,
                                                 min.CCF.to.consider.val = 0.15,
                                                 chrs.can.use.for.ccf.comp = c(1:22),
@@ -795,5 +799,5 @@ getSegNewCCFEstimate <- function( all.pw.cn.het.comp.lists
       }
 
 
-
+      return(all.seg.CCF.vals.list)
 }#end getSegNewCCFEstimate           <- function(   

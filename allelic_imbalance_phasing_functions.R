@@ -402,7 +402,7 @@ getMixturePhasingResultsForSegment <- function(sample.to.phase.seg.list,
 
 
 #This is used to generate CCF values so needs to be added to the sample.to.phase.seg.list
-createAllSegsPhasedBAFDataFrame <- function(asas.lr.baf.lists, sample.to.phase.seg.list, sample.vec) {
+createAllSegsPhasedBAFDataFrame <- function(asas.lr.baf.lists, sample.to.phase.seg.list) {
 
   sample.vec <- names(asas.lr.baf.lists)
   chr.start.end.string.vec <- paste(min.cons.segs.df[ ,1], min.cons.segs.df[ ,2], min.cons.segs.df[ ,3], sep=":")
@@ -456,4 +456,4 @@ createAllSegsPhasedBAFDataFrame <- function(asas.lr.baf.lists, sample.to.phase.s
 
 
 
-             
+                         
