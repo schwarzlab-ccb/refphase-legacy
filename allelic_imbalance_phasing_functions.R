@@ -458,8 +458,8 @@ createAllSegsPhasedBAFDataFrame <- function(asas.lr.baf.lists, sample.to.phase.s
         
       }#end if (nrow(samp.BAF.df[is.na(samp.BAF.df$maj_is_cpnA_idx_vec), ,drop=FALSE])>0)){
 
-      samp.BAF.df$ph_median_segmented_BAF <- min(median(samp.BAF.df[samp.BAF.df$maj_is_cpnB_idx_vec==1,]$BAF),
-                                           median(samp.BAF.df[samp.BAF.df$maj_is_cpnB_idx_vec==0,]$BAF))
+      samp.BAF.df$ph_median_segmented_BAF <- min(median(samp.BAF.df[samp.BAF.df$maj_is_cpnB_logic_vec == 1 ,]$BAF),
+                                           median(samp.BAF.df[samp.BAF.df$maj_is_cpnB_logic_vec == 0 ,]$BAF))
 
       all.samp.ph.BAF.df.list[[samp]]$ph_samp_BAF_df <- rbind(all.samp.ph.BAF.df.list[[samp]]$ph_samp_BAF_df, samp.BAF.df)
 
@@ -475,4 +475,4 @@ createAllSegsPhasedBAFDataFrame <- function(asas.lr.baf.lists, sample.to.phase.s
 
 
 
-                              
+                                                     
