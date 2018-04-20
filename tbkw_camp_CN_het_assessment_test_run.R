@@ -52,9 +52,9 @@ full.joint.segs.file.path <- paste(msaiDir, patient, "_joint_segs_all_ascat_info
 CN.heterogeneity.out.complete <- paste(CN.heterogeneity.dir,"/",patient,".CN.heterogeneity.complete",sep='');
 print(CN.heterogeneity.out.complete)
 
-source("/home/camp/watkint/working/watkint/scripts/modified_ascat/CN_heterogeneity_package_scripts/minimum_consistent_segmentation_functions.R")
-source("/home/camp/watkint/working/watkint/scripts/modified_ascat/CN_heterogeneity_package_scripts/data_input_and_QC_functions.R")
-source("/home/camp/watkint/working/watkint/scripts/modified_ascat/CN_heterogeneity_package_scripts/allelic_imbalance_phasing_functions.R")
+#source("/home/camp/watkint/working/watkint/scripts/modified_ascat/CN_heterogeneity_package_scripts/minimum_consistent_segmentation_functions.R")
+#source("/home/camp/watkint/working/watkint/scripts/modified_ascat/CN_heterogeneity_package_scripts/data_input_and_QC_functions.R")
+#source("/home/camp/watkint/working/watkint/scripts/modified_ascat/CN_heterogeneity_package_scripts/allelic_imbalance_phasing_functions.R")
 
 f.joint.segs.df <- read.table(full.joint.segs.file.path, stringsAsFactors=FALSE, sep="\t", header=TRUE)
     f.joint.segs.df$sample <- gsub("\\.", "-", gsub("_LogR", "", f.joint.segs.df$sample))
@@ -65,6 +65,7 @@ f.joint.segs.df <- read.table(full.joint.segs.file.path, stringsAsFactors=FALSE,
 
 #The patient is supposed to match what's in the segs:
 
+source("/home/camp/watkint/working/watkint/scripts/multiregioncopynum/data_input_and_QC_functions.R")
 #full.patient <- paste("B_", patient, sep="")
 array.type <- "exome"
 pt.id <- patient
@@ -85,10 +86,13 @@ names(purity.est.vec) <- unique(processed.orig.cpn.segs.df$sample)
 
 
 #Todo accept precomputed mininmum consistent segmentation
+source("/home/camp/watkint/working/watkint/scripts/multiregioncopynum/minimum_consistent_segmentation_functions.R")
 min.cons.segs.df <- generateMinimumConsistentSegmentation(processed.orig.cpn.segs.df, chroms=1:22, col.to.use="ploidy_adj_tot_cpn")
 print(head(min.cons.segs.df))
 
-min.cons.segs.df <- cleanAndErrorCheckMinConsSegs(processed.orig.cpn.segs.df)
+
+source("/home/camp/watkint/working/watkint/scripts/multiregioncopynum/data_input_and_QC_functions.R")
+min.cons.segs.df <- cleanAndErrorCheckMinConsSegs(min.cons.segs.df)
 print(head(min.cons.segs.df))
 #Todo might need to add column names so looks like below:?
 
@@ -105,17 +109,17 @@ if(array.type=="WGS"){
 
 } else if(array.type%in%c("snp_array", "exome")){
   
-  all.samp.SNP.list <- getSNPDataTRACERxFormatASCATBC(pt.id = full.pt, release.dir = workDir, array.type = array.type)
+  all.samp.SNP.list <- getSNPsWithBAFandLogRatioDataTRACERxFormatASCATBC(pt.id = full.pt, release.dir = workDir, array.type = array.type)
 
 }
 str(all.samp.SNP.list)
-STOP
+
 #all sample all seg logr baf lists is asas.lr.baf
 #All SNPs in these lists must have both a logr and baf value
-asas.SNPs.w.both.lr.baf.lists <- cleanAndErrorCheckSNPs(all.samp.SNP.list, min.cons.segs.df, allow.logr.only.flag=FALSE)
+asas.SNPs.w.both.lr.baf.snp.lists <- cleanAndErrorCheckSNPs(all.samp.SNP.list, min.cons.segs.df, allow.logr.only.flag=FALSE)
 #Todo, is it necessary to keep both lists of SNPs like this?
 #SNPs that only have LogR are permitted in these lists, but it also contains all the SNPs with both BAF and LogR
-source("/home/camp/watkint/working/watkint/scripts/modified_ascat/CN_heterogeneity_package_scripts/data_input_and_QC_functions.R")
+source("/home/camp/watkint/working/watkint/scripts/multiregioncopynum/data_input_and_QC_functions.R")
 asas.SNPS.lr.and.or.baf.lists <- cleanAndErrorCheckSNPs(all.samp.SNP.list, min.cons.segs.df, allow.logr.only.flag=TRUE)
 
 
@@ -129,7 +133,7 @@ asas.SNPS.lr.and.or.baf.lists <- cleanAndErrorCheckSNPs(all.samp.SNP.list, min.c
 # library(gtools)
 # library(diptest)
 # library(gplots)
-source("/home/camp/watkint/working/watkint/scripts/modified_ascat/CN_heterogeneity_package_scripts/allelic_imbalance_phasing_functions.R")
+source("/home/camp/watkint/working/watkint/scripts/multiregioncopynum/allelic_imbalance_phasing_functions.R")
 
 #Todo, further refactor code so that everything is done at the level of a segment
 #Todo, add options to phase using baf dip test not just ascat regions
@@ -143,12 +147,15 @@ all.seg.phasing.info.list <- getCombinedBAFDipTestPhasing(asas.lr.baf.lists = as
                                             purity.est.vec = purity.est.vec,
                                             gamma.val = 1)
 
+source("/home/camp/watkint/working/watkint/scripts/multiregioncopynum/allelic_imbalance_phasing_functions.R")
 
 #Todo unsure of what to do with the baf logr lists which have positions that only have logr here, at the moment exclude them but how
 #does that affect later run
-patient.phased.BAF.df <- createAllSegsPhasedBAFDataFrame(asas.lr.baf.lists = asas.SNPs.w.both.lr.baf.lists,
-                                                         sample.to.phase.seg.list = all.seg.phasing.info.list)
+patient.phased.BAF.df <- createAllSegsPhasedBAFDataFrame(asas.lr.baf.lists = asas.SNPs.w.both.lr.baf.snp.lists,
+                                                         sample.to.phase.seg.list = all.seg.phasing.info.list
+                                                         )
 
+str(patient.phased.BAF.df)
 #Add in plotting functions
 
 
@@ -214,4 +221,4 @@ all.segs.CCF.est.lists <- getSegsCCFEstimate(all.pw.cn.het.comp.lists = all.pw.c
 
 
 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          

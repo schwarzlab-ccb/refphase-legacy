@@ -22,36 +22,36 @@ getCombinedBAFDipTestPhasing <- function(asas.lr.baf.lists,
                                         min.cons.segs.df,
                                         ploidy.est.vec,
                                         purity.est.vec,
-                                        gamma.val=1,
-                                        min.num.hz.snp.phasing=5,
-                                        min.prop.snp.sep.threshold=0.75,
-                                        dip.test.p.val.threshold=0.01,
-                                        comb.wilcox.snp.sep.p.val.threshold=0.01) {
+                                        gamma.val = 1,
+                                        min.num.hz.snp.phasing = 5,
+                                        min.prop.snp.sep.threshold = 0.75,
+                                        dip.test.p.val.threshold = 0.01,
+                                        comb.wilcox.snp.sep.p.val.threshold = 0.01) {
 
   sample.vec <- names(asas.lr.baf.lists)
   sample.to.phase.seg.list <- list()
   new.baf.df.list <- list()
-  chr.start.end.string.vec <- paste(min.cons.segs.df[ ,1], min.cons.segs.df[ ,2], min.cons.segs.df[ ,3], sep=":")
+  seg.name.vec <- paste(min.cons.segs.df[ ,1], min.cons.segs.df[ ,2], min.cons.segs.df[ ,3], sep=":")
 
-  for ( seg.idx in 1:length(chr.start.end.string.vec) ) {
+  for ( seg.name in seg.name.vec ) {
 
-    seg.name <- chr.start.end.string.vec[seg.idx]
     #Test whether phasing is possible for this segment:
-    first.ss.lr.baf.df <- asas.lr.baf.lists[[sample.vec[1]]][[seg.idx]]
-
+    first.ss.lr.baf.df <- asas.lr.baf.lists[[sample.vec[1]]][[seg.name]]
+    print("print(head(first.ss.lr.baf.df))")
+    print(head(first.ss.lr.baf.df))
     if (nrow(first.ss.lr.baf.df) < min.num.hz.snp.phasing) {
 
       next;#Might actally want this to be a break as they should all have too few snps as it is joint segmentation with the same SNPs...
 
     }#end if( nrow(ref.ss.lr.baf.df) < min.hz.snp.phasing)
 
-    all.samp.seg.phasing.ability.list <- getAssessmentOfEachSamplesAbilityToPhaseAllOthersForSeg(asas.lr.baf.lists=asas.lr.baf.lists,
-                                                                                                sample.vec=sample.vec,
-                                                                                                seg.idx=seg.idx,
-                                                                                                ploidy.est.vec=ploidy.est.vec,
-                                                                                                purity.est.vec=purity.est.vec,
-                                                                                                gamma.val=gamma.val,
-                                                                                                min.num.hz.snp.phasing=min.num.hz.snp.phasing)
+    all.samp.seg.phasing.ability.list <- getAssessmentOfEachSamplesAbilityToPhaseAllOthersForSeg(asas.lr.baf.lists = asas.lr.baf.lists,
+                                                                                                sample.vec = sample.vec,
+                                                                                                seg.name = seg.name,
+                                                                                                ploidy.est.vec = ploidy.est.vec,
+                                                                                                purity.est.vec = purity.est.vec,
+                                                                                                gamma.val = gamma.val,
+                                                                                                min.num.hz.snp.phasing = min.num.hz.snp.phasing)
     #save to output list put for this seg:
     sample.to.phase.seg.list[[seg.name]]$all_samp_phasing_comparison_list <- all.samp.seg.phasing.ability.list
 
@@ -60,7 +60,7 @@ getCombinedBAFDipTestPhasing <- function(asas.lr.baf.lists,
                                             diptest_for_AI_pval = sapply(all.samp.seg.phasing.ability.list, function(x) x$diptest_for_AI_pval),
                                             ASCAT_called_as_AI = sapply(all.samp.seg.phasing.ability.list, function(x) x$ASCAT_called_as_AI),
                                             comb_pval_SNP_sep_across_samps = sapply(all.samp.seg.phasing.ability.list, function(x) x$comb_wilcox_sep_pval_across_samps),
-                                            stringsAsFactors=FALSE)
+                                            stringsAsFactors = FALSE)
     rownames(a.s.sum.phas.df) <- sample.vec
     a.s.sum.phas.df <- a.s.sum.phas.df[with(a.s.sum.phas.df, order(diptest_for_AI_pval)), ]
     #possible phasing samples passing the phasing thresholds:
@@ -100,7 +100,7 @@ getCombinedBAFDipTestPhasing <- function(asas.lr.baf.lists,
                                                                         sample.vec,
                                                                         poss.phas.s.df,
                                                                         asas.lr.baf.lists,
-                                                                        seg.idx, ploidy.est.vec, purity.est.vec, gamma.val)
+                                                                        seg.name, ploidy.est.vec, purity.est.vec, gamma.val)
 
         }#end if(poss.phas.s.df[sample.to.phase.seg,]$comb_wilcox_sep_pval_across_samps < comb.wilcox.snp.sep.p.val.threshold &
          #poss.phas.s.df[sample.to.phase.seg,]$mean_prop_SNPs_sep_across_samples > prop.snp.sep.threshold)
@@ -168,8 +168,7 @@ assessPhasingAcrossSelectedSamples <- function(sample.comparison.list,
 
   for ( other.samp in samples.to.test.vec ) {
 
-    oth.ss.lr.baf.df <- asas.lr.baf.lists[[other.samp]][[seg.idx]]
-     <- calculateSNPsCopyNumberAB(logr.vec=oth.ss.lr.baf.df$logR, baf.vec=oth.ss.lr.baf.df$BAF, tumor.ploidy=ploidy.est.vec[other.samp], tumor.purity=purity.est.vec[other.samp], gamma.val=gamma.val)
+    oth.ss.lr.baf.df <- asas.lr.baf.lists[[other.samp]][[seg.name]] <- calculateSNPsCopyNumberAB(logr.vec=oth.ss.lr.baf.df$logR, baf.vec=oth.ss.lr.baf.df$BAF, tumor.ploidy=ploidy.est.vec[other.samp], tumor.purity=purity.est.vec[other.samp], gamma.val=gamma.val)
 
     #old code had some checks here to make sure that these have the same number of rows, but if everything holds they should remain the same anyway...
     other.samp.wilcox.test <-  wilcox.test( c(oth.ss.cpnA.cpnB.df[ref.ss.maj.is.cpnA.idx.vec,  1], oth.ss.cpnA.cpnB.df[ref.ss.maj.is.cpnB.idx.vec, 2]), 
@@ -209,7 +208,7 @@ assessPhasingAcrossSelectedSamples <- function(sample.comparison.list,
 ##
 getAssessmentOfEachSamplesAbilityToPhaseAllOthersForSeg <- function(asas.lr.baf.lists,
                                                                     sample.vec,
-                                                                    seg.idx,
+                                                                    seg.name,
                                                                     ploidy.est.vec,
                                                                     purity.est.vec,
                                                                     gamma.val=1,
@@ -228,7 +227,7 @@ getAssessmentOfEachSamplesAbilityToPhaseAllOthersForSeg <- function(asas.lr.baf.
   for ( samp in sample.vec ) {
 
       #ref sample seg logr baf df
-      ref.ss.lr.baf.df <- asas.lr.baf.lists[[samp]][[seg.idx]]
+      ref.ss.lr.baf.df <- asas.lr.baf.lists[[samp]][[seg.name]]
       if( nrow(ref.ss.lr.baf.df) < min.num.hz.snp.phasing) {
 
         next;#Might actally want this to be a break as they should all have too few snps as it is joint segmentation with the same SNPs...
@@ -287,7 +286,7 @@ getMixturePhasingResultsForSegment <- function(sample.to.phase.seg.list,
                                               sample.vec,
                                               poss.phas.s.df,
                                               asas.lr.baf.lists,
-                                              seg.idx,
+                                              seg.name,
                                               ploidy.est.vec,
                                               purity.est.vec,
                                               gamma.val) {
@@ -296,7 +295,7 @@ getMixturePhasingResultsForSegment <- function(sample.to.phase.seg.list,
   sample.to.phase.seg.list[[seg.name]]$samp_chosen_to_phase_seg <- "mixture"
   #We will update the rest at the end of working out the optimum major and minor cpn indices...
 
-  phas.ss.lr.baf.df <- asas.lr.baf.lists[[sample.to.phase.seg]][[seg.idx]]
+  phas.ss.lr.baf.df <- asas.lr.baf.lists[[sample.to.phase.seg]][[seg.name]]
   phas.ss.cpnA.cpnB.df <- calculateSNPsCopyNumberAB(logr.vec=phas.ss.lr.baf.df$logR, baf.vec=phas.ss.lr.baf.df$BAF, tumor.ploidy=ploidy.est.vec[sample.to.phase.seg], tumor.purity=purity.est.vec[sample.to.phase.seg], gamma.val=gamma.val)
   
   other.samps.vec <- sample.vec[ ! sample.to.phase.seg %in% sample.vec]
@@ -402,25 +401,45 @@ getMixturePhasingResultsForSegment <- function(sample.to.phase.seg.list,
 
 
 #This is used to generate CCF values so needs to be added to the sample.to.phase.seg.list
-createAllSegsPhasedBAFDataFrame <- function(asas.lr.baf.lists, sample.to.phase.seg.list) {
+createAllSegsPhasedBAFDataFrame <- function(asas.lr.baf.lists, sample.to.phase.seg.list, min.num.hz.snp.phasing = 5) {
 
   sample.vec <- names(asas.lr.baf.lists)
-  chr.start.end.string.vec <- paste(min.cons.segs.df[ ,1], min.cons.segs.df[ ,2], min.cons.segs.df[ ,3], sep=":")
+ 
+  #Now we need to make sure that the asas.lr.baf.lists and sample.to.phase.seg.list 
+  if (length(names(sample.to.phase.seg.list)) != length(asas.lr.baf.lists[[1]])) {
+
+    print("Missing or removed segments:")
+    print(names(sample.to.phase.seg.list)[ ! names(asas.lr.baf.lists[[1]]) %in% names(sample.to.phase.seg.list)])
+    print("Continuing creation of phased BAF dataframe")
+  }
+
+
+  seg.name.vec <- names(sample.to.phase.seg.list)
+
   all.samp.ph.BAF.df.list <- list()
 
-  for ( i in 1:length(chr.start.end.string.vec) ) {
+  for ( seg.name in seg.name.vec ) {
 
-    seg.name <- chr.start.end.string.vec[seg.idx]
-
+    print(seg.name)
     for ( samp in sample.vec ) {
-
+      #Todo, make sure all segments are referred to by name, define this earlier on. Makes no sense to sometimes be using
+      #indices and other times be using the name format, causes confusion and bugs.
       samp.BAF.df <- asas.lr.baf.lists[[samp]][[seg.name]]
+
+      if (nrow(samp.BAF.df) < min.num.hz.snp.phasing) {
+
+        print(seg.name)
+        print("Has fewer than 5 heterozygous SNPs, not updating corresponding BAFs in table")
+        next;
+
+      }#end if(nrow(samp.BAF.df)<5) {
+      
       #initialise new columns
       samp.BAF.df$samp <- samp
       samp.BAF.df$sample_phased_by_this_sample <-  sample.to.phase.seg.list[[seg.name]]$samp_chosen_to_phase_seg
       samp.BAF.df$maj_is_cpnA_logic_vec <- 0
       samp.BAF.df$maj_is_cpnB_logic_vec <- 0
-
+  
       if (length(sample.to.phase.seg.list[[seg.name]]$maj_is_cpnA_idx_vec) > 1) {
 
         samp.BAF.df[sample.to.phase.seg.list[[seg.name]]$maj_is_cpnA_idx_vec,]$maj_is_cpnA_logic_vec <- 1 
@@ -433,16 +452,16 @@ createAllSegsPhasedBAFDataFrame <- function(asas.lr.baf.lists, sample.to.phase.s
 
       }#end if (length(sample.to.phase.seg.list[[seg.name]]$maj_is_cpnB_idx_vec) > 1) {
 
-      if (nrow(samp.BAF.df[is.na(samp.BAF.df$maj_is_cpnA_idx_vec), ,drop=FALSE])>0)){
+      if (nrow(samp.BAF.df[is.na(samp.BAF.df$maj_is_cpnA_logic_vec), ,drop=FALSE]) > 0) {
 
         stop("Check error in sample BAF df generation")
         
-      }#end if (nrow(sample.BAF.df[is.na(sample.BAF.df$maj_is_cpnA_idx_vec), ,drop=FALSE])>0)){
+      }#end if (nrow(samp.BAF.df[is.na(samp.BAF.df$maj_is_cpnA_idx_vec), ,drop=FALSE])>0)){
 
       samp.BAF.df$ph_median_segmented_BAF <- min(median(samp.BAF.df[samp.BAF.df$maj_is_cpnB_idx_vec==1,]$BAF),
                                            median(samp.BAF.df[samp.BAF.df$maj_is_cpnB_idx_vec==0,]$BAF))
 
-      all.samp.BAF.df.list[[samp]]$ph_samp_BAF_df <- rbind(all.samp.BAF.df.list[[samp]]$ph_samp_BAF_df, samp.BAF.df)
+      all.samp.ph.BAF.df.list[[samp]]$ph_samp_BAF_df <- rbind(all.samp.ph.BAF.df.list[[samp]]$ph_samp_BAF_df, samp.BAF.df)
 
     }#end for ( samp in sample.vec ) {
 
@@ -456,4 +475,4 @@ createAllSegsPhasedBAFDataFrame <- function(asas.lr.baf.lists, sample.to.phase.s
 
 
 
-                         
+                              

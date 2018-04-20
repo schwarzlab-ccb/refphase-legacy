@@ -199,6 +199,7 @@ cleanAndErrorCheckSNPs <- function(all.samp.SNP.list, min.cons.seg.df, allow.log
   #TODO add check that every single all.samp.SNP.list has the same SNPs..
   #Note error checking of removing NAs from the min.cons.seg.df should already have been performed
   min.cpn.vals.df <- min.cons.seg.df[,4:ncol(min.cons.seg.df)]
+  seg.name.vec <- paste(min.cons.seg.df[,1], min.cons.segs.df[,2], min.cons.segs.df[,3], sep=":")
   min.cpn.vals.df <- min.cpn.vals.df[!is.na(rowSums(min.cpn.vals.df)),,drop=FALSE] 
   sample.vec <- colnames(min.cpn.vals.df)
   working.all.samp.SNP.list <- list()
@@ -229,7 +230,7 @@ cleanAndErrorCheckSNPs <- function(all.samp.SNP.list, min.cons.seg.df, allow.log
       #Todo,
       #Another case is that we might have any of the SNPs removed might be the start or end position of the joint segs, if this is the case it might break downstream
       #analyses, we should stop the analysis if this is the case and say clean up the input data.
-      working.all.samp.SNP.list[[sample]][[seg.idx]] <- samp.seg.logR.BAF.df
+      working.all.samp.SNP.list[[sample]][[seg.name.vec[seg.idx]]] <- samp.seg.logR.BAF.df
 
     }#end for ( seg.idx in 1:nrow(min.cpn.vals.df) )
 
@@ -243,7 +244,7 @@ cleanAndErrorCheckSNPs <- function(all.samp.SNP.list, min.cons.seg.df, allow.log
 
     for (seg.idx in 1:nrow(min.cpn.vals.df)) {
 
-      working.all.samp.SNP.list[[sample]][[seg.idx]]  <- working.all.samp.SNP.list[[sample]][[seg.idx]][!rownames(working.all.samp.SNP.list[[sample]][[seg.idx]])%in%all.samps.prob.SNPs.vec, ,drop=FALSE] 
+      working.all.samp.SNP.list[[sample]][[seg.name.vec[seg.idx]]] <- working.all.samp.SNP.list[[sample]][[seg.name.vec[seg.idx]]][!rownames(working.all.samp.SNP.list[[sample]][[seg.name.vec[seg.idx]]])%in%all.samps.prob.SNPs.vec, ,drop=FALSE] 
 
     }#end for (seg.idx in 1:nrow(min.cpn.vals.df))
 
