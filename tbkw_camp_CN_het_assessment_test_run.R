@@ -205,7 +205,6 @@ for (i in 1:(length(sample.vec) - 1)) {
 
 source("/home/camp/watkint/working/watkint/scripts/multiregioncopynum/cancer_cell_fraction_calculation_functions.R")
 
-
 seg.name.vec <- names(all.pw.cn.het.comp.lists[[1]])
 #Check to make sure that all segments are present in all samples... why is this necessary
 #Todo, check why this bug is ocurring
@@ -247,12 +246,29 @@ names(test.list) <- seg.name.vec
 
 
 
-
-
-
 #Todo, rewrite the plotting functions for the CCFs..
-
+source("/home/camp/watkint/working/watkint/scripts/multiregioncopynum/final_output_segmentation_file_generation_functions.R")
 #Todo, rewrite functions to get the ASCAT style copy number segmentation
+generateFinalSegmentationOutput(all.pw.cn.het.comp.lists = all.pw.cn.het.comp.lists
+                                ,sample.to.phase.seg.list = sample.to.phase.seg.list      
+                                ,all.seg.CCF.vals.list = all.seg.CCF.vals.list
+                                ,processed.orig.cpn.segs.df = processed.orig.cpn.segs.df
+                                ,min.cons.segs.ploidy.adj.cpn.df = min.cons.segs.df
+                                ,ploidy.est.vec =  ploidy.est.vec
+                                ,purity.est.vec = purity.est.vec
+                                ,clonal.pval = 0.001
+                                ,diff.from.oth.p.val = 0.01
+                                ,min.CCF.to.consider.val =0.05
+                                ,pval.to.separate = 0.001
+                                ,min.num.other.chrs = 3
+                                ,gain.threshold    = log2(2.5 / 2)
+                                ,loss.threshold    = log2(1.5 / 2)
+                                ,amp.threshold     = log2(4 / 2)
+                                ,deep.loss.threshold= log2(0.5 / 2)
+                                ,chrs.to.use.vec = 1:22
+                                ,ploidy = 'mean'
+                                ,loss.gain.pval =0.01  
+                                )
 
 #Todo plot how much of the original segmentation actually comes all the way through the code.
 

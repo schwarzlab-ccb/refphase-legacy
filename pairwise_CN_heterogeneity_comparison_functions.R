@@ -177,11 +177,11 @@ calculatePairwiseCNHeterogeneity <- function(samp.one,
                                              min.num.hz.snp.phasing=5
                                              ){
 
-     cpn.event.names.vec <- c('logRObs','logRObs_low','logRObs_high'
-                                        ,'minGainExpLogR','gainPval'
-                                        ,'minAmpExpLogR','ampPval'
-                                        ,'minLossExpLogR','lossPval'
-                                        ,'minDeepLossExpLogR','DeepLossPval')
+     cpn.event.names.vec <- c('median_seg_logr','low_ci_logr_vs_exp_logr','high_ci_logr_vs_exp_logr'
+                                        ,'min_exp_logr_gain','gain_pval'
+                                        ,'min_exp_logr_amp','amp_pval'
+                                        ,'min_exp_logr_loss','loss_pval'
+                                        ,'min_exp_logr_deep_loss','deep_loss_pval')
 
 
 	#assuming that there will always be a phasing vector
@@ -415,7 +415,7 @@ calculatePairwiseCNHeterogeneity <- function(samp.one,
                seg.name.split.vec <- strsplit(chr.start.end.string.vec[i], split=":")
                seg.size <- as.numeric(unlist(seg.name.split.vec)[3]) - as.numeric(unlist(seg.name.split.vec)[2])
 
-
+               #Todo make the 0.001 a parameter..
                if (seg.paired.p.vals.vec[1] < 0.001) {
 
                     cpnA.diff.amplitude <- abs(mean(as.numeric(phased.s.one.s.cpnA.cpnB.df[,1])) - mean(as.numeric(phased.s.two.s.cpnA.cpnB.df[,1])))
@@ -453,7 +453,6 @@ calculatePairwiseCNHeterogeneity <- function(samp.one,
 
                s.one.two.comparison[[seg.name]][[samp.one.two.string]]$un_ph_cpnA_cpnB_het_comb_paired_pval    <- NA
                s.one.two.comparison[[seg.name]][[samp.one.two.string]]$un_ph_cpnA_cpnB_het_comb_unpaired_pval  <- NA
-               s.one.two.comparison[[seg.name]][[samp.one.two.string]]$un_ph_combinedUnPairedPval      <- NA
 
                s.one.two.comparison[[seg.name]][[samp.one.two.string]]$ph_cpnA_het_paired_pval <- seg.paired.p.vals.vec[1]
                s.one.two.comparison[[seg.name]][[samp.one.two.string]]$ph_cpnB_het_paired_pval <- seg.paired.p.vals.vec[2]
