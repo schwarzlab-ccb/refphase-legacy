@@ -71,19 +71,18 @@ generateAllSegsRoundedCPNSameOrDifferentAcrossSamplesLists <- function(all.pw.cn
 ##Returns:
 ##
 generateAllSamplesByChromIntCPNUnderlyingRawValuesLists <- function(all.pw.cn.het.comp.lists, sample.vec, seg.name.vec) {
-      print("called generateAllSamplesByChromIntCPNUnderlyingRawValuesLists")
       sample.chr.int.cpn.raw.vals.list <- list()
       #s.samps.obs.exp.cpn.df <- data.frame()
       #But really the datastructure organisation overall needs to change if we speed.
       for ( samp in sample.vec ) {
-            print(samp)
+
             for ( seg.name in seg.name.vec ) {
 
                   if (is.na(all.pw.cn.het.comp.lists[[1]][[seg.name]]$ph_cpnA_vec[1]) | is.na(all.pw.cn.het.comp.lists[[1]][[seg.name]]$ph_cpnB_vec[1])) {
 
                         next
                   }
-                  print(seg.name)
+
                   samp.seg.int.cpnA.val <- round(all.pw.cn.het.comp.lists[[samp]][[seg.name]]$mean_ph_cpnA)
                   samp.seg.int.cpnB.val <- round(all.pw.cn.het.comp.lists[[samp]][[seg.name]]$mean_ph_cpnB)
                   chr <- unlist(strsplit(seg.name, split=":"))[1]
@@ -119,14 +118,12 @@ calculateWhetherSegCPNDiffFromIntegerExpectedAndAllMatchingSampCPN <- function(s
                                                                               chrs.for.ccf.comp,
                                                                               samps.int.cpn.raw.cpn.by.chr.list,
                                                                               cpnA.or.cpnB){
-      print(samps.int.cpn.raw.cpn.by.chr.list)
+
       sample.vec <- rownames(s.samps.int.ob.xp.cpn.df)
-      print(s.samps.int.ob.xp.cpn.df)
       all.match.cpn.vals.vec <- c()
       chrs.w.same.cpn.vec <- c()
       #Todo, perhapsrefactor into a returnable dataframe...
-      print("chrs.for.ccf.comp")
-      print(chrs.for.ccf.comp)
+
 
       if (is.na(all.pw.cn.het.comp.lists[[1]][[seg.name]]$ph_cpnA_vec[1]) | is.na(all.pw.cn.het.comp.lists[[1]][[seg.name]]$ph_cpnB_vec[1])) {
 
@@ -134,36 +131,10 @@ calculateWhetherSegCPNDiffFromIntegerExpectedAndAllMatchingSampCPN <- function(s
       }
 
       for ( samp in sample.vec ) {
-            print(samp)           
+
             for ( chr in chrs.for.ccf.comp ) {
 
-
-                  print("samp")
-                  print(samp)
-                  print("chr")
-                  print(chr)
-                  print("str(samps.int.cpn.raw.cpn.by.chr.list[[samp]])")
-                  #print(str(samps.int.cpn.raw.cpn.by.chr.list[[samp]]))
-                  print(paste0("round_int_", cpnA.or.cpnB))
-                  print(paste0("all_seg_", cpnA.or.cpnB, "_vec"))
-                  print(s.samps.int.ob.xp.cpn.df)
-                  print(s.samps.int.ob.xp.cpn.df[samp, paste0("round_int_", cpnA.or.cpnB)])
-                  #print(samps.int.cpn.raw.cpn.by.chr.list[[samp]][[s.samps.int.ob.xp.cpn.df[samp, paste0("round_int_", cpnA.or.cpnB)]]])
-                  print("here")
-                  print("chr")
-                  print(chr)
-                  print("names(samps.int.cpn.raw.cpn.by.chr.list[[samp]])")
-                  print(names(samps.int.cpn.raw.cpn.by.chr.list[[samp]]))
-                  print("s.samps.int.ob.xp.cpn.df[samp, paste0(round_int_, cpnA.or.cpnB)")
-                  #print(s.samps.int.ob.xp.cpn.df[samp, paste0("round_int_", cpnA.or.cpnB)])
-                  #print(names(samps.int.cpn.raw.cpn.by.chr.list[[samp]][[s.samps.int.ob.xp.cpn.df[samp, paste0("round_int_", cpnA.or.cpnB)]]]))
-                  #print(samps.int.cpn.raw.cpn.by.chr.list[[samp]][[s.samps.int.ob.xp.cpn.df[samp, paste0("round_int_", cpnA.or.cpnB)]]][[as.character(chr)]])
-                  print("here2")
-
                   s.chr.cpn.vec <- samps.int.cpn.raw.cpn.by.chr.list[[samp]][[as.character(s.samps.int.ob.xp.cpn.df[samp, paste0("round_int_", cpnA.or.cpnB)])]][[as.character(chr)]][[paste0("all_seg_", cpnA.or.cpnB, "_vec")]]
-                  print("s.chr.cpn.vec")
-                  print(s.chr.cpn.vec)
-
 
                   if ( length(s.chr.cpn.vec) != 0 ) {
 
@@ -360,9 +331,8 @@ determineCCFClonalityOfSegment <- function(s.samps.int.ob.xp.cpn.df,
   for ( samp in sample.vec ) {
 
         #Get BAF values from the dataframe
-        samp.ph.baf.df <- all.samp.ph.BAF.df.list[[samp]][[1]]
-        print(str(samp.ph.baf.df))
-        
+        samp.ph.baf.df <- all.samp.ph.BAF.df.list[[samp]]
+        print(samp.ph.baf.df)
         s.samp.ph.baf.df <- samp.ph.baf.df[samp.ph.baf.df$chrom == chr & samp.ph.baf.df$pos >= start & samp.ph.baf.df$pos <= end, ,drop=FALSE]
 
         samp.maj.is.cpnA.cpnB.BAF.vs.exp.BAF.test <- tTestWithErrorHandling(c(s.samp.ph.baf.df[s.samp.ph.baf.df$maj_is_cpnA_logic_vec==1,"BAF"],
@@ -435,11 +405,8 @@ updateSegCCFValList <- function(seg.name,
   #Get and save mean fractions based on obs
 
   for ( samp in sample.vec ) {
-    print(samp)
     #Generate mean values:
     ss.mean.cpnX.obs <- s.samps.int.ob.xp.cpn.df[samp, paste0("mean_obs_", cpnX.string)]
-    print("ss.mean.cpnX.obs")
-    print(ss.mean.cpnX.obs)
 
     #Clean the mean...
     ss.mean.cpnX.obs <- ifelse(ss.mean.cpnX.obs < 0, 0, ss.mean.cpnX.obs)
@@ -456,25 +423,16 @@ updateSegCCFValList <- function(seg.name,
       ss.mean.frac.cpnX.high <- ss.fracs.to.use.vec[2]
 
     }#end if (use.preset.mean.frac.cpnX.low.high == TRUE) {
-    print("here3")
     #Save mean values:
     seg.CCF.val.list[[seg.name]][[samp]][[paste0("mean_obs_", cpnX.string)]] <- ss.mean.cpnX.obs
-    print("here4")
     seg.CCF.val.list[[seg.name]][[samp]][[paste0("mean_frac_", cpnX.string, "_low")]] <- ss.mean.frac.cpnX.low
     seg.CCF.val.list[[seg.name]][[samp]][[paste0("mean_frac_", cpnX.string, "_high")]] <- ss.mean.frac.cpnX.high
-    print("here5")
     #Generate raw values:
     ss.ph.cpnX.vals.vec <- all.pw.cn.het.comp.lists[[samp]][[seg.name]][[paste0("ph_", cpnX.string, "_vec")]]
-    print("print(str(all.pw.cn.het.comp.lists[[samp]][[seg.name]]))")
-    print(str(all.pw.cn.het.comp.lists[[samp]][[seg.name]]))
-    print(ss.ph.cpnX.vals.vec)
-    print("here6")
     ss.ph.cpnX.vals.vec <- ifelse(ss.ph.cpnX.vals.vec < 0, 0, ss.ph.cpnX.vals.vec)
     ss.ph.cpnX.vals.vec <- ifelse(ss.ph.cpnX.vals.vec >= max.cpn.val, max.cpn.val, ss.ph.cpnX.vals.vec)
     ss.fracs.to.use.vec <- sapply(ss.ph.cpnX.vals.vec, getCCFractionNeeded, ss.mean.frac.cpnX.low,  ss.mean.frac.cpnX.high)
-    print(ss.fracs.to.use.vec)
     ss.fracs.to.use.vec[ss.fracs.to.use.vec == "Inf"] <- 1
-    print(ss.fracs.to.use.vec)
     ss.frac.poss.sc.cpnX.low.vec <- apply(ss.fracs.to.use.vec, 2, min)
     ss.frac.poss.sc.cpnX.high.vec <- apply(ss.fracs.to.use.vec, 2, max)
 
@@ -513,11 +471,8 @@ calculateTwoValueDiffFlag <- function(s.samps.int.ob.xp.cpn.df, seg.cpnA.cnpB.di
       samps.poss.more.than.sc.cnpX.high.vec  <- rownames(s.samps.int.ob.xp.cpn.df[s.samps.int.ob.xp.cpn.df[, paste0("mean_obs_", cpnX.string)] >= ss.poss.sc.cpnX.high, ])
 
       for ( samp in samps.poss.more.than.sc.cnpX.high.vec ) {
-        print(samp)
         samp.max.CCF <- abs(ss.poss.sc.cpnX.high - samps.int.ob.xp.cpn.df[samp, paste0("mean_obs_", cpnX.string)])
-        print("here")
         raw.diff.from.int.cpnX.pval <- seg.cpnA.cnpB.diff.exp.list[[samp]][[paste0(cpnX.string, "_pval_vs_round_int_cpn")]]
-        print("here2")
         diff.from.int.flag <- raw.diff.from.int.cpnX.pval < (1 - confidence.interval.threshold)
 
         diff.from.other.chrs.flag <- TRUE
@@ -840,12 +795,10 @@ getSegsCCFEstimate <- function( all.pw.cn.het.comp.lists
       # (initially, simply do this by voting (will fail for subclonal GD events)).
 
       sample.vec <- names(ploidy.est.vec)
-      print("print(sample.vec)")
-      print(sample.vec)
+
       #old code got them from all.pw.cn.het.comp.lists, shouldn't bve nece
       seg.name.vec <- names(all.pw.cn.het.comp.lists[[1]])
-      print("print(seg.name.vec)")
-      print(seg.name.vec)
+
 
       #Check to make sure that all segments are present in all samples... why is this necessary
       #Todo, check why this bug is ocurring
@@ -856,15 +809,13 @@ getSegsCCFEstimate <- function( all.pw.cn.het.comp.lists
       }#end for ( samp in sample.vec ) {     
       #todo change these to preallocated dataframes if possible, this doesn't seem to be used? we can probably remove
       seg.r.cpn.same.diff.across.samps.list <- generateAllSegsRoundedCPNSameOrDifferentAcrossSamplesLists(all.pw.cn.het.comp.lists, sample.vec, seg.name.vec)
-      print("here")
       #next assess for each chromosome and region, what are the different raw-values
       samps.int.cpn.raw.cpn.by.chr.list <- generateAllSamplesByChromIntCPNUnderlyingRawValuesLists(all.pw.cn.het.comp.lists, sample.vec, seg.name.vec)
-      print("here2")
 
       all.seg.CCF.vals.list <- list()
-      print(seg.name.vec)
+
       for (seg.name in seg.name.vec) {
-        print(seg.name)
+        
         #all.samp.ph.BAF.df.list used to be in the all.pw.cn.het.comp.lists but was refactored out, need to add a call or pass it to this function.
         seg.CCF.vals <- getIndividualCCFestimates_withPvals(seg.name = seg.name,
                                                 sample.vec = sample.vec,

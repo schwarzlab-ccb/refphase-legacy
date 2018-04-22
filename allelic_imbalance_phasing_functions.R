@@ -37,8 +37,7 @@ getCombinedBAFDipTestPhasing <- function(asas.lr.baf.lists,
 
     #Test whether phasing is possible for this segment:
     first.ss.lr.baf.df <- asas.lr.baf.lists[[sample.vec[1]]][[seg.name]]
-    print("print(head(first.ss.lr.baf.df))")
-    print(head(first.ss.lr.baf.df))
+
     if (nrow(first.ss.lr.baf.df) < min.num.hz.snp.phasing) {
 
       next;#Might actally want this to be a break as they should all have too few snps as it is joint segmentation with the same SNPs...
@@ -136,11 +135,10 @@ getCombinedBAFDipTestPhasing <- function(asas.lr.baf.lists,
 ##
 calculateSNPsRawCopyNumberAB <- function(logr.vec, baf.vec, tumor.ploidy, tumor.purity, gamma.val = 1) {
 
-  #print("funCalcN_withBAF")
   cpnA <- (tumor.purity - 1 + baf.vec * 2 ^ (logr.vec / gamma.val) * ((1 - tumor.purity) * 2 + tumor.purity * tumor.ploidy)) / tumor.purity
   cpnB <- (tumor.purity - 1 - (baf.vec - 1) * 2 ^ (logr.vec / gamma.val) * ((1 - tumor.purity) * 2 + tumor.purity * tumor.ploidy)) / tumor.purity
-  #print("Returning from funCalcN_withBAF")
-  return(cbind(cpnA,cpnB))
+
+  return(cbind(cpnA, cpnB))
 
 }#end calculateSNPCopyNumberAB <- function(
 
@@ -215,7 +213,6 @@ getAssessmentOfEachSamplesAbilityToPhaseAllOthersForSeg <- function(asas.lr.baf.
                                                                     min.num.hz.snp.phasing=5){
 
   #other sample segment phasing df, used when working out the optimum sample in all regions, for each segment the same dataframe is reused to save time allocating memory...
-  print(sample.vec)
   num.other.samps <- length(sample.vec) - 1
   other.ss.phasing.df <- data.frame(separation_wilcox_pval = rep(1, num.other.samps),
                                     prop_separated = numeric(num.other.samps),
@@ -239,8 +236,6 @@ getAssessmentOfEachSamplesAbilityToPhaseAllOthersForSeg <- function(asas.lr.baf.
 
       #Get phasing:
       #reference sample segment cpn A cpn B
-      print(ploidy.est.vec)
-      print(purity.est.vec)
       #Todo getting the major and A and B columns can be made into a function...
       ref.ss.cpnA.cpnB.df <- calculateSNPsRawCopyNumberAB(logr.vec=ref.ss.lr.baf.df$logR,
                                                           baf.vec=ref.ss.lr.baf.df$BAF,
@@ -476,4 +471,4 @@ createAllSegsPhasedBAFDataFrame <- function(asas.lr.baf.lists, sample.to.phase.s
 
 
 
-                                                     
+                                                                                                                            
