@@ -217,18 +217,18 @@ getAssessmentOfEachSamplesAbilityToPhaseAllOthersForSeg <- function(asas.lr.baf.
   #other sample segment phasing df, used when working out the optimum sample in all regions, for each segment the same dataframe is reused to save time allocating memory...
   print(sample.vec)
   num.other.samps <- length(sample.vec) - 1
-  other.ss.phasing.df <- data.frame(separation_wilcox_pval=rep(1, num.other.samps),
-                                    prop_separated=numeric(num.other.samps),
-                                    concordant_w_ref=numeric(num.other.samps),
-                                    stringsAsFactors=FALSE,
-                                    drop=FALSE)
+  other.ss.phasing.df <- data.frame(separation_wilcox_pval = rep(1, num.other.samps),
+                                    prop_separated = numeric(num.other.samps),
+                                    concordant_w_ref = numeric(num.other.samps),
+                                    stringsAsFactors = FALSE,
+                                    drop = FALSE)
   sample.comparison.list <- list()
 
   for ( samp in sample.vec ) {
 
       #ref sample seg logr baf df
       ref.ss.lr.baf.df <- asas.lr.baf.lists[[samp]][[seg.name]]
-      if( nrow(ref.ss.lr.baf.df) < min.num.hz.snp.phasing) {
+      if ( nrow(ref.ss.lr.baf.df) < min.num.hz.snp.phasing) {
 
         next;#Might actally want this to be a break as they should all have too few snps as it is joint segmentation with the same SNPs...
 
@@ -270,6 +270,7 @@ getAssessmentOfEachSamplesAbilityToPhaseAllOthersForSeg <- function(asas.lr.baf.
   }#end for( samp in sample.vec ) 
 
   return(sample.comparison.list)
+
 }#end of getAssessmentOfEachSamplesAbilityToPhaseAllOthersForSeg <- function(asas.lr.baf.lists, sample.vec, seg.idx)
 
 ##Current issues, allowing samples through questionably
@@ -461,7 +462,7 @@ createAllSegsPhasedBAFDataFrame <- function(asas.lr.baf.lists, sample.to.phase.s
       samp.BAF.df$ph_median_segmented_BAF <- min(median(samp.BAF.df[samp.BAF.df$maj_is_cpnB_logic_vec == 1 ,]$BAF),
                                            median(samp.BAF.df[samp.BAF.df$maj_is_cpnB_logic_vec == 0 ,]$BAF))
 
-      all.samp.ph.BAF.df.list[[samp]]$ph_samp_BAF_df <- rbind(all.samp.ph.BAF.df.list[[samp]]$ph_samp_BAF_df, samp.BAF.df)
+      all.samp.ph.BAF.df.list[[samp]] <- rbind(all.samp.ph.BAF.df.list[[samp]], samp.BAF.df)
 
     }#end for ( samp in sample.vec ) {
 

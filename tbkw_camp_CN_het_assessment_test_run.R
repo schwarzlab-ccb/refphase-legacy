@@ -151,21 +151,19 @@ source("/home/camp/watkint/working/watkint/scripts/multiregioncopynum/allelic_im
 
 #Todo unsure of what to do with the baf logr lists which have positions that only have logr here, at the moment exclude them but how
 #does that affect later run
-patient.phased.BAF.df <- createAllSegsPhasedBAFDataFrame(asas.lr.baf.lists = asas.SNPs.w.both.lr.baf.snp.lists,
+patient.phased.BAF.df.list <- createAllSegsPhasedBAFDataFrame(asas.lr.baf.lists = asas.SNPs.w.both.lr.baf.snp.lists,
                                                          sample.to.phase.seg.list = all.seg.phasing.info.list
                                                          )
 
-str(patient.phased.BAF.df)
 #Add in plotting functions
 
 
 #Todo check wha happens to the missing rows, are these segments that contained less than 5 snps and thus didn't have something created?
 #what's going on.
 
-soure("/home/camp/watkint/working/watkint/scripts/modified_ascat/CN_heterogeneity_package_scripts/pairwise_CN_heterogeneity_comparison_functions.R")
-sample.vec <- names(asas.lr.baf.lists)
+source("/home/camp/watkint/working/watkint/scripts/multiregioncopynum/pairwise_CN_heterogeneity_comparison_functions.R")
+sample.vec <- names(asas.SNPs.w.both.lr.baf.snp.lists)
 
-#
 all.pw.cn.het.comp.lists <- list()
 for (i in 1:(length(sample.vec) - 1)) {
 
@@ -173,9 +171,10 @@ for (i in 1:(length(sample.vec) - 1)) {
 
     samp.one <- sample.vec[i]
     samp.two <- sample.vec[j]
+    samp.one.two <- paste(samp.one, ":", samp.two, sep="")
 
 
-    pairwise.samp.comparison <- calculatePairwiseCNHeterogeneity(samp.one = samp.one,
+    samp.one.two.comparison.list <- calculatePairwiseCNHeterogeneity(samp.one = samp.one,
                                                                   samp.two = samp.two,
                                                                   asas.both.lr.baf.lists = asas.SNPs.w.both.lr.baf.snp.lists,
                                                                   asas.lr.and.or.baf.lists = asas.SNPS.lr.and.or.baf.lists,
@@ -183,11 +182,18 @@ for (i in 1:(length(sample.vec) - 1)) {
                                                                   ploidy.est.vec = ploidy.est.vec,
                                                                   purity.est.vec = purity.est.vec,
                                                                   all.seg.phasing.info.list = all.seg.phasing.info.list,
-                                                                  gamma.val = gamma.val
+                                                                  gamma.val = 1
                                                                   )
+    #Todo, no need o keep reassigning here...
+    for ( seg.name in names(samp.one.two.comparison.list) ) {
 
+      all.pw.cn.het.comp.lists[[samp.one]][[seg.name]] <- samp.one.two.comparison.list[[seg.name]][[samp.one]]
+      all.pw.cn.het.comp.lists[[samp.two]][[seg.name]] <- samp.one.two.comparison.list[[seg.name]][[samp.two]]
+      all.pw.cn.het.comp.lists[[samp.one.two]][[seg.name]] <- samp.one.two.comparison.list[[seg.name]][[samp.one.two]]
 
-    #Todo work ou if we need to put into list in this loop or not...
+    }
+
+    all.pw.cn.het.comp.lists[[samp.one.two]]$pairwise_avg_cn_het_score <- samp.one.two.comparison.list[[seg.name]][[samp.one.two]]$pairwise_avg_cn_het_score
 
   }#end for (i in 1:(length(sample.vec) - 1)) {
 
@@ -197,16 +203,58 @@ for (i in 1:(length(sample.vec) - 1)) {
 
 #Let's get the CCF
 
-soure("/home/camp/watkint/working/watkint/scripts/modified_ascat/CN_heterogeneity_package_scripts/cancer_cell_fraction_calculation_functions.R")
+source("/home/camp/watkint/working/watkint/scripts/multiregioncopynum/cancer_cell_fraction_calculation_functions.R")
 
 all.segs.CCF.est.lists <- getSegsCCFEstimate(all.pw.cn.het.comp.lists = all.pw.cn.het.comp.lists
                                             ,ploidy.est.vec = ploidy.est.vec
                                             ,purity.est.vec = purity.est.vec
-                                            ,all.samp.ph.BAF.df.list = patient.phased.BAF.df
+                                            ,all.samp.ph.BAF.df.list = patient.phased.BAF.df.list
                                             ,highest.cpn.trusted = 10
                                             ,pval.to.separate = 0.001
                                             ,min.CCF.to.consider = 0.15
                                             ,confidence.interval = 0.99999)
+
+
+seg.name.vec <- names(all.pw.cn.het.comp.lists[[1]])
+#Check to make sure that all segments are present in all samples... why is this necessary
+#Todo, check why this bug is ocurring
+for ( samp in sample.vec ) {
+
+      seg.name.vec <- intersect(seg.name.vec, names(all.pw.cn.het.comp.lists[[samp]]))
+
+}#end for ( samp in sample.vec ) {   
+
+
+seg.r.cpn.same.diff.across.samps.list <- generateAllSegsRoundedCPNSameOrDifferentAcrossSamplesLists(all.pw.cn.het.comp.lists, sample.vec, seg.name.vec)
+#next assess for each chromosome and region, what are the different raw-values
+samps.int.cpn.raw.cpn.by.chr.list <- generateAllSamplesByChromIntCPNUnderlyingRawValuesLists(all.pw.cn.het.comp.lists, sample.vec, seg.name.vec)
+
+all.seg.CCF.vals.list <- list()
+for (seg.name in seg.name.vec) {
+
+  print(seg.name)
+  #all.samp.ph.BAF.df.list used to be in the all.pw.cn.het.comp.lists but was refactored out, need to add a call or pass it to this function.
+  seg.CCF.vals <- getIndividualCCFestimates_withPvals(seg.name = seg.name,
+                                          sample.vec = sample.vec,
+                                          all.pw.cn.het.comp.lists = all.pw.cn.het.comp.lists,
+                                          all.samp.ph.BAF.df.list = patient.phased.BAF.df.list,
+                                          samps.int.cpn.raw.cpn.by.chr.list = samps.int.cpn.raw.cpn.by.chr.list,
+                                          max.cpn.val = 10,
+                                          min.CCF.to.consider.val = 0.15,
+                                          chrs.can.use.for.ccf.comp = c(1:22),
+                                          confidence.interval.threshold = 0.9999,
+                                          min.num.other.chrs = 3)
+  all.seg.CCF.vals.list[[seg.name]] <- seg.CCF.vals
+}
+
+
+
+
+
+
+
+
+
 
 
 #Todo, rewrite the plotting functions for the CCFs..
@@ -221,4 +269,4 @@ all.segs.CCF.est.lists <- getSegsCCFEstimate(all.pw.cn.het.comp.lists = all.pw.c
 
 
 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   
