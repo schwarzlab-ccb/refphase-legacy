@@ -34,7 +34,7 @@ generateFinalSegmentationOutput <- function(all.pw.cn.het.comp.lists
 
         #define 
         
-        mu <- 1 - min.CCF.to.consider.val
+        mu.ccf.val <- 1 - min.CCF.to.consider.val
         #Note that the min.cons.segs.df passed to this function was generated on the ploidy_adj_tot_cpn column
         #Is ths really necessary? If we're using ploidy adjusted total cpn this might produce slightly smaller joint segs df but  why? 
         min.cons.segs.raw.cpnA.df <- generateMinimumConsistentSegmentation(processed.orig.cpn.segs.df, chroms=1:22, col.to.use="nAraw")
@@ -144,19 +144,102 @@ generateFinalSegmentationOutput <- function(all.pw.cn.het.comp.lists
                         ss.ph.baf.df <- all.samp.ph.BAF.df.list[[samp]]
                         all.seg.df[samp.seg.name,]$median_BAF  <- ss.ph.baf.df[ss.ph.baf.df$chrom == chr & ss.ph.baf.df$pos >= startpos & ss.ph.baf.df$pos <= endpos,,drop=FALSE]$ph_median_segmented_BAF[1]
 
+                        #Todo all this cpnA and cpnB stuff should be refactored into a single function accepting a cpnX.string parameter.
 
-                        if ( median() ) {
+                        #Test for evidence of subclonality within the segment for cpnA
+                        if ( median(seg.CCF.val.list[[seg.name]][[samp]]$frac_cpnA_low_vec) > median(seg.CCF.val.list[[seg.name]][[samp]]$frac_cpnA_high_vec) ) {
+
+                            cpnA.test.subclonal <- wilcox.test(seg.CCF.val.list[[seg.name]][[samp]]$frac_cpnA_low_vec, mu = mu.ccf.val, alternative = "less")
+                            all.seg.df[samp.seg.name,]$sc_cpnA_high_or_low_dominate <- "HIGH"
+
+                        } else {#end   if ( median(seg.CCF.val.list[[seg.name]][[samp]]$frac_cpnA_low_vec) > median(seg.CCF.val.list[[seg.name]][[samp]]$frac_cpnA_high_vec) ) {
+
+                            cpnA.test.subclonal <- wilcox.test(seg.CCF.val.list[[seg.name]][[samp]]$frac_cpnA_high_vec, mu = mu.ccf.val, alternative = "less")
+                            all.seg.df[samp.seg.name,]$sc_cpnA_high_or_low_dominate <- "LOW"
+
+                        }
+                        all.seg.df[samp.seg.name,]$sc_cpnA_vs_min_CCF_pval <- cpnA.test.subclonal$p.value
+
+                        #Tes for evidence of subclonality within the segment for cpnB
+                        if ( median(seg.CCF.val.list[[seg.name]][[samp]]$frac_cpnB_low_vec) > median(seg.CCF.val.list[[seg.name]][[samp]]$frac_cpnB_high_vec) ) {
+
+                            cpnB.test.subclonal <- wilcox.test(seg.CCF.val.list[[seg.name]][[samp]]$frac_cpnB_low_vec, mu = mu.ccf.val, alternative = "less")
+                            all.seg.df[samp.seg.name,]$sc_cpnB_high_or_low_dominate <- "HIGH"
+
+
+                        } else {#end   if ( median(seg.CCF.val.list[[seg.name]][[samp]]$frac_cpnB_low_vec) > median(seg.CCF.val.list[[seg.name]][[samp]]$frac_cpnA_high_vec) ) {
+
+                            cpnB.test.subclonal <- wilcox.test(seg.CCF.val.list[[seg.name]][[samp]]$frac_cpnB_high_vec, mu = mu.ccf.val, alternative = "less")
+                            all.seg.df[samp.seg.name,]$sc_cpnB_high_or_low_dominate <- "LOW"
+
+                        }
+                        all.seg.df[samp.seg.name,]$sc_cpnB_vs_min_CCF_pval <- cpnB.test.subclonal$p.value
+
+
+                        #Check if different to other chromosomes now
+                        seg.diff.from.others.list <- all.seg.CCF.vals.list[[seg.name]]$seg_diff_from_expected_list[[samp]]
+                        #Todo, make this a default parameter so can be set
+                        cpnA.pval.vs.other.chroms <- 1e-120
+                        all.seg.df[samp.seg.name,]$num_other_chrs_same_cpnA_cpn <- length(seg.diff.from.others.list$cpnA_num_chrs_w_match_int_cpn)
+                        if (length(seg.diff.from.others.list$cpnA_num_chrs_w_match_int_cpn) >= min.num.other.chrs) {
+
+                            cpnA.pval.vs.other.chroms <- seg.diff.from.others.list$cpnA_pval_vs_oth_cpn_match_chrs_raw_cpn
+
+                        }
+                        all.seg.df[samp.seg.name,]$vs_other_chrs_same_cpnA_pval <- cpnA.pval.vs.other.chroms
+
+
+
+                        cpnB.pval.vs.other.chroms <- 1e-120
+                        all.seg.df[samp.seg.name,]$num_other_chrs_same_cpnB_cpn <- length(seg.diff.from.others.list$cpnB_num_chrs_w_match_int_cpn)
+                        if (length(seg.diff.from.others.list$cpnB_num_chrs_w_match_int_cpn) >= min.num.other.chrs) {
+
+                            cpnB.pval.vs.other.chroms <- seg.diff.from.others.list$cpnB_pval_vs_oth_cpn_match_chrs_raw_cpn
+
+                        }
+                        all.seg.df[samp.seg.name,]$vs_other_chrs_same_cpnB_pval <- cpnB.pval.vs.other.chroms 
+
+                        #Todo, is it true that the hetA or hetB means that there is always some heterogeneity across the samples..., go back through code for edge cases.
+                        all.seg.df[samp.seg.name,]$het_cpnA_acc_samps_present <- all.seg.df[samp.seg.name,]$poss_sc_cpnA_low != all.seg.df[samp.seg.name,]$poss_sc_cpnA_high
+                        all.seg.df[samp.seg.name,]$het_cpnB_acc_samps_present <- all.seg.df[samp.seg.name,]$poss_sc_cpnB_low != all.seg.df[samp.seg.name,]$poss_sc_cpnB_high
+
+
+                        if(all.seg.df[samp.seg.name,]$frac_psc_cpnA_low > 1 |
+                            all.seg.df[samp.seg.name,]$frac_psc_cpnA_high > 1 |
+                            all.seg.df[samp.seg.name,]$subclonal_pval_cpnA >= clonal.pval |
+                            all.seg.df[samp.seg.name,]$vs_other_chrs_same_cpnA_pval >= diff.from.oth.p.val) {
+
+                            all.seg.df[samp.seg.name,]$sc_cpnA_present <-  FALSE
+
+                        } else {
+
+                            all.seg.df[samp.seg.name,]$sc_cpnA_present <- TRUE
 
                         }
 
+                        if(all.seg.df[samp.seg.name,]$frac_psc_cpnB_low > 1 |
+                            all.seg.df[samp.seg.name,]$frac_psc_cpnB_high > 1 |
+                            all.seg.df[samp.seg.name,]$subclonal_pval_cpnB >= clonal.pval |
+                            all.seg.df[samp.seg.name,]$vs_other_chrs_same_cpnB_pval >= diff.from.oth.p.val) {
+
+                            all.seg.df[samp.seg.name,]$sc_cpnB_present <-  FALSE
+                            
+                        } else {
+
+                            all.seg.df[samp.seg.name,]$sc_cpnB_present <- TRUE
+
+                        }
 
                 }#end for ( seg.name in seg.name.vec ) {
 
         }#end for ( samp in sample.vec ) {
 
+        #So now we have the full segmentation table
+        return(all.seg.df)
+
+        #We can also join with CCFs to generate another table:
+
 }#end generateFinalSegmentationOutput <- function(...)
-
-
 
 
 initialiseAllSegFullDataframe <- function(seg.name.vec, sample.vec) { 
@@ -188,23 +271,25 @@ initialiseAllSegFullDataframe <- function(seg.name.vec, sample.vec) {
                 orig_cpnB_raw = rep(NA, nr),
                 sc_cpnA_present = rep(NA, nr),
                 sc_cpnB_present = rep(NA, nr),
-                het_cpnA_present = rep(NA, nr),
-                het_cpnB_present = rep(NA, nr),
+                het_cpnA_acc_samps_present = rep(NA, nr),
+                het_cpnB_acc_samps_present = rep(NA, nr),
                 median_BAF = rep(NA, nr),
                 median_seg_logr = rep(NA, nr),
                 gain_pval = rep(NA, nr),
                 amp_pval = rep(NA, nr),
                 loss_pval = rep(NA, nr),
                 deep_loss_pval = rep(NA, nr),
-                small_pval_cpnA = rep(NA, nr),
-                small_pval_cpnB = rep(NA, nr),
-                other_chrs_same_cpnA_cpn = rep(NA, nr),
-                other_chrs_cpnA_pval = rep(NA, nr),
-                other_chrs_same_cpnB_cpn = rep(NA, nr),
-                other_chrs_cpnB_pval = rep(NA, nr),
+                sc_cpnA_high_or_low_dominate = rep(NA, nr),
+                sc_cpnA_vs_min_CCF_pval = rep(NA, nr),
+                sc_cpnB_high_or_low_dominate = rep(NA, nr),
+                sc_cpnB_vs_min_CCF_pval = rep(NA, nr),
+                num_other_chrs_same_cpnA_cpn = rep(NA, nr),
+                vs_other_chrs_same_cpnA_pval = rep(NA, nr),
+                num_other_chrs_same_cpnB_cpn = rep(NA, nr),
+                vs_other_chrs_same_cpnB_pval = rep(NA, nr),
                 samp_used_to_phase  = rep(NA, nr),
                 diff_from_ref_samp  = rep(NA, nr),
-                stringsAsFactors=FALSE
+                stringsAsFactors = FALSE
                 )
         row.names.vec <- c()
         for ( samp in sample.vec ) {

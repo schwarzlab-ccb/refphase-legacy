@@ -151,11 +151,10 @@ calculateWhetherSegCPNDiffFromIntegerExpectedAndAllMatchingSampCPN <- function(s
             t.test.raw.seg.vs.cpn.int <- tTestWithErrorHandling(seg.raw.cpn.vals, s.samps.int.ob.xp.cpn.df[samp, paste0("round_int_", cpnA.or.cpnB)])
             median.seg.raw.cpn.greater.than.matched.cpn <- median(seg.raw.cpn.vals) > median(all.match.cpn.vals.vec)
             median.seg.raw.cpn.greater.seg.int.cpn   <- median(seg.raw.cpn.vals) > s.samps.int.ob.xp.cpn.df[samp, paste0("round_int_", cpnA.or.cpnB)]
-            samp.pvals.diff.from.exp.list[[samp]] <- list()
             samp.pvals.diff.from.exp.list[[samp]][[paste0("round_int_", cpnA.or.cpnB)]] <- s.samps.int.ob.xp.cpn.df[samp, paste0("round_int_", cpnA.or.cpnB)]
             samp.pvals.diff.from.exp.list[[samp]][[paste0(cpnA.or.cpnB, "_pval_vs_oth_cpn_match_chrs_raw_cpn")]] <- t.test.raw.seg.cpn.vs.all.matching.cpn.raw$p.value
             samp.pvals.diff.from.exp.list[[samp]][[paste0(cpnA.or.cpnB, "_pval_vs_round_int_cpn")]] <- t.test.raw.seg.vs.cpn.int$p.value
-            samp.pvals.diff.from.exp.list[[samp]][[paste0(cpnA.or.cpnB, "_num_chrs_w_match_int_cpn")]]  <- chrs.w.same.cpn.vec
+            samp.pvals.diff.from.exp.list[[samp]][[paste0(cpnA.or.cpnB, "_num_chrs_w_match_int_cpn_vec")]]  <- chrs.w.same.cpn.vec
             samp.pvals.diff.from.exp.list[[samp]][[paste0("median_", cpnA.or.cpnB, "_greater_than_match_raw_cpn")]] <- median.seg.raw.cpn.greater.than.matched.cpn
             samp.pvals.diff.from.exp.list[[samp]][[paste0("median_", cpnA.or.cpnB, "_greater_than_match_int_cpn")]] <- median.seg.raw.cpn.greater.seg.int.cpn
 
@@ -187,10 +186,7 @@ getSegObsExpCPNBySampleDF <- function(all.pw.cn.het.comp.lists, sample.vec, seg.
       rownames(s.samps.obs.exp.cpn.df) <- sample.vec    
 
       for ( samp in sample.vec ) {
-            print(seg.name)
-            print(samp)
-            print(all.pw.cn.het.comp.lists[[samp]][[seg.name]])
-
+            
             s.samps.obs.exp.cpn.df[samp, "round_int_cpnA"] <- round(all.pw.cn.het.comp.lists[[samp]][[seg.name]]$mean_ph_cpnA)
             s.samps.obs.exp.cpn.df[samp, "round_int_cpnB"] <- round(all.pw.cn.het.comp.lists[[samp]][[seg.name]]$mean_ph_cpnB)
             #Calculate observed
@@ -332,7 +328,6 @@ determineCCFClonalityOfSegment <- function(s.samps.int.ob.xp.cpn.df,
 
         #Get BAF values from the dataframe
         samp.ph.baf.df <- all.samp.ph.BAF.df.list[[samp]]
-        print(samp.ph.baf.df)
         s.samp.ph.baf.df <- samp.ph.baf.df[samp.ph.baf.df$chrom == chr & samp.ph.baf.df$pos >= start & samp.ph.baf.df$pos <= end, ,drop=FALSE]
 
         samp.maj.is.cpnA.cpnB.BAF.vs.exp.BAF.test <- tTestWithErrorHandling(c(s.samp.ph.baf.df[s.samp.ph.baf.df$maj_is_cpnA_logic_vec==1,"BAF"],
@@ -398,7 +393,6 @@ updateSegCCFValList <- function(seg.name,
                 ss.poss.sc.cpnX.high,
                 use.preset.mean.frac.cpnX.low.high
                 ) {
-  print("called updateSegCCFValList")
   seg.CCF.val.list[[seg.name]][[paste0("poss_sc_", cpnX.string, "_low")]] <- ss.poss.sc.cpnX.low
   seg.CCF.val.list[[seg.name]][[paste0("poss_sc_", cpnX.string, "_high")]] <- ss.poss.sc.cpnX.high
 
@@ -519,7 +513,7 @@ calculateTwoValueDiffFlag <- function(s.samps.int.ob.xp.cpn.df, seg.cpnA.cnpB.di
     }#end for (samp in samps.poss.less.than.sc.cnpX.low.vec) {
 
   }#end if (abs(min(top.int.mean.cpnX - mean.cpnX.vec)) < abs(max(low.int.mean.cpnX - mean.cpnX.vec))) {
-
+  #Todo, make this return a single value (split into two functions ideally)
   return(two.value.diff.flag)
 
 }
@@ -552,12 +546,14 @@ getIndividualCCFestimates_withPvals <- function(seg.name,
       s.samps.int.ob.xp.cpn.df <- getSegObsExpCPNBySampleDF(all.pw.cn.het.comp.lists, sample.vec, seg.name)
       chrs.for.ccf.comp.vec <- chrs.can.use.for.ccf.comp[ ! chrs.can.use.for.ccf.comp%in% chr] #Going to be used to assess CCFs across the each sample
 
+      #Need to initialise all the lists outside the loop now we are doing cpnA cpnB in a loop and cpnB entries would wipe cpnA ones...
       seg.CCF.val.list <- list()
       seg.CCF.val.list[[seg.name]] <- list()
+      seg.cpnA.cnpB.diff.exp.list <- list()
       for ( samp in sample.vec ) {
         seg.CCF.val.list[[seg.name]][[samp]] <- list()
+        seg.cpnA.cnpB.diff.exp.list[[samp]] <- list()
       }
-      seg.cpnA.cnpB.diff.exp.list <- list()
       for ( cpnX.string in c("cpnA", "cpnB") ) {
 
             seg.cpnA.cnpB.diff.exp.list <- calculateWhetherSegCPNDiffFromIntegerExpectedAndAllMatchingSampCPN(samp.pvals.diff.from.exp.list=seg.cpnA.cnpB.diff.exp.list,
@@ -671,7 +667,7 @@ getIndividualCCFestimates_withPvals <- function(seg.name,
                                                                   use.preset.mean.frac.cpnX.low.high = FALSE) 
 
                         } else {#end if (all.clonal.flag == TRUE) {
-
+                              #Note this currently returns two values, the first that the two values are different and the second that segment is different to other chromosomes
                               two.value.diff.flag <- calculateTwoValueDiffFlag(s.samps.int.ob.xp.cpn.df = s.samps.int.ob.xp.cpn.df,
                                                                               seg.cpnA.cnpB.diff.exp.list = seg.cpnA.cnpB.diff.exp.list,
                                                                               cpnX.string = cpnX.string,
@@ -710,7 +706,7 @@ getIndividualCCFestimates_withPvals <- function(seg.name,
                                     }#end if(abs(min(max(ceiling(mean.cpnX.vec - mean.cpnX.vec)) >= abs(max(min(floor(mean.cpnX.vec)) - mean.cpnX.vec))) { 
 
 
-                              } else {#end: if (two.value.diff.flag == TRUE)# start of: two.value.diff.flag==FALSE
+                              } else {#end: if (two.value.diff.and.diff.from.other.chroms.flag.vec[1] == TRUE)# start of: two.value.diff.flag==FALSE
 
                                     mean.cpnX.vec <- s.samps.int.ob.xp.cpn.df[, paste0("mean_obs_", cpnX.string)]
                                     # do we twist up or down
@@ -772,7 +768,7 @@ getIndividualCCFestimates_withPvals <- function(seg.name,
     
       }#end for ( cpnX.string in c("cpnA", "cpnB") )
       #Todo refactor this seg_diff_form expected so it's generated by another function call...
-      seg.CCF.val.list$seg_diff_from_expected <- seg.cpnA.cnpB.diff.exp.list
+      seg.CCF.val.list[[seg.name]]$seg_diff_from_expected_list <- seg.cpnA.cnpB.diff.exp.list
       return(seg.CCF.val.list)
 
 }#end getIndividualCCFestimates_withPvals <- function(...)
@@ -833,4 +829,4 @@ getSegsCCFEstimate <- function( all.pw.cn.het.comp.lists
 
 
       return(all.seg.CCF.vals.list)
-}#end getSegNewCCFEstimate           <- function(                                                  
+}#end getSegNewCCFEstimate           <- function(                                                                                                                                                            
