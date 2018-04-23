@@ -46,7 +46,7 @@ generateFinalSegmentationOutput <- function(all.pw.cn.het.comp.lists
         sample.vec <- names(ploidy.est.vec)
         first.sample <- sample.vec[1]
         #Note we may be missing a segment that fell through, what about those without eno
-        orig.seg.name.vec <- paste(min.cons.segs.ploidy.adj.cpn.df[,1], min.cons.segs.ploidy.adj.cpn.df[,2], min.cons.segs.ploidy.adj.cpn.df[,3], sep=":")
+        orig.seg.name.vec <- paste(min.cons.segs.ploidy.adj.cpn.df[, 1], min.cons.segs.ploidy.adj.cpn.df[, 2], min.cons.segs.ploidy.adj.cpn.df[, 3], sep=":")
         print("orig.seg.name.vec")
         print(orig.seg.name.vec)
         seg.name.vec <- orig.seg.name.vec[orig.seg.name.vec %in% names(all.pw.cn.het.comp.lists[[1]])]
@@ -65,7 +65,7 @@ generateFinalSegmentationOutput <- function(all.pw.cn.het.comp.lists
         #Now on a per sample basis:
 
         all.samp.new.cpn.vec <- c()
-        all.seg.df <- initialiseAllSegFullDataframe(seg.name.vec)
+        all.seg.df <- initialiseAllSegFullDataframe(seg.name.vec, sample.vec)
 
         for ( samp in sample.vec ) {
 
@@ -77,6 +77,7 @@ generateFinalSegmentationOutput <- function(all.pw.cn.het.comp.lists
 
                         seg.info.fss.list <- all.pw.cn.het.comp.lists[[first.sample]][[seg.name]]
                         seg.info.css.list <- all.pw.cn.het.comp.lists[[samp]][[seg.name]]
+                        print(seg.info.css.list)
                         css.cpn.event.status.vec <- all.pw.cn.het.comp.lists[[samp]][[seg.name]]$seg_cpn_event_status_vec
                         chr.start.end.vec <- unlist(strsplit(seg.name,split=":"))
 
@@ -84,18 +85,18 @@ generateFinalSegmentationOutput <- function(all.pw.cn.het.comp.lists
                         all.seg.df[samp.seg.name,]$chr <- seg.info.fss.list$chr[1]
                         all.seg.df[samp.seg.name,]$startpos <- chr.start.end.vec[2]
                         all.seg.df[samp.seg.name,]$endpos <- chr.start.end.vec[3]
-                        all.seg.df[samp.seg.name,]$cnTotal <- median(seg.info.css.list$cnTotal)             
+                        all.seg.df[samp.seg.name,]$cnTotal <- seg.info.css.list$median_seg_logr             
                         all.seg.df[samp.seg.name,]$Ploidy <- ploidy.est.vec[samp]
                         all.seg.df[samp.seg.name,]$ACF <- purity.est.vec[samp]
                         all.seg.df[samp.seg.name,]$orig_cpnA_raw <- min.cons.segs.raw.cpnA.df[seg.name, samp]
                         all.seg.df[samp.seg.name,]$orig_cpnB_raw <- min.cons.segs.raw.cpnB.df[seg.name, samp]
-                        all.seg.df[samp.seg.name,]$median_seg_logr <- css.cpn.event.status.vec["median_seg_logr"]
+                        all.seg.df[samp.seg.name,]$median_logr <- css.cpn.event.status.vec["median_seg_logr"]
                         all.seg.df[samp.seg.name,]$gain_pval <- css.cpn.event.status.vec["gain_pval"]
                         all.seg.df[samp.seg.name,]$amp_pval <-  css.cpn.event.status.vec["amp_pval"]
                         all.seg.df[samp.seg.name,]$loss_pval <- css.cpn.event.status.vec["loss_pval"]
                         all.seg.df[samp.seg.name,]$deep_loss_pval <- css.cpn.event.status.vec["deep_loss_pval"]
 
-                        if ( is.na(seg.info.fss.list$ph_cpnA_vec[1]) ) {
+                        if ( is.na(seg.info.fss.list$ph_cpnA_vec[1])  | is.na(seg.info.fss.list$ph_cpnB_vec[1])) {
 
                                 all.seg.df[samp.seg.name,]$samp_used_to_phase <- "too_few_SNPs"
 
@@ -122,16 +123,20 @@ generateFinalSegmentationOutput <- function(all.pw.cn.het.comp.lists
 
                         }
 
+                        seg.CCF.val.list <- all.seg.CCF.vals.list
                         # css.ccf.list <- seg.CCF.val.list[[seg.name]][[samp]]
                         # all.samps.ccf.list <- seg.CCF.val.list[[seg.name]][[seg.name]]
                         # all.oth.samps.ccf.list <- seg.CCF.val.list[[seg.name]]
-
+                        
                         all.seg.df[samp.seg.name,]$n.het <- length(seg.info.css.list$ph_cpnA_vec)
                         all.seg.df[samp.seg.name,]$nBraw <- ifelse(median(as.numeric(seg.info.css.list$ph_cpnB_vec)) < 0 , 0, median(as.numeric(seg.info.css.list$ph_cpnB_vec)))
                         all.seg.df[samp.seg.name,]$nAraw <- ifelse(median(as.numeric(seg.info.css.list$ph_cpnA_vec)) < 0 , 0, median(as.numeric(seg.info.css.list$ph_cpnA_vec)))
-                        all.seg.df[samp.seg.name,]$nMinor <-  round(all.seg.df[samp.seg.name,]$nBraw)
-                        all.seg.df[samp.seg.name,]$nMajor <-  round(all.seg.df[samp.seg.name,]$nAraw )
-                        all.seg.df[samp.seg.name,]$cnTotal <- all.seg.df[samp.seg.name,]$nMinor + all.seg.df[samp.seg.name,]$nMajor
+                        print(seg.info.css.list)
+                        print(all.seg.df[samp.seg.name,]$nBraw)
+                        print("here4")
+                        all.seg.df[samp.seg.name,]$nMinor <-  round(as.numeric(all.seg.df[samp.seg.name,]$nBraw))
+                        all.seg.df[samp.seg.name,]$nMajor <-  round(as.numeric(all.seg.df[samp.seg.name,]$nAraw))
+                        all.seg.df[samp.seg.name,]$cnTotal <- as.numeric(all.seg.df[samp.seg.name,]$nMinor) + as.numeric(all.seg.df[samp.seg.name,]$nMajor)
                         all.seg.df[samp.seg.name,]$poss_sc_cpnA_low <- seg.CCF.val.list[[seg.name]][[samp]]$poss_sc_cpnA_low
                         all.seg.df[samp.seg.name,]$poss_sc_cpnA_high <- seg.CCF.val.list[[seg.name]][[samp]]$poss_sc_cpnA_high
                         all.seg.df[samp.seg.name,]$poss_sc_cpnB_low <- seg.CCF.val.list[[seg.name]][[samp]]$poss_sc_cpnB_low
@@ -142,7 +147,10 @@ generateFinalSegmentationOutput <- function(all.pw.cn.het.comp.lists
                         all.seg.df[samp.seg.name,]$frac_psc_cpnB_high <- seg.CCF.val.list[[seg.name]][[samp]]$mean_frac_cpnB_high
 
                         ss.ph.baf.df <- all.samp.ph.BAF.df.list[[samp]]
-                        all.seg.df[samp.seg.name,]$median_BAF  <- ss.ph.baf.df[ss.ph.baf.df$chrom == chr & ss.ph.baf.df$pos >= startpos & ss.ph.baf.df$pos <= endpos,,drop=FALSE]$ph_median_segmented_BAF[1]
+                        print(head(ss.ph.baf.df))
+                        print("Here1")
+                        all.seg.df[samp.seg.name,]$median_BAF  <- ss.ph.baf.df[ss.ph.baf.df$chrom == chr.start.end.vec[1] & ss.ph.baf.df$pos >= chr.start.end.vec[2] & ss.ph.baf.df$pos <= chr.start.end.vec[3],,drop=FALSE]$ph_median_segmented_BAF[1]
+
 
                         #Todo all this cpnA and cpnB stuff should be refactored into a single function accepting a cpnX.string parameter.
 
@@ -206,7 +214,7 @@ generateFinalSegmentationOutput <- function(all.pw.cn.het.comp.lists
 
                         if(all.seg.df[samp.seg.name,]$frac_psc_cpnA_low > 1 |
                             all.seg.df[samp.seg.name,]$frac_psc_cpnA_high > 1 |
-                            all.seg.df[samp.seg.name,]$subclonal_pval_cpnA >= clonal.pval |
+                            all.seg.df[samp.seg.name,]$sc_cpnA_vs_min_CCF_pval >= clonal.pval |
                             all.seg.df[samp.seg.name,]$vs_other_chrs_same_cpnA_pval >= diff.from.oth.p.val) {
 
                             all.seg.df[samp.seg.name,]$sc_cpnA_present <-  FALSE
@@ -219,7 +227,7 @@ generateFinalSegmentationOutput <- function(all.pw.cn.het.comp.lists
 
                         if(all.seg.df[samp.seg.name,]$frac_psc_cpnB_low > 1 |
                             all.seg.df[samp.seg.name,]$frac_psc_cpnB_high > 1 |
-                            all.seg.df[samp.seg.name,]$subclonal_pval_cpnB >= clonal.pval |
+                            all.seg.df[samp.seg.name,]$sc_cpnB_vs_min_CCF_pval >= clonal.pval |
                             all.seg.df[samp.seg.name,]$vs_other_chrs_same_cpnB_pval >= diff.from.oth.p.val) {
 
                             all.seg.df[samp.seg.name,]$sc_cpnB_present <-  FALSE
@@ -266,7 +274,7 @@ initialiseAllSegFullDataframe <- function(seg.name.vec, sample.vec) {
                 frac_psc_cpnA_low = rep(NA, nr),
                 frac_psc_cpnA_high = rep(NA, nr),
                 frac_psc_cpnB_low = rep(NA, nr),
-                frac_psc_cpnB_low = rep(NA, nr),
+                frac_psc_cpnB_high = rep(NA, nr),
                 orig_cpnA_raw  = rep(NA, nr),
                 orig_cpnB_raw = rep(NA, nr),
                 sc_cpnA_present = rep(NA, nr),
@@ -274,7 +282,7 @@ initialiseAllSegFullDataframe <- function(seg.name.vec, sample.vec) {
                 het_cpnA_acc_samps_present = rep(NA, nr),
                 het_cpnB_acc_samps_present = rep(NA, nr),
                 median_BAF = rep(NA, nr),
-                median_seg_logr = rep(NA, nr),
+                median_logr = rep(NA, nr),
                 gain_pval = rep(NA, nr),
                 amp_pval = rep(NA, nr),
                 loss_pval = rep(NA, nr),
@@ -289,6 +297,7 @@ initialiseAllSegFullDataframe <- function(seg.name.vec, sample.vec) {
                 vs_other_chrs_same_cpnB_pval = rep(NA, nr),
                 samp_used_to_phase  = rep(NA, nr),
                 diff_from_ref_samp  = rep(NA, nr),
+                MSAI = rep(NA,nr),#Todo, decide whether this is used or diff from ref samp
                 stringsAsFactors = FALSE
                 )
         row.names.vec <- c()
@@ -297,4 +306,4 @@ initialiseAllSegFullDataframe <- function(seg.name.vec, sample.vec) {
         }
         rownames(all.seg.df) <- row.names.vec
         return(all.seg.df)
-}                                                                                               
+}                                                                                                   

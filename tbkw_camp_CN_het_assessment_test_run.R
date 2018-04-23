@@ -237,8 +237,8 @@ for (seg.name in seg.name.vec) {
   all.seg.CCF.vals.list[[seg.name]] <- seg.CCF.vals
 }
 #Todo, fix the need to remove upper layer of list and rename
-all.seg.CCF.vals.list.test <- unlist(all.seg.CCF.vals.list,recursive=FALSE)
-names(all.seg.CCF.vals.list.test) <- seg.name.vec
+all.seg.CCF.vals.list <- unlist(all.seg.CCF.vals.list,recursive=FALSE)
+names(all.seg.CCF.vals.list) <- seg.name.vec
 
 
 
@@ -250,10 +250,9 @@ names(all.seg.CCF.vals.list.test) <- seg.name.vec
 source("/home/camp/watkint/working/watkint/scripts/multiregioncopynum/final_output_segmentation_file_generation_functions.R")
 #Todo, rewrite functions to get the ASCAT style copy number segmentation
 full.joint.segs.df <- generateFinalSegmentationOutput(all.pw.cn.het.comp.lists = all.pw.cn.het.comp.lists
-                                ,sample.to.phase.seg.list = sample.to.phase.seg.list
-                                ,all.samp.ph.BAF.df.list = patient.phased.BAF.df.list,     
+                                ,sample.to.phase.seg.list = all.seg.phasing.info.list
+                                ,all.samp.ph.BAF.df.list = patient.phased.BAF.df.list     
                                 ,all.seg.CCF.vals.list = all.seg.CCF.vals.list
-                                ,samps.int.cpn.raw.cpn.by.chr.list = samps.int.cpn.raw.cpn.by.chr.list
                                 ,processed.orig.cpn.segs.df = processed.orig.cpn.segs.df
                                 ,min.cons.segs.ploidy.adj.cpn.df = min.cons.segs.df
                                 ,ploidy.est.vec =  ploidy.est.vec
@@ -272,7 +271,6 @@ full.joint.segs.df <- generateFinalSegmentationOutput(all.pw.cn.het.comp.lists =
                                 ,loss.gain.pval =0.01  
                                 )
 
-print(full.joint.segs.df)
 
 #Todo plot how much of the original segmentation actually comes all the way through the code.
 
