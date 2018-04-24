@@ -47,11 +47,7 @@ generateFinalSegmentationOutput <- function(all.pw.cn.het.comp.lists
         first.sample <- sample.vec[1]
         #Note we may be missing a segment that fell through, what about those without eno
         orig.seg.name.vec <- paste(min.cons.segs.ploidy.adj.cpn.df[, 1], min.cons.segs.ploidy.adj.cpn.df[, 2], min.cons.segs.ploidy.adj.cpn.df[, 3], sep=":")
-        print("orig.seg.name.vec")
-        print(orig.seg.name.vec)
         seg.name.vec <- orig.seg.name.vec[orig.seg.name.vec %in% names(all.pw.cn.het.comp.lists[[1]])]
-        print("seg.name.vec")
-        print(seg.name.vec)
 
         if (length(orig.seg.name.vec) != length(seg.name.vec)) {
                 print(orig.seg.name.vec[ ! orig.seg.name.vec %in% seg.name.vec])
@@ -77,7 +73,6 @@ generateFinalSegmentationOutput <- function(all.pw.cn.het.comp.lists
 
                         seg.info.fss.list <- all.pw.cn.het.comp.lists[[first.sample]][[seg.name]]
                         seg.info.css.list <- all.pw.cn.het.comp.lists[[samp]][[seg.name]]
-                        print(seg.info.css.list)
                         css.cpn.event.status.vec <- all.pw.cn.het.comp.lists[[samp]][[seg.name]]$seg_cpn_event_status_vec
                         chr.start.end.vec <- unlist(strsplit(seg.name,split=":"))
 
@@ -131,30 +126,25 @@ generateFinalSegmentationOutput <- function(all.pw.cn.het.comp.lists
                         all.seg.df[samp.seg.name,]$n.het <- length(seg.info.css.list$ph_cpnA_vec)
                         all.seg.df[samp.seg.name,]$nBraw <- ifelse(median(as.numeric(seg.info.css.list$ph_cpnB_vec)) < 0 , 0, median(as.numeric(seg.info.css.list$ph_cpnB_vec)))
                         all.seg.df[samp.seg.name,]$nAraw <- ifelse(median(as.numeric(seg.info.css.list$ph_cpnA_vec)) < 0 , 0, median(as.numeric(seg.info.css.list$ph_cpnA_vec)))
-                        print(seg.info.css.list)
-                        print(all.seg.df[samp.seg.name,]$nBraw)
-                        print("here4")
                         all.seg.df[samp.seg.name,]$nMinor <-  round(as.numeric(all.seg.df[samp.seg.name,]$nBraw))
                         all.seg.df[samp.seg.name,]$nMajor <-  round(as.numeric(all.seg.df[samp.seg.name,]$nAraw))
                         all.seg.df[samp.seg.name,]$cnTotal <- as.numeric(all.seg.df[samp.seg.name,]$nMinor) + as.numeric(all.seg.df[samp.seg.name,]$nMajor)
-                        all.seg.df[samp.seg.name,]$poss_sc_cpnA_low <- seg.CCF.val.list[[seg.name]][[samp]]$poss_sc_cpnA_low
-                        all.seg.df[samp.seg.name,]$poss_sc_cpnA_high <- seg.CCF.val.list[[seg.name]][[samp]]$poss_sc_cpnA_high
-                        all.seg.df[samp.seg.name,]$poss_sc_cpnB_low <- seg.CCF.val.list[[seg.name]][[samp]]$poss_sc_cpnB_low
-                        all.seg.df[samp.seg.name,]$poss_sc_cpnB_high <- seg.CCF.val.list[[seg.name]][[samp]]$poss_sc_cpnB_high
+                        all.seg.df[samp.seg.name,]$poss_sc_cpnA_low <- seg.CCF.val.list[[seg.name]]$poss_sc_cpnA_low
+                        all.seg.df[samp.seg.name,]$poss_sc_cpnA_high <- seg.CCF.val.list[[seg.name]]$poss_sc_cpnA_high
+                        all.seg.df[samp.seg.name,]$poss_sc_cpnB_low <- seg.CCF.val.list[[seg.name]]$poss_sc_cpnB_low
+                        all.seg.df[samp.seg.name,]$poss_sc_cpnB_high <- seg.CCF.val.list[[seg.name]]$poss_sc_cpnB_high
                         all.seg.df[samp.seg.name,]$frac_psc_cpnA_low <- seg.CCF.val.list[[seg.name]][[samp]]$mean_frac_cpnA_low 
                         all.seg.df[samp.seg.name,]$frac_psc_cpnA_high <- seg.CCF.val.list[[seg.name]][[samp]]$mean_frac_cpnA_high
                         all.seg.df[samp.seg.name,]$frac_psc_cpnB_low <- seg.CCF.val.list[[seg.name]][[samp]]$mean_frac_cpnB_low
                         all.seg.df[samp.seg.name,]$frac_psc_cpnB_high <- seg.CCF.val.list[[seg.name]][[samp]]$mean_frac_cpnB_high
 
                         ss.ph.baf.df <- all.samp.ph.BAF.df.list[[samp]]
-                        print(head(ss.ph.baf.df))
-                        print("Here1")
                         all.seg.df[samp.seg.name,]$median_BAF  <- ss.ph.baf.df[ss.ph.baf.df$chrom == chr.start.end.vec[1] & ss.ph.baf.df$pos >= chr.start.end.vec[2] & ss.ph.baf.df$pos <= chr.start.end.vec[3],,drop=FALSE]$ph_median_segmented_BAF[1]
 
-                        print(str(seg.CCF.val.list[[seg.name]][[samp]]))
                         #Todo all this cpnA and cpnB stuff should be refactored into a single function accepting a cpnX.string parameter.
 
                         #Test for evidence of subclonality within the segment for cpnA
+
                         if ( median(seg.CCF.val.list[[seg.name]][[samp]]$frac_cpnA_low_vec) > median(seg.CCF.val.list[[seg.name]][[samp]]$frac_cpnA_high_vec) ) {
 
                             cpnA.test.subclonal <- wilcox.test(seg.CCF.val.list[[seg.name]][[samp]]$frac_cpnA_low_vec, mu = mu.ccf.val, alternative = "less")
@@ -306,4 +296,4 @@ initialiseAllSegFullDataframe <- function(seg.name.vec, sample.vec) {
         }
         rownames(all.seg.df) <- row.names.vec
         return(all.seg.df)
-}                                                                                                   
+}                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      
