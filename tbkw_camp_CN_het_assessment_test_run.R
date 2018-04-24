@@ -225,7 +225,7 @@ for (seg.name in seg.name.vec) {
   print(seg.name)
   #all.samp.ph.BAF.df.list used to be in the all.pw.cn.het.comp.lists but was refactored out, need to add a call or pass it to this function.
   seg.CCF.vals <- getIndividualCCFestimates_withPvals(seg.name = seg.name,
-                                          sample.vec = sample.vec,
+                                          purity.est.vec = purity.est.vec,
                                           all.pw.cn.het.comp.lists = all.pw.cn.het.comp.lists,
                                           all.samp.ph.BAF.df.list = patient.phased.BAF.df.list,
                                           samps.int.cpn.raw.cpn.by.chr.list = samps.int.cpn.raw.cpn.by.chr.list,
@@ -237,7 +237,7 @@ for (seg.name in seg.name.vec) {
   all.seg.CCF.vals.list[[seg.name]] <- seg.CCF.vals
 }
 #Todo, fix the need to remove upper layer of list and rename
-all.seg.CCF.vals.list <- unlist(all.seg.CCF.vals.list,recursive=FALSE)
+#all.seg.CCF.vals.list <- unlist(all.seg.CCF.vals.list, recursive=FALSE)
 names(all.seg.CCF.vals.list) <- seg.name.vec
 
 

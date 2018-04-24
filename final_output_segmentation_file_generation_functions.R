@@ -151,7 +151,7 @@ generateFinalSegmentationOutput <- function(all.pw.cn.het.comp.lists
                         print("Here1")
                         all.seg.df[samp.seg.name,]$median_BAF  <- ss.ph.baf.df[ss.ph.baf.df$chrom == chr.start.end.vec[1] & ss.ph.baf.df$pos >= chr.start.end.vec[2] & ss.ph.baf.df$pos <= chr.start.end.vec[3],,drop=FALSE]$ph_median_segmented_BAF[1]
 
-
+                        print(str(seg.CCF.val.list[[seg.name]][[samp]]))
                         #Todo all this cpnA and cpnB stuff should be refactored into a single function accepting a cpnX.string parameter.
 
                         #Test for evidence of subclonality within the segment for cpnA
