@@ -147,12 +147,12 @@ generateFinalSegmentationOutput <- function(all.pw.cn.het.comp.lists
 
                         if ( median(seg.CCF.val.list[[seg.name]][[samp]]$frac_cpnA_low_vec) > median(seg.CCF.val.list[[seg.name]][[samp]]$frac_cpnA_high_vec) ) {
 
-                            cpnA.test.subclonal <- wilcox.test(seg.CCF.val.list[[seg.name]][[samp]]$frac_cpnA_low_vec, mu = mu.ccf.val, alternative = "less")
+                            cpnA.test.subclonal <- wilcox.test(seg.CCF.val.list[[seg.name]][[samp]]$frac_cpnA_low_vec, mu = mu.ccf.val, alternative = "less", exact=FALSE)
                             all.seg.df[samp.seg.name,]$sc_cpnA_high_or_low_dominate <- "HIGH"
 
                         } else {#end   if ( median(seg.CCF.val.list[[seg.name]][[samp]]$frac_cpnA_low_vec) > median(seg.CCF.val.list[[seg.name]][[samp]]$frac_cpnA_high_vec) ) {
 
-                            cpnA.test.subclonal <- wilcox.test(seg.CCF.val.list[[seg.name]][[samp]]$frac_cpnA_high_vec, mu = mu.ccf.val, alternative = "less")
+                            cpnA.test.subclonal <- wilcox.test(seg.CCF.val.list[[seg.name]][[samp]]$frac_cpnA_high_vec, mu = mu.ccf.val, alternative = "less", exact=FALSE)
                             all.seg.df[samp.seg.name,]$sc_cpnA_high_or_low_dominate <- "LOW"
 
                         }
@@ -161,13 +161,13 @@ generateFinalSegmentationOutput <- function(all.pw.cn.het.comp.lists
                         #Tes for evidence of subclonality within the segment for cpnB
                         if ( median(seg.CCF.val.list[[seg.name]][[samp]]$frac_cpnB_low_vec) > median(seg.CCF.val.list[[seg.name]][[samp]]$frac_cpnB_high_vec) ) {
 
-                            cpnB.test.subclonal <- wilcox.test(seg.CCF.val.list[[seg.name]][[samp]]$frac_cpnB_low_vec, mu = mu.ccf.val, alternative = "less")
+                            cpnB.test.subclonal <- wilcox.test(seg.CCF.val.list[[seg.name]][[samp]]$frac_cpnB_low_vec, mu = mu.ccf.val, alternative = "less", exact=FALSE)
                             all.seg.df[samp.seg.name,]$sc_cpnB_high_or_low_dominate <- "HIGH"
 
 
                         } else {#end   if ( median(seg.CCF.val.list[[seg.name]][[samp]]$frac_cpnB_low_vec) > median(seg.CCF.val.list[[seg.name]][[samp]]$frac_cpnA_high_vec) ) {
 
-                            cpnB.test.subclonal <- wilcox.test(seg.CCF.val.list[[seg.name]][[samp]]$frac_cpnB_high_vec, mu = mu.ccf.val, alternative = "less")
+                            cpnB.test.subclonal <- wilcox.test(seg.CCF.val.list[[seg.name]][[samp]]$frac_cpnB_high_vec, mu = mu.ccf.val, alternative = "less", exact=FALSE)
                             all.seg.df[samp.seg.name,]$sc_cpnB_high_or_low_dominate <- "LOW"
 
                         }
