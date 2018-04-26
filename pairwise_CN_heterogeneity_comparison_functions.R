@@ -29,7 +29,6 @@ tTestWithErrorHandling <- function(x, y = NULL, alternative = c("two.sided", "le
       } else if(grepl("enough|constant|NULL", err$message) & "other"%in%errors.not.permitted){
         stop(err$message)
       }
-      STOP
       # cat("\n")
       # paste("Input for t test")
       # print("x")
@@ -522,4 +521,4 @@ calculatePairwiseCNHeterogeneity <- function(samp.one,
 
      return(s.one.two.comparison)
 
-}#End calculatePairwiseCNHeterogeneity <- function(samp.one                               
+}#End calculatePairwiseCNHeterogeneity <- function(samp.one                                          

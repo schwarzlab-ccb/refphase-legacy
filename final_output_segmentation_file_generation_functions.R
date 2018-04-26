@@ -2,7 +2,6 @@
 
 
 
-
 generateFinalSegmentationOutput <- function(all.pw.cn.het.comp.lists
                                  ,sample.to.phase.seg.list
                                  ,all.samp.ph.BAF.df.list      
@@ -23,219 +22,173 @@ generateFinalSegmentationOutput <- function(all.pw.cn.het.comp.lists
                                  ,chrs.to.use.vec = 1:22
                                  ,ploidy = 'mean'
                                  ,loss.gain.pval =0.01  
-                                )
+                                ) {
+    mu.ccf.val <- 1 - min.CCF.to.consider.val
+    #Note that the min.cons.segs.df passed to this function was generated on the ploidy_adj_tot_cpn column
+    #Is ths really necessary? If we're using ploidy adjusted total cpn this might produce slightly smaller joint segs df but  why?
+    #Todo, pull this out of this function and put in main()
+    min.cons.segs.raw.cpnA.df <- generateMinimumConsistentSegmentation(processed.orig.cpn.segs.df, chroms=1:22, col.to.use="nAraw")
+    min.cons.segs.raw.cpnB.df <- generateMinimumConsistentSegmentation(processed.orig.cpn.segs.df, chroms=1:22, col.to.use="nBraw")
+    #If the rownames are exactly the same, what's the point? original code uses Araw for both...
+    rownames(min.cons.segs.raw.cpnA.df) <- paste(min.cons.segs.raw.cpnA.df[,1],min.cons.segs.raw.cpnA.df[,2],min.cons.segs.raw.cpnA.df[,3],sep=":") 
+    rownames(min.cons.segs.raw.cpnB.df) <- paste(min.cons.segs.raw.cpnA.df[,1],min.cons.segs.raw.cpnA.df[,2],min.cons.segs.raw.cpnA.df[,3],sep=":")
 
-{
-        #Todo add error checking
-        #processed.orig.cpn.segs.df looks like this:
-        #           sample chr  startpos    endpos n.het cnTotal nMajor nMinor   Ploidy  ACF    nAraw    nBraw patient sample_name tot_raw_cpn max_raw_cpn min_raw_cpn cpn_to_use ploidy_adj_tot_cpn
-        # 1 B_MET002_MT-M1   1    762496  23885674 16393       2      1      1 1.885366 0.31 1.082364 1.082364  MET002   MET002:M1    2.164729    1.082364    1.082364   2.164729          0.1993419
-        # 2 B_MET002_MT-M1   1  23885742  34666653  6453       1      1      0 1.885366 0.31 1.035798 0.000000  MET002   MET002:M1    1.035798    1.035798    0.000000   1.035798         -0.8641015
+    sample.vec <- names(ploidy.est.vec)
+    first.sample <- sample.vec[1]
+    #Note we may be missing a segment that fell through, what about those without eno
+    orig.seg.name.vec <- paste(min.cons.segs.ploidy.adj.cpn.df[, 1], min.cons.segs.ploidy.adj.cpn.df[, 2], min.cons.segs.ploidy.adj.cpn.df[, 3], sep=":")
+    seg.name.vec <- orig.seg.name.vec[orig.seg.name.vec %in% names(all.pw.cn.het.comp.lists[[1]])]
 
-        #define 
-        
-        mu.ccf.val <- 1 - min.CCF.to.consider.val
-        #Note that the min.cons.segs.df passed to this function was generated on the ploidy_adj_tot_cpn column
-        #Is ths really necessary? If we're using ploidy adjusted total cpn this might produce slightly smaller joint segs df but  why? 
-        min.cons.segs.raw.cpnA.df <- generateMinimumConsistentSegmentation(processed.orig.cpn.segs.df, chroms=1:22, col.to.use="nAraw")
-        min.cons.segs.raw.cpnB.df <- generateMinimumConsistentSegmentation(processed.orig.cpn.segs.df, chroms=1:22, col.to.use="nBraw")
-        #If the rownames are exactly the same, what's the point? original code uses Araw for both...
-        rownames(min.cons.segs.raw.cpnA.df) <- paste(min.cons.segs.raw.cpnA.df[,1],min.cons.segs.raw.cpnA.df[,2],min.cons.segs.raw.cpnA.df[,3],sep=":") 
-        rownames(min.cons.segs.raw.cpnB.df) <- paste(min.cons.segs.raw.cpnA.df[,1],min.cons.segs.raw.cpnA.df[,2],min.cons.segs.raw.cpnA.df[,3],sep=":")
+    if (length(orig.seg.name.vec) != length(seg.name.vec)) {
+            print(orig.seg.name.vec[ ! orig.seg.name.vec %in% seg.name.vec])
+            print("not present in the all.pw.cn.het.comp.lists[[1]] and excluded.")
+    } else {#end  if (length(orig.seg.name.vec) != length(seg.name.vec)) {
 
-        sample.vec <- names(ploidy.est.vec)
-        first.sample <- sample.vec[1]
-        #Note we may be missing a segment that fell through, what about those without eno
-        orig.seg.name.vec <- paste(min.cons.segs.ploidy.adj.cpn.df[, 1], min.cons.segs.ploidy.adj.cpn.df[, 2], min.cons.segs.ploidy.adj.cpn.df[, 3], sep=":")
-        seg.name.vec <- orig.seg.name.vec[orig.seg.name.vec %in% names(all.pw.cn.het.comp.lists[[1]])]
-
-        if (length(orig.seg.name.vec) != length(seg.name.vec)) {
-                print(orig.seg.name.vec[ ! orig.seg.name.vec %in% seg.name.vec])
-                print("not present in the all.pw.cn.het.comp.lists[[1]] and excluded.")
-        } else {#end  if (length(orig.seg.name.vec) != length(seg.name.vec)) {
-
-                print("All segments present in min.cons.segs.ploidy.adj.cpn.df present in all.pw.cn.het.comp.lists[[1]]")
-        } 
+            print("All segments present in min.cons.segs.ploidy.adj.cpn.df present in all.pw.cn.het.comp.lists[[1]]")
+    } 
 
 
-        #Now on a per sample basis:
+    #Now on a per sample basis:
 
-        all.samp.new.cpn.vec <- c()
-        all.seg.df <- initialiseAllSegFullDataframe(seg.name.vec, sample.vec)
+    all.samp.new.cpn.vec <- c()
+    all.seg.df <- initialiseAllSegFullDataframe(seg.name.vec, sample.vec)
 
-        for ( samp in sample.vec ) {
+    for ( samp in sample.vec ) {
 
-                new.cpn.vec <- c()
+            new.cpn.vec <- c()
 
-                for ( seg.name in seg.name.vec ) {
+            for ( seg.name in seg.name.vec ) {
 
-                        samp.seg.name <- paste0(samp, ":", seg.name)
+                    samp.seg.name <- paste0(samp, ":", seg.name)
 
-                        seg.info.fss.list <- all.pw.cn.het.comp.lists[[first.sample]][[seg.name]]
-                        seg.info.css.list <- all.pw.cn.het.comp.lists[[samp]][[seg.name]]
-                        css.cpn.event.status.vec <- all.pw.cn.het.comp.lists[[samp]][[seg.name]]$seg_cpn_event_status_vec
-                        chr.start.end.vec <- unlist(strsplit(seg.name,split=":"))
+                    seg.info.fss.list <- all.pw.cn.het.comp.lists[[first.sample]][[seg.name]]
+                    seg.info.css.list <- all.pw.cn.het.comp.lists[[samp]][[seg.name]]
+                    css.cpn.event.status.vec <- all.pw.cn.het.comp.lists[[samp]][[seg.name]]$seg_cpn_event_status_vec
+                    chr.start.end.vec <- unlist(strsplit(seg.name,split=":"))
 
-                        all.seg.df[samp.seg.name,]$sample <- samp
-                        all.seg.df[samp.seg.name,]$chr <- seg.info.fss.list$chr[1]
-                        all.seg.df[samp.seg.name,]$startpos <- chr.start.end.vec[2]
-                        all.seg.df[samp.seg.name,]$endpos <- chr.start.end.vec[3]
-                        all.seg.df[samp.seg.name,]$cnTotal <- seg.info.css.list$median_seg_logr             
-                        all.seg.df[samp.seg.name,]$Ploidy <- ploidy.est.vec[samp]
-                        all.seg.df[samp.seg.name,]$ACF <- purity.est.vec[samp]
-                        all.seg.df[samp.seg.name,]$orig_cpnA_raw <- min.cons.segs.raw.cpnA.df[seg.name, samp]
-                        all.seg.df[samp.seg.name,]$orig_cpnB_raw <- min.cons.segs.raw.cpnB.df[seg.name, samp]
-                        all.seg.df[samp.seg.name,]$median_logr <- css.cpn.event.status.vec["median_seg_logr"]
-                        all.seg.df[samp.seg.name,]$gain_pval <- css.cpn.event.status.vec["gain_pval"]
-                        all.seg.df[samp.seg.name,]$amp_pval <-  css.cpn.event.status.vec["amp_pval"]
-                        all.seg.df[samp.seg.name,]$loss_pval <- css.cpn.event.status.vec["loss_pval"]
-                        all.seg.df[samp.seg.name,]$deep_loss_pval <- css.cpn.event.status.vec["deep_loss_pval"]
+                    all.seg.df[samp.seg.name,]$sample <- samp
+                    all.seg.df[samp.seg.name,]$chr <- seg.info.fss.list$chr[1]
+                    all.seg.df[samp.seg.name,]$startpos <- chr.start.end.vec[2]
+                    all.seg.df[samp.seg.name,]$endpos <- chr.start.end.vec[3]
+                    all.seg.df[samp.seg.name,]$cnTotal <- seg.info.css.list$median_seg_logr             
+                    all.seg.df[samp.seg.name,]$Ploidy <- ploidy.est.vec[samp]
+                    all.seg.df[samp.seg.name,]$ACF <- purity.est.vec[samp]
+                    all.seg.df[samp.seg.name,]$orig_cpnA_raw <- min.cons.segs.raw.cpnA.df[seg.name, samp]
+                    all.seg.df[samp.seg.name,]$orig_cpnB_raw <- min.cons.segs.raw.cpnB.df[seg.name, samp]
+                    all.seg.df[samp.seg.name,]$median_logr <- css.cpn.event.status.vec["median_seg_logr"]
+                    all.seg.df[samp.seg.name,]$gain_pval <- css.cpn.event.status.vec["gain_pval"]
+                    all.seg.df[samp.seg.name,]$amp_pval <-  css.cpn.event.status.vec["amp_pval"]
+                    all.seg.df[samp.seg.name,]$loss_pval <- css.cpn.event.status.vec["loss_pval"]
+                    all.seg.df[samp.seg.name,]$deep_loss_pval <- css.cpn.event.status.vec["deep_loss_pval"]
 
-                        if ( is.na(seg.info.fss.list$ph_cpnA_vec[1])  | is.na(seg.info.fss.list$ph_cpnB_vec[1])) {
+                    if ( is.na(seg.info.fss.list$ph_cpnA_vec[1])  | is.na(seg.info.fss.list$ph_cpnB_vec[1])) {
 
-                                all.seg.df[samp.seg.name,]$samp_used_to_phase <- "too_few_SNPs"
+                            all.seg.df[samp.seg.name,]$samp_used_to_phase <- "too_few_SNPs"
 
-                                next
+                            next
 
-                        } else {#end if ( is.na(seg.info.fss.list$ph_cpnA_vec[1]) ) {
+                    } else {#end if ( is.na(seg.info.fss.list$ph_cpnA_vec[1]) ) {
 
-                                #Look for MSAI 
-                                samp.used.to.phase <- sample.to.phase.seg.list[[seg.name]]$samp_chosen_to_phase_seg
-                                switch.comp.to.ref <- all.pw.cn.het.comp.lists[[paste0(samp, ":", samp.used.to.phase)]][[seg.name]]$MSAI
+                            #Look for MSAI 
+                            samp.used.to.phase <- sample.to.phase.seg.list[[seg.name]]$samp_chosen_to_phase_seg
+                            switch.comp.to.ref <- all.pw.cn.het.comp.lists[[paste0(samp, ":", samp.used.to.phase)]][[seg.name]]$MSAI
 
-                                if ( length(switch.comp.to.ref) == 0 ) {
+                            if ( length(switch.comp.to.ref) == 0 ) {
 
-                                        switch.comp.to.ref <- all.pw.cn.het.comp.lists[[paste0(samp.used.to.phase, ":", samp)]][[seg.name]]$MSAI
+                                    switch.comp.to.ref <- all.pw.cn.het.comp.lists[[paste0(samp.used.to.phase, ":", samp)]][[seg.name]]$MSAI
 
-                                        if (  length(switch.comp.to.ref) == 0 ) {
+                                    if (  length(switch.comp.to.ref) == 0 ) {
 
-                                                switch.comp.to.ref <- NA
+                                            switch.comp.to.ref <- NA
 
-                                        }
-                                }
+                                    }
+                            }
 
-                                all.seg.df[samp.seg.name,]$MSAI <- switch.comp.to.ref 
+                            all.seg.df[samp.seg.name,]$MSAI <- switch.comp.to.ref 
 
-                        }
+                    }
 
-                        seg.CCF.val.list <- all.seg.CCF.vals.list
-                        # css.ccf.list <- seg.CCF.val.list[[seg.name]][[samp]]
-                        # all.samps.ccf.list <- seg.CCF.val.list[[seg.name]][[seg.name]]
-                        # all.oth.samps.ccf.list <- seg.CCF.val.list[[seg.name]]
-                        
-                        all.seg.df[samp.seg.name,]$n.het <- length(seg.info.css.list$ph_cpnA_vec)
-                        all.seg.df[samp.seg.name,]$nBraw <- ifelse(median(as.numeric(seg.info.css.list$ph_cpnB_vec)) < 0 , 0, median(as.numeric(seg.info.css.list$ph_cpnB_vec)))
-                        all.seg.df[samp.seg.name,]$nAraw <- ifelse(median(as.numeric(seg.info.css.list$ph_cpnA_vec)) < 0 , 0, median(as.numeric(seg.info.css.list$ph_cpnA_vec)))
-                        all.seg.df[samp.seg.name,]$nMinor <-  round(as.numeric(all.seg.df[samp.seg.name,]$nBraw))
-                        all.seg.df[samp.seg.name,]$nMajor <-  round(as.numeric(all.seg.df[samp.seg.name,]$nAraw))
-                        all.seg.df[samp.seg.name,]$cnTotal <- as.numeric(all.seg.df[samp.seg.name,]$nMinor) + as.numeric(all.seg.df[samp.seg.name,]$nMajor)
-                        all.seg.df[samp.seg.name,]$poss_sc_cpnA_low <- seg.CCF.val.list[[seg.name]]$poss_sc_cpnA_low
-                        all.seg.df[samp.seg.name,]$poss_sc_cpnA_high <- seg.CCF.val.list[[seg.name]]$poss_sc_cpnA_high
-                        all.seg.df[samp.seg.name,]$poss_sc_cpnB_low <- seg.CCF.val.list[[seg.name]]$poss_sc_cpnB_low
-                        all.seg.df[samp.seg.name,]$poss_sc_cpnB_high <- seg.CCF.val.list[[seg.name]]$poss_sc_cpnB_high
-                        all.seg.df[samp.seg.name,]$frac_psc_cpnA_low <- seg.CCF.val.list[[seg.name]][[samp]]$mean_frac_cpnA_low 
+                    seg.CCF.val.list <- all.seg.CCF.vals.list
+                    #Todo refacor to allow 
+                    all.seg.df[samp.seg.name,]$n.het <- length(seg.info.css.list$ph_cpnA_vec)
+                    all.seg.df[samp.seg.name,]$nBraw <- ifelse(median(as.numeric(seg.info.css.list$ph_cpnB_vec)) < 0 , 0, median(as.numeric(seg.info.css.list$ph_cpnB_vec)))
+                    all.seg.df[samp.seg.name,]$nAraw <- ifelse(median(as.numeric(seg.info.css.list$ph_cpnA_vec)) < 0 , 0, median(as.numeric(seg.info.css.list$ph_cpnA_vec)))
+                    all.seg.df[samp.seg.name,]$nMinor <-  round(as.numeric(all.seg.df[samp.seg.name,]$nBraw))
+                    all.seg.df[samp.seg.name,]$nMajor <-  round(as.numeric(all.seg.df[samp.seg.name,]$nAraw))
+                    all.seg.df[samp.seg.name,]$cnTotal <- as.numeric(all.seg.df[samp.seg.name,]$nMinor) + as.numeric(all.seg.df[samp.seg.name,]$nMajor)
+                    ss.ph.baf.df <- all.samp.ph.BAF.df.list[[samp]]
+                    all.seg.df[samp.seg.name,]$median_BAF  <- ss.ph.baf.df[ss.ph.baf.df$chrom == as.numeric(chr.start.end.vec[1]) &
+                                                                            ss.ph.baf.df$pos >= as.numeric(chr.start.end.vec[2]) &
+                                                                            ss.ph.baf.df$pos <= as.numeric(chr.start.end.vec[3]),,drop=FALSE]$ph_median_segmented_BAF[1]
+ 
+            
+                    for ( cpnX in c("cpnA", "cpnB") ) {
+
+                        all.seg.df[samp.seg.name, paste0("poss_sc_",cpnX, "_low")] <- seg.CCF.val.list[[seg.name]][[paste0("poss_sc_",cpnX, "_low")]]
+                        all.seg.df[samp.seg.name, paste0("poss_sc_",cpnX, "_high")] <- seg.CCF.val.list[[seg.name]][[paste0("poss_sc_",cpnX, "_high")]]
+                        all.seg.df[samp.seg.name, paste0("frac_psc_",cpnX,"_low")] <- seg.CCF.val.list[[seg.name]][[samp]][[paste0("mean_frac_",cpnX,"_low")]]
+                        all.seg.df[samp.seg.name, paste0("frac_psc_",cpnX,"_high")] <- seg.CCF.val.list[[seg.name]][[samp]][[paste0("mean_frac_",cpnX,"_high")]] 
+
                         all.seg.df[samp.seg.name,]$frac_psc_cpnA_high <- seg.CCF.val.list[[seg.name]][[samp]]$mean_frac_cpnA_high
-                        all.seg.df[samp.seg.name,]$frac_psc_cpnB_low <- seg.CCF.val.list[[seg.name]][[samp]]$mean_frac_cpnB_low
-                        all.seg.df[samp.seg.name,]$frac_psc_cpnB_high <- seg.CCF.val.list[[seg.name]][[samp]]$mean_frac_cpnB_high
-
-                        ss.ph.baf.df <- all.samp.ph.BAF.df.list[[samp]]
-                        all.seg.df[samp.seg.name,]$median_BAF  <- ss.ph.baf.df[ss.ph.baf.df$chrom == chr.start.end.vec[1] & ss.ph.baf.df$pos >= chr.start.end.vec[2] & ss.ph.baf.df$pos <= chr.start.end.vec[3],,drop=FALSE]$ph_median_segmented_BAF[1]
-
-                        #Todo all this cpnA and cpnB stuff should be refactored into a single function accepting a cpnX.string parameter.
 
                         #Test for evidence of subclonality within the segment for cpnA
+                        if (all.seg.df[samp.seg.name, paste0("poss_sc_", cpnX, "_low")] == all.seg.df[samp.seg.name, paste0("poss_sc_", cpnX, "_low")]) {
 
-                        if ( median(seg.CCF.val.list[[seg.name]][[samp]]$frac_cpnA_low_vec) > median(seg.CCF.val.list[[seg.name]][[samp]]$frac_cpnA_high_vec) ) {
+                            all.seg.df[samp.seg.name, paste0("sc_", cpnX, "_high_or_low_dominate")] <- NA
+                            all.seg.df[samp.seg.name,  paste0("sc_", cpnX, "vs_min_CCF_pval")] <- 1
 
-                            cpnA.test.subclonal <- wilcox.test(seg.CCF.val.list[[seg.name]][[samp]]$frac_cpnA_low_vec, mu = mu.ccf.val, alternative = "less", exact=FALSE)
-                            all.seg.df[samp.seg.name,]$sc_cpnA_high_or_low_dominate <- "HIGH"
+                        }  else if ( median(seg.CCF.val.list[[seg.name]][[samp]][[paste0("frac_",cpnX,"_low_vec")]]) > median(seg.CCF.val.list[[seg.name]][[samp]][[paste0("frac_",cpnX,"_high_vec")]]) ) {
 
+                            cpnA.test.subclonal <- wilcox.test(seg.CCF.val.list[[seg.name]][[samp]][[paste0("frac_",cpnX,"_low_vec")]], mu = mu.ccf.val, alternative = "less", exact=FALSE)
+                            all.seg.df[samp.seg.name, paste0("sc_", cpnX, "_high_or_low_dominate")] <- "HIGH"
+                            all.seg.df[samp.seg.name, paste0("sc_", cpnX, "vs_min_CCF_pval")] <- cpnA.test.subclonal$p.value
+                            
                         } else {#end   if ( median(seg.CCF.val.list[[seg.name]][[samp]]$frac_cpnA_low_vec) > median(seg.CCF.val.list[[seg.name]][[samp]]$frac_cpnA_high_vec) ) {
 
-                            cpnA.test.subclonal <- wilcox.test(seg.CCF.val.list[[seg.name]][[samp]]$frac_cpnA_high_vec, mu = mu.ccf.val, alternative = "less", exact=FALSE)
-                            all.seg.df[samp.seg.name,]$sc_cpnA_high_or_low_dominate <- "LOW"
-
+                            cpnA.test.subclonal <- wilcox.test(seg.CCF.val.list[[seg.name]][[samp]][[paste0("frac_",cpnX,"_high_vec")]], mu = mu.ccf.val, alternative = "less", exact=FALSE)
+                            all.seg.df[samp.seg.name, paste0("sc_", cpnX, "_high_or_low_dominate")] <- "LOW"
+                            all.seg.df[samp.seg.name, paste0("sc_", cpnX, "vs_min_CCF_pval")] <- cpnA.test.subclonal$p.value
                         }
-                        all.seg.df[samp.seg.name,]$sc_cpnA_vs_min_CCF_pval <- cpnA.test.subclonal$p.value
-
-                        #Tes for evidence of subclonality within the segment for cpnB
-                        if ( median(seg.CCF.val.list[[seg.name]][[samp]]$frac_cpnB_low_vec) > median(seg.CCF.val.list[[seg.name]][[samp]]$frac_cpnB_high_vec) ) {
-
-                            cpnB.test.subclonal <- wilcox.test(seg.CCF.val.list[[seg.name]][[samp]]$frac_cpnB_low_vec, mu = mu.ccf.val, alternative = "less", exact=FALSE)
-                            all.seg.df[samp.seg.name,]$sc_cpnB_high_or_low_dominate <- "HIGH"
-
-
-                        } else {#end   if ( median(seg.CCF.val.list[[seg.name]][[samp]]$frac_cpnB_low_vec) > median(seg.CCF.val.list[[seg.name]][[samp]]$frac_cpnA_high_vec) ) {
-
-                            cpnB.test.subclonal <- wilcox.test(seg.CCF.val.list[[seg.name]][[samp]]$frac_cpnB_high_vec, mu = mu.ccf.val, alternative = "less", exact=FALSE)
-                            all.seg.df[samp.seg.name,]$sc_cpnB_high_or_low_dominate <- "LOW"
-
-                        }
-                        all.seg.df[samp.seg.name,]$sc_cpnB_vs_min_CCF_pval <- cpnB.test.subclonal$p.value
-
-
+                        
                         #Check if different to other chromosomes now
                         seg.diff.from.others.list <- all.seg.CCF.vals.list[[seg.name]]$seg_diff_from_expected_list[[samp]]
                         #Todo, make this a default parameter so can be set
-                        cpnA.pval.vs.other.chroms <- 1e-120
-                        all.seg.df[samp.seg.name,]$num_other_chrs_same_cpnA_cpn <- length(seg.diff.from.others.list$cpnA_num_chrs_w_match_int_cpn)
-                        if (length(seg.diff.from.others.list$cpnA_num_chrs_w_match_int_cpn) >= min.num.other.chrs) {
 
-                            cpnA.pval.vs.other.chroms <- seg.diff.from.others.list$cpnA_pval_vs_oth_cpn_match_chrs_raw_cpn
+                        cpnX.pval.vs.other.chroms <- 1e-120
+                        all.seg.df[samp.seg.name, paste0("num_other_chrs_same_", cpnX, "_cpn")] <- length(seg.diff.from.others.list[[paste0(cpnX, "_num_chrs_w_match_int_cpn")]])
+                        if (length(seg.diff.from.others.list[[paste0(cpnX,"_num_chrs_w_match_int_cpn")]]) >= min.num.other.chrs) {
 
-                        }
-                        all.seg.df[samp.seg.name,]$vs_other_chrs_same_cpnA_pval <- cpnA.pval.vs.other.chroms
-
-
-
-                        cpnB.pval.vs.other.chroms <- 1e-120
-                        all.seg.df[samp.seg.name,]$num_other_chrs_same_cpnB_cpn <- length(seg.diff.from.others.list$cpnB_num_chrs_w_match_int_cpn)
-                        if (length(seg.diff.from.others.list$cpnB_num_chrs_w_match_int_cpn) >= min.num.other.chrs) {
-
-                            cpnB.pval.vs.other.chroms <- seg.diff.from.others.list$cpnB_pval_vs_oth_cpn_match_chrs_raw_cpn
+                            cpnX.pval.vs.other.chroms <- seg.diff.from.others.list[[paste0(cpnX,"_pval_vs_oth_cpn_match_chrs_raw_cpn")]]
 
                         }
-                        all.seg.df[samp.seg.name,]$vs_other_chrs_same_cpnB_pval <- cpnB.pval.vs.other.chroms 
+                        all.seg.df[samp.seg.name, paste0("vs_other_chrs_same_", cpnX, "_pval")] <- cpnX.pval.vs.other.chroms 
 
                         #Todo, is it true that the hetA or hetB means that there is always some heterogeneity across the samples..., go back through code for edge cases.
-                        all.seg.df[samp.seg.name,]$het_cpnA_acc_samps_present <- all.seg.df[samp.seg.name,]$poss_sc_cpnA_low != all.seg.df[samp.seg.name,]$poss_sc_cpnA_high
-                        all.seg.df[samp.seg.name,]$het_cpnB_acc_samps_present <- all.seg.df[samp.seg.name,]$poss_sc_cpnB_low != all.seg.df[samp.seg.name,]$poss_sc_cpnB_high
+                        all.seg.df[samp.seg.name, paste0("het_", cpnX, "_acc_samps_present")] <- all.seg.df[samp.seg.name,paste0("poss_sc_", cpnX, "_low")] != all.seg.df[samp.seg.name,paste0("poss_sc_",cpnX, "_high")]
+                        print(all.seg.df[samp.seg.name, paste0("frac_psc_",cpnX,"_low")])
+                        print(all.seg.df[samp.seg.name, paste0("frac_psc_",cpnX,"_high")])
+                        print(all.seg.df[samp.seg.name, paste0("sc_",cpnX,"_vs_min_CCF_pval")])
+                        print(all.seg.df[samp.seg.name, paste0("vs_other_chrs_same_",cpnX,"_pval")])
+                        if(all.seg.df[samp.seg.name, paste0("frac_psc_",cpnX,"_low")] > 1 |
+                           all.seg.df[samp.seg.name, paste0("frac_psc_",cpnX,"_high")] > 1 |
+                           all.seg.df[samp.seg.name, paste0("sc_",cpnX,"_vs_min_CCF_pval")] >= clonal.pval |
+                           all.seg.df[samp.seg.name, paste0("vs_other_chrs_same_",cpnX,"_pval")] >= diff.from.oth.p.val) {
 
-
-                        if(all.seg.df[samp.seg.name,]$frac_psc_cpnA_low > 1 |
-                            all.seg.df[samp.seg.name,]$frac_psc_cpnA_high > 1 |
-                            all.seg.df[samp.seg.name,]$sc_cpnA_vs_min_CCF_pval >= clonal.pval |
-                            all.seg.df[samp.seg.name,]$vs_other_chrs_same_cpnA_pval >= diff.from.oth.p.val) {
-
-                            all.seg.df[samp.seg.name,]$sc_cpnA_present <-  FALSE
+                            all.seg.df[samp.seg.name, paste0("sc_",cpnX,"_present")] <-  FALSE
 
                         } else {
 
-                            all.seg.df[samp.seg.name,]$sc_cpnA_present <- TRUE
+                            all.seg.df[samp.seg.name, paste0("sc_",cpnX,"_present")] <- TRUE
 
                         }
 
-                        if(all.seg.df[samp.seg.name,]$frac_psc_cpnB_low > 1 |
-                            all.seg.df[samp.seg.name,]$frac_psc_cpnB_high > 1 |
-                            all.seg.df[samp.seg.name,]$sc_cpnB_vs_min_CCF_pval >= clonal.pval |
-                            all.seg.df[samp.seg.name,]$vs_other_chrs_same_cpnB_pval >= diff.from.oth.p.val) {
+                    }#end for ( cpnX in c("cpnA", "cpnB") ) {
 
-                            all.seg.df[samp.seg.name,]$sc_cpnB_present <-  FALSE
-                            
-                        } else {
+            }#end for ( seg.name in seg.name.vec ) {
 
-                            all.seg.df[samp.seg.name,]$sc_cpnB_present <- TRUE
-
-                        }
-
-                }#end for ( seg.name in seg.name.vec ) {
-
-        }#end for ( samp in sample.vec ) {
-
-        #So now we have the full segmentation table
-        return(all.seg.df)
-
-        #We can also join with CCFs to generate another table:
+    }#end for ( samp in sample.vec ) {
+        
+    return(all.seg.df)
 
 }#end generateFinalSegmentationOutput <- function(...)
 
@@ -296,4 +249,4 @@ initialiseAllSegFullDataframe <- function(seg.name.vec, sample.vec) {
         }
         rownames(all.seg.df) <- row.names.vec
         return(all.seg.df)
-}                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      
+}                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               

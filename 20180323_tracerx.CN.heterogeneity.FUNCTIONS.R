@@ -4402,7 +4402,7 @@ funJoinAdjacentSegments_withCCF <- function(regionComparisonList
               
             }
             
-          }
+          }#end f(newWilcox.test(segOneB,segTwoB)$p.val>PvalToSeparate&newWilcox.test(segOneBfrac,segTwoBfrac)$p.val>PvalToSeparate)
           
           if((newWilcox.test(segOneB,segTwoB)$p.val<=PvalToSeparate|newWilcox.test(segOneBfrac,segTwoBfrac)$p.val<=PvalToSeparate)&k<=length(segsToConsiderSubs))
           {
