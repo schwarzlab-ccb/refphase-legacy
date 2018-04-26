@@ -393,10 +393,6 @@ calculatePairwiseCNHeterogeneity <- function(samp.one,
 
               phased.s.one.s.cpnA.cpnB.df <- s.one.s.cpnA.cpnB.df
               phased.s.two.s.cpnA.cpnB.df <- s.two.s.cpnA.cpnB.df
-              print("maj.is.cpnA.idx.vec")
-              print(length(maj.is.cpnA.idx.vec))
-              print("maj.is.cpnB.idx.vec")
-              print(length(maj.is.cpnB.idx.vec))
 
                if (length(maj.is.cpnA.idx.vec) > 0) {
 
@@ -499,15 +495,14 @@ calculatePairwiseCNHeterogeneity <- function(samp.one,
                if (tTestWithErrorHandling(phased.s.one.s.cpnA.cpnB.df[, 1], phased.s.one.s.cpnA.cpnB.df[, 2], paired=TRUE)$p.val < 0.001 &
                     tTestWithErrorHandling(phased.s.two.s.cpnA.cpnB.df[, 1], phased.s.two.s.cpnA.cpnB.df[,2], paired=TRUE)$p.val < 0.001) {
 
-                    if( (mean(phased.s.one.s.cpnA.cpnB.df[, 1] - phased.s.one.s.cpnA.cpnB.df[, 2]) < 0 & 
+                    if( (mean(phased.s.one.s.cpnA.cpnB.df[, 1] - phased.s.one.s.cpnA.cpnB.df[, 2]) > 0 & 
                          mean(phased.s.two.s.cpnA.cpnB.df[, 1] - phased.s.one.s.cpnA.cpnB.df[, 2]) < 0) | 
                         (mean(phased.s.one.s.cpnA.cpnB.df[, 2] - phased.s.one.s.cpnA.cpnB.df[, 1]) < 0 & 
-                         mean(phased.s.two.s.cpnA.cpnB.df[, 2] - phased.s.one.s.cpnA.cpnB.df[, 1]) < 0) ){
+                         mean(phased.s.two.s.cpnA.cpnB.df[, 2] - phased.s.one.s.cpnA.cpnB.df[, 1]) > 0) ){
 
                          s.one.two.comparison[[seg.name]][[samp.one.two.string]]$MSAI <- 1
 
                     }
-
 
                }#end if (tTestWithErrorHandling(phased.s.one.s.cpnA.cpnB.df[, 1], phased.s.one.s.cpnA.cpnB.df[, 2], paired=TRUE)$p.val < 0.001 &
                     #tTestWithErrorHandling(phased.s.two.s.cpnA.cpnB.df[, 1], phased.s.two.s.cpnA.cpnB.df[,2], paired=TRUE)$p.val < 0.001) {
@@ -550,4 +545,4 @@ calculatePairwiseCNHeterogeneity <- function(samp.one,
 
      return(s.one.two.comparison)
 
-}#End calculatePairwiseCNHeterogeneity <- function(samp.one                                                                                                                                                                                                                                                                                                                               
+}#End calculatePairwiseCNHeterogeneity <- function(samp.one                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
