@@ -197,6 +197,7 @@ calculatePairwiseCNHeterogeneity <- function(samp.one,
 	for ( i in 1:length(chr.start.end.string.vec) ) {
 
 		seg.name <- chr.start.end.string.vec[i]
+    print(seg.name)
           samp.one.two.string <- paste(samp.one, samp.two, sep=":")
           s.one.s.b.lr.baf.df <- asas.both.lr.baf.lists[[samp.one]][[seg.name]]
           s.two.s.b.lr.baf.df <- asas.both.lr.baf.lists[[samp.two]][[seg.name]]
@@ -205,7 +206,7 @@ calculatePairwiseCNHeterogeneity <- function(samp.one,
           s.two.s.ao.lr.baf.df <- asas.lr.and.or.baf.lists[[samp.two]][[seg.name]]
 
           s.one.two.comparison[[seg.name]] <- initialiseSampOneTwoSegPairwiseComparisonList(samp.one, samp.two, samp.one.two.string)
-
+          print(nrow(s.one.s.b.lr.baf.df))
           if (nrow(s.one.s.b.lr.baf.df) < min.num.hz.snp.phasing) {
 
                s.one.s.cpnA.cpnB.df <- calculateSNPsCopyNumberAB(logr.vec = s.two.s.ao.lr.baf.df$logR,
@@ -368,27 +369,55 @@ calculatePairwiseCNHeterogeneity <- function(samp.one,
                if (length(all.seg.phasing.info.list[[seg.name]]$maj_is_cpnA_idx_vec) > 0) {
 
                     maj.is.cpnA.idx.vec <- all.seg.phasing.info.list[[seg.name]]$maj_is_cpnA_idx_vec
-                    maj.is.cpnB.idx.vec <- all.seg.phasing.info.list[[seg.name]]$maj_is_cpnB_idx_vec
+                    
+                } else { #end if (length(all.seg.phasing.info.list[[seg.name]]$maj_is_cpnA_idx_vec) > 0)
+                
+                    maj.is.cpnA.idx.vec <- c()
+                }
 
-               }#end if (length(all.seg.phasing.info.list[[seg.name]]$maj_is_cpnA_idx_vec) > 0)
-               
+
+                if (length(all.seg.phasing.info.list[[seg.name]]$maj_is_cpnB_idx_vec) > 0) {
+
+                     maj.is.cpnA.idx.vec <- all.seg.phasing.info.list[[seg.name]]$maj_is_cpnB_idx_vec
+                     
+                 } else { #end if (length(all.seg.phasing.info.list[[seg.name]]$maj_is_cpnA_idx_vec) > 0)
+                 
+                     maj.is.cpnB.idx.vec <- c()
+                 }
+
+
+
+
+               maj.is.cpnB.idx.vec <- all.seg.phasing.info.list[[seg.name]]$maj_is_cpnB_idx_vec
                #Now we need to apply the phasing/classifier to both samples
 
-               phased.s.one.s.cpnA.cpnB.df <- s.one.s.cpnA.cpnB.df
+              phased.s.one.s.cpnA.cpnB.df <- s.one.s.cpnA.cpnB.df
+              phased.s.two.s.cpnA.cpnB.df <- s.two.s.cpnA.cpnB.df
+              print("maj.is.cpnA.idx.vec")
+              print(length(maj.is.cpnA.idx.vec))
+              print("maj.is.cpnB.idx.vec")
+              print(length(maj.is.cpnB.idx.vec))
 
-               phased.s.one.s.cpnA.cpnB.df[maj.is.cpnA.idx.vec, 1] <- s.one.s.cpnA.cpnB.df[maj.is.cpnA.idx.vec, 1]
-               phased.s.one.s.cpnA.cpnB.df[maj.is.cpnB.idx.vec, 1] <- s.one.s.cpnA.cpnB.df[maj.is.cpnB.idx.vec, 2]
+               if (length(maj.is.cpnA.idx.vec) > 0) {
 
-               phased.s.one.s.cpnA.cpnB.df[maj.is.cpnA.idx.vec, 2] <- s.one.s.cpnA.cpnB.df[maj.is.cpnA.idx.vec, 2]
-               phased.s.one.s.cpnA.cpnB.df[maj.is.cpnB.idx.vec, 2] <- s.one.s.cpnA.cpnB.df[maj.is.cpnB.idx.vec, 1]
+                  phased.s.one.s.cpnA.cpnB.df[maj.is.cpnA.idx.vec, 1] <- s.one.s.cpnA.cpnB.df[maj.is.cpnA.idx.vec, 1]
+                  phased.s.one.s.cpnA.cpnB.df[maj.is.cpnA.idx.vec, 2] <- s.one.s.cpnA.cpnB.df[maj.is.cpnA.idx.vec, 2]
 
-               phased.s.two.s.cpnA.cpnB.df <- s.two.s.cpnA.cpnB.df
+                  phased.s.two.s.cpnA.cpnB.df[maj.is.cpnA.idx.vec, 1] <- s.two.s.cpnA.cpnB.df[maj.is.cpnA.idx.vec, 1]
+                  phased.s.two.s.cpnA.cpnB.df[maj.is.cpnA.idx.vec, 2] <- s.two.s.cpnA.cpnB.df[maj.is.cpnA.idx.vec, 2]
 
-               phased.s.two.s.cpnA.cpnB.df[maj.is.cpnA.idx.vec, 1] <- s.two.s.cpnA.cpnB.df[maj.is.cpnA.idx.vec, 1]
-               phased.s.two.s.cpnA.cpnB.df[maj.is.cpnB.idx.vec, 1] <- s.two.s.cpnA.cpnB.df[maj.is.cpnB.idx.vec, 2]
+               }
 
-               phased.s.two.s.cpnA.cpnB.df[maj.is.cpnA.idx.vec, 2] <- s.two.s.cpnA.cpnB.df[maj.is.cpnA.idx.vec, 2]
-               phased.s.two.s.cpnA.cpnB.df[maj.is.cpnB.idx.vec, 2] <- s.two.s.cpnA.cpnB.df[maj.is.cpnB.idx.vec, 1]
+               if (length(maj.is.cpnB.idx.vec) > 0) {
+
+                  phased.s.one.s.cpnA.cpnB.df[maj.is.cpnB.idx.vec, 1] <- s.one.s.cpnA.cpnB.df[maj.is.cpnB.idx.vec, 2]
+                  phased.s.one.s.cpnA.cpnB.df[maj.is.cpnB.idx.vec, 2] <- s.one.s.cpnA.cpnB.df[maj.is.cpnB.idx.vec, 1]
+
+                  phased.s.two.s.cpnA.cpnB.df[maj.is.cpnB.idx.vec, 1] <- s.two.s.cpnA.cpnB.df[maj.is.cpnB.idx.vec, 2]
+                  phased.s.two.s.cpnA.cpnB.df[maj.is.cpnB.idx.vec, 2] <- s.two.s.cpnA.cpnB.df[maj.is.cpnB.idx.vec, 1]
+
+               }
+
 
 
                seg.paired.p.vals.vec <- c(tTestWithErrorHandling(phased.s.one.s.cpnA.cpnB.df[, 1],
@@ -521,4 +550,4 @@ calculatePairwiseCNHeterogeneity <- function(samp.one,
 
      return(s.one.two.comparison)
 
-}#End calculatePairwiseCNHeterogeneity <- function(samp.one                                          
+}#End calculatePairwiseCNHeterogeneity <- function(samp.one                                                                                                                                                                                                                                                                                                                               
