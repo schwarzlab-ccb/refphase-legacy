@@ -174,7 +174,7 @@ joinAdjacentSegsWithinSampleChromosome <- function(chr.seg.df, pval.to.separate)
                     samp.cpnX.segs.list <- updateJoinedSegList(cpnX.string, samp.cpnX.joined.segs.list=samp.cpnX.segs.list, s.next.name, s.next.df)
                     segs.cpnX.used.vec <- c(segs.cpnX.used.vec, s.curr.name, s.next.name)
 
-                }#end if (cpnX.vec.s.one.vs.s.two.test$p.val <= pval.to.separate & frac.vec.s.one.vs.s.two.test$p.val <= pval.to.separate)
+                }#end  if (shouldSegsBeJoined(s.curr.df, s.next.df, pval.to.separate) == TRUE) {
             }#end  if (k > length(chr.seg.names.vec)) {
         }#end if (shouldSegsBeJoined(s.curr.df, s.next.df) == FALSE & k <= length(chr.seg.names.vec)) {
     }# end while (k <= length(chr.seg.names.vec)) {
