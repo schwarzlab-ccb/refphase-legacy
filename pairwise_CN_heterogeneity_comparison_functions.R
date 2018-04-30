@@ -12,7 +12,7 @@ calculateSNPsCopyNumberAB <- function(logr.vec, baf.vec, tumor.ploidy, tumor.pur
 
 #
 tTestWithErrorHandling <- function(x, y = NULL, alternative = c("two.sided", "less", "greater"),
-                                   mu = 0, paired = FALSE, var.equal = FALSE, conf.level = 0.95,errors.not.permitted=""){
+                                   mu = 0, paired = FALSE, var.equal = FALSE, conf.level = 0.95, errors.not.permitted=""){
   
   test.results <- tryCatch({
     return(t.test(x=x, y=y, alternative=alternative, mu=mu, paired=paired, var.equal=var.equal, conf.level=conf.level))},
@@ -20,13 +20,13 @@ tTestWithErrorHandling <- function(x, y = NULL, alternative = c("two.sided", "le
       message(err)
       write(paste(err$message, "\n"), stderr())
       write("\n", stderr())
-      if(grepl("NULL", err$message) & "NULL"%in%errors.not.permitted){
+      if(grepl("NULL", err$message) & "NULL"%in% errors.not.permitted){
         stop("t.test ERROR with a NULL")
-      } else if (grepl("enough", err$message) & "enough"%in%errors.not.permitted){
+      } else if (grepl("enough", err$message) & "enough"%in% errors.not.permitted){
         stop("t.test ERROR with not enough")
-      } else if (grepl("constant", err$message) & "constant"%in%errors.not.permitted){
+      } else if (grepl("constant", err$message) & "constant" %in% errors.not.permitted){
         stop("t.test ERROR with constant data")
-      } else if(grepl("enough|constant|NULL", err$message) & "other"%in%errors.not.permitted){
+      } else if(grepl("enough|constant|NULL", err$message) & "other" %in% errors.not.permitted){
         stop(err$message)
       }
       # cat("\n")
@@ -56,6 +56,8 @@ initialiseSampOneTwoSegPairwiseComparisonList <- function(samp.one, samp.two, sa
 
      output.list[[samp.one]]$chr_vec <- NA
      output.list[[samp.one]]$pos_vec <- NA
+     output.list[[samp.two]]$chr_vec <- NA
+     output.list[[samp.two]]$pos_vec <- NA
 
      output.list[[samp.one]]$ph_cpnA_vec <- NA
      output.list[[samp.one]]$ph_cpnB_vec <- NA
@@ -132,12 +134,14 @@ checkSegGainOrLossSignificance <- function(ss.baf.lr.baf.df, samp.to.check, ploi
 
     specific.t.test.result <- tTestWithErrorHandling(ss.baf.lr.baf.df$logR, mu = min.thresh.logr.exp.for.samp, alternative = specific.t.test.alt)
 
-     low.obs.logr.conf.int  <- specific.t.test.result$conf.int[1]
-     high.obs.logr.conf.int <- specific.t.test.result$conf.int[2]
-     gen.t.test.pval     <- gen.t.test.results$p.value
-     alt.t.test.pval     <- specific.t.test.result$p.value
+    low.obs.logr.conf.int  <- specific.t.test.result$conf.int[1]
+    high.obs.logr.conf.int <- specific.t.test.result$conf.int[2]
+    gen.t.test.pval     <- gen.t.test.results$p.value
+    alt.t.test.pval     <- specific.t.test.result$p.value
     
   }#end if (nrow(ss.baf.lr.baf.df) >= 3) {
+
+  #Todo, refactor this magic number...
   if (nrow(ss.baf.lr.baf.df) < 3) {
 
     low.obs.logr.conf.int  <- NA
@@ -237,6 +241,8 @@ calculatePairwiseCNHeterogeneity <- function(samp.one,
 
                s.one.two.comparison[[seg.name]][[samp.one]]$chr_vec <- s.one.s.b.lr.baf.df$chrom
                s.one.two.comparison[[seg.name]][[samp.one]]$pos_vec <- s.one.s.b.lr.baf.df$pos
+               s.one.two.comparison[[seg.name]][[samp.two]]$chr_vec <- s.one.s.b.lr.baf.df$chrom
+               s.one.two.comparison[[seg.name]][[samp.two]]$pos_vec <- s.one.s.b.lr.baf.df$pos
 
                s.one.two.comparison[[seg.name]][[samp.one]]$ph_cpnA_vec <- NA
                s.one.two.comparison[[seg.name]][[samp.one]]$ph_cpnB_vec <- NA
@@ -545,4 +551,4 @@ calculatePairwiseCNHeterogeneity <- function(samp.one,
 
      return(s.one.two.comparison)
 
-}#End calculatePairwiseCNHeterogeneity <- function(samp.one                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+}#End calculatePairwiseCNHeterogeneity <- function(samp.one                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            

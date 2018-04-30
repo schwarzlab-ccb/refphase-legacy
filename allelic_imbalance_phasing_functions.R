@@ -1,17 +1,3 @@
-# options(scipen=999);
-# library(compiler)
-# library(parallel)
-# library(data.table)
-# library(mclust)
-# library(GenomicRanges)
-# library(Rsamtools)
-# library(gtools)
-# library(diptest)
-# library(gplots)
-
-
-
-
 
 ##
 ##Params:
@@ -143,8 +129,6 @@ calculateSNPsRawCopyNumberAB <- function(logr.vec, baf.vec, tumor.ploidy, tumor.
 }#end calculateSNPCopyNumberAB <- function(
 
 
-
-
 ##
 ##Params:
 ##
@@ -230,7 +214,6 @@ getAssessmentOfEachSamplesAbilityToPhaseAllOthersForSeg <- function(asas.lr.baf.
         next;#Might actally want this to be a break as they should all have too few snps as it is joint segmentation with the same SNPs...
 
       }#end if( nrow(ref.ss.lr.baf.df) < min.hz.snp.phasing)
-
       #renaming the dataframe rows for the other samples, now we are trying a new reference sample
       rownames(other.ss.phasing.df) <- sample.vec[samp != sample.vec]
 
@@ -267,9 +250,6 @@ getAssessmentOfEachSamplesAbilityToPhaseAllOthersForSeg <- function(asas.lr.baf.
   return(sample.comparison.list)
 
 }#end of getAssessmentOfEachSamplesAbilityToPhaseAllOthersForSeg <- function(asas.lr.baf.lists, sample.vec, seg.idx)
-
-##Current issues, allowing samples through questionably
-##
 
 
 ##
@@ -389,7 +369,6 @@ getMixturePhasingResultsForSegment <- function(sample.to.phase.seg.list,
                                                                                                               ploidy.est.vec,
                                                                                                               purity.est.vec)
 
-
   return(sample.to.phase.seg.list)
 }
 
@@ -471,4 +450,4 @@ createAllSegsPhasedBAFDataFrame <- function(asas.lr.baf.lists, sample.to.phase.s
 
 
 
-                                                                                                                              
+                                                                                                                                                                                           

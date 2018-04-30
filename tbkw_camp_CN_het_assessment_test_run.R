@@ -182,7 +182,8 @@ for (i in 1:(length(sample.vec) - 1)) {
                                                                   ploidy.est.vec = ploidy.est.vec,
                                                                   purity.est.vec = purity.est.vec,
                                                                   all.seg.phasing.info.list = all.seg.phasing.info.list,
-                                                                  gamma.val = 1
+                                                                  gamma.val = 1,
+                                                                  min.num.hz.snp.phasing = 5
                                                                   )
     #Todo, no need o keep reassigning here...
     for ( seg.name in names(samp.one.two.comparison.list) ) {
@@ -244,13 +245,23 @@ names(all.seg.CCF.vals.list) <- seg.name.vec
 
 #Todo, rewrite the plotting functions for the CCFs..
 source("/home/camp/watkint/working/watkint/scripts/multiregioncopynum/final_output_segmentation_file_generation_functions.R")
+
+#These really need to passed as parameters to the function... Can't really be refactored for the joined segments....? Could use the median over all
+#segments that have been included...? I would ignore for the rejoined segments. 
+# min.cons.segs.raw.cpnA.df <- generateMinimumConsistentSegmentation(processed.orig.cpn.segs.df, chroms=1:22, col.to.use="nAraw")
+# min.cons.segs.raw.cpnB.df <- generateMinimumConsistentSegmentation(processed.orig.cpn.segs.df, chroms=1:22, col.to.use="nBraw")
+# #If the rownames are exactly the same, what's the point? original code uses Araw for both...
+# rownames(min.cons.segs.raw.cpnA.df) <- paste(min.cons.segs.raw.cpnA.df[,1],min.cons.segs.raw.cpnA.df[,2],min.cons.segs.raw.cpnA.df[,3],sep=":") 
+# rownames(min.cons.segs.raw.cpnB.df) <- paste(min.cons.segs.raw.cpnA.df[,1],min.cons.segs.raw.cpnA.df[,2],min.cons.segs.raw.cpnA.df[,3],sep=":")
+
+# #These were in the function... we may want to read them at a later date
+# all.seg.df[samp.seg.name,]$orig_cpnA_raw <- min.cons.segs.raw.cpnA.df[seg.name, samp]
+# all.seg.df[samp.seg.name,]$orig_cpnB_raw <- min.cons.segs.raw.cpnB.df[seg.name, samp]
+
 #Todo, rewrite functions to get the ASCAT style copy number segmentation
-full.joint.segs.df <- generateFinalSegmentationOutput(all.pw.cn.het.comp.lists = all.pw.cn.het.comp.lists
-                                ,sample.to.phase.seg.list = all.seg.phasing.info.list
+full.joint.segs.df <- generateFinalSegmentationOutput(seg.name.vec = names(all.pw.cn.het.comp.lists[[1]])
                                 ,all.samp.ph.BAF.df.list = patient.phased.BAF.df.list     
                                 ,all.seg.CCF.vals.list = all.seg.CCF.vals.list
-                                ,processed.orig.cpn.segs.df = processed.orig.cpn.segs.df
-                                ,min.cons.segs.ploidy.adj.cpn.df = min.cons.segs.df
                                 ,ploidy.est.vec =  ploidy.est.vec
                                 ,purity.est.vec = purity.est.vec
                                 ,clonal.pval = 0.001
@@ -263,17 +274,168 @@ full.joint.segs.df <- generateFinalSegmentationOutput(all.pw.cn.het.comp.lists =
                                 ,amp.threshold     = log2(4 / 2)
                                 ,deep.loss.threshold= log2(0.5 / 2)
                                 ,chrs.to.use.vec = 1:22
-                                ,ploidy = 'mean'
-                                ,loss.gain.pval =0.01  
+                                ,loss.gain.pval = 0.01  
                                 )
 
+
+# #Todo, rewrite functions to get the ASCAT style copy number segmentation
+# full.joint.segs.df <- generateFinalSegmentationOutput(all.pw.cn.het.comp.lists = all.pw.cn.het.comp.lists
+#                                 ,all.samp.ph.BAF.df.list = patient.phased.BAF.df.list     
+#                                 ,all.seg.CCF.vals.list = all.seg.CCF.vals.list
+#                                 ,min.cons.segs.ploidy.adj.cpn.df = min.cons.segs.df
+#                                 ,ploidy.est.vec =  ploidy.est.vec
+#                                 ,purity.est.vec = purity.est.vec
+#                                 ,clonal.pval = 0.001
+#                                 ,diff.from.oth.p.val = 0.01
+#                                 ,min.CCF.to.consider.val =0.05
+#                                 ,pval.to.separate = 0.001
+#                                 ,min.num.other.chrs = 3
+#                                 ,gain.threshold    = log2(2.5 / 2)
+#                                 ,loss.threshold    = log2(1.5 / 2)
+#                                 ,amp.threshold     = log2(4 / 2)
+#                                 ,deep.loss.threshold= log2(0.5 / 2)
+#                                 ,chrs.to.use.vec = 1:22
+#                                 ,loss.gain.pval =0.01  
+#                                 )
+
+
+
+#I think we're going to update the MSAI calls separately,  this bit removed from the dataframe:
+
+#                                ,sample.to.phase.seg.list = all.seg.phasing.info.list
+
+#switch.comp.to.ref <- NA
+
+# if ( ! is.na(seg.info.fss.list$ph_cpnA_vec[1]) ) {
+
+#         #Look for MSAI
+#         samp.used.to.phase <- sample.to.phase.seg.list[[seg.name]]$samp_chosen_to_phase_seg
+#         all.seg.df[samp.seg.name,]$samp_used_to_phase <- samp.used.to.phase
+#         print(all.pw.cn.het.comp.lists[[paste0(samp, ":", samp.used.to.phase)]][[seg.name]]$MSAI)
+#         switch.comp.to.ref <- all.pw.cn.het.comp.lists[[paste0(samp, ":", samp.used.to.phase)]][[seg.name]]$MSAI
+#         print("switch.comp.to.ref")
+#         print(switch.comp.to.ref)
+#         if (length(switch.comp.to.ref) != 0) {
+#             if ( ! is.null(switch.comp.to.ref) ){
+#                 if (switch.comp.to.ref == 1){
+#                     all.seg.df[samp.seg.name,]$MSAI <- TRUE 
+#                 }
+#                 # if(switch.comp.to.ref == 0) {
+#                 #     all.seg.df[samp.seg.name,]$MSAI <- FALSE  
+#                 # }
+#          }
+#      }
+# }
+# print("MSAI bit done")
 
 #Todo plot how much of the original segmentation actually comes all the way through the code.
 
 
 
+#Join segments together for each sample... for now let's just ignore the samples that have fewer than 5 SNPs...
+source("/home/camp/watkint/working/watkint/scripts/multiregioncopynum/join_segments_functions.R")
+#Pull out all pairwise comparisons
+min.num.hz.snp.phasing <- 5
+new.segs.list <- list()
+filt.segs.vec <- c()
+
+for ( seg.name in seg.name.vec ) {
+
+  if (length(all.pw.cn.het.comp.lists[[sample.vec[1]]][[seg.name]]$chr_vec) >= min.num.hz.snp.phasing &
+      length(all.pw.cn.het.comp.lists[[sample.vec[1]]][[seg.name]]$ph_cpnA_vec) > 0 &
+      length(all.pw.cn.het.comp.lists[[sample.vec[1]]][[seg.name]]$ph_cpnB_vec) > 0) {
+    
+    filt.segs.vec <- c(filt.segs.vec, seg.name)
+    
+  }
+
+}#end for ( seg.name in seg.name.vec ) {
+
+#Now rejoin the segs for cpnA and cpnB separately for each sample.
+new.joined.cpnA.cpnB.segs.list <- list()
+
+for ( samp in sample.vec ) {
+    print(samp)
+    all.segs.chr.pos.df <- do.call(rbind, strsplit(filt.segs.vec, split=":"))
+    all.segs.chr.pos.df <- apply(all.segs.chr.pos.df, 2, as.numeric)
+    rownames(all.segs.chr.pos.df) <- filt.segs.vec
+    new.joined.cpnA.cpnB.segs.list[[samp]] <- list()
+
+    for ( cpnX in c("cpnA", "cpnB")  ) {
+      print(cpnX)
+      samp.cpnX.segs.list <- list()
+
+      for ( chr in unique(all.segs.chr.pos.df[,1]) ) {
+          print(chr)
+          #We've got an issue here that we sometimes have segments that are too small to be joined together, i.e. they don't have enough SNPs for the Wilcox tests
+          #This is because the number of het snps is under the minimum number for SNP phasing, so the only segments that can be joined by this method are those that
+          #are next to one another and have more than this minimum number of snps... We should only pass "runs" like these to the joining function...
+          #And flag the segments that couldn't be joined.
+          chr.seg.df <- all.segs.chr.pos.df[all.segs.chr.pos.df[,1] %in% chr, ,drop = FALSE]
+          chr.joined.seg.list <- joinAdjacentSegsWithinSampleChromosome(samp, chr.seg.df, cpnX.string=cpnX, all.pw.cn.het.comp.lists, all.seg.CCF.vals.list, pval.to.separate = 0.001)
+          samp.cpnX.segs.list  <- c(samp.cpnX.segs.list ,chr.joined.seg.list)
+      }#end or ( chrs in all.segs.chr.pos.df[,1] ) {
+        #This stupidity is to try and match list nesting...
+        new.joined.cpnA.cpnB.segs.list[[samp]][[paste0(cpnX,"_joined_segs_list")]] <- samp.cpnX.segs.list
+
+    }#end  for ( cpnX in c("cpnA", "cpnB")  ) {s
+
+}#end for ( samp in sample.vec ) {
+
+print(str(new.joined.cpnA.cpnB.segs.list, max=1))
+print(str(new.joined.cpnA.cpnB.segs.list[[1]], max=1))
+#So next we need to reassess cpn changes in these larger joined segments.
 
 
 
+source("/home/camp/watkint/working/watkint/scripts/multiregioncopynum/final_output_segmentation_file_generation_functions.R")
 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                
+new.comb.cpn.seg.mat       <- c()
+new.cpnA.seg.mat           <- c()
+new.cpnB.seg.mat           <- c()
+
+for ( samp in sample.vec ) { 
+
+  samp.new.cpnA.segs <- c()
+  samp.new.cpnB.segs <- c()
+  #get sample segs, need to do unique as we have repeated segments in each sample massively...., need to go back and find out why and remove
+
+  for ( cpnX in c("cpnA", "cpnB") ) {
+
+    seg.name.vec <- unique(names(new.joined.cpnA.cpnB.segs.list[[samp]][[paste0(cpnX, "_joined_segs_list")]]))
+
+
+    #So 
+    print(seg.name.vec)
+    #So now we want to recalcuate everything that went into the final segmentation but for this new set of segments
+    cpnX.joint.segs.df <- generateFinalSegmentationOutput(seg.name.vec = seg.name.vec
+                                ,all.samp.ph.BAF.df.list = patient.phased.BAF.df.list     
+                                ,all.seg.CCF.vals.list = new.joined.cpnA.cpnB.segs.list[[samp]][[paste0(cpnX, "_joined_segs_list")]]
+                                ,ploidy.est.vec =  ploidy.est.vec[samp]
+                                ,purity.est.vec = purity.est.vec[samp]
+                                ,clonal.pval = 0.001
+                                ,diff.from.oth.p.val = 0.01
+                                ,min.CCF.to.consider.val =0.05
+                                ,pval.to.separate = 0.001
+                                ,min.num.other.chrs = 3
+                                ,gain.threshold    = log2(2.5 / 2)
+                                ,loss.threshold    = log2(1.5 / 2)
+                                ,amp.threshold     = log2(4 / 2)
+                                ,deep.loss.threshold= log2(0.5 / 2)
+                                ,chrs.to.use.vec = 1:22
+                                ,loss.gain.pval = 0.01
+                                ,cpnX.vec = c(cpnX)
+                                ,reduced.seg.flag=TRUE 
+                                )
+
+    print(head(cpnX.joint.segs.df))
+    STOP
+
+  }#end for ( cpnX in c("cpnA", "cpnB") ) {
+
+}#end for ( samp in sample.vec ) { 
+
+
+# #Now combine everything...
+
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       
