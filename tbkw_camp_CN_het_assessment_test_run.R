@@ -291,7 +291,11 @@ full.joint.segs.df <- generateFinalSegmentationOutput(seg.name.vec = names(all.p
                                 )
 
 
-
+full.joint.segs.w.phasing.df <- addPhasingInformatonToOutputSegmentation(sample.vec = names(purity.est.vec),
+                                        seg.name.vec = names(all.pw.cn.het.comp.lists[[1]]), 
+                                        sample.to.phase.seg.list = all.seg.phasing.info.list,
+                                        all.pw.cn.het.comp.lists = all.pw.cn.het.comp.lists,
+                                        all.segs.df = full.joint.segs.df)
 
 # #Todo, rewrite functions to get the ASCAT style copy number segmentation
 # full.joint.segs.df <- generateFinalSegmentationOutput(all.pw.cn.het.comp.lists = all.pw.cn.het.comp.lists
