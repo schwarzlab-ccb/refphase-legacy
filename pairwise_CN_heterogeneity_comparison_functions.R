@@ -466,7 +466,7 @@ calculatePairwiseCNHeterogeneity <- function(samp.one,
                seg.size.vec <- c(seg.size.vec, seg.size)
 
                s.one.two.comparison[[seg.name]][[samp.one]]$chr_vec <- s.one.s.b.lr.baf.df$chrom
-               s.one.two.comparison[[seg.name]][[samp.one]]$pos_vec <- s.one.s.b.lr.baf.df$chrom
+               s.one.two.comparison[[seg.name]][[samp.one]]$pos_vec <- s.one.s.b.lr.baf.df$pos
 
                s.one.two.comparison[[seg.name]][[samp.one]]$ph_cpnA_vec <- as.numeric(phased.s.one.s.cpnA.cpnB.df[,1])
                s.one.two.comparison[[seg.name]][[samp.one]]$ph_cpnB_vec <- as.numeric(phased.s.one.s.cpnA.cpnB.df[,2])
