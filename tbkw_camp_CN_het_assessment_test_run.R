@@ -300,7 +300,7 @@ full.joint.segs.w.phasing.df <- addPhasingInformationToOutputSegmentation(sample
                                         all.segs.df = full.joint.segs.df)
 
 
-full.joint.segs.w.phasing.and.raw.df <- addOriginalRawValuesToOutputSegmentation(sample.vec,
+full.joint.segs.w.phasing.and.raw.df <- addOriginalCPNValuesToOutputSegmentation(sample.vec,
                                         seg.name.vec=names(all.pw.cn.het.comp.lists[[1]]), 
                                         processed.orig.cpn.segs.df,
                                         full.joint.segs.w.phasing.df)
