@@ -353,7 +353,7 @@ source("/home/camp/watkint/working/watkint/scripts/multiregioncopynum/join_segme
 min.num.hz.snp.phasing <- 5
 new.segs.list <- list()
 filt.segs.vec <- c()
-
+print(length(seg.name.vec))
 for ( seg.name in seg.name.vec ) {
 
   if (length(all.pw.cn.het.comp.lists[[sample.vec[1]]][[seg.name]]$chr_vec) >= min.num.hz.snp.phasing &
@@ -365,6 +365,7 @@ for ( seg.name in seg.name.vec ) {
   }
 
 }#end for ( seg.name in seg.name.vec ) {
+print(length(seg.name.vec))
 
 #Now rejoin the segs for cpnA and cpnB separately for each sample.
 new.joined.cpnA.cpnB.segs.list <- list()
@@ -389,10 +390,15 @@ for ( samp in sample.vec ) {
           chr.seg.df <- all.segs.chr.pos.df[all.segs.chr.pos.df[,1] %in% chr, ,drop = FALSE]
           chr.joined.seg.list <- joinAdjacentSegsWithinSampleChromosome(samp, chr.seg.df, cpnX.string=cpnX, all.pw.cn.het.comp.lists, all.seg.CCF.vals.list, pval.to.separate = 0.001)
           samp.cpnX.segs.list  <- c(samp.cpnX.segs.list ,chr.joined.seg.list)
+
+          # if(chr==2){
+          #   print(names(chr.joined.seg.list))
+          #   STOP
+          # }
       }#end or ( chrs in all.segs.chr.pos.df[,1] ) {
         #This stupidity is to try and match list nesting...
         new.joined.cpnA.cpnB.segs.list[[samp]][[paste0(cpnX,"_joined_segs_list")]] <- samp.cpnX.segs.list
-
+        print(samp.cpnX.segs.list)
     }#end  for ( cpnX in c("cpnA", "cpnB")  ) {s
 
 }#end for ( samp in sample.vec ) {
@@ -474,108 +480,115 @@ for ( samp in sample.vec ) {
 
   }#end for ( cpnX in c("cpnA", "cpnB") ) {
 
-  # #Now here we want to make a merged version
-  # samp.cpnA.df <- new.cpn.segs.list[[samp]][[paste0("new_cpnA_joined_segs_df")]]
-  # samp.cpnB.df <- new.cpn.segs.list[[samp]][[paste0("new_cpnB_joined_segs_df")]]
-  # unq.seg.name.vec <- unique(c(samp.cpnA.df$seg_name, samp.cpnB.df$seg_name))
-  # comb.segs.df <- do.call(rbind, strsplit(unq.seg.name.vec, split=":")) 
-  # comb.segs.df      <- comb.segs.df[order(as.numeric(comb.segs.df[,1]),as.numeric(comb.segs.df[,2]),as.numeric(comb.segs.df[,3])),,drop=FALSE]
-  # comb.segs.df  <- data.frame(comb.segs.df, stringsAsFactors=FALSE)
-  # comb.segs.df$seg_name <- paste(comb.segs.df[,1], comb.segs.df[,2], comb.segs.df[,3], sep=":")
-  # colnames(comb.segs.df)[1:3] <- c("chr", "start", "end")
-  # rownames(comb.segs.df) <- comb.segs.df$seg_name
+  #Now here we want to make a merged version
+  samp.cpnA.df <- new.cpn.segs.list[[samp]][[paste0("new_cpnA_joined_segs_df")]]
+  samp.cpnB.df <- new.cpn.segs.list[[samp]][[paste0("new_cpnB_joined_segs_df")]]
+  unq.seg.name.vec <- unique(c(samp.cpnA.df$seg_name, samp.cpnB.df$seg_name))
+  comb.segs.df <- do.call(rbind, strsplit(unq.seg.name.vec, split=":")) 
+  comb.segs.df      <- comb.segs.df[order(as.numeric(comb.segs.df[,1]),as.numeric(comb.segs.df[,2]),as.numeric(comb.segs.df[,3])),,drop=FALSE]
+  comb.segs.df  <- data.frame(comb.segs.df, stringsAsFactors=FALSE)
+  comb.segs.df$seg_name <- paste(comb.segs.df[,1], comb.segs.df[,2], comb.segs.df[,3], sep=":")
+  colnames(comb.segs.df)[1:3] <- c("chr", "start", "end")
+  rownames(comb.segs.df) <- comb.segs.df$seg_name
 
-  # #Now check which names should be removed:
+  #Now check which names should be removed:
 
-  # for ( i in 2:nrow(comb.segs.df) ) {
-  #   #Note not sure if we actually need to check that is less than nrow..., try without
-  #   if (as.numeric(comb.segs.df[i,]$start) < as.numeric(comb.segs.df[ (i - 1) ,]$end) &
-  #       comb.segs.df[i,]$chr == comb.segs.df[ (i - 1) , ]$chr &
-  #       i <= nrow(comb.segs.df)) {
+  for ( i in 2:nrow(comb.segs.df) ) {
+    #Note not sure if we actually need to check that is less than nrow..., try without
+    if (as.numeric(comb.segs.df[i,]$start) < as.numeric(comb.segs.df[ (i - 1) ,]$end) &
+        comb.segs.df[i,]$chr == comb.segs.df[ (i - 1) , ]$chr &
+        i <= nrow(comb.segs.df)) {
 
-  #       #remove the offending row
-  #       comb.segs.df <- comb.segs.df[ -i ,]
+        #remove the offending row
+        comb.segs.df <- comb.segs.df[ -i ,]
 
-  #   }#end if (as.numeric(comb.segs.df[i,]$start...))
+    }#end if (as.numeric(comb.segs.df[i,]$start...))
 
-  # }#end for ( i in 2:nrow(comb.segs.df) ) {
+  }#end for ( i in 2:nrow(comb.segs.df) ) {
 
-  # #So now we can initialise the actual final joint segmentation matrix
+  #So now we can initialise the actual final joint segmentation matrix
 
-  # #function(seg.name.vec, sample.vec) {
-  # new.seg.name.vec <- rownames(comb.segs.df)
-  # final.comb.seg.df <- initialiseAllSegFullDataframe(seg.name.vec = new.seg.name.vec, samp, make.row.names.seg.name.alone=TRUE)
+  #function(seg.name.vec, sample.vec) {
+  new.seg.name.vec <- rownames(comb.segs.df)
+  final.comb.seg.df <- initialiseAllSegFullDataframe(seg.name.vec = new.seg.name.vec, samp, make.row.names.seg.name.alone=TRUE)
 
-  # #So as we don't know how many rows there are going to be in this
-  # #Todo really hese aren't accurate CCFs etc.. the values would actually change with the size of the segments..., this whole section 
-  # #needs a rethink..
-  # #Todo the start and end positions of the segments haven't really been sorted out, need to be redone.
-  # for ( seg.name in new.seg.name.vec) {
+  #So as we don't know how many rows there are going to be in this
+  #Todo really hese aren't accurate CCFs etc.. the values would actually change with the size of the segments..., this whole section 
+  #needs a rethink..
+  #Todo the start and end positions of the segments haven't really been sorted out, need to be redone.
+  for ( seg.name in new.seg.name.vec) {
 
-  #   for ( cpnX in c("cpnA", "cpnB") ) {
+    for ( cpnX in c("cpnA", "cpnB") ) {
 
-  #     raw.col.name <- ifelse(cpnX == "cpnA", "nAraw", "nBraw")
+      raw.col.name <- ifelse(cpnX == "cpnA", "nAraw", "nBraw")
 
-  #     samp.cpnX.df <- new.cpn.segs.list[[samp]][[paste0("new_",cpnX,"_joined_segs_df")]]
+      samp.cpnX.df <- new.cpn.segs.list[[samp]][[paste0("new_",cpnX,"_joined_segs_df")]]
 
-  #     if ( seg.name %in% samp.cpnX.df$seg_name ){
+      if ( seg.name %in% samp.cpnX.df$seg_name ){
 
-  #       seg.name <- paste0(samp, ":", seg.name)
-  #       #Now we need to update the dataframe if this worked.. can put into anot her function if we want
-  #       #Todo add he additional columns that have been added since the update.
-  #       final.comb.seg.df[seg.name, raw.col.name] <- samp.cpnX.df[seg.name, raw.col.name]
-  #       final.comb.seg.df[seg.name, paste0("poss_sc_",cpnX,"_low")]  <- samp.cpnX.df[seg.name, paste0("poss_sc_",cpnX,"_low")]
-  #       final.comb.seg.df[seg.name, paste0("poss_sc_",cpnX,"_high")]  <- samp.cpnX.df[seg.name, paste0("poss_sc_",cpnX,"_high")]
-  #       final.comb.seg.df[seg.name, paste0("frac_psc_",cpnX,"_low")]  <- samp.cpnX.df[seg.name, paste0("frac_psc_",cpnX,"_low")]
-  #       final.comb.seg.df[seg.name, paste0("frac_psc_",cpnX,"_high")]  <- samp.cpnX.df[seg.name, paste0("frac_psc_",cpnX,"_high")]
-  #       final.comb.seg.df[seg.name, paste0("frac_psc_",cpnX,"_high")]  <- samp.cpnX.df[seg.name, paste0("frac_psc_",cpnX,"_high")]
-  #       #Todo check that this is the right column:
-  #       final.comb.seg.df[seg.name ,paste0("sc_",cpnX,"_present")] <- samp.cpnX.df[seg.name ,paste0("sc_",cpnX,"_present")]
-  #       final.comb.seg.df[seg.name ,paste0("orig_",cpnX,"_raw")] <- samp.cpnX.df[seg.name ,paste0("orig_",cpnX,"_raw")]
-  #       final.comb.seg.df[seg.name,"n.het"] <- samp.cpnX.df[seg.name, "n.het"]
-  #       final.comb.seg.df[seg.name, paste0("sc_",cpnX,"_high_or_low_dominate")] <- samp.cpnX.df[seg.name, paste0("sc_",cpnX,"_high_or_low_dominate")]
-  #       final.comb.seg.df[seg.name, paste0("sc_",cpnX,"_vs_min_CCF_pval")] <- samp.cpnX.df[seg.name, paste0("sc_",cpnX,"_vs_min_CCF_pval")]
+        #Now we need to update the dataframe if this worked.. can put into anot her function if we want
+        #Todo add he additional columns that have been added since the update.
+        final.comb.seg.df[seg.name, raw.col.name] <- samp.cpnX.df[seg.name, raw.col.name]
+        final.comb.seg.df[seg.name, paste0("poss_sc_",cpnX,"_low")]  <- samp.cpnX.df[seg.name, paste0("poss_sc_",cpnX,"_low")]
+        final.comb.seg.df[seg.name, paste0("poss_sc_",cpnX,"_high")]  <- samp.cpnX.df[seg.name, paste0("poss_sc_",cpnX,"_high")]
+        final.comb.seg.df[seg.name, paste0("frac_psc_",cpnX,"_low")]  <- samp.cpnX.df[seg.name, paste0("frac_psc_",cpnX,"_low")]
+        final.comb.seg.df[seg.name, paste0("frac_psc_",cpnX,"_high")]  <- samp.cpnX.df[seg.name, paste0("frac_psc_",cpnX,"_high")]
+        final.comb.seg.df[seg.name, paste0("frac_psc_",cpnX,"_high")]  <- samp.cpnX.df[seg.name, paste0("frac_psc_",cpnX,"_high")]
+        #Todo check that this is the right column:
+        final.comb.seg.df[seg.name ,paste0("sc_",cpnX,"_present")] <- samp.cpnX.df[seg.name ,paste0("sc_",cpnX,"_present")]
+        final.comb.seg.df[seg.name ,paste0("orig_",cpnX,"_raw")] <- samp.cpnX.df[seg.name ,paste0("orig_",cpnX,"_raw")]
+        final.comb.seg.df[seg.name,"n.het"] <- samp.cpnX.df[seg.name, "n.het"]
+        final.comb.seg.df[seg.name, paste0("sc_",cpnX,"_high_or_low_dominate")] <- samp.cpnX.df[seg.name, paste0("sc_",cpnX,"_high_or_low_dominate")]
+        final.comb.seg.df[seg.name, paste0("sc_",cpnX,"_vs_min_CCF_pval")] <- samp.cpnX.df[seg.name, paste0("sc_",cpnX,"_vs_min_CCF_pval")]
 
-  #       final.comb.seg.df[seg.name, paste0("num_other_chrs_same_",cpnX,"_cpn")] <- samp.cpnX.df[seg.name, paste0("num_other_chrs_same_",cpnX,"_cpn")]
-  #       final.comb.seg.df[seg.name, paste0("vs_other_chrs_same_",cpnX,"_pval")] <- samp.cpnX.df[seg.name, paste0("vs_other_chrs_same_",cpnX,"_pval")]
-  #       #Todo potentially add in the gains and losses
+        final.comb.seg.df[seg.name, paste0("num_other_chrs_same_",cpnX,"_cpn")] <- samp.cpnX.df[seg.name, paste0("num_other_chrs_same_",cpnX,"_cpn")]
+        final.comb.seg.df[seg.name, paste0("vs_other_chrs_same_",cpnX,"_pval")] <- samp.cpnX.df[seg.name, paste0("vs_other_chrs_same_",cpnX,"_pval")]
+        #Todo potentially add in the gains and losses
 
-  #     } else {
+      } else {
 
-  #       seg.chr <- as.numeric(unlist(strsplit(seg.name,split=":"))[1])
-  #       seg.start <- as.numeric(unlist(strsplit(seg.name,split=":"))[2])
-  #       seg.end <- as.numeric(unlist(strsplit(seg.name,split=":"))[3])
-  #       subset.samp.cpnX.df <- samp.cpnX.df[samp.cpnX.df$chr == seg.chr, ,drop = FALSE]
-  #       subset.samp.cpnX.df <- subset.samp.cpnX.df[as.numeric(subset.samp.cpnX.df$startpos) <= seg.start &
-  #                                                   as.numeric(subset.samp.cpnX.df$endpos) >= seg.end, ,drop=FALSE]
-  #       #Todo refacor so that these this updating is actually part of a function tow which you pass two dataframes?
-  #       final.comb.seg.df[seg.name, raw.col.name] <- subset.samp.cpnX.df[seg.name, raw.col.name]
-  #       final.comb.seg.df[seg.name, paste0("poss_sc_",cpnX,"_low")]  <- subset.samp.cpnX.df[seg.name, paste0("poss_sc_",cpnX,"_low")]
-  #       final.comb.seg.df[seg.name, paste0("poss_sc_",cpnX,"_high")]  <- subset.samp.cpnX.df[seg.name, paste0("poss_sc_",cpnX,"_high")]
-  #       final.comb.seg.df[seg.name, paste0("frac_psc_",cpnX,"_low")]  <- subset.samp.cpnX.df[seg.name, paste0("frac_psc_",cpnX,"_low")]
-  #       final.comb.seg.df[seg.name, paste0("frac_psc_",cpnX,"_high")]  <- subset.samp.cpnX.df[seg.name, paste0("frac_psc_",cpnX,"_high")]
-  #       final.comb.seg.df[seg.name, paste0("frac_psc_",cpnX,"_high")]  <- subset.samp.cpnX.df[seg.name, paste0("frac_psc_",cpnX,"_high")]
-  #       #Todo check that this is the right column:
-  #       final.comb.seg.df[seg.name ,paste0("sc_",cpnX,"_present")] <- subset.samp.cpnX.df[seg.name ,paste0("sc_",cpnX,"_present")]
-  #       final.comb.seg.df[seg.name ,paste0("orig_",cpnX,"_raw")] <- subset.samp.cpnX.df[seg.name ,paste0("orig_",cpnX,"_raw")]
-  #       final.comb.seg.df[seg.name,"n.het"] <- subset.samp.cpnX.df[seg.name, "n.het"]
-  #       final.comb.seg.df[seg.name, paste0("sc_",cpnX,"_high_or_low_dominate")] <- subset.samp.cpnX.df[seg.name, paste0("sc_",cpnX,"_high_or_low_dominate")]
-  #       final.comb.seg.df[seg.name, paste0("sc_",cpnX,"_vs_min_CCF_pval")] <- subset.samp.cpnX.df[seg.name, paste0("sc_",cpnX,"_vs_min_CCF_pval")]
+        seg.chr <- as.numeric(unlist(strsplit(seg.name,split=":"))[1])
+        seg.start <- as.numeric(unlist(strsplit(seg.name,split=":"))[2])
+        seg.end <- as.numeric(unlist(strsplit(seg.name,split=":"))[3])
+        subset.samp.cpnX.df <- samp.cpnX.df[samp.cpnX.df$chr == seg.chr, ,drop = FALSE]
+        print("###########")
+        print("subset.samp.cpnX.df")
+        print(subset.samp.cpnX.df)
+        print("seg.start")
+        print(seg.start)
+        print("seg.end")
+        print(seg.end)
+        subset.samp.cpnX.df <- subset.samp.cpnX.df[as.numeric(subset.samp.cpnX.df$startpos) <= seg.start &
+                                                    as.numeric(subset.samp.cpnX.df$endpos) >= seg.start, ,drop=FALSE]
+        print("subset.samp.cpnX.df")
+        print(subset.samp.cpnX.df)
+        print("#############3")
+        #Todo refacor so that these this updating is actually part of a function tow which you pass two dataframes?
+        final.comb.seg.df[seg.name, raw.col.name] <- subset.samp.cpnX.df[, raw.col.name]
+        final.comb.seg.df[seg.name, paste0("poss_sc_",cpnX,"_low")]  <- subset.samp.cpnX.df[, paste0("poss_sc_",cpnX,"_low")]
+        final.comb.seg.df[seg.name, paste0("poss_sc_",cpnX,"_high")]  <- subset.samp.cpnX.df[, paste0("poss_sc_",cpnX,"_high")]
+        final.comb.seg.df[seg.name, paste0("frac_psc_",cpnX,"_low")]  <- subset.samp.cpnX.df[, paste0("frac_psc_",cpnX,"_low")]
+        final.comb.seg.df[seg.name, paste0("frac_psc_",cpnX,"_high")]  <- subset.samp.cpnX.df[, paste0("frac_psc_",cpnX,"_high")]
+        final.comb.seg.df[seg.name, paste0("frac_psc_",cpnX,"_high")]  <- subset.samp.cpnX.df[, paste0("frac_psc_",cpnX,"_high")]
+        #Todo check that this is the right column:
+        final.comb.seg.df[seg.name ,paste0("sc_",cpnX,"_present")] <- subset.samp.cpnX.df[ ,paste0("sc_",cpnX,"_present")]
+        final.comb.seg.df[seg.name ,paste0("orig_",cpnX,"_raw")] <- subset.samp.cpnX.df[ ,paste0("orig_",cpnX,"_raw")]
+        final.comb.seg.df[seg.name,"n.het"] <- subset.samp.cpnX.df[, "n.het"]
+        final.comb.seg.df[seg.name, paste0("sc_",cpnX,"_high_or_low_dominate")] <- subset.samp.cpnX.df[, paste0("sc_",cpnX,"_high_or_low_dominate")]
+        final.comb.seg.df[seg.name, paste0("sc_",cpnX,"_vs_min_CCF_pval")] <- subset.samp.cpnX.df[, paste0("sc_",cpnX,"_vs_min_CCF_pval")]
 
-  #       final.comb.seg.df[seg.name, paste0("num_other_chrs_same_",cpnX,"_cpn")] <- subset.samp.cpnX.df[seg.name, paste0("num_other_chrs_same_",cpnX,"_cpn")]
-  #       final.comb.seg.df[seg.name, paste0("vs_other_chrs_same_",cpnX,"_pval")] <- subset.samp.cpnX.df[seg.name, paste0("vs_other_chrs_same_",cpnX,"_pval")]
+        final.comb.seg.df[seg.name, paste0("num_other_chrs_same_",cpnX,"_cpn")] <- subset.samp.cpnX.df[, paste0("num_other_chrs_same_",cpnX,"_cpn")]
+        final.comb.seg.df[seg.name, paste0("vs_other_chrs_same_",cpnX,"_pval")] <- subset.samp.cpnX.df[, paste0("vs_other_chrs_same_",cpnX,"_pval")]
 
-  #     }
+      }
 
-  #   }#end for ( cpnX in c("cpnA", "cpnB") ) {
+    }#end for ( cpnX in c("cpnA", "cpnB") ) {
 
-
-  # }#for ( seg.name in new.seg.name.vec) {
+  }#for ( seg.name in new.seg.name.vec) {
   
-
 }#end for ( samp in sample.vec ) { 
 
 
 # #Now combine everything...
 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      
