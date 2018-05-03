@@ -12,7 +12,8 @@ getCombinedBAFDipTestPhasing <- function(asas.lr.baf.lists,
                                         min.num.hz.snp.phasing = 5,
                                         min.prop.snp.sep.threshold = 0.75,
                                         dip.test.p.val.threshold = 0.01,
-                                        comb.wilcox.snp.sep.p.val.threshold = 0.01) {
+                                        comb.wilcox.snp.sep.p.val.threshold = 0.01,
+                                        allow.dip.test.without.ASCAT.to.phase = FALSE) {
 
   sample.vec <- names(asas.lr.baf.lists)
   sample.to.phase.seg.list <- list()
@@ -49,28 +50,26 @@ getCombinedBAFDipTestPhasing <- function(asas.lr.baf.lists,
     rownames(a.s.sum.phas.df) <- sample.vec
     a.s.sum.phas.df <- a.s.sum.phas.df[with(a.s.sum.phas.df, order(diptest_for_AI_pval)), ]
     #possible phasing samples passing the phasing thresholds:
+    print("nrow(a.s.sum.phas.df)")
+    print(nrow(a.s.sum.phas.df))
     poss.phas.s.df <- a.s.sum.phas.df[a.s.sum.phas.df$ASCAT_called_as_AI==TRUE | a.s.sum.phas.df$diptest_for_AI_pval < dip.test.p.val.threshold, ,drop=FALSE]
-
+    print("nrow(poss.phas.s.df)")
+    print(nrow(poss.phas.s.df))
+    print(poss.phas.s.df)
     # first scenario - there is evidence of allelic imbalance (from either ASCAT or dip.test)
     if (nrow(poss.phas.s.df) > 0) {
-
+    	print("> 0")
       #If ASCAT only chose one region then choose this region as the reference
       if (nrow(poss.phas.s.df[poss.phas.s.df$ASCAT_called_as_AI==TRUE, ,drop=FALSE]) == 1) {
 
-        sample.to.phase.seg <- rownames(poss.phas.s.df[poss.phas.s.df$ASCAT_called_as_AI==TRUE, ,drop=FALSE])[1] 
+        sample.to.phase.seg <- rownames(poss.phas.s.df[poss.phas.s.df$ASCAT_called_as_AI == TRUE, ,drop=FALSE])[1]
         sample.to.phase.seg.list[[seg.name]]$samp_chosen_to_phase_seg <- sample.to.phase.seg
         sample.to.phase.seg.list[[seg.name]]$maj_is_cpnA_idx_vec <- all.samp.seg.phasing.ability.list[[sample.to.phase.seg]]$maj_is_cpnA_idx_vec
         sample.to.phase.seg.list[[seg.name]]$maj_is_cpnB_idx_vec <- all.samp.seg.phasing.ability.list[[sample.to.phase.seg]]$maj_is_cpnB_idx_vec
 
-      }#end if (length(all.samp.s.ASCAT.called.AI.logical.vec) == 0)
-
-      #If ASCAT calls more than one region to use as reference:
-      if (nrow(poss.phas.s.df[poss.phas.s.df$ASCAT_called_as_AI==TRUE, ,drop=FALSE]) > 1) {
-
+      } else if (nrow(poss.phas.s.df[poss.phas.s.df$ASCAT_called_as_AI==TRUE, ,drop=FALSE]) > 1) {
         #Choose the maximum phasing region from already sorted by maximum proportion of snps separated dataframe:
         sample.to.phase.seg <- rownames(poss.phas.s.df)[1]
-
-
         sample.to.phase.seg.list[[seg.name]]$samp_chosen_to_phase_seg <- sample.to.phase.seg
         sample.to.phase.seg.list[[seg.name]]$maj_is_cpnA_idx_vec <- all.samp.seg.phasing.ability.list[[sample.to.phase.seg]]$maj_is_cpnA_idx_vec
         sample.to.phase.seg.list[[seg.name]]$maj_is_cpnB_idx_vec <- all.samp.seg.phasing.ability.list[[sample.to.phase.seg]]$maj_is_cpnB_idx_vec
@@ -87,15 +86,41 @@ getCombinedBAFDipTestPhasing <- function(asas.lr.baf.lists,
                                                                         asas.lr.baf.lists,
                                                                         seg.name, ploidy.est.vec, purity.est.vec, gamma.val)
 
-        }#end if(poss.phas.s.df[sample.to.phase.seg,]$comb_wilcox_sep_pval_across_samps < comb.wilcox.snp.sep.p.val.threshold &
-         #poss.phas.s.df[sample.to.phase.seg,]$mean_prop_SNPs_sep_across_samples > prop.snp.sep.threshold)
+        }#end  
 
-      }#end if (nrow(poss.phas.s.df[poss.phas.s.df$ASCAT_called_as_AI==TRUE,]) > 1)
+      } else if (nrow(poss.phas.s.df[poss.phas.s.df$diptest_for_AI_pval < dip.test.p.val.threshold, ,drop=FALSE]) > 0 & allow.dip.test.without.ASCAT.to.phase == TRUE) {
+
+      		sample.to.phase.seg <- rownames(poss.phas.s.df)[1]
+      		sample.to.phase.seg.list[[seg.name]]$samp_chosen_to_phase_seg <- sample.to.phase.seg
+      		sample.to.phase.seg.list[[seg.name]]$maj_is_cpnA_idx_vec <- all.samp.seg.phasing.ability.list[[sample.to.phase.seg]]$maj_is_cpnA_idx_vec
+      		sample.to.phase.seg.list[[seg.name]]$maj_is_cpnB_idx_vec <- all.samp.seg.phasing.ability.list[[sample.to.phase.seg]]$maj_is_cpnB_idx_vec
+
+
+      		sample.to.phase.seg.list <- getMixturePhasingResultsForSegment(sample.to.phase.seg.list,
+      		                                                              sample.to.phase.seg,
+      		                                                              sample.vec,
+      		                                                              poss.phas.s.df,
+      		                                                              asas.lr.baf.lists,
+      		                                                              seg.name, ploidy.est.vec, purity.est.vec, gamma.val)
+
+      } else {
+
+      	sample.to.phase.seg <- "none_snps_randomized_though_diptest_possible"
+
+      	possible.maj.cpnA.maj.cpnB.idxs.df <- c(all.samp.seg.phasing.ability.list[[1]]$maj_is_cpnA_idx_vec, all.samp.seg.phasing.ability.list[[1]]$maj_is_cpnB_idx_vec) 
+      	major.random.idxs <- sample(possible.maj.cpnA.maj.cpnB.idxs.df, size=length(possible.maj.cpnA.maj.cpnB.idxs.df) / 2)
+      	minor.random.idxs <- possible.maj.cpnA.maj.cpnB.idxs.df[ ! possible.maj.cpnA.maj.cpnB.idxs.df %in% major.random.idxs]
+
+      	sample.to.phase.seg.list[[seg.name]]$samp_chosen_to_phase_seg <- sample.to.phase.seg
+      	sample.to.phase.seg.list[[seg.name]]$maj_is_cpnA_idx_vec <- sort(major.random.idxs)
+      	sample.to.phase.seg.list[[seg.name]]$maj_is_cpnB_idx_vec <- sort(minor.random.idxs)
+
+      } 
 
     }#end if (nrow(poss.phas.s.df) > 0)
     # second scenario - there is no evidence of allelic imbalance (from ASCAT or dip.test) # in this case -randomly assign SNPs as major or minor
     if (nrow(poss.phas.s.df) == 0 ) {
-
+    	
       possible.maj.cpnA.maj.cpnB.idxs.df <- c(all.samp.seg.phasing.ability.list[[1]]$maj_is_cpnA_idx_vec, all.samp.seg.phasing.ability.list[[1]]$maj_is_cpnB_idx_vec) 
       major.random.idxs <- sample(possible.maj.cpnA.maj.cpnB.idxs.df, size=length(possible.maj.cpnA.maj.cpnB.idxs.df) / 2)
       minor.random.idxs <- possible.maj.cpnA.maj.cpnB.idxs.df[ ! possible.maj.cpnA.maj.cpnB.idxs.df %in% major.random.idxs]
@@ -400,6 +425,10 @@ createAllSegsPhasedBAFDataFrame <- function(asas.lr.baf.lists, sample.to.phase.s
       #Todo, make sure all segments are referred to by name, define this earlier on. Makes no sense to sometimes be using
       #indices and other times be using the name format, causes confusion and bugs.
       samp.BAF.df <- asas.lr.baf.lists[[samp]][[seg.name]]
+      print("###########")
+      print("print(samp.BAF.df)")
+      print(samp.BAF.df)
+      print("###########")
 
       if (nrow(samp.BAF.df) < min.num.hz.snp.phasing) {
 
@@ -411,6 +440,8 @@ createAllSegsPhasedBAFDataFrame <- function(asas.lr.baf.lists, sample.to.phase.s
       
       #initialise new columns
       samp.BAF.df$samp <- samp
+      print("sample.to.phase.seg.list[[seg.name]]")
+      print(sample.to.phase.seg.list[[seg.name]])
       samp.BAF.df$sample_phased_by_this_sample <-  sample.to.phase.seg.list[[seg.name]]$samp_chosen_to_phase_seg
       samp.BAF.df$maj_is_cpnA_logic_vec <- 0
       samp.BAF.df$maj_is_cpnB_logic_vec <- 0
@@ -436,6 +467,12 @@ createAllSegsPhasedBAFDataFrame <- function(asas.lr.baf.lists, sample.to.phase.s
       samp.BAF.df$ph_median_segmented_BAF <- min(median(samp.BAF.df[samp.BAF.df$maj_is_cpnB_logic_vec == 1 ,]$BAF),
                                            median(samp.BAF.df[samp.BAF.df$maj_is_cpnB_logic_vec == 0 ,]$BAF))
 
+      print("print(all.samp.ph.BAF.df.list[[samp]])")
+      print(head(all.samp.ph.BAF.df.list[[samp]]))
+      print(colnames(all.samp.ph.BAF.df.list[[samp]]))
+      print("head(samp.BAF.df)")
+      print(head(samp.BAF.df))
+      print(colnames(samp.BAF.df))
       all.samp.ph.BAF.df.list[[samp]] <- rbind(all.samp.ph.BAF.df.list[[samp]], samp.BAF.df)
 
     }#end for ( samp in sample.vec ) {
@@ -450,4 +487,4 @@ createAllSegsPhasedBAFDataFrame <- function(asas.lr.baf.lists, sample.to.phase.s
 
 
 
-                                                                                                                                                                                           
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  

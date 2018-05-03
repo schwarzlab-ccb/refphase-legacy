@@ -10,15 +10,11 @@ funPlotAllRegions_withJoining <- function(all.pw.cn.het.comp.lists, full.joint.s
   #First get the consensus segmentation, probably want to filter out the smallest segments:
   #filter out the segments that are unphased
   phased.joint.segs.df  <- full.joint.segs.df[full.joint.segs.df$samp_used_to_phase != "too_few_SNPs",]
-  print(head(phased.joint.segs.df))
   #phased.joint.segs.df <- full.joint.segs.df
   chr.start.end.df <- phased.joint.segs.df[,c("chr","startpos","endpos")]
   chr.start.end.df <- apply(chr.start.end.df,2,as.numeric)
-  print(chr.start.end.df)
   chroms.length.vec <- getChromLengthsVec(chr.start.end.df)
-  print(chroms.length.vec)
   names(chroms.length.vec) <- 1:22
-  print(chroms.length.vec)
   chrom.segs.to.plot.df <- getCumulativeChromLengthsForPlottingDF(chr.start.end.df, chroms.length.vec)
 
   min.x               <- 0
@@ -61,7 +57,7 @@ funPlotAllRegions_withJoining <- function(all.pw.cn.het.comp.lists, full.joint.s
          ,ylab=""
          ,xlab=""
          ,lwd=2
-         ,main=paste(samp," A allele",sep="")
+         ,main=paste(samp," ",cpnX," allele",sep="")
          ,bty="n")
     box()
 
@@ -81,8 +77,6 @@ funPlotAllRegions_withJoining <- function(all.pw.cn.het.comp.lists, full.joint.s
       chr.start.end.vec <- unlist(strsplit(seg.name, split=":"))
       seg.samp.cpnX.vals.list <- samp.vals.list[[seg.name]]
       seg.samp.one.cpnX.vals.list <- samp.one.vals.list[[seg.name]]
-      print(seg.name)
-      print(samp)
       seg.ccf.cpnX.frac.vec   <- all.seg.CCF.vals.list[[seg.name]][[samp]][[paste0("frac_",cpnX,"_low_vec")]]
 
       
@@ -95,7 +89,6 @@ funPlotAllRegions_withJoining <- function(all.pw.cn.het.comp.lists, full.joint.s
                               seg.ccf.cpnX.frac.vec
                               )
 
-      print(head(seg.to.plot.df))
       if(is.na(seg.to.plot.df[1,1])) {
 
         next
@@ -135,6 +128,22 @@ funPlotAllRegions_withJoining <- function(all.pw.cn.het.comp.lists, full.joint.s
 
       }
 
+      print(all.seg.CCF.vals.list[[seg.name]][[paste0("poss_sc_",cpnX,"_low")]])
+      print(all.seg.CCF.vals.list[[seg.name]][[paste0("poss_sc_",cpnX,"_high")]])
+
+      segments(x0=min(as.numeric(seg.to.plot.df$pos))
+               ,y0=all.seg.CCF.vals.list[[seg.name]][[samp]][[paste0("poss_sc_",cpnX,"_low")]]
+               ,x1=max(as.numeric(seg.to.plot.df$pos))
+               ,y1=all.seg.CCF.vals.list[[seg.name]][[samp]][[paste0("poss_sc_",cpnX,"_low")]]
+               ,col="#de2d26"
+               ,lwd=3)
+      
+      segments(x0=min(as.numeric(seg.to.plot.df$pos))
+               ,y0=all.seg.CCF.vals.list[[seg.name]][[samp]][[paste0("poss_sc_",cpnX,"_high")]]
+               ,x1=max(as.numeric(seg.to.plot.df$pos))
+               ,y1=all.seg.CCF.vals.list[[seg.name]][[samp]][[paste0("poss_sc_",cpnX,"_high")]]
+               ,col="#31a354"
+               ,lwd=3)
 
       segments(x0=min(as.numeric(seg.to.plot.df$pos))
                ,y0=mean(c(as.numeric(seg.to.plot.df$Sample1nA)))
@@ -142,19 +151,6 @@ funPlotAllRegions_withJoining <- function(all.pw.cn.het.comp.lists, full.joint.s
                ,col=ccf.bar.color
                ,lwd=3)
       
-      segments(x0=min(as.numeric(seg.to.plot.df$pos))
-               ,y0=all.seg.CCF.vals.list[[seg.name]][[paste0("poss_sc_",cpnX,"_low")]]
-               ,x1=max(as.numeric(seg.to.plot.df$pos))
-               ,y1=all.seg.CCF.vals.list[[seg.name]][[paste0("poss_sc_",cpnX,"_low")]]
-               ,col="#de2d26"
-               ,lwd=3)
-      
-      segments(x0=min(as.numeric(seg.to.plot.df$pos))
-               ,y0=all.seg.CCF.vals.list[[seg.name]][[paste0("poss_sc_",cpnX,"_high")]]
-               ,x1=max(as.numeric(seg.to.plot.df$pos))
-               ,y1=all.seg.CCF.vals.list[[seg.name]][[paste0("poss_sc_",cpnX,"_high")]]
-               ,col="#31a354"
-               ,lwd=3)
 
 
     }#end   for ( seg.name in seg.name.vec ) {
@@ -188,21 +184,18 @@ funPlotAllRegions_withJoining <- function(all.pw.cn.het.comp.lists, full.joint.s
 getChromLengthsVec <- function(seg){
   # This function returns the length of chromosome 1,...,22
   # seg: first three columns of the minimum conistent region matrix
-  print("Called fun.chrom.length")
   chrom.length <- c()
   for(i in 1:22){
     sub.chrom <- subset(seg, seg[, 1] == i)
     chrom.length <- c(chrom.length, sub.chrom[nrow(sub.chrom), 3])
     
   }
-  print("Returning from fun.chrom.length")
   return(chrom.length)
   
 }
 
 #Was fun.add.chrom
 getCumulativeChromLengthsForPlottingDF <-function(seg, chrom.length){
-  print("Called fun.add.chrom")
   # This function adds the length of chromosome 1,...,(i - 1) to chromsomes 2,...,22
   # seg: first three columns of the minimum conistent region matrix
   # chrom.length: output of fun.chrom.length(...)
@@ -218,13 +211,11 @@ getCumulativeChromLengthsForPlottingDF <-function(seg, chrom.length){
     sub.chrom[, 3] <- sub.chrom[, 3] + sum(chrom.length[1:(i - 1)])
     seg.tmp <- rbind(seg.tmp, sub.chrom)
   }
-  print("Returning from fun.add.chrom")
   return(seg.tmp)
   
 }
 
 fun.chrom.mean<-function(seg){
-  print("Called fun.chrom.mean")
   # This function finds the middle of the positions for each chromosome.
   # seg: Matrix with three columns, containing the positions.
   chrom.mean <- c()
@@ -233,8 +224,7 @@ fun.chrom.mean<-function(seg){
     chrom.mean <- c(chrom.mean, (min(sub.chrom[, 2]) + max(sub.chrom[, 3]))/2)
     
   }
-  print("Returning from fun.chrom.mean")
   return(chrom.mean)
 }
 
-                                                                                                                                                                                                                                                                                                                                                    
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    
