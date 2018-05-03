@@ -692,8 +692,8 @@ chooseLowHighSubclonalCPNWithMoreThanTwoPossibilities <- function(s.samps.int.ob
   #check whether there are more than two states when rounding
   if (length(unique(round(samps.mean.cpnX.vec))) > 2) {
 
-    ss.poss.sc.cpnX.low =  min(unique(floor(samps.mean.cpnX.vec + min.CCF.to.consider)))
-    ss.poss.sc.cpnX.high = max(unique(ceiling(samps.mean.cpnX.vec + min.CCF.to.consider)))
+    ss.poss.sc.cpnX.low =  min(unique(floor(samps.mean.cpnX.vec + min.CCF.to.consider.val)))
+    ss.poss.sc.cpnX.high = max(unique(ceiling(samps.mean.cpnX.vec + min.CCF.to.consider.val)))
 
   }#end if (length(unique(round(samps.mean.cpnX.vec))) > 2) {
 
