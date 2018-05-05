@@ -1,70 +1,6 @@
 #Note needs tTestWithErrorHandling which is in CN_heterogeneity_utility_functions.R
 
 
-generateAllSegsRoundedCPNSameOrDifferentAcrossSamplesLists <- function(all.pw.cn.het.comp.lists, sample.vec, seg.name.vec) {
-      #todo change these to preallocated dataframes if possible.. not ideally suited as theses are vectors of different lengths.
-      seg.cpn.across.samps.list <- list()
-      seg.cpn.across.samps.list$same_cpnA_cpnB_seg_name_vec <- c()     
-      seg.cpn.across.samps.list$diff_cpnA_cpnB_seg_name_vec <- c()
-      seg.cpn.across.samps.list$same_cpnA_seg_name_vec <- c()
-      seg.cpn.across.samps.list$diff_cnpA_seg_name_vec <- c()
-      seg.cpn.across.samps.list$same_cpnB_seg_name_vec <- c()
-      seg.cpn.across.samps.list$diff_cpnB_seg_name_vec <- c()
-
-      for ( seg.name in seg.name.vec ) {
-            #samp
-            ss.mean.int.cpnA <- c()
-            ss.mean.int.cpnB <- c()
-
-            for ( samp in sample.vec ) {
-
-                  ss.mean.int.cpnA <- c(ss.mean.int.cpnA , round(all.pw.cn.het.comp.lists[[samp]][[seg.name]]$mean_ph_cpnA))
-                  ss.mean.int.cpnB <- c(ss.mean.int.cpnB , round(all.pw.cn.het.comp.lists[[samp]][[seg.name]]$mean_ph_cpnB))
-
-            }#end for ( samp in samp.vec ) {    
-
-            num.uniq.cpnA <- length(unique(ss.mean.int.cpnA))
-            num.uniq.cpnB <- length(unique(ss.mean.int.cpnB))
-
-            #Check if total cpn the same across all samples for seg
-            if (num.uniq.cpnA == 1 & num.uniq.cpnB == 1) {
-
-                  seg.cpn.across.samps.list$same_cpnA_cpnB_seg_name_vec <- c(seg.cpn.across.samps.list$same_cpnA_cpnB_seg_name_vec, seg.name)
-
-            } else {
-
-                  seg.cpn.across.samps.list$diff_cpnA_cpnB_seg_name_vec <- c(seg.cpn.across.samps.list$diff_cpnA_cpnB_seg_name_vec, seg.name)
-
-            }
-            #Check if cpnA the same across alls samples for seg
-            if (num.uniq.cpnA == 1) {
-
-                  seg.cpn.across.samps.list$same_cpnA_seg_name_vec <- c(seg.cpn.across.samps.list$same_cpnA_seg_name_vec, seg.name)
-
-            } else {
-
-                  seg.cpn.across.samps.list$diff_cnpA_seg_name_vec <- c(seg.cpn.across.samps.list$diff_cnpA_seg_name_vec, seg.name)
-
-            }
-            #Check if cpnB the same across alls samples for seg
-            if (num.uniq.cpnB == 1) {
-
-                  seg.cpn.across.samps.list$same_cpnB_seg_name_vec <- c(seg.cpn.across.samps.list$same_cpnB_seg_name_vec, seg.name)
-
-            } else {
-
-                  seg.cpn.across.samps.list$diff_cpnB_seg_name_vec <- c(seg.cpn.across.samps.list$diff_cpnB_seg_name_vec, seg.name)
-
-            }
-           
-      }#end for ( seg.name in seg.names ) {
-
-      return(seg.cpn.across.samps.list)
-
-}#end generateAllSegsVectorListRoundedSameOrDifferentCPN <- function(...)
-
-
-
 ##
 ##Params:
 ##
@@ -318,6 +254,104 @@ calcExpectedBAF <- function(exp_intA, exp_intB, tumor.purity) {
 }#end calcExpectedBAF
 
 
+
+
+
+
+getIndividualCCFestimates_withPvals <- function(seg.name,
+                                                purity.est.vec,
+                                                all.pw.cn.het.comp.lists,
+                                                all.samp.ph.BAF.df.list,
+                                                samps.int.cpn.raw.cpn.by.chr.list,
+                                                max.cpn.val = 5,
+                                                min.CCF.to.consider.val = 0.15,
+                                                chrs.can.use.for.ccf.comp = c(1:22),
+                                                confidence.interval.threshold = 0.9999,
+                                                min.num.other.chrs = 3) {
+
+      if (is.na(all.pw.cn.het.comp.lists[[1]][[seg.name]]$ph_cpnA_vec[1])) {
+
+            return(NA)
+      }
+      sample.vec <- names(purity.est.vec)
+      chr <- strsplit(seg.name, split=":")[1]
+      s.samps.int.ob.xp.cpn.df <- getSegObsExpCPNBySampleDF(all.pw.cn.het.comp.lists, sample.vec, seg.name)
+      chrs.for.ccf.comp.vec <- chrs.can.use.for.ccf.comp[ ! chrs.can.use.for.ccf.comp%in% chr] #Going to be used to assess CCFs across the each sample
+      #Need to initialise all the lists outside the loop now we are doing cpnA cpnB in a loop and cpnB entries would wipe cpnA ones...
+      seg.CCF.val.list <- list()
+      seg.CCF.val.list[[seg.name]] <- list()
+      seg.cpnA.cnpB.diff.exp.list <- list()
+      for ( samp in sample.vec ) {
+        seg.CCF.val.list[[seg.name]][[samp]] <- list()
+        seg.cpnA.cnpB.diff.exp.list[[samp]] <- list()
+      }
+      for ( cpnX.string in c("cpnA", "cpnB") ) {
+            print("cpnX.string")
+            print(cpnX.string)
+            seg.cpnA.cnpB.diff.exp.list <- calculateWhetherSegCPNDiffFromIntegerExpectedAndAllMatchingSampCPN(samp.pvals.diff.from.exp.list=seg.cpnA.cnpB.diff.exp.list,
+                                                                                                              all.pw.cn.het.comp.lists,
+                                                                                                              s.samps.int.ob.xp.cpn.df,
+                                                                                                              seg.name,
+                                                                                                              chrs.for.ccf.comp.vec,
+                                                                                                              samps.int.cpn.raw.cpn.by.chr.list,
+                                                                                                              cpnA.or.cpnB=cpnX.string)
+            
+            use.preset.mean.frac.cpnX.low.high <- FALSE #Todo, decide whether this should be default parameter
+            samps.mean.cpnX.vec <- s.samps.int.ob.xp.cpn.df[, paste0("mean_obs_", cpnX.string)]
+
+            print("samps.mean.cpnX.vec")
+            print(samps.mean.cpnX.vec)
+
+            #Catch the edge case that all the seg's mean cpnX are equal
+            if (length(unique(samps.mean.cpnX.vec)) == 1) {
+              print("if (length(unique(samps.mean.cpnX.vec)) == 1) {")
+              ss.poss.sc.cpnX.low = 1#Should really be ploidy n this case.
+              ss.poss.sc.cpnX.high = unique(samps.mean.cpnX.vec)
+              low.high.ss.poss.cpnX.vec <- c(ss.poss.sc.cpnX.low, ss.poss.sc.cpnX.low)
+              use.preset.mean.frac.cpnX.low.high = TRUE 
+
+            }#end if (length(unique(round(samps.mean.cpnX.vec))) == 1) {
+            if (length(unique(c(floor(samps.mean.cpnX.vec), ceiling(samps.mean.cpnX.vec)))) == 2) {
+              print("if (length(unique(c(floor(samps.mean.cpnX.vec), ceiling(samps.mean.cpnX.vec)))) == 2) {")
+               low.high.ss.poss.cpnX.vec <- chooseLowHighSubclonalCPNWithOnlyTwoPossibilities(s.samps.int.ob.xp.cpn.df,
+                                                                             seg.name,
+                                                                             all.samp.ph.BAF.df.list,
+                                                                             purity.est.vec,
+                                                                             cpnX.string,
+                                                                             min.CCF.to.consider.val,
+                                                                             confidence.interval.threshold)
+
+            }#end if (length(unique(c(floor(samps.mean.cpnX.vec), ceiling(samps.mean.cpnX.vec)))) == 2) {
+            if (length(unique(c(floor(samps.mean.cpnX.vec), ceiling(samps.mean.cpnX.vec)))) > 2) {
+              print("if (length(unique(c(floor(samps.mean.cpnX.vec), ceiling(samps.mean.cpnX.vec)))) > 2) {")
+              low.high.ss.poss.cpnX.vec <- chooseLowHighSubclonalCPNWithMoreThanTwoPossibilities(s.samps.int.ob.xp.cpn.df,
+                                                                    seg.cpnA.cnpB.diff.exp.list,
+                                                                    seg.name,
+                                                                    all.samp.ph.BAF.df.list,
+                                                                    purity.est.vec,
+                                                                    cpnX.string,
+                                                                    min.CCF.to.consider.val,
+                                                                    confidence.interval.threshold,
+                                                                    min.num.other.chrs)
+
+            }#end (length(unique(c(floor(samps.mean.cpnX.vec), ceiling(samps.mean.cpnX.vec)))) > 2) {
+                  #ceiling(s.samps.int.ob.xp.cpn.df[, paste0("mean_obs_", cpnX.string)]))) > 2) {
+        seg.CCF.val.list <- updateSegCCFValList(seg.name = seg.name, seg.CCF.val.list = seg.CCF.val.list, sample.vec = sample.vec, s.samps.int.ob.xp.cpn.df = s.samps.int.ob.xp.cpn.df, 
+                                           all.pw.cn.het.comp.lists = all.pw.cn.het.comp.lists, cpnX.string = cpnX.string, max.cpn.val = max.cpn.val,
+                                           ###These parameters vary:
+                                           ss.poss.sc.cpnX.low = low.high.ss.poss.cpnX.vec[1],
+                                           ss.poss.sc.cpnX.high = low.high.ss.poss.cpnX.vec[2],
+                                           use.preset.mean.frac.cpnX.low.high = use.preset.mean.frac.cpnX.low.high)   
+      }#end for ( cpnX.string in c("cpnA", "cpnB") )
+      #Todo refactor this seg_diff_form expected so it's generated by another function call...
+      seg.CCF.val.list[[seg.name]]$seg_diff_from_expected_list <- seg.cpnA.cnpB.diff.exp.list
+      return(seg.CCF.val.list)
+
+}#end getIndividualCCFestimates_withPvals <- function(...)
+
+
+
+
 #Can be refactored further...
 determineCCFClonalityOfSegment <- function(s.samps.int.ob.xp.cpn.df,
                     seg.name,
@@ -327,8 +361,9 @@ determineCCFClonalityOfSegment <- function(s.samps.int.ob.xp.cpn.df,
                     min.CCF.to.consider.val,
                     confidence.interval.threshold) {
   #all the same so can just take the first value... not sure it needs to be like this, could just be unique
+  print("determineCCFClonalityOfSegment")
   sample.vec <- names(purity.est.vec)
-  all.clonal.flag <- TRUE
+  all.samp.cpnX.clonal.t.test <- TRUE
   ss.round.mean.obs.cpn <- round(s.samps.int.ob.xp.cpn.df[, paste0("mean_obs_", cpnX.string)])[1]
   #Todo, remove non.clonal.CPN.samps.vec as not used..
   non.clonal.CPN.samps.vec <- c()
@@ -337,16 +372,18 @@ determineCCFClonalityOfSegment <- function(s.samps.int.ob.xp.cpn.df,
         #sample seg phased cpnX vector of values...
         ss.ph.cpnX.vec <- all.pw.cn.het.comp.lists[[samp]][[seg.name]][[paste0("ph_", cpnX.string, "_vec")]]
         samp.ph.cpnX.vs.samp.round.mean.obs.cpnX.test <- tTestWithErrorHandling(ss.ph.cpnX.vec, mu = ss.round.mean.obs.cpn, conf.level = confidence.interval.threshold)
-
+        #print("samp.ph.cpnX.vs.samp.round.mean.obs.cpnX.test")
+        #print(samp.ph.cpnX.vs.samp.round.mean.obs.cpnX.test)
         if (samp.ph.cpnX.vs.samp.round.mean.obs.cpnX.test$p.val < 1 - confidence.interval.threshold) {
-
-              all.clonal.flag <- FALSE
+              #print(" (samp.ph.cpnX.vs.samp.round.mean.obs.cpnX.test$p.val < 1 - confidence.interval.threshold) { so all clonal FALSE")
+              all.samp.cpnX.clonal.t.test <- FALSE
               non.clonal.CPN.samps.vec <- c(non.clonal.CPN.samps.vec, samp)
 
         }#end if (samp.ph.cpnX.vs.samp.round.mean.obs.cpnX.test$p.val < 1 - confidence.interval.threshold) {
 
   }#for ( samp in sample.vec ) {
-  all.samp.clonal.t.test <- TRUE
+
+  all.samp.BAF.clonal.t.test <- TRUE
   #Todo, remove non.clonal.BAF.samps.vec as not used..
   non.clonal.BAF.samps.vec <- c()
   seg.chr.start.end.vec <- unlist(strsplit(seg.name, split=":"))
@@ -359,16 +396,16 @@ determineCCFClonalityOfSegment <- function(s.samps.int.ob.xp.cpn.df,
         #Get BAF values from the dataframe
         samp.ph.baf.df <- all.samp.ph.BAF.df.list[[samp]]
         s.samp.ph.baf.df <- samp.ph.baf.df[samp.ph.baf.df$chrom == chr & samp.ph.baf.df$pos >= start & samp.ph.baf.df$pos <= end, ,drop=FALSE]
-
-        samp.maj.is.cpnA.cpnB.BAF.vs.exp.BAF.test <- tTestWithErrorHandling(c(s.samp.ph.baf.df[s.samp.ph.baf.df$maj_is_cpnA_logic_vec==1,"BAF"],
-                                              s.samp.ph.baf.df[s.samp.ph.baf.df$maj_is_cpnB_logic_vec==1,"BAF",]),
-                                            mu = calcExpectedBAF(s.samps.int.ob.xp.cpn.df[samp, "exp_cpnA"],
-                                                                 s.samps.int.ob.xp.cpn.df[samp, "exp_cpnB"],
+        samp.maj.is.cpnA.cpnB.BAF.vs.exp.BAF.test <- t.test(c(s.samp.ph.baf.df[s.samp.ph.baf.df$maj_is_cpnA_logic_vec==1,"BAF"],#tTestWithErrorHandling(c
+                                              1 - s.samp.ph.baf.df[s.samp.ph.baf.df$maj_is_cpnB_logic_vec==1,"BAF",]),
+                                            mu = calcExpectedBAF(s.samps.int.ob.xp.cpn.df[samp, "exp_cpnB"],
+                                              s.samps.int.ob.xp.cpn.df[samp, "exp_cpnA"],
                                                                  purity.est.vec[samp]))
-
+        #print("samp.maj.is.cpnA.cpnB.BAF.vs.exp.BAF.test")
+        #print(samp.maj.is.cpnA.cpnB.BAF.vs.exp.BAF.test)
         if (samp.maj.is.cpnA.cpnB.BAF.vs.exp.BAF.test$p.val < (1 - confidence.interval.threshold)) {
-
-              clonal.samp.t.test <- FALSE
+              #print("if (samp.maj.is.cpnA.cpnB.BAF.vs.exp.BAF.test$p.val < (1 - confidence.interval.threshold)) { so all clonal FALSE")
+              all.samp.BAF.clonal.t.test <- FALSE
               non.clonal.BAF.samps.vec <- c(non.clonal.BAF.samps.vec, samp)
 
         }#if (samp.maj.is.cpnA.cpnB.BAF.vs.exp.BAF.test$p.val < (1 - confidence.interval.threshold)) {
@@ -393,13 +430,18 @@ determineCCFClonalityOfSegment <- function(s.samps.int.ob.xp.cpn.df,
 
   }#end or (samp in sample.vec) {
   #Now determine whether to explore subclonality:
-  if (all.clonal.flag == TRUE | all.samp.clonal.t.test == TRUE | max.CCF < min.CCF.to.consider.val) {
 
-        all.clonal.flag <- TRUE
+  if (all.samp.cpnX.clonal.t.test == TRUE | all.samp.BAF.clonal.t.test == TRUE | max.CCF < min.CCF.to.consider.val) {
 
-  }#end if (all.clonal.flag == TRUE | all.samp.clonal.t.test == TRUE | max.CCF min.CCF.to.consider.val){
+    final.all.clonal.flag <- TRUE
 
-  return(all.clonal.flag)
+  } else {#end if (all.clonal.flag == TRUE | all.samp.clonal.t.test == TRUE | max.CCF min.CCF.to.consider.val){
+
+    final.all.clonal.flag <- FALSE
+
+  }
+
+  return(final.all.clonal.flag)
 
 }#determineCCFClonalityOfSegment <- function(...)
 
@@ -487,12 +529,12 @@ updateSegCCFValList <- function(seg.name,
 ##
 ##Returns:
 ##
-calculateTwoValueDiffFlag <- function(s.samps.int.ob.xp.cpn.df, seg.cpnA.cnpB.diff.exp.list, cpnX.string, min.CCF.to.consider.val, confidence.interval.threshold) {
+calculateTwoValueDiffFlag <- function(s.samps.int.ob.xp.cpn.df, seg.cpnA.cnpB.diff.exp.list, cpnX.string, min.CCF.to.consider.val, confidence.interval.threshold, min.num.other.chrs) {
 
   two.value.diff.flag <- TRUE
   samps.mean.cpnX.vec <- s.samps.int.ob.xp.cpn.df[, paste0("mean_obs_", cpnX.string)]
-  low.int.mean.cpnX <- min(floor(mean.cpnX.vec))
-  top.int.mean.cpnX <- max(ceiling(mean.cpnX.vec))
+  low.int.mean.cpnX <- min(floor(samps.mean.cpnX.vec))
+  top.int.mean.cpnX <- max(ceiling(samps.mean.cpnX.vec))
 
   if (abs(min(top.int.mean.cpnX - samps.mean.cpnX.vec)) >= abs(max(low.int.mean.cpnX - samps.mean.cpnX.vec))) {
 
@@ -524,17 +566,19 @@ calculateTwoValueDiffFlag <- function(s.samps.int.ob.xp.cpn.df, seg.cpnA.cnpB.di
 
   }#end if(abs(min(top.int.mean.cpnX - mean.cpnX.vec)) >= abs(max(low.int.mean.cpnX - mean.cpnX.vec))) {
 
-  if (abs(min(top.int.mean.cpnX - mean.cpnX.vec)) < abs(max(low.int.mean.cpnX - mean.cpnX.vec))) {
+  if (abs(min(top.int.mean.cpnX - samps.mean.cpnX.vec)) < abs(max(low.int.mean.cpnX - samps.mean.cpnX.vec))) {
 
-    ss.poss.sc.cpnX.low  <- round(mean.cpnX.vec)[1]
+    ss.poss.sc.cpnX.low  <- round(samps.mean.cpnX.vec)[1]
     ss.poss.sc.cpnX.high  <- max(unique(ceiling(s.samps.int.ob.xp.cpn.df[, paste0("mean_obs_", cpnX.string)])))
 
     # is this choice of nA1, too conservative
     samps.poss.less.than.sc.cnpX.low.vec <- rownames(s.samps.int.ob.xp.cpn.df[s.samps.int.ob.xp.cpn.df[, paste0("mean_obs_", cpnX.string)] <= ss.poss.sc.cpnX.low, ])
     for (samp in samps.poss.less.than.sc.cnpX.low.vec) {
       
-      samp.max.CCF      <-  abs(ss.poss.sc.cpnX.low - samps.int.ob.xp.cpn.df[samp, paste0("mean_obs_", cpnX.string)])
+      samp.max.CCF      <-  abs(ss.poss.sc.cpnX.low - s.samps.int.ob.xp.cpn.df[samp, paste0("mean_obs_", cpnX.string)])
       raw.diff.from.int.cpnX.pval <- seg.cpnA.cnpB.diff.exp.list[[samp]][[paste0(cpnX.string, "_pval_vs_round_int_cpn")]]
+      diff.from.int.flag <- raw.diff.from.int.cpnX.pval < (1 - confidence.interval.threshold)
+
       diff.from.other.chrs.flag <- TRUE
       if (length(seg.cpnA.cnpB.diff.exp.list[[samp]][[paste0(cpnX.string, "_chrs_w_match_int_cpn_vec")]]) > min.num.other.chrs) { 
 
@@ -612,12 +656,13 @@ chooseLowHighSubclonalCPNWithMoreThanTwoPossibilities <- function(s.samps.int.ob
                                                                   purity.est.vec,
                                                                   cpnX.string,
                                                                   min.CCF.to.consider.val,
-                                                                  confidence.interval.threshold) {
+                                                                  confidence.interval.threshold,
+                                                                  min.num.other.chrs) {
 
   samps.mean.cpnX.vec <- s.samps.int.ob.xp.cpn.df[, paste0("mean_obs_", cpnX.string)]
   #check whether there is ony one state when rounding, can this ever be called?
   if (length(unique(round(samps.mean.cpnX.vec))) == 1) {
-
+        print(" if (length(unique(round(samps.mean.cpnX.vec))) == 1) { ")
         all.clonal.flag <- determineCCFClonalityOfSegment(s.samps.int.ob.xp.cpn.df = s.samps.int.ob.xp.cpn.df,
                             seg.name = seg.name,
                             all.samp.ph.BAF.df.list= all.samp.ph.BAF.df.list,
@@ -627,17 +672,21 @@ chooseLowHighSubclonalCPNWithMoreThanTwoPossibilities <- function(s.samps.int.ob
                             confidence.interval.threshold = confidence.interval.threshold)
 
         if (all.clonal.flag == TRUE) {
+          print("if (all.clonal.flag == TRUE) {")
 
           ss.poss.sc.cpnX.low =  round(samps.mean.cpnX.vec)
           ss.poss.sc.cpnX.high = round(samps.mean.cpnX.vec)
 
         } else {#end if (all.clonal.flag == TRUE) {
+          print("if (all.clonal.flag == FALSE) {")
+
               #Not all clonal but all cpn rounds to the same cpn, question is:
               two.value.diff.flag <- calculateTwoValueDiffFlag(s.samps.int.ob.xp.cpn.df = s.samps.int.ob.xp.cpn.df,
                                                               seg.cpnA.cnpB.diff.exp.list = seg.cpnA.cnpB.diff.exp.list,
                                                               cpnX.string = cpnX.string,
                                                               min.CCF.to.consider.val = min.CCF.to.consider.val,
-                                                              confidence.interval.threshold = confidence.interval.threshold)
+                                                              confidence.interval.threshold = confidence.interval.threshold,
+                                                              min.num.other.chrs = min.num.other.chrs)
 
               max.ceiling.cpnX <- max(ceiling(samps.mean.cpnX.vec))
               min.floor.cpnX <- min(floor(samps.mean.cpnX.vec))
@@ -646,13 +695,17 @@ chooseLowHighSubclonalCPNWithMoreThanTwoPossibilities <- function(s.samps.int.ob
               max.diff.from.min.psc.cpn <- abs(max(min.floor.cpnX - samps.mean.cpnX.vec))
 
               if (two.value.diff.flag == TRUE) {
+                print("if (two.value.diff.flag == TRUE) {")
                     #Do we twist up or do we twist down
                     if (min.diff.from.max.psc.cpn < max.diff.from.min.psc.cpn) {
+                      print("if (min.diff.from.max.psc.cpn < max.diff.from.min.psc.cpn) {")
                         #take the ceiling
                         ss.poss.sc.cpnX.low = round(samps.mean.cpnX.vec)
                         ss.poss.sc.cpnX.high = max(unique(ceiling(samps.mean.cpnX.vec)))
 
-                    } else {#(min.diff.from.max.psc.cpn >= max.diff.from.min.psc.cpn) {      
+                    } else {#(min.diff.from.max.psc.cpn >= max.diff.from.min.psc.cpn) {
+                    print("if (min.diff.from.max.psc.cpn >= max.diff.from.min.psc.cpn) {")
+      
                         # take the floor
                         ss.poss.sc.cpnX.low =  min(unique(floor(samps.mean.cpnX.vec)))
                         ss.poss.sc.cpnX.high = max(unique(round(samps.mean.cpnX.vec)))
@@ -660,14 +713,16 @@ chooseLowHighSubclonalCPNWithMoreThanTwoPossibilities <- function(s.samps.int.ob
                     }#end if (min.diff.from.max.psc.cpn >= max.diff.from.min.psc.cpn) {    
 
               } else {#end if (two.value.diff.flag == TRUE) {
-
+                print("if (two.value.diff.flag == FALSE) {")
                     # do we twist up or down
                     if (min.diff.from.max.psc.cpn < max.diff.from.min.psc.cpn) {
+                      print("if (min.diff.from.max.psc.cpn < max.diff.from.min.psc.cpn) {")
                         #take the ceiling
                         ss.poss.sc.cpnX.low =  min(unique(floor(samps.mean.cpnX.vec)))
                         ss.poss.sc.cpnX.high = max(unique(ceiling(samps.mean.cpnX.vec)))
 
                     } else {#(min.diff.from.max.psc.cpn >= max.diff.from.min.psc.cpn) {  
+                      print("if (min.diff.from.max.psc.cpn >= max.diff.from.min.psc.cpn) {")
                         #take the floor #TODO, check with Nicky but these values are the same as the < than, BUG?
                         #Maybe don't treat as one continuous factor... we're treating a loss and a gain as one event...
                         #Flag if gain and losses either here or in the segmentation...
@@ -684,6 +739,7 @@ chooseLowHighSubclonalCPNWithMoreThanTwoPossibilities <- function(s.samps.int.ob
   }#end if (length(unique(round(samps.mean.cpnX.vec))) == 1) {
   #check whether there are only two states when rounding
   if (length(unique(round(samps.mean.cpnX.vec))) == 2) {
+    print("length(unique(round(samps.mean.cpnX.vec))) == 2)")
 
     ss.poss.sc.cpnX.low =  min(round(samps.mean.cpnX.vec))
     ss.poss.sc.cpnX.high = max(round(samps.mean.cpnX.vec))
@@ -691,109 +747,92 @@ chooseLowHighSubclonalCPNWithMoreThanTwoPossibilities <- function(s.samps.int.ob
   }#end if (length(unique(round(samps.mean.cpnX.vec))) == 2) {
   #check whether there are more than two states when rounding
   if (length(unique(round(samps.mean.cpnX.vec))) > 2) {
-
+  print("if (length(unique(round(samps.mean.cpnX.vec))) > 2) {")  
     ss.poss.sc.cpnX.low =  min(unique(floor(samps.mean.cpnX.vec + min.CCF.to.consider.val)))
     ss.poss.sc.cpnX.high = max(unique(ceiling(samps.mean.cpnX.vec + min.CCF.to.consider.val)))
 
   }#end if (length(unique(round(samps.mean.cpnX.vec))) > 2) {
-
+    print("print(ss.poss.sc.cpnX.low)")
+    print(ss.poss.sc.cpnX.low)
+    print("print(ss.poss.sc.cpnX.high)")
+    print(ss.poss.sc.cpnX.high)
     return(c(ss.poss.sc.cpnX.low, ss.poss.sc.cpnX.high))
 
 }
 
 
-getIndividualCCFestimates_withPvals <- function(seg.name,
-                                                purity.est.vec,
-                                                all.pw.cn.het.comp.lists,
-                                                all.samp.ph.BAF.df.list,
-                                                samps.int.cpn.raw.cpn.by.chr.list,
-                                                max.cpn.val = 5,
-                                                min.CCF.to.consider.val = 0.15,
-                                                chrs.can.use.for.ccf.comp = c(1:22),
-                                                confidence.interval.threshold = 0.9999,
-                                                min.num.other.chrs = 3) {
-
-      if (is.na(all.pw.cn.het.comp.lists[[1]][[seg.name]]$ph_cpnA_vec[1])) {
-
-            return(NA)
-      }
-      sample.vec <- names(purity.est.vec)
-      chr <- strsplit(seg.name, split=":")[1]
-      s.samps.int.ob.xp.cpn.df <- getSegObsExpCPNBySampleDF(all.pw.cn.het.comp.lists, sample.vec, seg.name)
-      chrs.for.ccf.comp.vec <- chrs.can.use.for.ccf.comp[ ! chrs.can.use.for.ccf.comp%in% chr] #Going to be used to assess CCFs across the each sample
-      #Need to initialise all the lists outside the loop now we are doing cpnA cpnB in a loop and cpnB entries would wipe cpnA ones...
-      seg.CCF.val.list <- list()
-      seg.CCF.val.list[[seg.name]] <- list()
-      seg.cpnA.cnpB.diff.exp.list <- list()
-      for ( samp in sample.vec ) {
-        seg.CCF.val.list[[seg.name]][[samp]] <- list()
-        seg.cpnA.cnpB.diff.exp.list[[samp]] <- list()
-      }
-      for ( cpnX.string in c("cpnA", "cpnB") ) {
-
-            seg.cpnA.cnpB.diff.exp.list <- calculateWhetherSegCPNDiffFromIntegerExpectedAndAllMatchingSampCPN(samp.pvals.diff.from.exp.list=seg.cpnA.cnpB.diff.exp.list,
-                                                                                                              all.pw.cn.het.comp.lists,
-                                                                                                              s.samps.int.ob.xp.cpn.df,
-                                                                                                              seg.name,
-                                                                                                              chrs.for.ccf.comp.vec,
-                                                                                                              samps.int.cpn.raw.cpn.by.chr.list,
-                                                                                                              cpnA.or.cpnB=cpnX.string)
-            
-            use.preset.mean.frac.cpnX.low.high <- FALSE #Todo, decide whether this should be default parameter
-            samps.mean.cpnX.vec <- s.samps.int.ob.xp.cpn.df[, paste0("mean_obs_", cpnX.string)]
-            #Catch the edge case that all the seg's mean cpnX are equal
-            if (length(unique(samps.mean.cpnX.vec)) == 1) {
-
-              ss.poss.sc.cpnX.low = 1#Should really be ploidy n this case.
-              ss.poss.sc.cpnX.high = unique(samps.mean.cpnX.vec)
-              low.high.ss.poss.cpnX.vec <- c(ss.poss.sc.cpnX.low, ss.poss.sc.cpnX.low)
-              use.preset.mean.frac.cpnX.low.high = TRUE 
-
-            }#end if (length(unique(round(samps.mean.cpnX.vec))) == 1) {
-            if (length(unique(c(floor(samps.mean.cpnX.vec), ceiling(samps.mean.cpnX.vec)))) == 2) {
-
-               low.high.ss.poss.cpnX.vec <- chooseLowHighSubclonalCPNWithOnlyTwoPossibilities(s.samps.int.ob.xp.cpn.df,
-                                                                             seg.name,
-                                                                             all.samp.ph.BAF.df.list,
-                                                                             purity.est.vec,
-                                                                             cpnX.string,
-                                                                             min.CCF.to.consider.val,
-                                                                             confidence.interval.threshold)
-
-            }#end if (length(unique(c(floor(samps.mean.cpnX.vec), ceiling(samps.mean.cpnX.vec)))) == 2) {
-            if (length(unique(c(floor(samps.mean.cpnX.vec), ceiling(samps.mean.cpnX.vec)))) > 2) {
-
-              low.high.ss.poss.cpnX.vec <- chooseLowHighSubclonalCPNWithMoreThanTwoPossibilities(s.samps.int.ob.xp.cpn.df,
-                                                                    seg.cpnA.cnpB.diff.exp.list,
-                                                                    seg.name,
-                                                                    all.samp.ph.BAF.df.list,
-                                                                    purity.est.vec,
-                                                                    cpnX.string,
-                                                                    min.CCF.to.consider.val,
-                                                                    confidence.interval.threshold)
-
-            }#end (length(unique(c(floor(samps.mean.cpnX.vec), ceiling(samps.mean.cpnX.vec)))) > 2) {
-                  #ceiling(s.samps.int.ob.xp.cpn.df[, paste0("mean_obs_", cpnX.string)]))) > 2) {
-        seg.CCF.val.list <- updateSegCCFValList(seg.name = seg.name, seg.CCF.val.list = seg.CCF.val.list, sample.vec = sample.vec, s.samps.int.ob.xp.cpn.df = s.samps.int.ob.xp.cpn.df, 
-                                           all.pw.cn.het.comp.lists = all.pw.cn.het.comp.lists, cpnX.string = cpnX.string, max.cpn.val = max.cpn.val,
-                                           ###These parameters vary:
-                                           ss.poss.sc.cpnX.low = low.high.ss.poss.cpnX.vec[1],
-                                           ss.poss.sc.cpnX.high = low.high.ss.poss.cpnX.vec[2],
-                                           use.preset.mean.frac.cpnX.low.high = use.preset.mean.frac.cpnX.low.high)   
-      }#end for ( cpnX.string in c("cpnA", "cpnB") )
-      #Todo refactor this seg_diff_form expected so it's generated by another function call...
-      seg.CCF.val.list[[seg.name]]$seg_diff_from_expected_list <- seg.cpnA.cnpB.diff.exp.list
-      return(seg.CCF.val.list)
-
-}#end getIndividualCCFestimates_withPvals <- function(...)
 
 
 
 
 
 
+#Not actually called anywhere: can probably delete.
+
+# generateAllSegsRoundedCPNSameOrDifferentAcrossSamplesLists <- function(all.pw.cn.het.comp.lists, sample.vec, seg.name.vec) {
+#       #todo change these to preallocated dataframes if possible.. not ideally suited as theses are vectors of different lengths.
+#       seg.cpn.across.samps.list <- list()
+#       seg.cpn.across.samps.list$same_cpnA_cpnB_seg_name_vec <- c()     
+#       seg.cpn.across.samps.list$diff_cpnA_cpnB_seg_name_vec <- c()
+#       seg.cpn.across.samps.list$same_cpnA_seg_name_vec <- c()
+#       seg.cpn.across.samps.list$diff_cnpA_seg_name_vec <- c()
+#       seg.cpn.across.samps.list$same_cpnB_seg_name_vec <- c()
+#       seg.cpn.across.samps.list$diff_cpnB_seg_name_vec <- c()
+
+#       for ( seg.name in seg.name.vec ) {
+#             #samp
+#             ss.mean.int.cpnA <- c()
+#             ss.mean.int.cpnB <- c()
+
+#             for ( samp in sample.vec ) {
+
+#                   ss.mean.int.cpnA <- c(ss.mean.int.cpnA , round(all.pw.cn.het.comp.lists[[samp]][[seg.name]]$mean_ph_cpnA))
+#                   ss.mean.int.cpnB <- c(ss.mean.int.cpnB , round(all.pw.cn.het.comp.lists[[samp]][[seg.name]]$mean_ph_cpnB))
+
+#             }#end for ( samp in samp.vec ) {    
+
+#             num.uniq.cpnA <- length(unique(ss.mean.int.cpnA))
+#             num.uniq.cpnB <- length(unique(ss.mean.int.cpnB))
+
+#             #Check if total cpn the same across all samples for seg
+#             if (num.uniq.cpnA == 1 & num.uniq.cpnB == 1) {
+
+#                   seg.cpn.across.samps.list$same_cpnA_cpnB_seg_name_vec <- c(seg.cpn.across.samps.list$same_cpnA_cpnB_seg_name_vec, seg.name)
+
+#             } else {
+
+#                   seg.cpn.across.samps.list$diff_cpnA_cpnB_seg_name_vec <- c(seg.cpn.across.samps.list$diff_cpnA_cpnB_seg_name_vec, seg.name)
+
+#             }
+#             #Check if cpnA the same across alls samples for seg
+#             if (num.uniq.cpnA == 1) {
+
+#                   seg.cpn.across.samps.list$same_cpnA_seg_name_vec <- c(seg.cpn.across.samps.list$same_cpnA_seg_name_vec, seg.name)
+
+#             } else {
+
+#                   seg.cpn.across.samps.list$diff_cnpA_seg_name_vec <- c(seg.cpn.across.samps.list$diff_cnpA_seg_name_vec, seg.name)
+
+#             }
+#             #Check if cpnB the same across alls samples for seg
+#             if (num.uniq.cpnB == 1) {
+
+#                   seg.cpn.across.samps.list$same_cpnB_seg_name_vec <- c(seg.cpn.across.samps.list$same_cpnB_seg_name_vec, seg.name)
+
+#             } else {
+
+#                   seg.cpn.across.samps.list$diff_cpnB_seg_name_vec <- c(seg.cpn.across.samps.list$diff_cpnB_seg_name_vec, seg.name)
+
+#             }
+           
+#       }#end for ( seg.name in seg.names ) {
+
+#       return(seg.cpn.across.samps.list)
+
+# }#end generateAllSegsVectorListRoundedSameOrDifferentCPN <- function(...)
 
 
 
 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  
+
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         
