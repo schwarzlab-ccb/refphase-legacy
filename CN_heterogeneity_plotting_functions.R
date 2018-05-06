@@ -3,15 +3,15 @@
 ##
 ##Returns:
 ##
-plotAllSampleCCFsAcrossGenome <- function(all.pw.cn.het.comp.lists, full.joint.segs.df, sample.vec,final.comb.seg.df, all.seg.CCF.vals.list, cpnX){
+plotAllSampleCCFsAcrossGenome <- function(all.pw.cn.het.comp.lists, full.joint.segs.df, sample.vec, all.seg.CCF.vals.list, cpnX){
 
-  Colours <- colorpanel(100,'steelblue4','#deebf7','steelblue4')
+  Colours <- colorpanel(100, 'steelblue4', '#deebf7', 'steelblue4')
   #First get the consensus segmentation, probably want to filter out the smallest segments:
   #filter out the segments that are unphased
   phased.joint.segs.df  <- full.joint.segs.df[full.joint.segs.df$samp_used_to_phase != "too_few_SNPs",]
   #phased.joint.segs.df <- full.joint.segs.df
-  chr.start.end.df <- phased.joint.segs.df[,c("chr","startpos","endpos")]
-  chr.start.end.df <- apply(chr.start.end.df,2,as.numeric)
+  chr.start.end.df <- phased.joint.segs.df[,c("chr", "startpos", "endpos")]
+  chr.start.end.df <- apply(chr.start.end.df, 2, as.numeric)
   chroms.length.vec <- getChromLengthsVec(chr.start.end.df)
   names(chroms.length.vec) <- 1:22
   chrom.segs.to.plot.df <- getCumulativeChromLengthsForPlottingDF(chr.start.end.df, chroms.length.vec)
@@ -19,13 +19,12 @@ plotAllSampleCCFsAcrossGenome <- function(all.pw.cn.het.comp.lists, full.joint.s
   min.x               <- 0
   min.y               <- -0.5
   max.y               <- 8.5
-  max.x               <- as.numeric(max(chrom.segs.to.plot.df[,3]))
+  max.x               <- as.numeric(max(chrom.segs.to.plot.df[, 3]))
 
   num.samples  <- length(sample.vec)
   first.samp <- sample.vec[1] 
   last.samp <- sample.vec[length(sample.vec)] 
   #sampJoinedSeg <- funJoinAdjacentSegments(copyITHRDS$sampComparisonList) is the equivalent
-  final.comb.seg.df
 
   par(mfrow = c(num.samples, 1))
 
@@ -34,30 +33,30 @@ plotAllSampleCCFsAcrossGenome <- function(all.pw.cn.het.comp.lists, full.joint.s
     #Set out border size for sub plot
     if (samp == first.samp) {
 
-      par(mar = c(2,3,4,3))
+      par(mar = c(2, 3, 4, 3))
 
     } else if (samp == last.samp) {
 
-      par(mar = c(4,3,2,3))
+      par(mar = c(4, 3, 2, 3))
 
     } else {
 
-      par(mar = c(3,3,3,3))
+      par(mar = c(3, 3, 3, 3))
 
     }
     plot(1
-         ,xlim=c(min.x,max.x)
-         ,ylim=c(min.y,max.y)
-         ,type='n'
-         ,xaxt='n'
-         ,yaxs='i'
-         ,yaxt='n'
-         ,xaxs='i'
-         ,ylab=""
-         ,xlab=""
-         ,lwd=2
-         ,main=paste(samp," ",cpnX," allele",sep="")
-         ,bty="n")
+         ,xlim = c(min.x, max.x)
+         ,ylim = c(min.y, max.y)
+         ,type = 'n'
+         ,xaxt = 'n'
+         ,yaxs = 'i'
+         ,yaxt = 'n'
+         ,xaxs = 'i'
+         ,ylab = ""
+         ,xlab = ""
+         ,lwd = 2
+         ,main = paste0(samp, " ", cpnX, " allele")
+         ,bty = "n")
     box()
 
     #"B_MET004_MT-M1"
@@ -67,28 +66,29 @@ plotAllSampleCCFsAcrossGenome <- function(all.pw.cn.het.comp.lists, full.joint.s
     seg.name.vec <- phased.joint.segs.df$seg_name #names(all.seg.CCF.vals.list)
     for ( seg.name in seg.name.vec ) {
 
-      if( is.na(all.seg.CCF.vals.list[[seg.name]]) ) {
+      #Will be NA if too few SNPs and can't be plotted, length of NA == 1, do this check to avoid warnings about checking only first element of list.
+      if( length(all.seg.CCF.vals.list[[seg.name]]) == 1 ) {
 
         next
 
       }
 
-      chr.start.end.vec <- unlist(strsplit(seg.name, split=":"))
+      chr.start.end.vec <- unlist(strsplit(seg.name, split = ":"))
       seg.samp.cpnX.vals.list <- samp.vals.list[[seg.name]]
       seg.samp.one.cpnX.vals.list <- samp.one.vals.list[[seg.name]]
-      seg.ccf.cpnX.frac.vec   <- all.seg.CCF.vals.list[[seg.name]][[samp]][[paste0("frac_",cpnX,"_low_vec")]]
+      seg.ccf.cpnX.frac.vec   <- all.seg.CCF.vals.list[[seg.name]][[samp]][[paste0("frac_", cpnX, "_low_vec")]]
 
       
       seg.to.plot.df <- cbind(seg.samp.one.cpnX.vals.list$chr_vec,
                               seg.samp.one.cpnX.vals.list$pos_vec,
                               seg.samp.one.cpnX.vals.list$pos_vec,
-                              seg.samp.cpnX.vals.list[[paste0("ph_",cpnX,"_vec")]],
-                              seg.samp.cpnX.vals.list[[paste0("ph_",cpnX,"_vec")]],
-                              seg.samp.cpnX.vals.list[[paste0("ph_",cpnX,"_vec")]],
+                              seg.samp.cpnX.vals.list[[paste0("ph_", cpnX, "_vec")]],
+                              seg.samp.cpnX.vals.list[[paste0("ph_", cpnX, "_vec")]],
+                              seg.samp.cpnX.vals.list[[paste0("ph_", cpnX, "_vec")]],
                               seg.ccf.cpnX.frac.vec
                               )
 
-      if(is.na(seg.to.plot.df[1,1])) {
+      if (is.na(seg.to.plot.df[1,1])) {
 
         next
 
@@ -127,9 +127,6 @@ plotAllSampleCCFsAcrossGenome <- function(all.pw.cn.het.comp.lists, full.joint.s
 
       }
 
-      print(all.seg.CCF.vals.list[[seg.name]][[paste0("poss_sc_",cpnX,"_low")]])
-      print(all.seg.CCF.vals.list[[seg.name]][[paste0("poss_sc_",cpnX,"_high")]])
-
       segments(x0=min(as.numeric(seg.to.plot.df$pos))
                ,y0=all.seg.CCF.vals.list[[seg.name]][[samp]][[paste0("poss_sc_",cpnX,"_low")]]
                ,x1=max(as.numeric(seg.to.plot.df$pos))
@@ -156,7 +153,7 @@ plotAllSampleCCFsAcrossGenome <- function(all.pw.cn.het.comp.lists, full.joint.s
       abline(h=seq((min.y+0.5),(max.y-0.5),by=1),lty='dashed',lwd=0.75,col='gray')
       
       mtext(side=3
-            ,at=fun.chrom.mean(chrom.segs.to.plot.df[,1:3])
+            ,at = getChromMidpointsVec(chrom.segs.to.plot.df[,1:3])
             ,text=sort(unique(chrom.segs.to.plot.df[,1]))
             ,cex=seq(0.6,0.4,length.out=length(unique(chrom.segs.to.plot.df[,1])))
             ,line=-1
@@ -192,7 +189,6 @@ plotAllSampleBAFsAcrossGenome <- function(sample.vec, patient.phased.BAF.df.list
   first.samp <- sample.vec[1] 
   last.samp <- sample.vec[length(sample.vec)] 
   #sampJoinedSeg <- funJoinAdjacentSegments(copyITHRDS$sampComparisonList) is the equivalent
-  final.comb.seg.df
 
   par(mfrow = c(num.samples, 1))
 
@@ -234,7 +230,7 @@ plotAllSampleBAFsAcrossGenome <- function(sample.vec, patient.phased.BAF.df.list
 
       abline(v = max(as.numeric(chrom.segs.to.plot.df[chrom.segs.to.plot.df[, 1] == chr, 3])), lwd = 0.5)
 
-    }
+    }#end for ( chr in sort(unique(as.numeric(chrom.segs.to.plot.df[, 1])))) {
 
     points(chrom.segs.to.plot.df[, 2], samp.BAF.df$BAFsegmented, col = 'black',ylim = c(0,1), pch = 15, cex = 0.25)
     points(chrom.segs.to.plot.df[, 2], samp.BAF.df$ph_median_segmented_BAF, col = '#78c679',ylim = c(0,1), pch = 15, cex = 0.5)
@@ -246,13 +242,9 @@ plotAllSampleBAFsAcrossGenome <- function(sample.vec, patient.phased.BAF.df.list
     box()
 
 
+  }#end for ( samp in sample.vec ) {
 
-
-  }
-
-
-
-}
+}#end plotAllSampleBAFsAcrossGenome(...)
 
 
 
@@ -261,10 +253,12 @@ plotAllSampleBAFsAcrossGenome <- function(sample.vec, patient.phased.BAF.df.list
 ##
 ##Returns:
 ##
-plotOldNewComparisonOfAllCPN <- function(sample.vec, full.joint.segs.df) {
+plotOldNewComparisonOfAllCPN <- function(sample.vec, full.joint.segs.df, plot.output.dir) {
 
-  par(mfrow=c(2,2))
   for (samp in sample.vec) {
+
+    png(file = paste(plot.output.dir, samp, "_orig_vs_mphase_raw_cpn_comparison", ".png", sep = ""), width = 1200, height = 1400)
+    par(mfrow = c(1, 2))
 
     samp.proc.segs.df <- full.joint.segs.df[full.joint.segs.df$sample%in%samp, ,drop=FALSE]
     #defineYmax and Xmax
@@ -275,32 +269,34 @@ plotOldNewComparisonOfAllCPN <- function(sample.vec, full.joint.segs.df) {
           ,ifelse(as.numeric(samp.proc.segs.df$orig_cpnA_raw) >= max.cpnA.val, max.cpnA.val, as.numeric(samp.proc.segs.df$orig_cpnA_raw))
           ,pch = 16,
           ,cex = log(as.numeric(samp.proc.segs.df$n.het), 5),
-          ,col=ifelse(samp.proc.segs.df$sc_cpnA_present == "TRUE", '#de2d2699', '#3182bd99')
-          ,las=1
-          ,xlab="new cpnA raw "
-          ,ylab="original cpnA raw"
-          ,xlim=c(0,max.cpnA.val)
-          ,ylim=c(0,max.cpnA.val)
-          ,main=samp)
+          ,col = ifelse(samp.proc.segs.df$sc_cpnA_present == "TRUE", '#de2d2699', '#3182bd99')
+          ,las = 1
+          ,xlab = "new cpnA raw "
+          ,ylab = "original cpnA raw"
+          ,xlim = c(0, max.cpnA.val)
+          ,ylim = c(0, max.cpnA.val)
+          ,main = samp)
     
     abline(0,1)
     abline(h = seq(0, 20, by=1), lty = 'dashed')
     abline(v = seq(0, 20, by = 1), lty = 'dashed')
+    par()
     plot(ifelse(as.numeric(samp.proc.segs.df$nBraw) >= max.cpnB.val, max.cpnB.val, as.numeric(samp.proc.segs.df$nBraw))
          ,ifelse(as.numeric(samp.proc.segs.df$orig_cpnB_raw) >= max.cpnB.val, max.cpnB.val, as.numeric(samp.proc.segs.df$orig_cpnB_raw))
-         ,pch=16,cex=log(as.numeric(samp.proc.segs.df$n.het),10)
-         ,col=ifelse(samp.proc.segs.df$sc_cpnB_present=="TRUE",'#de2d2699','#3182bd99')
-         ,las=1
-         ,xlab="new cpnB raw "
-         ,ylab="original cpnB raw"
-         ,xlim=c(0,max.cpnB.val)
-         ,ylim=c(0,max.cpnB.val)
-         ,main=samp)
+         ,pch = 16, cex = log(as.numeric(samp.proc.segs.df$n.het), 10)
+         ,col = ifelse(samp.proc.segs.df$sc_cpnB_present == "TRUE", '#de2d2699', '#3182bd99')
+         ,las = 1
+         ,xlab = "new cpnB raw "
+         ,ylab = "original cpnB raw"
+         ,xlim = c(0, max.cpnB.val)
+         ,ylim = c(0, max.cpnB.val)
+         ,main = samp)
 
-    abline(h=seq(0,20,by=1),lty='dashed')
-    abline(v=seq(0,20,by=1),lty='dashed')
-    abline(0,1)
-    
+    abline(h = seq(0, 20, by = 1), lty = 'dashed')
+    abline(v = seq(0, 20, by = 1), lty = 'dashed')
+    abline(0, 1)
+
+    dev.off()
   }#end for (samp in sample.vec)
   
 }#end plotOldNewComparisonOfAllCPN(...) 
@@ -313,7 +309,7 @@ plotOldNewComparisonOfAllCPN <- function(sample.vec, full.joint.segs.df) {
 ##
 ##Returns:
 ##
-plotAllSamplePairwiseComparisonSegmentCPN <- function(sample.vec, full.joint.segs.df) {
+plotAllSamplePairwiseComparisonSegmentCPN <- function(sample.vec, full.joint.segs.df, plot.output.dir) {
   # next, compare each and every samp to each other
   par(mfrow=c(2,2))
   for (x in 1:(length(sample.vec) - 1)) {
@@ -322,6 +318,11 @@ plotAllSamplePairwiseComparisonSegmentCPN <- function(sample.vec, full.joint.seg
 
       x.axis.samp <- sample.vec[x]
       y.axis.samp <- sample.vec[y]
+
+      png(file = paste(PLOT_OUTPUT_DIR, y.axis.samp, "_vs_", x.axis.samp, "_cpnA_cpnB_comparison", ".png", sep = ""), width = 1200, height = 1400)
+
+      par(mfrow = c(2, 2))
+
       
       x.axis.samp.proc.segs.df <- full.joint.segs.df[full.joint.segs.df$sample %in% x.axis.samp, ,drop=FALSE]
       y.axis.samp.proc.segs.df <- full.joint.segs.df[full.joint.segs.df$sample %in% y.axis.samp, ,drop=FALSE]
@@ -341,7 +342,7 @@ plotAllSamplePairwiseComparisonSegmentCPN <- function(sample.vec, full.joint.seg
            ,las = 1
            ,xlab = paste(x.axis.samp, "Araw")
            ,ylab = paste(y.axis.samp, "Araw")
-           ,main = paste(x.axis.samp, y.axis.samp)
+           ,main = paste(y.axis.samp, x.axis.samp)
            ,xlim = c(0, max.cpnA.val)
            ,ylim = c(0, max.cpnA.val))
       abline(0, 1)
@@ -355,7 +356,7 @@ plotAllSamplePairwiseComparisonSegmentCPN <- function(sample.vec, full.joint.seg
            ,las = 1
            ,xlab = paste(x.axis.samp, "Braw")
            ,ylab = paste(y.axis.samp, "Braw")
-           ,main = paste(x.axis.samp, y.axis.samp)
+           ,main = paste(y.axis.samp, x.axis.samp)
            ,xlim = c(0, max.cpnB.val)
            ,ylim = c(0, max.cpnB.val))
       abline(0, 1)
@@ -369,7 +370,7 @@ plotAllSamplePairwiseComparisonSegmentCPN <- function(sample.vec, full.joint.seg
            ,las = 1
            ,xlab = paste(x.axis.samp, "frac_psc_cpnA_high")
            ,ylab = paste(y.axis.samp, "frac_psc_cpnA_high")
-           ,main = paste(x.axis.samp, y.axis.samp)
+           ,main = paste(y.axis.samp, x.axis.samp)
            ,xlim = c(0, 1.5)
            ,ylim = c(0, 1.5))
       abline(0, 1)
@@ -383,13 +384,14 @@ plotAllSamplePairwiseComparisonSegmentCPN <- function(sample.vec, full.joint.seg
            ,las=1
            ,xlab = paste(x.axis.samp, "frac_psc_cpnB_high")
            ,ylab = paste(y.axis.samp, "frac_psc_cpnB_high")
-           ,main = paste(x.axis.samp, y.axis.samp)
+           ,main = paste(y.axis.samp, x.axis.samp)
            ,xlim = c(0, 1.5)
            ,ylim = c(0, 1.5))
       abline(0, 1)
       abline(h = seq(0, 20, by = 1), lty = 'dashed')
       abline(v = seq(0, 20, by = 1), lty = 'dashed')
       
+      dev.off()
     }#end for (y in (x + 1):length(samps)) {
 
   }#end for (x in 1:(length(samps) - 1)) {
@@ -446,4 +448,4 @@ getChromMidpointsVec <-function(seg){
   return(chrom.mean)
 }
 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   
