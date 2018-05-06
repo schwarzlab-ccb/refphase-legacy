@@ -395,10 +395,10 @@ for ( samp in sample.vec ) {
                                 ,deep.loss.threshold = DEEP_LOSS_LOGR_THRESH 
                                 ,chrs.to.use.vec = CHRS_TO_USE_VEC
                                 ,cpnX.vec = c(cpnX)
-                                ,reduced.seg.flag=TRUE
+                                ,reduced.seg.flag = TRUE
                                 ,max.cpn.val = MAX_CPN_FOR_SUBCLONALITY
                                 )
-    new.cpn.segs.list[[samp]][[paste0("new_",cpnX,"_joined_segs_df")]] <- cpnX.joint.segs.df
+    new.cpn.segs.list[[samp]][[paste0("new_", cpnX, "_joined_segs_df")]] <- cpnX.joint.segs.df
 
   }#end for ( cpnX in c("cpnA", "cpnB") ) {
 

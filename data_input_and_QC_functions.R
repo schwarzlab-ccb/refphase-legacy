@@ -120,7 +120,7 @@ getSNPsWithBAFandLogRatioDataTRACERxFormatASCATBC <- function(pt.id, array.type=
 ##
 ##Returns:
 ##
-getSNPDataFromTRACERxFormatBAFLogRData <- function(pt.id, release.dir, array.type="WGS"){
+getSNPDataFromTRACERxFormatBAFLogRData <- function(pt.id, release.dir, array.type = "WGS"){
 
   pt.dir <- paste(release.dir, pt.id, "/", array.type, "/ASCAT/", sep="")
   regions <- grep("FAILED",grep(".txt$|.complete$|*EXCLUDE*|*ManualQC*",list.files(pt.dir), value=TRUE, invert=TRUE), invert=TRUE, value=TRUE)
@@ -176,7 +176,7 @@ getSNPDataFromTRACERxFormatBAFLogRData <- function(pt.id, release.dir, array.typ
 ##
 ##Returns:
 ##
-cleanAndErrorCheckMinConsSegs <- function(min.cons.seg.df){
+cleanAndErrorCheckMinConsSegs <- function(min.cons.seg.df) {
 
   #TODO report any rows removed due to being NA
   #Any values updated to from Inf or -Inf
@@ -195,7 +195,7 @@ cleanAndErrorCheckMinConsSegs <- function(min.cons.seg.df){
 ##
 ##Returns:
 ##
-cleanAndErrorCheckSNPs <- function(all.samp.SNP.list, min.cons.seg.df, allow.logr.only.flag = FALSE){
+cleanAndErrorCheckSNPs <- function(all.samp.SNP.list, min.cons.seg.df, allow.logr.only.flag = FALSE) {
   #TODO add check that every single all.samp.SNP.list has the same SNPs..
   #Note error checking of removing NAs from the min.cons.seg.df should already have been performed
   min.cpn.vals.df <- min.cons.seg.df[,4:ncol(min.cons.seg.df)]
