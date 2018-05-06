@@ -72,7 +72,7 @@ calculateWhetherSegCPNDiffFromIntegerExpectedAndAllMatchingSampCPN <- function(s
                                                                               chrs.for.ccf.comp,
                                                                               samps.int.cpn.raw.cpn.by.chr.list,
                                                                               cpnA.or.cpnB,
-                                                                              reduced.seg.flag=FALSE){
+                                                                              reduced.seg.flag=FALSE) {
 
       sample.vec <- rownames(s.samps.int.ob.xp.cpn.df)
       #Todo, perhapsrefactor into a returnable dataframe...
@@ -144,7 +144,7 @@ calculateWhetherSegCPNDiffFromIntegerExpectedAndAllMatchingSampCPN <- function(s
 ##
 ##Returns:
 ##
-getSegObsExpCPNBySampleDF <- function(all.pw.cn.het.comp.lists, sample.vec, seg.name, cpnX.vec=c("cpnA", "cpnB"), reduced.seg.flag=FALSE){
+getSegObsExpCPNBySampleDF <- function(all.pw.cn.het.comp.lists, sample.vec, seg.name, cpnX.vec = c("cpnA", "cpnB"), reduced.seg.flag = FALSE) {
 
       num.samples <- length(sample.vec)
       s.samps.obs.exp.cpn.df <- data.frame(round_int_cpnA = numeric(num.samples),
@@ -263,9 +263,9 @@ getIndividualCCFestimates_withPvals <- function(seg.name,
                                                 all.pw.cn.het.comp.lists,
                                                 all.samp.ph.BAF.df.list,
                                                 samps.int.cpn.raw.cpn.by.chr.list,
-                                                max.cpn.val = 5,
+                                                max.cpn.val = 10,
                                                 min.CCF.to.consider.val = 0.15,
-                                                chrs.can.use.for.ccf.comp = c(1:22),
+                                                chrs.can.use.for.ccf.comp = 1:22,
                                                 confidence.interval.threshold = 0.9999,
                                                 min.num.other.chrs = 3) {
 
@@ -607,8 +607,7 @@ chooseLowHighSubclonalCPNWithOnlyTwoPossibilities <- function(s.samps.int.ob.xp.
                                                               purity.est.vec,
                                                               cpnX.string,
                                                               min.CCF.to.consider.val,
-                                                              confidence.interval.threshold)
-                                                              {
+                                                              confidence.interval.threshold) {
   samps.mean.cpnX.vec <- s.samps.int.ob.xp.cpn.df[, paste0("mean_obs_", cpnX.string)]
   # check whether only one state when rounding
   if (length(unique(round(samps.mean.cpnX.vec))) == 1) {
