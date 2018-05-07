@@ -67,7 +67,7 @@ plotAllSampleCCFsAcrossGenome <- function(all.pw.cn.het.comp.lists, full.joint.s
     for ( seg.name in seg.name.vec ) {
 
       #Will be NA if too few SNPs and can't be plotted, length of NA == 1, do this check to avoid warnings about checking only first element of list.
-      if( length(all.seg.CCF.vals.list[[seg.name]]) == 1 ) {
+      if( length(all.seg.CCF.vals.list[[cpnX]][[seg.name]]) == 1 ) {
 
         next
 
@@ -76,7 +76,7 @@ plotAllSampleCCFsAcrossGenome <- function(all.pw.cn.het.comp.lists, full.joint.s
       chr.start.end.vec <- unlist(strsplit(seg.name, split = ":"))
       seg.samp.cpnX.vals.list <- samp.vals.list[[seg.name]]
       seg.samp.one.cpnX.vals.list <- samp.one.vals.list[[seg.name]]
-      seg.ccf.cpnX.frac.vec   <- all.seg.CCF.vals.list[[seg.name]][[samp]][[paste0("frac_", cpnX, "_low_vec")]]
+      seg.ccf.cpnX.frac.vec   <- all.seg.CCF.vals.list[[cpnX]][[seg.name]][[samp]][[paste0("frac_", cpnX, "_low_vec")]]
 
       
       seg.to.plot.df <- cbind(seg.samp.one.cpnX.vals.list$chr_vec,
@@ -110,7 +110,7 @@ plotAllSampleCCFsAcrossGenome <- function(all.pw.cn.het.comp.lists, full.joint.s
              ,cex=.5
              ,pch=16)#ifelse(MSAIstatus==1,'#238b4550',ifelse(PValsPaired<0.001&totalPval<0.001,'#3182bd50','#fc927250')),cex=0.75,pch=16)
       par(lend=1)
-      segColour <- as.numeric(all.seg.CCF.vals.list[[seg.name]][[samp]][[paste0("mean_frac_",cpnX,"_low")]])
+      segColour <- as.numeric(all.seg.CCF.vals.list[[cpnX]][[seg.name]][[samp]][[paste0("mean_frac_",cpnX,"_low")]])
       segColour <- Colours[(ifelse(segColour > 1, 1, segColour)*100)]
       
       #So now very quickly we can check wehter that segment has been called significantly subclonal or not:
@@ -128,16 +128,16 @@ plotAllSampleCCFsAcrossGenome <- function(all.pw.cn.het.comp.lists, full.joint.s
       }
 
       segments(x0=min(as.numeric(seg.to.plot.df$pos))
-               ,y0=all.seg.CCF.vals.list[[seg.name]][[samp]][[paste0("poss_sc_",cpnX,"_low")]]
+               ,y0=all.seg.CCF.vals.list[[cpnX]][[seg.name]][[samp]][[paste0("poss_sc_",cpnX,"_low")]]
                ,x1=max(as.numeric(seg.to.plot.df$pos))
-               ,y1=all.seg.CCF.vals.list[[seg.name]][[samp]][[paste0("poss_sc_",cpnX,"_low")]]
+               ,y1=all.seg.CCF.vals.list[[cpnX]][[seg.name]][[samp]][[paste0("poss_sc_",cpnX,"_low")]]
                ,col="#de2d26"
                ,lwd=3)
       
       segments(x0=min(as.numeric(seg.to.plot.df$pos))
-               ,y0=all.seg.CCF.vals.list[[seg.name]][[samp]][[paste0("poss_sc_",cpnX,"_high")]]
+               ,y0=all.seg.CCF.vals.list[[cpnX]][[seg.name]][[samp]][[paste0("poss_sc_",cpnX,"_high")]]
                ,x1=max(as.numeric(seg.to.plot.df$pos))
-               ,y1=all.seg.CCF.vals.list[[seg.name]][[samp]][[paste0("poss_sc_",cpnX,"_high")]]
+               ,y1=all.seg.CCF.vals.list[[cpnX]][[seg.name]][[samp]][[paste0("poss_sc_",cpnX,"_high")]]
                ,col="#31a354"
                ,lwd=3)
 
