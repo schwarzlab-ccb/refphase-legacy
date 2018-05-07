@@ -27,11 +27,7 @@ processOriginalCopyNumberSegments <- function(pt.id, orig.cpn.segs.df){
 
   orig.cpn.segs.df$ploidy_adj_tot_cpn <- log2(orig.cpn.segs.df$tot_raw_cpn/orig.cpn.segs.df$Ploidy)
 
-  purity.estimates <- orig.cpn.segs.df[ ! duplicated(orig.cpn.segs.df$sample), "ACF"]
-  names(purity.estimates) <- samples
 
-  ploidy.estimates <- orig.cpn.segs.df[ ! duplicated(orig.cpn.segs.df$sample), "Ploidy"]
-  names(ploidy.estimates) <- samples
 
   return(orig.cpn.segs.df)
 }

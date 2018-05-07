@@ -1,14 +1,13 @@
 #!/usr/bin/env Rscript
 args = commandArgs(trailingOnly=TRUE)
-
-snp.file.path <- args[1]
-seg.file.path <- args[2]
-output.directory.path <- args[3]
+patient <- args[1]
+snp.file.path <- args[2]
+seg.file.path <- args[3]
+output.directory.path <- args[4]
 
 #####Get relevant libraries:
 #Todo check this is the only required library.
 library(diptest)
-
 
 
 ###Source relevant scripts
@@ -54,7 +53,7 @@ if (is.null(output.directory.path)) {
 #so now we need to read in the MSAI data:
 if ( ! file.exists(snp.file.path)) {
 
-	stop("No file at the snp.file.path provided in the first argument")
+	stop("No file at the snp.file.path provided in the second argument")
 
 }
 
@@ -69,12 +68,90 @@ snp.file.path <- "/home/camp/watkint/working/watkint/data/brastianos/release_v2/
 
 seg.file.path <- "/home/camp/watkint/working/watkint/data/brastianos/release_v2/B_MET048/exome/MSAI/MET048_joint_segs_all_ascat_info.txt"
 
-snp.file.df <- read.table(, stringsAsFactors=FALSE, sep="\t", header=TRUE)
+snp.file.df <- read.table(snp.file.path, stringsAsFactors=FALSE, sep="\t", header=TRUE)
 #Note this should be the full oen
-seg.file.df <- read.table(, stringsAsFactors=FALSE, sep="\t", header=TRUE)
+seg.file.df <- read.table(seg.file.path, stringsAsFactors=FALSE, sep="\t", header=TRUE)
+#Designed to handle the MSAI nput files
+seg.file.df$sample <- gsub("\\.", "-", gsub("_LogR", "", seg.file.df$sample))
+seg.file.df$callState <- NULL
+seg.file.df$patient <- patient
+seg.file.df$sample_name <- paste(patient,sapply(f.joint.segs.df$sample, function(x) strsplit(x, split="-")[[1]][2]), sep=":")
+
+processed.orig.cpn.segs.df <- processOriginalCopyNumberSegments(patient, seg.file.df)
+
+samples <- unique(orig.cpn.segs.df$sample)
+
+purity.estimates <- processed.orig.cpn.segs.df[ ! duplicated(processed.orig.cpn.segs.df$sample), "ACF"]
+names(purity.estimates) <- samples
+
+ploidy.estimates <- processed.orig.cpn.segs.df[ ! duplicated(processed.orig.cpn.segs.df$sample), "Ploidy"]
+names(ploidy.estimates) <- samples
+
+#Todo accept precomputed mininmum consistent segmentation
+min.cons.segs.df <- generateMinimumConsistentSegmentation(processed.orig.cpn.segs.df, chroms=1:22, col.to.use="ploidy_adj_tot_cpn")
+print(head(min.cons.segs.df))
+
+min.cons.segs.df <- cleanAndErrorCheckMinConsSegs(min.cons.segs.df)
+#colnames(min.cons.segs.df)[1:3] <- c("chrom", "startpos", "endpos")
+print(head(min.cons.segs.df))
 
 
-STOP
+#Ok so now we want to load in the snps from this kind of file:
+#              Name Chr Position ref alt Scaled_CADD_score B_MET048_MT.M1_LogR B_MET048_MT.M1_tot B_MET048_MT.M1_var B_MET048_MT.M1_BAF B_MET048_T1.R1_LogR B_MET048_T1.R1_tot B_MET048_T1.R1_var B_MET048_T1.R1_BAF
+# 1 chr1:762496:G:G   1   762496   G   G                 0               0.509                  0                  0                  2               0.108                  0                  0                  2
+
+# samples in sample.vec look like this:
+# [1] "B_MET048_MT-M1" "B_MET048_T1-R1"
+
+#So we need to tmake a fata frame for each of the 
+all.samp.SNP.list <- list()
+for ( samp in sample.vec ) {
+
+	ASCAT.summary <- data.frame(chr = snp.file.df$Chr,
+		                					pos = snp.file.df$Pos,
+		   									BAF = snp.file.df[, paste0(gsub(samp, "-" ,"\\.","_BAF")])],
+		   									BAFsegmented = rep(NA, length(snp.file.df$Chr)),
+		   									logr = snp.file.df[, paste0(gsub(samp, "-", "\\.", "_LogR"))],
+		   									logRsegmented = rep(NA, length(snp.file.df$Chr)),
+		   									stringsAsFactors = FALSE)
+
+	#So I guess we want the mnimum consistent segmentation? or the original?
+	#           sample chr  startpos    endpos n.het cnTotal nMajor nMinor   Ploidy  ACF     nAraw       nBraw patient sample_name tot_raw_cpn max_raw_cpn min_raw_cpn cpn_to_use ploidy_adj_tot_cpn
+	# 1 B_MET048_MT-M1   1    762496   4834651  4329       2      1      1 2.293931 0.83 0.8747692 0.874769163  MET048   MET048:M1   1.7495383   0.8747692 0.874769163  1.7495383         -0.3908477
+	# 2 B_MET048_MT-M1   1   4847589  34684306 18442       1      1      0 2.293931 0.83 0.8888665 0.000000000  MET048   MET048:M1   0.8888665   0.8888665 0.000000000  0.8888665         -1.3677832
+
+	seg <- processed.orig.cpn.segs.df[processed.orig.cpn.segs.df$sample==sample,]
+
+	#Update the fake ASCAT.summaary BAFsegmetned and logRsegmented
+	for ( j in 1:nrow(seg) ) {
+
+	  if(nrow(ASCAT.summary[ASCAT.summary$chrom==seg[j,]$chr & ASCAT.summary$pos >= seg[j,]$startpos & ASCAT.summary$pos <= seg[j,]$endpos,]) > 0) {
+
+	    if(seg[j,]$nMajor==seg[j,]$nMinor){
+	      
+	      ASCAT.summary[ASCAT.summary$chrom==seg[j,]$chr & ASCAT.summary$pos >= seg[j,]$startpos & ASCAT.summary$pos <= seg[j,]$endpos,]$BAFsegmented <- 0.5
+	      
+	    } else {
+	      
+	      avg.seg.baf <- 0.5 - mean(abs(tumor.baf_logr[tumor.baf_logr$chrom==seg[j,]$chr & tumor.baf_logr$pos >= seg[j,]$startpos & tumor.baf_logr$pos <= seg[j,]$endpos,]$BAF - 0.5))
+	      ASCAT.summary[ASCAT.summary$chrom==seg[j,]$chr & ASCAT.summary$pos >= seg[j,]$startpos & ASCAT.summary$pos <= seg[j,]$endpos,]$BAFsegmented <- avg.seg.baf
+	      
+	    }
+
+	    avg.seg.logr <- mean(tumor.baf_logr[tumor.baf_logr$chrom==seg[j,]$chr & tumor.baf_logr$pos >= seg[j,]$startpos & tumor.baf_logr$pos <= seg[j,]$endpos, regions[i]])
+	    ASCAT.summary[ASCAT.summary$chrom==seg[j,]$chr & ASCAT.summary$pos >= seg[j,]$startpos & ASCAT.summary$pos <= seg[j,]$endpos,]$logRsegmented <- avg.seg.logr
+
+	  }#end if(nrow(ASCAT.summary[ASCAT.summary$chrom==seg[j,]$chr & ASCAT.summary$pos...
+
+	}#end for ( j in 1:nrow(seg) ) {
+
+	all.samp.SNP.list[[samp]] <- ASCAT.summary	                					
+}#end for ( samp in sample.vec ) {
+
+
+asas.SNPs.w.both.lr.baf.snp.lists <- cleanAndErrorCheckSNPs(all.samp.SNP.list, min.cons.segs.df, allow.logr.only.flag = FALSE)
+
+asas.SNPS.lr.and.or.baf.lists <- cleanAndErrorCheckSNPs(all.samp.SNP.list, min.cons.segs.df, allow.logr.only.flag = TRUE)
 
 
 #Todo, further refactor code so that everything is done at the level of a segment
@@ -289,7 +366,6 @@ for (cpnX in c("cpnA", "cpnB")) {
 #Let's initialise the first joint output:
 
 #empty.unjoined.mcr.segs.df <- initialiseAllSegFullDataframe(seg.name.vec, sample.vec, make.row.names.seg.name.alone = FALSE)
-source("/home/camp/watkint/working/watkint/scripts/multiregioncopynum/final_output_segmentation_file_generation_functions.R")
 
 #So no
 full.joint.segs.df <- generateFinalSegmentationOutput(seg.name.vec = names(all.pw.cn.het.comp.lists[[1]])
@@ -362,9 +438,8 @@ dev.off()
 
 #Now for these sample by sample comparisons the names of PNGs should contain the two samples being being compared really so we'll have to the plotting within the functions
 
-
 plotOldNewComparisonOfAllCPN(sample.vec, full.joint.segs.df, plot.output.dir = PLOT_OUTPUT_DIR)
 
 
 plotAllSamplePairwiseComparisonSegmentCPN(sample.vec, full.joint.segs.df, plot.output.dir = PLOT_OUTPUT_DIR)
-ssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss 
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 
