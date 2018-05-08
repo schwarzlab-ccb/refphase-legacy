@@ -1,44 +1,171 @@
 #!/usr/bin/env Rscript
 args = commandArgs(trailingOnly=TRUE)
 patient <- args[1]
-allow.dip.test.phasing.flag <- args[2]
+allow.dip.test.phasing.flag <- as.logical(args[2])
 output.directory.base.path <- args[3]
 dir.name.to.hold.results <- args[4]
 data.format.to.use <- args[5]#Defulat for this is MEDICC, but can specify TRACERx_exome, TRACERx_snp_array or TRACERx_WGS
 snp.files.path <- args[6]#Points towards the snp files, of whatever format they are given that should be used based on data.format to use.
 seg.files.path <- args[7]#Pintts towards the seg files, of whatever format they should be determined byh the data.format.to.use flag.
 
+#Debugging option:
+patient <- "MET048"
+allow.dip.test.phasing.flag = FALSE
+output.directory.path <- "/home/camp/watkint/working/watkint/data/brastianos/release_v2/B_MET048/exome/"
+dir.name.to.hold.results <- "CN_heterogeneity_new"
+data.format.to.use <- "MEDICC"
+snp.file.path <- "/home/camp/watkint/working/watkint/data/brastianos/release_v2/B_MET048/exome/MSAI/MET048_joint_snps.txt"
+seg.file.path <- "/home/camp/watkint/working/watkint/data/brastianos/release_v2/B_MET048/exome/MSAI/MET048_joint_segs_all_ascat_info.txt"
+
 
 source("./data_input_and_QC_functions.R")
 #So let's load in data etc....
 
 
+#Todo refactor into function calls at a later date.
+
 if (data.format.to.use == "MEDICC") {
-	#Debugging option:
-	snp.file.path <- "/home/camp/watkint/working/watkint/data/brastianos/release_v2/B_MET048/exome/MSAI/MET048_joint_snps.txt"
-	seg.file.path <- "/home/camp/watkint/working/watkint/data/brastianos/release_v2/B_MET048/exome/MSAI/MET048_joint_segs_all_ascat_info.txt"
-	patient <- "MET048"
-	output.directory.path <- "/home/camp/watkint/working/watkint/data/brastianos/release_v2/B_MET048/exome/"
-	dir.name.to.hold.results <- ""
-	#Just load in the snp.files.path and seg.files path and process
-	#For purposes of debugging
+
+	snp.file.df <- read.table(snp.file.path, stringsAsFactors=FALSE, sep="\t", header=TRUE)
+	seg.file.df <- read.table(seg.file.path, stringsAsFactors=FALSE, sep="\t", header=TRUE)
+
+	#Designed to handle the MSAI nput files
+	seg.file.df$sample <- gsub("\\.", "-", gsub("_LogR", "", seg.file.df$sample))
+	seg.file.df$callState <- NULL
+	seg.file.df$patient <- patient
+	seg.file.df$sample_name <- paste(patient,sapply(seg.file.df$sample, function(x) strsplit(x, split="-")[[1]][2]), sep=":")
+
+	processed.orig.cpn.segs.df <- processOriginalCopyNumberSegments(patient, seg.file.df)
+	sample.vec <- unique(processed.orig.cpn.segs.df$sample)
+
+	purity.est.vec <- processed.orig.cpn.segs.df[ ! duplicated(processed.orig.cpn.segs.df$sample), "ACF"]
+	names(purity.est.vec) <- sample.vec
+
+	ploidy.est.vec <- processed.orig.cpn.segs.df[ ! duplicated(processed.orig.cpn.segs.df$sample), "Ploidy"]
+	names(ploidy.est.vec) <- sample.vec
+
+	#Todo accept precomputed mininmum consistent segmentation
+	min.cons.segs.df <- generateMinimumConsistentSegmentation(processed.orig.cpn.segs.df, chroms=1:22, col.to.use="ploidy_adj_tot_cpn")
+	min.cons.segs.df <- cleanAndErrorCheckMinConsSegs(min.cons.segs.df)
 
 
+
+	all.samp.SNP.list <- list()
+	for ( samp in sample.vec ) {
+
+		ASCAT.summary <- data.frame(chr = as.numeric(snp.file.df$Chr),
+			                					pos = as.numeric(snp.file.df$Pos),
+			   									BAF = as.numeric(snp.file.df[, paste0(gsub("-" ,"\\.",samp),"_BAF")]),
+			   									BAFsegmented = rep(NA, length(snp.file.df$Chr)),
+			   									logR = as.numeric(snp.file.df[, paste0(gsub("-", "\\.", samp), "_LogR")]),
+			   									logRsegmented = rep(NA, length(snp.file.df$Chr)),
+			   									stringsAsFactors = FALSE)
+
+		seg <- processed.orig.cpn.segs.df[processed.orig.cpn.segs.df$sample == samp,]
+
+		for ( j in 1:nrow(seg) ) {
+			#print(seg[j,])
+		  if(nrow(ASCAT.summary[ASCAT.summary$chr==seg[j,]$chr & ASCAT.summary$pos >= seg[j,]$startpos & ASCAT.summary$pos <= seg[j,]$endpos & ASCAT.summary$BAF != 2 ,]) > 0) {
+		  	
+		    if(seg[j,]$nMajor==seg[j,]$nMinor){
+
+		      ASCAT.summary[ASCAT.summary$chr==seg[j,]$chr & ASCAT.summary$pos >= seg[j,]$startpos & ASCAT.summary$pos <= seg[j,]$endpos,]$BAFsegmented <- 0.5
+		      
+		    } else {
+	
+		      avg.seg.baf <- 0.5 - mean(abs(as.numeric(ASCAT.summary[ASCAT.summary$chr==seg[j,]$chr & ASCAT.summary$pos >= seg[j,]$startpos & ASCAT.summary$pos <= seg[j,]$endpos & ASCAT.summary$BAF != 2,]$BAF) - 0.5))
+		      ASCAT.summary[ASCAT.summary$chr==seg[j,]$chr & ASCAT.summary$pos >= seg[j,]$startpos & ASCAT.summary$pos <= seg[j,]$endpos,]$BAFsegmented <- avg.seg.baf
+		      
+		    }
+	 
+		  }#end if(nrow(ASCAT.summary[ASCAT.summary$chrom==seg[j,]$chr & ASCAT.summary$pos...
+
+		  if (nrow(ASCAT.summary[ASCAT.summary$chr==seg[j,]$chr & ASCAT.summary$pos >= seg[j,]$startpos & ASCAT.summary$pos <= seg[j,]$endpos ,]) > 0) {
+
+		  	avg.seg.logr <- mean(ASCAT.summary[ASCAT.summary$chr==seg[j,]$chr & ASCAT.summary$pos >= seg[j,]$startpos & ASCAT.summary$pos <= seg[j,]$endpos, ]$logR)
+		  	ASCAT.summary[ASCAT.summary$chr==seg[j,]$chr & ASCAT.summary$pos >= seg[j,]$startpos & ASCAT.summary$pos <= seg[j,]$endpos,]$logRsegmented <- avg.seg.logr
+
+		  }
+
+		}#end for ( j in 1:nrow(seg) ) {
+		all.samp.SNP.list[[samp]] <- ASCAT.summary	                					
+	}#end for ( samp in sample.vec ) {
+
+
+	asas.SNPs.w.both.lr.baf.snp.lists <- cleanAndErrorCheckSNPsMPhase(all.samp.SNP.list, min.cons.segs.df, allow.logr.only.flag = FALSE)
+	print(head(str(asas.SNPs.w.both.lr.baf.snp.lists[[1]], max = 1)))
+
+	asas.SNPS.lr.and.or.baf.lists <- cleanAndErrorCheckSNPsMPhase(all.samp.SNP.list, min.cons.segs.df, allow.logr.only.flag = TRUE)
 
 
 
 } else if (data.format.to.use == "TRACERx_exome" | data.format.to.use == "TRACERx_snp_array") {
 
-	#Go to the file that contains paths to all the snp file paths
+	#The seg file path here will also be to the segments that were chosen to be provided to the MSAI scrpt as these are the best filtered as far as we know:
 	#Go to the file that contains paths to all the seg file paths
+	#Go to the file that contains paths to all the snp file paths
+
+	#So currently looks like a bit of a mix betweeen loading in the MSAI segmentaton file
+	#As well as going into the ASCAT direcories and actually pulling out the original ascat objects and the seg files.... we can do all of this in this loop
+
+	f.joint.segs.df <- read.table(seg.file.path, stringsAsFactors=FALSE, sep="\t", header=TRUE)
+	f.joint.segs.df$sample <- gsub("\\.", "-", gsub("_LogR", "", f.joint.segs.df$sample))
+	f.joint.segs.df$callState <- NULL
+	f.joint.segs.df$patient <- patient
+	f.joint.segs.df$sample_name <- paste(patient,sapply(f.joint.segs.df$sample, function(x) strsplit(x, split="-")[[1]][2]), sep=":")
+	array.type <- "exome"
+	pt.id <- patient
+	#Todo workout how much an issue this hospital identifier thing is, can we assume that for the purposes of this that the icentifier is going to be full? or will that break things?
+	#For the moment keep as is and concentrate entirely on the brastianos dataset.
+	full.pt <- paste("B_",patient, sep="")
+	orig.cpn.segs.df <- f.joint.segs.df
+
+	processed.orig.cpn.segs.df <- processOriginalCopyNumberSegments(pt.id, orig.cpn.segs.df)
+
+	ploidy.est.vec <- processed.orig.cpn.segs.df[!duplicated(processed.orig.cpn.segs.df$sample),'Ploidy']
+	names(ploidy.est.vec) <- unique(processed.orig.cpn.segs.df$sample)
+	purity.est.vec <- processed.orig.cpn.segs.df[!duplicated(processed.orig.cpn.segs.df$sample),'ACF']
+	names(purity.est.vec) <- unique(processed.orig.cpn.segs.df$sample)
 
 
+	#This is wha we need to refactor, we just want a path to afile that contains all the data that these functions go and look for to try and grep the correct file paths
+	#We can do this  here through refactoring, then can pull out that functionality and put in the existing CN heterogeneity TRACERx scripts that will actaully call 
+	#This command line MPhase implemenation.
+
+	all.samp.SNP.list <- getSNPsWithBAFandLogRatioDataTRACERxFormatASCATBC(pt.id = full.pt, release.dir = workDir, array.type = array.type)
+
+	
+
+
+
+	#all sample all seg logr baf lists is asas.lr.baf
+	#All SNPs in these lists must have both a logr and baf value
+	asas.SNPs.w.both.lr.baf.snp.lists <- cleanAndErrorCheckSNPs(all.samp.SNP.list, min.cons.segs.df, allow.logr.only.flag = FALSE)
+	#Todo, is it necessary to keep both lists of SNPs like this?
+	#SNPs that only have LogR are permitted in these lists, but it also contains all the SNPs with both BAF and LogR
+	asas.SNPS.lr.and.or.baf.lists <- cleanAndErrorCheckSNPs(all.samp.SNP.list, min.cons.segs.df, allow.logr.only.flag = TRUE)
 
 
 } else if (data.format.to.use == "TRACERx_WGS") {
 
 
-	#Go to the TRACERx file paths...
+
+
+
+
+
+
+
+
+	#This is he part that needs to be refactored as well so that we can get the paths from a file that will be created by whatever script we use to process data....
+	all.samp.SNP.list <- getSNPDataFromTRACERxFormatBAFLogRData(pt.id = full.pt, release.dir = workDir, array.type = array.type)
+
+	#all sample all seg logr baf lists is asas.lr.baf
+	#All SNPs in these lists must have both a logr and baf value
+	asas.SNPs.w.both.lr.baf.snp.lists <- cleanAndErrorCheckSNPs(all.samp.SNP.list, min.cons.segs.df, allow.logr.only.flag = FALSE)
+	#Todo, is it necessary to keep both lists of SNPs like this?
+	#SNPs that only have LogR are permitted in these lists, but it also contains all the SNPs with both BAF and LogR
+	asas.SNPS.lr.and.or.baf.lists <- cleanAndErrorCheckSNPs(all.samp.SNP.list, min.cons.segs.df, allow.logr.only.flag = TRUE)
 
 
 
@@ -65,10 +192,6 @@ if (data.format.to.use == "MEDICC") {
 
 
 
-#For purposes of debugging
-snp.file.path <- "/home/camp/watkint/working/watkint/data/brastianos/release_v2/B_MET048/exome/MSAI/MET048_joint_snps.txt"
-seg.file.path <- "/home/camp/watkint/working/watkint/data/brastianos/release_v2/B_MET048/exome/MSAI/MET048_joint_segs_all_ascat_info.txt"
-
 #####Get relevant libraries:
 #Todo check this is the only required library.
 library(diptest)
@@ -89,7 +212,7 @@ source("./CN_heterogeneity_plotting_functions.R")
 MIN_NUM_HZ_SNP_PHASING <- 5
 #PLOT_OUTPUT_DIR <- NULL
 
-PLOT_OUTPUT_DIR <- paste(output.directory.path, "CN_heterogeneity_new/", sep="")
+PLOT_OUTPUT_DIR <- paste(output.directory.path, "/", dir.name.to.hold.results, "/", sep="")
 
 if ( ! file.exists(PLOT_OUTPUT_DIR) ) {
 
@@ -166,74 +289,6 @@ min.cons.segs.df <- cleanAndErrorCheckMinConsSegs(min.cons.segs.df)
 print(head(min.cons.segs.df))
 
 
-#Ok so now we want to load in the snps from this kind of file:
-#              Name Chr Position ref alt Scaled_CADD_score B_MET048_MT.M1_LogR B_MET048_MT.M1_tot B_MET048_MT.M1_var B_MET048_MT.M1_BAF B_MET048_T1.R1_LogR B_MET048_T1.R1_tot B_MET048_T1.R1_var B_MET048_T1.R1_BAF
-# 1 chr1:762496:G:G   1   762496   G   G                 0               0.509                  0                  0                  2               0.108                  0                  0                  2
-
-# samples in sample.vec look like this:
-# [1] "B_MET048_MT-M1" "B_MET048_T1-R1"
-
-#So we need to tmake a fata frame for each of the 
-
-
-all.samp.SNP.list <- list()
-for ( samp in sample.vec ) {
-
-	ASCAT.summary <- data.frame(chr = as.numeric(snp.file.df$Chr),
-		                					pos = as.numeric(snp.file.df$Pos),
-		   									BAF = as.numeric(snp.file.df[, paste0(gsub("-" ,"\\.",samp),"_BAF")]),
-		   									BAFsegmented = rep(NA, length(snp.file.df$Chr)),
-		   									logR = as.numeric(snp.file.df[, paste0(gsub("-", "\\.", samp), "_LogR")]),
-		   									logRsegmented = rep(NA, length(snp.file.df$Chr)),
-		   									stringsAsFactors = FALSE)
-
-	#So I guess we want the mnimum consistent segmentation? or the original?
-	#           sample chr  startpos    endpos n.het cnTotal nMajor nMinor   Ploidy  ACF     nAraw       nBraw patient sample_name tot_raw_cpn max_raw_cpn min_raw_cpn cpn_to_use ploidy_adj_tot_cpn
-	# 1 B_MET048_MT-M1   1    762496   4834651  4329       2      1      1 2.293931 0.83 0.8747692 0.874769163  MET048   MET048:M1   1.7495383   0.8747692 0.874769163  1.7495383         -0.3908477
-	# 2 B_MET048_MT-M1   1   4847589  34684306 18442       1      1      0 2.293931 0.83 0.8888665 0.000000000  MET048   MET048:M1   0.8888665   0.8888665 0.000000000  0.8888665         -1.3677832
-
-	seg <- processed.orig.cpn.segs.df[processed.orig.cpn.segs.df$sample == samp,]
-
-	#Update the fake ASCAT.summaary BAFsegmetned and logRsegmented
-	for ( j in 1:nrow(seg) ) {
-		#print(seg[j,])
-	  if(nrow(ASCAT.summary[ASCAT.summary$chr==seg[j,]$chr & ASCAT.summary$pos >= seg[j,]$startpos & ASCAT.summary$pos <= seg[j,]$endpos & ASCAT.summary$BAF != 2 ,]) > 0) {
-	  	#print("ASCAT.summary subset:")
-	  	#print(head(ASCAT.summary[ASCAT.summary$chr==seg[j,]$chr & ASCAT.summary$pos >= seg[j,]$startpos & ASCAT.summary$pos <= seg[j,]$endpos  & ASCAT.summary$BAF != 2,]))
-	  	#print(nrow(ASCAT.summary[ASCAT.summary$chr==seg[j,]$chr & ASCAT.summary$pos >= seg[j,]$startpos & ASCAT.summary$pos <= seg[j,]$endpos  & ASCAT.summary$BAF != 2,]))
-
-	    if(seg[j,]$nMajor==seg[j,]$nMinor){
-	      #print("BALANCED")
-	      ASCAT.summary[ASCAT.summary$chr==seg[j,]$chr & ASCAT.summary$pos >= seg[j,]$startpos & ASCAT.summary$pos <= seg[j,]$endpos,]$BAFsegmented <- 0.5
-	      
-	    } else {
-	      #print("UNBALANCED")
-	      #print(ASCAT.summary[ASCAT.summary$chrom==seg[j,]$chr & ASCAT.summary$pos >= seg[j,]$startpos & ASCAT.summary$pos <= seg[j,]$endpos & ASCAT.summary$BAF != 2,]$BAF)
-	      avg.seg.baf <-0.5 - mean(abs(as.numeric(ASCAT.summary[ASCAT.summary$chr==seg[j,]$chr & ASCAT.summary$pos >= seg[j,]$startpos & ASCAT.summary$pos <= seg[j,]$endpos & ASCAT.summary$BAF != 2,]$BAF) - 0.5))
-	      #print("avg.seg.baf")
-	     #print(avg.seg.baf)
-	      ASCAT.summary[ASCAT.summary$chr==seg[j,]$chr & ASCAT.summary$pos >= seg[j,]$startpos & ASCAT.summary$pos <= seg[j,]$endpos,]$BAFsegmented <- avg.seg.baf
-	      
-	    }
- 
-
-	
-	  }#end if(nrow(ASCAT.summary[ASCAT.summary$chrom==seg[j,]$chr & ASCAT.summary$pos...
-
-	  if (nrow(ASCAT.summary[ASCAT.summary$chr==seg[j,]$chr & ASCAT.summary$pos >= seg[j,]$startpos & ASCAT.summary$pos <= seg[j,]$endpos ,]) > 0) {
-
-	  	avg.seg.logr <- mean(ASCAT.summary[ASCAT.summary$chr==seg[j,]$chr & ASCAT.summary$pos >= seg[j,]$startpos & ASCAT.summary$pos <= seg[j,]$endpos, ]$logR)
-	  	#print("avg.seg.logr")
-	  	#print(avg.seg.logr)
-	  	ASCAT.summary[ASCAT.summary$chr==seg[j,]$chr & ASCAT.summary$pos >= seg[j,]$startpos & ASCAT.summary$pos <= seg[j,]$endpos,]$logRsegmented <- avg.seg.logr
-
-
-	  }
-
-	}#end for ( j in 1:nrow(seg) ) {
-
-	all.samp.SNP.list[[samp]] <- ASCAT.summary	                					
-}#end for ( samp in sample.vec ) {
 
 source("./data_input_and_QC_functions.R")
 asas.SNPs.w.both.lr.baf.snp.lists <- cleanAndErrorCheckSNPsMPhase(all.samp.SNP.list, min.cons.segs.df, allow.logr.only.flag = FALSE)
@@ -531,4 +586,4 @@ plotOldNewComparisonOfAllCPN(sample.vec, full.joint.segs.df, plot.output.dir = P
 
 
 plotAllSamplePairwiseComparisonSegmentCPN(sample.vec, full.joint.segs.df, plot.output.dir = PLOT_OUTPUT_DIR)
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       
