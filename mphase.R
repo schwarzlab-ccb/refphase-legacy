@@ -34,6 +34,14 @@ MIN_NUM_HZ_SNP_PHASING <- 5
 #PLOT_OUTPUT_DIR <- NULL
 
 PLOT_OUTPUT_DIR <- paste(output.directory.path, "CN_heterogeneity_new/", sep="")
+
+if ( ! file.exists(PLOT_OUTPUT_DIR) ) {
+
+	dir.create(PLOT_OUTPUT_DIR)
+
+}
+
+
 GAMMA_VAL <- 1
 MAX_CPN_FOR_SUBCLONALITY <- 10
 MIN_CCF_TO_CONSIDER <- 0.15
@@ -113,14 +121,16 @@ print(head(min.cons.segs.df))
 # [1] "B_MET048_MT-M1" "B_MET048_T1-R1"
 
 #So we need to tmake a fata frame for each of the 
+
+
 all.samp.SNP.list <- list()
 for ( samp in sample.vec ) {
 
-	ASCAT.summary <- data.frame(chr = snp.file.df$Chr,
-		                					pos = snp.file.df$Pos,
-		   									BAF = snp.file.df[, paste0(gsub("-" ,"\\.",samp),"_BAF")],
+	ASCAT.summary <- data.frame(chr = as.numeric(snp.file.df$Chr),
+		                					pos = as.numeric(snp.file.df$Pos),
+		   									BAF = as.numeric(snp.file.df[, paste0(gsub("-" ,"\\.",samp),"_BAF")]),
 		   									BAFsegmented = rep(NA, length(snp.file.df$Chr)),
-		   									logr = snp.file.df[, paste0(gsub("-", "\\.", samp), "_LogR")],
+		   									logR = as.numeric(snp.file.df[, paste0(gsub("-", "\\.", samp), "_LogR")]),
 		   									logRsegmented = rep(NA, length(snp.file.df$Chr)),
 		   									stringsAsFactors = FALSE)
 
@@ -133,35 +143,52 @@ for ( samp in sample.vec ) {
 
 	#Update the fake ASCAT.summaary BAFsegmetned and logRsegmented
 	for ( j in 1:nrow(seg) ) {
-
-	  if(nrow(ASCAT.summary[ASCAT.summary$chrom==seg[j,]$chr & ASCAT.summary$pos >= seg[j,]$startpos & ASCAT.summary$pos <= seg[j,]$endpos,]) > 0) {
+		#print(seg[j,])
+	  if(nrow(ASCAT.summary[ASCAT.summary$chr==seg[j,]$chr & ASCAT.summary$pos >= seg[j,]$startpos & ASCAT.summary$pos <= seg[j,]$endpos & ASCAT.summary$BAF != 2 ,]) > 0) {
+	  	#print("ASCAT.summary subset:")
+	  	#print(head(ASCAT.summary[ASCAT.summary$chr==seg[j,]$chr & ASCAT.summary$pos >= seg[j,]$startpos & ASCAT.summary$pos <= seg[j,]$endpos  & ASCAT.summary$BAF != 2,]))
+	  	#print(nrow(ASCAT.summary[ASCAT.summary$chr==seg[j,]$chr & ASCAT.summary$pos >= seg[j,]$startpos & ASCAT.summary$pos <= seg[j,]$endpos  & ASCAT.summary$BAF != 2,]))
 
 	    if(seg[j,]$nMajor==seg[j,]$nMinor){
-	      
-	      ASCAT.summary[ASCAT.summary$chrom==seg[j,]$chr & ASCAT.summary$pos >= seg[j,]$startpos & ASCAT.summary$pos <= seg[j,]$endpos,]$BAFsegmented <- 0.5
+	      #print("BALANCED")
+	      ASCAT.summary[ASCAT.summary$chr==seg[j,]$chr & ASCAT.summary$pos >= seg[j,]$startpos & ASCAT.summary$pos <= seg[j,]$endpos,]$BAFsegmented <- 0.5
 	      
 	    } else {
-	      
-	      avg.seg.baf <- 0.5 - mean(abs(tumor.baf_logr[tumor.baf_logr$chrom==seg[j,]$chr & tumor.baf_logr$pos >= seg[j,]$startpos & tumor.baf_logr$pos <= seg[j,]$endpos,]$BAF - 0.5))
-	      ASCAT.summary[ASCAT.summary$chrom==seg[j,]$chr & ASCAT.summary$pos >= seg[j,]$startpos & ASCAT.summary$pos <= seg[j,]$endpos,]$BAFsegmented <- avg.seg.baf
+	      #print("UNBALANCED")
+	      #print(ASCAT.summary[ASCAT.summary$chrom==seg[j,]$chr & ASCAT.summary$pos >= seg[j,]$startpos & ASCAT.summary$pos <= seg[j,]$endpos & ASCAT.summary$BAF != 2,]$BAF)
+	      avg.seg.baf <-0.5 - mean(abs(as.numeric(ASCAT.summary[ASCAT.summary$chr==seg[j,]$chr & ASCAT.summary$pos >= seg[j,]$startpos & ASCAT.summary$pos <= seg[j,]$endpos & ASCAT.summary$BAF != 2,]$BAF) - 0.5))
+	      #print("avg.seg.baf")
+	     #print(avg.seg.baf)
+	      ASCAT.summary[ASCAT.summary$chr==seg[j,]$chr & ASCAT.summary$pos >= seg[j,]$startpos & ASCAT.summary$pos <= seg[j,]$endpos,]$BAFsegmented <- avg.seg.baf
 	      
 	    }
+ 
 
-	    avg.seg.logr <- mean(tumor.baf_logr[tumor.baf_logr$chrom==seg[j,]$chr & tumor.baf_logr$pos >= seg[j,]$startpos & tumor.baf_logr$pos <= seg[j,]$endpos, regions[i]])
-	    ASCAT.summary[ASCAT.summary$chrom==seg[j,]$chr & ASCAT.summary$pos >= seg[j,]$startpos & ASCAT.summary$pos <= seg[j,]$endpos,]$logRsegmented <- avg.seg.logr
-
+	
 	  }#end if(nrow(ASCAT.summary[ASCAT.summary$chrom==seg[j,]$chr & ASCAT.summary$pos...
+
+	  if (nrow(ASCAT.summary[ASCAT.summary$chr==seg[j,]$chr & ASCAT.summary$pos >= seg[j,]$startpos & ASCAT.summary$pos <= seg[j,]$endpos ,]) > 0) {
+
+	  	avg.seg.logr <- mean(ASCAT.summary[ASCAT.summary$chr==seg[j,]$chr & ASCAT.summary$pos >= seg[j,]$startpos & ASCAT.summary$pos <= seg[j,]$endpos, ]$logR)
+	  	#print("avg.seg.logr")
+	  	#print(avg.seg.logr)
+	  	ASCAT.summary[ASCAT.summary$chr==seg[j,]$chr & ASCAT.summary$pos >= seg[j,]$startpos & ASCAT.summary$pos <= seg[j,]$endpos,]$logRsegmented <- avg.seg.logr
+
+
+	  }
 
 	}#end for ( j in 1:nrow(seg) ) {
 
 	all.samp.SNP.list[[samp]] <- ASCAT.summary	                					
 }#end for ( samp in sample.vec ) {
 
+source("./data_input_and_QC_functions.R")
+asas.SNPs.w.both.lr.baf.snp.lists <- cleanAndErrorCheckSNPsMPhase(all.samp.SNP.list, min.cons.segs.df, allow.logr.only.flag = FALSE)
+print(head(str(asas.SNPs.w.both.lr.baf.snp.lists[[1]], max = 1)))
 
-asas.SNPs.w.both.lr.baf.snp.lists <- cleanAndErrorCheckSNPs(all.samp.SNP.list, min.cons.segs.df, allow.logr.only.flag = FALSE)
+asas.SNPS.lr.and.or.baf.lists <- cleanAndErrorCheckSNPsMPhase(all.samp.SNP.list, min.cons.segs.df, allow.logr.only.flag = TRUE)
 
-asas.SNPS.lr.and.or.baf.lists <- cleanAndErrorCheckSNPs(all.samp.SNP.list, min.cons.segs.df, allow.logr.only.flag = TRUE)
-
+print(head(str(asas.SNPs.w.both.lr.baf.snp.lists[[1]], max = 1)))
 
 #Todo, further refactor code so that everything is done at the level of a segment
 #Todo, add options to phase using baf dip test not just ascat regions
@@ -451,4 +478,4 @@ plotOldNewComparisonOfAllCPN(sample.vec, full.joint.segs.df, plot.output.dir = P
 
 
 plotAllSamplePairwiseComparisonSegmentCPN(sample.vec, full.joint.segs.df, plot.output.dir = PLOT_OUTPUT_DIR)
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               

@@ -255,8 +255,7 @@ all.seg.greater.than.two.diff.list <- list()
 samps.int.cpn.raw.cpn.by.chr.list <- generateAllSamplesByChromIntCPNUnderlyingRawValuesLists(all.pw.cn.het.comp.lists, sample.vec, seg.name.vec)
 
 for (cpnX in c("cpnA", "cpnB")) {
-
-  #Here is where we're going to have iniatalise on all the lists
+  #Here is where we're going to have iniatalise on all the lists for either cpnA or cpnB
   all.seg.CCF.list[[cpnX]] <- list()
   all.seg.int.ob.xp.cpn.df.list[[cpnX]] <- list()
   all.seg.CCF.diff.from.exp.list[[cpnX]] <- list()
@@ -264,7 +263,7 @@ for (cpnX in c("cpnA", "cpnB")) {
   all.seg.greater.than.two.diff.list[[cpnX]] <- list()
 
   for ( seg.name in seg.name.vec ) {
-
+    #Now we need to initialise lists for each segment for whichever cpnA or cpnB we are working on.
     all.seg.CCF.list[[cpnX]][[seg.name]] <- list()
     all.seg.int.ob.xp.cpn.df.list[[cpnX]][[seg.name]] <- list()
     all.seg.CCF.diff.from.exp.list[[cpnX]][[seg.name]] <- list()
@@ -274,7 +273,7 @@ for (cpnX in c("cpnA", "cpnB")) {
   }
 
   for (seg.name in seg.name.vec) {
-
+    #Check if the phasing wasn't performed for this segment, if so set all values to NA and move on.
     if (is.na(all.pw.cn.het.comp.lists[[1]][[seg.name]]$ph_cpnA_vec[1])) {
 
       all.seg.CCF.list[[cpnX]][[seg.name]] <- NA
@@ -383,7 +382,7 @@ full.joint.segs.df <- generateFinalSegmentationOutput(seg.name.vec = names(all.p
                                 ,all.seg.CCF.diff.from.exp.list = all.seg.CCF.diff.from.exp.list
                                 ,ploidy.est.vec =  ploidy.est.vec
                                 ,purity.est.vec = purity.est.vec
-                                ,clonal.pval = PVAL_THRESH_VS_MIN_CCF
+                                ,clonal.pval = PVAL_THRESH_VS_MIN_CCF#Todo median data is sometimes > the threshold but it still comes out highly significant... check this, looking at patient ME048
                                 ,diff.from.oth.p.val = PVAL_THRESH_VS_OTH_CHRS_SAME_CPN
                                 ,min.CCF.to.consider.val = MIN_CCF_TO_CONSIDER
                                 ,min.num.other.chrs = MIN_NUM_CHRS

@@ -28,7 +28,6 @@ processOriginalCopyNumberSegments <- function(pt.id, orig.cpn.segs.df){
   orig.cpn.segs.df$ploidy_adj_tot_cpn <- log2(orig.cpn.segs.df$tot_raw_cpn/orig.cpn.segs.df$Ploidy)
 
 
-
   return(orig.cpn.segs.df)
 }
 
@@ -186,12 +185,13 @@ cleanAndErrorCheckMinConsSegs <- function(min.cons.seg.df) {
   return(min.cons.seg.df)
 } #end cleanAndErrorCheckMinConsSegs <- function(....
 
+
 ##
 ##Params:
 ##
 ##Returns:
 ##
-cleanAndErrorCheckSNPs <- function(all.samp.SNP.list, min.cons.seg.df, allow.logr.only.flag = FALSE) {
+cleanAndErrorCheckSNPsMPhase <- function(all.samp.SNP.list, min.cons.seg.df, allow.logr.only.flag = FALSE) {
   #TODO add check that every single all.samp.SNP.list has the same SNPs..
   #Note error checking of removing NAs from the min.cons.seg.df should already have been performed
   min.cpn.vals.df <- min.cons.seg.df[,4:ncol(min.cons.seg.df)]
@@ -208,16 +208,20 @@ cleanAndErrorCheckSNPs <- function(all.samp.SNP.list, min.cons.seg.df, allow.log
     for ( seg.idx in 1:nrow(min.cpn.vals.df) ) {
 
       samp.SNP.df <- all.samp.SNP.list[[sample]]
-      samp.seg.logR.BAF.df <- samp.SNP.df[ samp.SNP.df$chrom == min.cons.seg.df[seg.idx, 1] & samp.SNP.df$pos >= min.cons.seg.df[seg.idx, 2] & samp.SNP.df$pos <= min.cons.seg.df[seg.idx, 3], ,drop=FALSE ]
+
+      samp.seg.logR.BAF.df <- samp.SNP.df[ samp.SNP.df$chr == min.cons.seg.df[seg.idx, 1] & samp.SNP.df$pos >= min.cons.seg.df[seg.idx, 2] & samp.SNP.df$pos <= min.cons.seg.df[seg.idx, 3], ,drop=FALSE ]
+
       #Catch any snp values that have a BAF but no logr in any region, these are likely incorrect
       samp.prob.SNPs.vec <- c(samp.prob.SNPs.vec, rownames(samp.seg.logR.BAF.df[ ! is.na(samp.seg.logR.BAF.df$BAFsegmented)
                                                                                  & (is.na(samp.seg.logR.BAF.df$logRsegmented)
                                                                                     | is.na(samp.seg.logR.BAF.df$logR))
                                                                                  ,]))
       #Remove any snps that have no logr but no BAF is the flag is false
+
       if (allow.logr.only.flag == FALSE) {
-        samp.prob.SNPs.vec <- c(samp.prob.SNPs.vec, rownames(samp.seg.logR.BAF.df[is.na(samp.seg.logR.BAF.df$BAFsegmented),]))
-        samp.seg.logR.BAF.df <- samp.seg.logR.BAF.df[!is.na(samp.seg.logR.BAF.df$BAFsegmented), ,drop=FALSE]
+        samp.prob.SNPs.vec <- c(samp.prob.SNPs.vec, rownames(samp.seg.logR.BAF.df[samp.seg.logR.BAF.df$BAF == 2,]))
+        samp.seg.logR.BAF.df <- samp.seg.logR.BAF.df[as.numeric(samp.seg.logR.BAF.df$BAF) != 2, ,drop=FALSE]
+        #samp.seg.logR.BAF.df <- samp.seg.logR.BAF.df[! is.na(samp.seg.logR.BAF.df$BAFsegmented), ,drop=FALSE]
 
       }
       #Todo,
@@ -226,7 +230,10 @@ cleanAndErrorCheckSNPs <- function(all.samp.SNP.list, min.cons.seg.df, allow.log
       #Todo,
       #Another case is that we might have any of the SNPs removed might be the start or end position of the joint segs, if this is the case it might break downstream
       #analyses, we should stop the analysis if this is the case and say clean up the input data.
+     
+      colnames(samp.seg.logR.BAF.df)[colnames(samp.seg.logR.BAF.df)=="chr"] <- "chrom"
       working.all.samp.SNP.list[[sample]][[seg.name.vec[seg.idx]]] <- samp.seg.logR.BAF.df
+
 
     }#end for ( seg.idx in 1:nrow(min.cpn.vals.df) )
 
@@ -249,4 +256,80 @@ cleanAndErrorCheckSNPs <- function(all.samp.SNP.list, min.cons.seg.df, allow.log
   return(working.all.samp.SNP.list)
 
 }#end <- function(all.samp.SNP.list, min.cons.seg.df)
-                                                                       
+
+##
+##Params:
+##
+##Returns:
+##
+cleanAndErrorCheckSNPs <- function(all.samp.SNP.list, min.cons.seg.df, allow.logr.only.flag = FALSE) {
+  #TODO add check that every single all.samp.SNP.list has the same SNPs..
+  #Note error checking of removing NAs from the min.cons.seg.df should already have been performed
+  min.cpn.vals.df <- min.cons.seg.df[,4:ncol(min.cons.seg.df)]
+  seg.name.vec <- paste(min.cons.seg.df[,1], min.cons.segs.df[,2], min.cons.segs.df[,3], sep=":")
+  min.cpn.vals.df <- min.cpn.vals.df[!is.na(rowSums(min.cpn.vals.df)),,drop=FALSE] 
+  sample.vec <- colnames(min.cpn.vals.df)
+  working.all.samp.SNP.list <- list()
+  all.samps.prob.SNPs.vec <- c()
+
+  for ( sample in sample.vec ) {
+
+    samp.prob.SNPs.vec <- c()
+
+    for ( seg.idx in 1:nrow(min.cpn.vals.df) ) {
+
+      samp.SNP.df <- all.samp.SNP.list[[sample]]
+      print("head(samp.SNP.df")
+      print(head(samp.SNP.df))
+      samp.seg.logR.BAF.df <- samp.SNP.df[ samp.SNP.df$chrom == min.cons.seg.df[seg.idx, 1] & samp.SNP.df$pos >= min.cons.seg.df[seg.idx, 2] & samp.SNP.df$pos <= min.cons.seg.df[seg.idx, 3], ,drop=FALSE ]
+      print("head(samp.seg.logR.BAF.df)")
+      print(head(samp.seg.logR.BAF.df))
+      #Catch any snp values that have a BAF but no logr in any region, these are likely incorrect
+      samp.prob.SNPs.vec <- c(samp.prob.SNPs.vec, rownames(samp.seg.logR.BAF.df[ ! is.na(samp.seg.logR.BAF.df$BAFsegmented)
+                                                                                 & (is.na(samp.seg.logR.BAF.df$logRsegmented)
+                                                                                    | is.na(samp.seg.logR.BAF.df$logR))
+                                                                                 ,]))
+      #Remove any snps that have no logr but no BAF is the flag is false
+      print("length(samp.prob.SNPs.vec)")
+      print(length(samp.prob.SNPs.vec))
+
+      if (allow.logr.only.flag == FALSE) {
+        print("allow.logr.only.flag is FALSE")
+        samp.prob.SNPs.vec <- c(samp.prob.SNPs.vec, rownames(samp.seg.logR.BAF.df[is.na(samp.seg.logR.BAF.df$BAFsegmented),]))
+        samp.seg.logR.BAF.df <- samp.seg.logR.BAF.df[samp.seg.logR.BAF.df$BAF != 2, ,drop=FALSE]
+        samp.seg.logR.BAF.df <- samp.seg.logR.BAF.df[! is.na(samp.seg.logR.BAF.df$BAFsegmented), ,drop=FALSE]
+
+      }
+      #Todo,
+      #There's one more case we need to consider that a only on or some samples might have a logr SNP or BAF SNP as NA but the others don't, if this were the case
+      #We'd want to remove these SNPs
+      #Todo,
+      #Another case is that we might have any of the SNPs removed might be the start or end position of the joint segs, if this is the case it might break downstream
+      #analyses, we should stop the analysis if this is the case and say clean up the input data.
+      print("head(samp.seg.logR.BAF.df)")
+      print(head(samp.seg.logR.BAF.df))
+      working.all.samp.SNP.list[[sample]][[seg.name.vec[seg.idx]]] <- samp.seg.logR.BAF.df
+
+
+    }#end for ( seg.idx in 1:nrow(min.cpn.vals.df) )
+
+    all.samps.prob.SNPs.vec <- c(all.samps.prob.SNPs.vec, samp.prob.SNPs.vec)
+
+  }#end for ( sample in samples.vec ) {
+
+  all.samps.prob.SNPs.vec <- unique(all.samps.prob.SNPs.vec)
+
+  for ( sample in sample.vec ) {
+
+    for (seg.idx in 1:nrow(min.cpn.vals.df)) {
+
+      working.all.samp.SNP.list[[sample]][[seg.name.vec[seg.idx]]] <- working.all.samp.SNP.list[[sample]][[seg.name.vec[seg.idx]]][!rownames(working.all.samp.SNP.list[[sample]][[seg.name.vec[seg.idx]]])%in%all.samps.prob.SNPs.vec, ,drop=FALSE] 
+
+    }#end for (seg.idx in 1:nrow(min.cpn.vals.df))
+
+  }#end for ( sample in sample.vec ) {
+
+  return(working.all.samp.SNP.list)
+
+}#end <- function(all.samp.SNP.list, min.cons.seg.df)
+                                                                                                                                                                                                                                                                                                                                                                                                                                                           
