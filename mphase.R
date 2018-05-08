@@ -52,8 +52,8 @@ print(current.dir)
 
 # #Debugging option parameters:
 # patient <- "MET048"
-# allow.dip.test.phasing.flag = FALSE
-# output.directory.base.path <- "/home/camp/watkint/working/watkint/data/brastianos/release_v2/B_MET048/exome/"
+# allow.dip.test.phasing.flag  <- FALSE
+# output.directory.base.path <- "/home/camp/watkint/working/watkint/data/brastianos/release_v2/B_MET048/exome/CN_het"
 # data.format.to.use <- "MEDICC"
 # snp.file.path <- "/home/camp/watkint/working/watkint/data/brastianos/release_v2/B_MET048/exome/MSAI/MET048_joint_snps.txt"
 # seg.file.path <- "/home/camp/watkint/working/watkint/data/brastianos/release_v2/B_MET048/exome/MSAI/MET048_joint_segs_all_ascat_info.txt"
