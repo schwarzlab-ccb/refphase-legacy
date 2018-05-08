@@ -10,8 +10,6 @@ makeInputPathFileForTRACERxExomeSNPArray <- function(pt.id, sample.vec, release.
                 samp_ascat_bc_path= rep("None", length(sample.vec)),
                 stringsAsFactors = FALSE)
 
-
-
   for ( samp in sample.vec ) {
     #We need to check for the existence of directories that look like this: B_MET005_MT-M1_ManualQC
     samp.poss.qc.file.path <- paste(pt.dir, samp, "_ManualQC", "/", samp, ".ascat.bc.RData", sep="")
@@ -487,4 +485,4 @@ cleanAndErrorCheckSNPs <- function(all.samp.SNP.list, min.cons.seg.df, allow.log
   return(working.all.samp.SNP.list)
 
 }#end <- function(all.samp.SNP.list, min.cons.seg.df)
-      
+        

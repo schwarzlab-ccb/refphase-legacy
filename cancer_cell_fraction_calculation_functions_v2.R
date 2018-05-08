@@ -265,7 +265,8 @@ getPossibleLowAndHighSubclonalCPNStates <- function(seg.name,
                                                 cpnX,
                                                 s.samps.int.ob.xp.cpn.df,
                                                 all.clonal.flag,
-                                                two.value.diff.flag) {
+                                                two.value.diff.flag,
+                                                min.CCF.to.consider.val) {
 
       #Need to initialise all the lists outside the loop now we are doing cpnA cpnB in a loop and cpnB entries would wipe cpnA ones...
       use.preset.mean.frac.cpnX.low.high <- FALSE #Todo, decide whether this should be default parameter
@@ -296,7 +297,8 @@ getPossibleLowAndHighSubclonalCPNStates <- function(seg.name,
         low.high.ss.poss.cpnX.vec <- chooseLowHighSubclonalCPNWithMoreThanTwoPossibilities(s.samps.int.ob.xp.cpn.df,
                                                                                           cpnX,
                                                                                           all.clonal.flag,
-                                                                                          two.value.diff.flag)
+                                                                                          two.value.diff.flag,
+                                                                                          min.CCF.to.consider.val)
 
       }#end (length(unique(c(floor(samps.mean.cpnX.vec), ceiling(samps.mean.cpnX.vec)))) > 2) {
             #ceiling(s.samps.int.ob.xp.cpn.df[, paste0("mean_obs_", cpnX)]))) > 2) {
@@ -564,7 +566,8 @@ chooseLowHighSubclonalCPNWithOnlyTwoPossibilities <- function(s.samps.int.ob.xp.
 chooseLowHighSubclonalCPNWithMoreThanTwoPossibilities <- function(s.samps.int.ob.xp.cpn.df,
                                                                   cpnX,
                                                                   all.clonal.flag,
-                                                                  two.value.diff.flag) {
+                                                                  two.value.diff.flag,
+                                                                  min.CCF.to.consider.val) {
 
   samps.mean.cpnX.vec <- s.samps.int.ob.xp.cpn.df[, paste0("mean_obs_", cpnX)]
   #check whether there is ony one state when rounding, can this ever be called?
