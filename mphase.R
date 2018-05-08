@@ -554,7 +554,8 @@ for (cpnX in c("cpnA", "cpnB")) {
                                                                                                 cpnX = cpnX,
                                                                                                 s.samps.int.ob.xp.cpn.df = s.samps.int.ob.xp.cpn.df,
                                                                                                 all.clonal.flag = is.segment.clonal.in.all.samps.flag,
-                                                                                                two.value.diff.flag = is.there.cpnX.difference.greater.than.two.flag)
+                                                                                                two.value.diff.flag = is.there.cpnX.difference.greater.than.two.flag,
+                                                                                                min.CCF.to.consider.val = MIN_CCF_TO_CONSIDER)
     seg.psc.cpnX.low  <- seg.psc.low.high.cpn.and.use.preset.ccf.flag.vec[1]
     seg.psc.cpnX.high  <- seg.psc.low.high.cpn.and.use.preset.ccf.flag.vec[2]
     seg.use.default.ccf <- as.logical(seg.psc.low.high.cpn.and.use.preset.ccf.flag.vec[3])
