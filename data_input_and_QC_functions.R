@@ -1,17 +1,13 @@
 
 
+makeInputPathFileForTRACERxExomeSNPArray <- function(pt.id, sample.vec, release.dir, array.type, save.output.path) {
 
-
-makeInputPathFileForTRACERxExomeSNPArray <- function(pt.id, release.dir, array.type, save.output.path) {
-
-
-  #Do we not care about the ASCAT_QC directories, we can come back to these a bit later...
   pt.dir <- paste(release.dir, pt.id, "/", array.type, "/ASCAT/", sep="")
-  sample.vec <- grep("FAILED",grep(".txt$|.complete$|*EXCLUDE*|*ManualQC*",list.files(pt.dir), value=TRUE, invert=TRUE), invert=TRUE, value=TRUE)
+  #sample.vec <- grep("FAILED",grep(".txt$|.complete$|*EXCLUDE*|*ManualQC*",list.files(pt.dir), value=TRUE, invert=TRUE), invert=TRUE, value=TRUE)
 
-  pt.file.paths.df <- data.frame(patient_id = rep(pt.id, length(sample.vec),
+  pt.file.paths.df <- data.frame(patient_id = rep(pt.id, length(sample.vec)),
                 sample = sample.vec,
-                samp_ascat_bc_path= rep("None", length(sample.vec),
+                samp_ascat_bc_path= rep("None", length(sample.vec)),
                 stringsAsFactors = FALSE)
 
 
@@ -42,7 +38,6 @@ makeInputPathFileForTRACERxExomeSNPArray <- function(pt.id, release.dir, array.t
 
 }
 
-
 getSNPDataForTRACERxExomeSNPArray <- function(pt.file.paths.df) {
 
   sample.vec <- pt.file.paths.df$sample
@@ -51,6 +46,7 @@ getSNPDataForTRACERxExomeSNPArray <- function(pt.file.paths.df) {
   for ( samp in sample.vec ) {
 
     samp.ASCAT.obj <- pt.file.paths.df[pt.file.paths.df$sample == samp, ]$samp_ascat_bc_path
+    samp.ASCAT.obj <- load(samp.ASCAT.obj)
     samp.ASCAT.obj <- get(samp.ASCAT.obj)
 
     samp.ASCAT.summary               <- samp.ASCAT.obj$SNPpos
@@ -58,7 +54,6 @@ getSNPDataForTRACERxExomeSNPArray <- function(pt.file.paths.df) {
     samp.ASCAT.summary$BAFsegmented  <- NA
     samp.ASCAT.summary$logR          <- NA
     samp.ASCAT.summary$logRsegmented <- NA
-
 
     samp.ASCAT.summary[rownames(samp.ASCAT.obj$Tumor_LogR_segmented),]$logRsegmented           <- samp.ASCAT.obj$Tumor_LogR_segmented[,1]
     samp.ASCAT.summary[rownames(samp.ASCAT.obj$Tumor_BAF),]$BAF                                <- samp.ASCAT.obj$Tumor_BAF[[1]]
@@ -75,103 +70,86 @@ getSNPDataForTRACERxExomeSNPArray <- function(pt.file.paths.df) {
 }
 
 
+makeInputPathFileForTRACERxWGS <- function(pt.id, release.dir, array.type, save.output.path) {
+
+  #Do we not care about the ASCAT_QC directories, we can come back to these a bit later
+  pt.dir <- paste(release.dir, pt.id, "/", array.type, "/ASCAT/", sep="")
+  sample.vec <- grep("FAILED",grep(".txt$|.complete$|*EXCLUDE*|*ManualQC*",list.files(pt.dir), value=TRUE, invert=TRUE), invert=TRUE, value=TRUE)
+
+  pt.file.paths.df <- data.frame(patient_id = rep(pt.id, length(sample.vec)),
+                sample = sample.vec,
+                samp_logr_baf_file_path = rep("None", length(sample.vec)),
+                samp_seg_file_path = rep("None", length(sample.vec)),
+                stringsAsFactors = FALSE)
 
 
+  for ( samp in sample.vec ) {
+    samp.logr.baf.path <- paste(pt.dir, samp, "/", samp, ".tumor.baf_logr.RData", sep="")
 
+    pt.file.paths.df[file.paths.df$sample==samp, ]$samp_logr_baf_file_path <- samp.logr.baf.path
 
-  makeInputPathFileForTRACERxWGS <- function(pt.id, release.dir, array.type, save.output.path) {
+    samp.seg.path <- paste(DirToConsider, samp, "/", samp, ".ascat.seg.RData", sep="")
 
-
-    #Do we not care about the ASCAT_QC directories, we can come back to these a bit later
-    pt.dir <- paste(release.dir, pt.id, "/", array.type, "/ASCAT/", sep="")
-    sample.vec <- grep("FAILED",grep(".txt$|.complete$|*EXCLUDE*|*ManualQC*",list.files(pt.dir), value=TRUE, invert=TRUE), invert=TRUE, value=TRUE)
-
-    pt.file.paths.df <- data.frame(patient_id = rep(pt.id, length(sample.vec),
-                  sample = sample.vec,
-                  samp_logr_baf_file_path = rep("None", length(sample.vec),
-                  samp_seg_file_path = rep("None", length(sample.vec)),
-                  stringsAsFactors = FALSE)
-
-
-    for ( samp in sample.vec ) {
-      #What the fuck is DirToConsider...
-      samp.logr.baf.path <- paste(pt.dir, samp, "/", samp, ".tumor.baf_logr.RData", sep="")
-
-      pt.file.paths.df[file.paths.df$sample==samp, ]$samp_logr_baf_file_path <- samp.logr.baf.path
-
-      samp.seg.path <- paste(DirToConsider, samp, "/", samp, ".ascat.seg.RData", sep="")
-
-      pt.file.paths.df[file.paths.df$sample==samp, ]$samp_seg_file_path <- samp.seg.path
-
-    }
-
-    write.table(pt.file.paths.df, file = save.output.path ,row.names=FALSE, sep="\t", quote=FALSE)
+    pt.file.paths.df[file.paths.df$sample==samp, ]$samp_seg_file_path <- samp.seg.path
 
   }
 
+  write.table(pt.file.paths.df, file = save.output.path ,row.names=FALSE, sep="\t", quote=FALSE)
 
-
-  getSNPDataForTRACERxWGS <- function(pt.file.paths.df) {
-
-
-    sample.vec <- pt.file.paths.df$sample
-
-    for ( samp in sample.vec ) {
-
-      samp.logr.baf.path <- pt.file.paths.df[pt.file.paths.df$sample == samp, ]$samp_logr_baf_file_path
-      load(samp.logr.baf.path)#gives tumor.baf_logr
-
-
-      samp.seg.path <- pt.file.paths.df[pt.file.paths.df$sample == samp, ]$samp_seg_file_path
-      load(samp.seg.path)#gives seg
-
-      ASCAT.summary               <- tumor.baf_logr[,c("chrom", "pos")]
-      ASCAT.summary$BAF           <- tumor.baf_logr$BAF
-      ASCAT.summary$logR          <- tumor.baf_logr[,regions[i]]
-      ASCAT.summary$BAFsegmented  <- NA
-      ASCAT.summary$logRsegmented <- NA
-
-      all.regions.ASCAT.list <- list()
-
-        for ( j in 1:nrow(seg) ) {
-
-          if(nrow(ASCAT.summary[ASCAT.summary$chrom==seg[j,]$chr & ASCAT.summary$pos >= seg[j,]$startpos & ASCAT.summary$pos <= seg[j,]$endpos,]) > 0) {
-
-            if(seg[j,]$nMajor==seg[j,]$nMinor){
-              
-              ASCAT.summary[ASCAT.summary$chrom==seg[j,]$chr & ASCAT.summary$pos >= seg[j,]$startpos & ASCAT.summary$pos <= seg[j,]$endpos,]$BAFsegmented <- 0.5
-              
-            } else {
-              
-              avg.seg.baf <- 0.5 - mean(abs(tumor.baf_logr[tumor.baf_logr$chrom==seg[j,]$chr & tumor.baf_logr$pos >= seg[j,]$startpos & tumor.baf_logr$pos <= seg[j,]$endpos,]$BAF - 0.5))
-              ASCAT.summary[ASCAT.summary$chrom==seg[j,]$chr & ASCAT.summary$pos >= seg[j,]$startpos & ASCAT.summary$pos <= seg[j,]$endpos,]$BAFsegmented <- avg.seg.baf
-              
-            }
-
-            avg.seg.logr <- mean(tumor.baf_logr[tumor.baf_logr$chrom==seg[j,]$chr & tumor.baf_logr$pos >= seg[j,]$startpos & tumor.baf_logr$pos <= seg[j,]$endpos, regions[i]])
-            ASCAT.summary[ASCAT.summary$chrom==seg[j,]$chr & ASCAT.summary$pos >= seg[j,]$startpos & ASCAT.summary$pos <= seg[j,]$endpos,]$logRsegmented <- avg.seg.logr
-
-          }#end if(nrow(ASCAT.summary[ASCAT.summary$chrom==seg[j,]$chr & ASCAT.summary$pos...
-
-        }#end for ( j in 1:nrow(seg) ) {
-        
-        all.regions.ASCAT.list[[samp] <- ASCAT.summary
-
-      }#end for ( i in 1:length(regions) )
-
-      return(all.regions.ASCAT.list)
-
-  }
+}
 
 
 
+getSNPDataForTRACERxWGS <- function(pt.file.paths.df) {
+
+  sample.vec <- pt.file.paths.df$sample
+
+  for ( samp in sample.vec ) {
+
+    samp.logr.baf.path <- pt.file.paths.df[pt.file.paths.df$sample == samp, ]$samp_logr_baf_file_path
+    load(samp.logr.baf.path)#gives tumor.baf_logr
 
 
+    samp.seg.path <- pt.file.paths.df[pt.file.paths.df$sample == samp, ]$samp_seg_file_path
+    load(samp.seg.path)#gives seg
+
+    ASCAT.summary               <- tumor.baf_logr[,c("chrom", "pos")]
+    ASCAT.summary$BAF           <- tumor.baf_logr$BAF
+    ASCAT.summary$logR          <- tumor.baf_logr[,regions[i]]
+    ASCAT.summary$BAFsegmented  <- NA
+    ASCAT.summary$logRsegmented <- NA
+
+    all.regions.ASCAT.list <- list()
 
 
+      for ( j in 1:nrow(seg) ) {
 
+        if(nrow(ASCAT.summary[ASCAT.summary$chrom==seg[j,]$chr & ASCAT.summary$pos >= seg[j,]$startpos & ASCAT.summary$pos <= seg[j,]$endpos,]) > 0) {
 
+          if(seg[j,]$nMajor==seg[j,]$nMinor){
+            
+            ASCAT.summary[ASCAT.summary$chrom==seg[j,]$chr & ASCAT.summary$pos >= seg[j,]$startpos & ASCAT.summary$pos <= seg[j,]$endpos,]$BAFsegmented <- 0.5
+            
+          } else {
+            
+            avg.seg.baf <- 0.5 - mean(abs(tumor.baf_logr[tumor.baf_logr$chrom==seg[j,]$chr & tumor.baf_logr$pos >= seg[j,]$startpos & tumor.baf_logr$pos <= seg[j,]$endpos,]$BAF - 0.5))
+            ASCAT.summary[ASCAT.summary$chrom==seg[j,]$chr & ASCAT.summary$pos >= seg[j,]$startpos & ASCAT.summary$pos <= seg[j,]$endpos,]$BAFsegmented <- avg.seg.baf
+            
+          }
 
+          avg.seg.logr <- mean(tumor.baf_logr[tumor.baf_logr$chrom==seg[j,]$chr & tumor.baf_logr$pos >= seg[j,]$startpos & tumor.baf_logr$pos <= seg[j,]$endpos, regions[i]])
+          ASCAT.summary[ASCAT.summary$chrom==seg[j,]$chr & ASCAT.summary$pos >= seg[j,]$startpos & ASCAT.summary$pos <= seg[j,]$endpos,]$logRsegmented <- avg.seg.logr
+
+        }#end if(nrow(ASCAT.summary[ASCAT.summary$chrom==seg[j,]$chr & ASCAT.summary$pos...
+
+      }#end for ( j in 1:nrow(seg) ) {
+      
+      all.regions.ASCAT.list[[samp]] <- ASCAT.summary
+
+  }# end  for ( samp in sample.vec ) {
+
+    return(all.regions.ASCAT.list)
+}#end getSNPDataForTRACERxWGS
 
 
 
@@ -509,4 +487,4 @@ cleanAndErrorCheckSNPs <- function(all.samp.SNP.list, min.cons.seg.df, allow.log
   return(working.all.samp.SNP.list)
 
 }#end <- function(all.samp.SNP.list, min.cons.seg.df)
-                                                                                                                                                                                                                                                                                                                                                                                                                                                           
+      

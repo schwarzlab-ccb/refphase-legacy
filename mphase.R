@@ -3,44 +3,93 @@ args = commandArgs(trailingOnly=TRUE)
 patient <- args[1]
 allow.dip.test.phasing.flag <- as.logical(args[2])
 output.directory.base.path <- args[3]
-dir.name.to.hold.results <- args[4]
-data.format.to.use <- args[5]#Defulat for this is MEDICC, but can specify TRACERx_exome, TRACERx_snp_array or TRACERx_WGS
-snp.file.path <- args[6]#Points towards the snp files, of whatever format they are given that should be used based on data.format to use.
-seg.file.path <- args[7]#Pintts towards the seg files, of whatever format they should be determined byh the data.format.to.use flag.
+data.format.to.use <- args[4]#Defulat for this is MEDICC, but can specify TRACERx_exome, TRACERx_snp_array or TRACERx_WGS
+snp.file.path <- args[5]#Points towards the snp files, of whatever format they are given that should be used based on data.format to use.
+seg.file.path <- args[6]#Pintts towards the seg files, of whatever format they should be determined byh the data.format.to.use flag.
 
-#Debugging option:
-patient <- "MET048"
-allow.dip.test.phasing.flag = FALSE
-output.directory.path <- "/home/camp/watkint/working/watkint/data/brastianos/release_v2/B_MET048/exome/"
-dir.name.to.hold.results <- "CN_heterogeneity_MEDICC"
-data.format.to.use <- "MEDICC"
-snp.file.path <- "/home/camp/watkint/working/watkint/data/brastianos/release_v2/B_MET048/exome/MSAI/MET048_joint_snps.txt"
-seg.file.path <- "/home/camp/watkint/working/watkint/data/brastianos/release_v2/B_MET048/exome/MSAI/MET048_joint_segs_all_ascat_info.txt"
+print("patient")
+print(patient)
+print("allow.dip.test.phasing.flag")
+print(allow.dip.test.phasing.flag)
+print("output.directory.base.path")
+print(output.directory.base.path)
+print("data.format.to.use)")
+print(data.format.to.use)
+print("snp.file.path")
+print(snp.file.path)
+print("seg.file.path")
+print(seg.file.path)
 
-#Ok let's write the use cases, medicc run for MET048
-mphase.script.path <- "/home/camp/watkint/working/watkint/scripts/multiregioncopynum/mphase.R"
-#MEDICC format for TRACERx example
-medicc.mphase.command <- paste("Rscript", mphase.script.path, patient, allow.dip.test.phasing.flag, dir.name.to.hold.results, data.format.to.use, snp.file.path, seg.file.path, sep=" ")
 
-#Debugging option:
-patient <- "MET048"
-allow.dip.test.phasing.flag = FALSE
-output.directory.path <- "/home/camp/watkint/working/watkint/data/brastianos/release_v2/B_MET048/exome/"
-dir.name.to.hold.results <- "CN_heterogeneity_TRACERx"
-data.format.to.use <- "TRACERx_exome"
-snp.file.path <- "/home/camp/watkint/working/watkint/data/brastianos/release_v2/B_MET048/exome/MSAI/MET048_joint_snps.txt"
-seg.file.path <- "/home/camp/watkint/working/watkint/data/brastianos/release_v2/B_MET048/exome/MSAI/MET048_mphase_snp_input_file_paths.txt"
+#function taken from https://github.com/molgenis/molgenis-pipelines/wiki/How-to-source-another_file.R-from-within-your-R-script
+LocationOfThisScript = function() # Function LocationOfThisScript returns the location of this .R script (may be needed to source other files in same dir)
+{
+	this.file = NULL
+	# This file may be 'sourced'
+	for (i in -(1:sys.nframe())) {
+		if (identical(sys.function(i), base::source)) this.file = (normalizePath(sys.frame(i)$ofile))
+	}
 
-#TRACERx format for TRASCERx example
-tracerx.mphase.command <- paste("Rscript", mphase.script.path, patient, allow.dip.test.phasing.flag, dir.name.to.hold.results, data.format.to.use, snp.file.path, seg.file.path, sep= " ")
- 
+	if (!is.null(this.file)) return(dirname(this.file))
 
-source("./data_input_and_QC_functions.R")
+	# But it may also be called from the command line
+	cmd.args = commandArgs(trailingOnly = FALSE)
+	cmd.args.trailing = commandArgs(trailingOnly = TRUE)
+	cmd.args = cmd.args[seq.int(from=1, length.out=length(cmd.args) - length(cmd.args.trailing))]
+	res = gsub("^(?:--file=(.*)|.*)$", "\\1", cmd.args)
+
+	# If multiple --file arguments are given, R uses the last one
+	res = tail(res[res != ""], 1)
+	if (0 < length(res)) return(dirname(res))
+
+	# Both are not the case. Maybe we are in an R GUI?
+	return(NULL)
+}
+
+current.dir <-  LocationOfThisScript()
+
+print(current.dir)
+
+# #Debugging option parameters:
+# patient <- "MET048"
+# allow.dip.test.phasing.flag = FALSE
+# output.directory.base.path <- "/home/camp/watkint/working/watkint/data/brastianos/release_v2/B_MET048/exome/"
+# data.format.to.use <- "MEDICC"
+# snp.file.path <- "/home/camp/watkint/working/watkint/data/brastianos/release_v2/B_MET048/exome/MSAI/MET048_joint_snps.txt"
+# seg.file.path <- "/home/camp/watkint/working/watkint/data/brastianos/release_v2/B_MET048/exome/MSAI/MET048_joint_segs_all_ascat_info.txt"
+# ##########
+# mphase.script.path <- "/home/camp/watkint/working/watkint/scripts/multiregioncopynum/mphase.R"
+# #MEDICC format for TRACERx example
+# medicc.mphase.command <- paste("Rscript", mphase.script.path, patient, allow.dip.test.phasing.flag, data.format.to.use, snp.file.path, seg.file.path, sep=" ")
+
+# #Debugging option parameters:
+# patient <- "MET048"
+# allow.dip.test.phasing.flag = FALSE
+# output.directory.base.path <- "/home/camp/watkint/working/watkint/data/brastianos/release_v2/B_MET048/exome/"
+# data.format.to.use <- "TRACERx_exome"
+# snp.file.path <- "/home/camp/watkint/working/watkint/data/brastianos/release_v2/B_MET048/exome/MSAI/MET048_joint_snps.txt"
+# seg.file.path <- "/home/camp/watkint/working/watkint/data/brastianos/release_v2/B_MET048/exome/MSAI/MET048_mphase_snp_input_file_paths.txt"
+# ##########
+# mphase.script.path <- "/home/camp/watkint/working/watkint/scripts/multiregioncopynum/mphase.R"
+# #TRACERx format for TRACERx example
+# tracerx.mphase.command <- paste("Rscript", mphase.script.path, patient, allow.dip.test.phasing.flag, data.format.to.use, snp.file.path, seg.file.path, sep= " ")
+
+###Source relevant scripts, best to do this at the top to check for errors...
+source(paste0(current.dir, "/data_input_and_QC_functions_v2.R"))
+source(paste0(current.dir, "/minimum_consistent_segmentation_functions_v2.R"))
+source(paste0(current.dir, "/allelic_imbalance_phasing_functions_v2.R"))
+source(paste0(current.dir, "/pairwise_CN_heterogeneity_comparison_functions_v2.R"))
+source(paste0(current.dir, "/cancer_cell_fraction_calculation_functions_v2.R"))
+source(paste0(current.dir, "/final_output_segmentation_file_generation_functions_v2.R"))
+source(paste0(current.dir, "/join_segments_functions_v2.R"))
+source(paste0(current.dir, "/CN_heterogeneity_plotting_functions_v2.R"))
+
+
+
 #So let's load in data etc....
-
-
 #Todo refactor into function calls at a later date.
 #Note that the afunctions to create the single dataframes that it accepts are in the data_input_and_QC_functions.R
+
 if (data.format.to.use == "MEDICC") {
 
 	snp.file.df <- read.table(snp.file.path, stringsAsFactors=FALSE, sep="\t", header=TRUE)
@@ -223,6 +272,7 @@ if (data.format.to.use == "MEDICC") {
 
 } else {
 
+	print(data.format.to.use)
 	stop("Incorrect data.format.to.use input to mphase")
 
 }
@@ -234,28 +284,19 @@ if (data.format.to.use == "MEDICC") {
 #####Get relevant libraries:
 #Todo check this is the only required library.
 library(diptest)
-
-###Source relevant scripts
-source("./data_input_and_QC_functions.R")
-source("./minimum_consistent_segmentation_functions.R")
-source("./allelic_imbalance_phasing_functions.R")
-source("./pairwise_CN_heterogeneity_comparison_functions.R")
-source("./cancer_cell_fraction_calculation_functions.R")
-source("./final_output_segmentation_file_generation_functions.R")
-source("./join_segments_functions.R")
-source("./CN_heterogeneity_plotting_functions.R")
-
+library(gplots)
 
 ###############This is past the input stage and into the analysis:
 #Set constants for all analyses here... eventually these can be command line set
 MIN_NUM_HZ_SNP_PHASING <- 5
 #PLOT_OUTPUT_DIR <- NULL
 
-PLOT_OUTPUT_DIR <- paste(output.directory.path, "/", dir.name.to.hold.results, "/", sep="")
+PLOT_OUTPUT_DIR <- paste(output.directory.base.path, "/", sep="")
 
 if ( ! file.exists(PLOT_OUTPUT_DIR) ) {
 
-	dir.create(PLOT_OUTPUT_DIR)
+	print(PLOT_OUTPUT_DIR)
+	print("file doesn't exist")
 
 }
 
@@ -276,9 +317,9 @@ PVAL_THRESH_TO_JOIN_PH_SEGS <- 0.001
 MIN_PROP_SNP_SEP_THRESH <- 0.75
 PVAL_COMB_WILCOX_PH_THRESH <- 0.01
 PVAL_DIPTEST_AI_THRESH <- 0.01
-ALLOW_DIPTEST_ALONE_PH_FLAG <- FALSE
+ALLOW_DIPTEST_ALONE_PH_FLAG <- allow.dip.test.phasing.flag
 
-if (is.null(output.directory.path)) {
+if (is.null(output.directory.base.path)) {
 
 	stop("No output path provided, aborting...")
 
@@ -300,42 +341,41 @@ if ( ! file.exists(seg.file.path)) {
 
 
 
-snp.file.df <- read.table(snp.file.path, stringsAsFactors=FALSE, sep="\t", header=TRUE)
-#Note this should be the full oen
-seg.file.df <- read.table(seg.file.path, stringsAsFactors=FALSE, sep="\t", header=TRUE)
-#Designed to handle the MSAI nput files
-seg.file.df$sample <- gsub("\\.", "-", gsub("_LogR", "", seg.file.df$sample))
-seg.file.df$callState <- NULL
-seg.file.df$patient <- patient
-seg.file.df$sample_name <- paste(patient,sapply(seg.file.df$sample, function(x) strsplit(x, split="-")[[1]][2]), sep=":")
+# snp.file.df <- read.table(snp.file.path, stringsAsFactors=FALSE, sep="\t", header=TRUE)
+# #Note this should be the full oen
+# seg.file.df <- read.table(seg.file.path, stringsAsFactors=FALSE, sep="\t", header=TRUE)
+# #Designed to handle the MSAI nput files
+# seg.file.df$sample <- gsub("\\.", "-", gsub("_LogR", "", seg.file.df$sample))
+# seg.file.df$callState <- NULL
+# seg.file.df$patient <- patient
+# seg.file.df$sample_name <- paste(patient,sapply(seg.file.df$sample, function(x) strsplit(x, split="-")[[1]][2]), sep=":")
 
-processed.orig.cpn.segs.df <- processOriginalCopyNumberSegments(patient, seg.file.df)
+# processed.orig.cpn.segs.df <- processOriginalCopyNumberSegments(patient, seg.file.df)
 
-sample.vec <- unique(processed.orig.cpn.segs.df$sample)
+# sample.vec <- unique(processed.orig.cpn.segs.df$sample)
 
-purity.est.vec <- processed.orig.cpn.segs.df[ ! duplicated(processed.orig.cpn.segs.df$sample), "ACF"]
-names(purity.est.vec) <- sample.vec
+# purity.est.vec <- processed.orig.cpn.segs.df[ ! duplicated(processed.orig.cpn.segs.df$sample), "ACF"]
+# names(purity.est.vec) <- sample.vec
 
-ploidy.est.vec <- processed.orig.cpn.segs.df[ ! duplicated(processed.orig.cpn.segs.df$sample), "Ploidy"]
-names(ploidy.est.vec) <- sample.vec
+# ploidy.est.vec <- processed.orig.cpn.segs.df[ ! duplicated(processed.orig.cpn.segs.df$sample), "Ploidy"]
+# names(ploidy.est.vec) <- sample.vec
 
-#Todo accept precomputed mininmum consistent segmentation
-min.cons.segs.df <- generateMinimumConsistentSegmentation(processed.orig.cpn.segs.df, chroms=1:22, col.to.use="ploidy_adj_tot_cpn")
-print(head(min.cons.segs.df))
+# #Todo accept precomputed mininmum consistent segmentation
+# min.cons.segs.df <- generateMinimumConsistentSegmentation(processed.orig.cpn.segs.df, chroms=1:22, col.to.use="ploidy_adj_tot_cpn")
+# print(head(min.cons.segs.df))
 
-min.cons.segs.df <- cleanAndErrorCheckMinConsSegs(min.cons.segs.df)
-#colnames(min.cons.segs.df)[1:3] <- c("chrom", "startpos", "endpos")
-print(head(min.cons.segs.df))
+# min.cons.segs.df <- cleanAndErrorCheckMinConsSegs(min.cons.segs.df)
+# #colnames(min.cons.segs.df)[1:3] <- c("chrom", "startpos", "endpos")
+# print(head(min.cons.segs.df))
 
 
 
-source("./data_input_and_QC_functions.R")
-asas.SNPs.w.both.lr.baf.snp.lists <- cleanAndErrorCheckSNPsMPhase(all.samp.SNP.list, min.cons.segs.df, allow.logr.only.flag = FALSE)
-print(head(str(asas.SNPs.w.both.lr.baf.snp.lists[[1]], max = 1)))
+# asas.SNPs.w.both.lr.baf.snp.lists <- cleanAndErrorCheckSNPsMPhase(all.samp.SNP.list, min.cons.segs.df, allow.logr.only.flag = FALSE)
+# print(head(str(asas.SNPs.w.both.lr.baf.snp.lists[[1]], max = 1)))
 
-asas.SNPS.lr.and.or.baf.lists <- cleanAndErrorCheckSNPsMPhase(all.samp.SNP.list, min.cons.segs.df, allow.logr.only.flag = TRUE)
+# asas.SNPS.lr.and.or.baf.lists <- cleanAndErrorCheckSNPsMPhase(all.samp.SNP.list, min.cons.segs.df, allow.logr.only.flag = TRUE)
 
-print(head(str(asas.SNPs.w.both.lr.baf.snp.lists[[1]], max = 1)))
+# print(head(str(asas.SNPs.w.both.lr.baf.snp.lists[[1]], max = 1)))
 
 #Todo, further refactor code so that everything is done at the level of a segment
 #Todo, add options to phase using baf dip test not just ascat regions
@@ -343,6 +383,18 @@ print(head(str(asas.SNPs.w.both.lr.baf.snp.lists[[1]], max = 1)))
 #Todo, Add function definitions documentaiton
 #Todo, clarify the loops and next statements that are controlling what happens when there are less than 5 hz snps in a sample.
 #Todo, check if the mixture phasing is ever being selected... in the example with B_MET002 no mixture phasing called.
+
+asas.SNPs.w.both.lr.baf.snp.lists.path <- paste0(PLOT_OUTPUT_DIR, patient, "_asas_SNPs_w_both_lr_baf_snp_lists.RDS")
+saveRDS(asas.SNPs.w.both.lr.baf.snp.lists, file=asas.SNPs.w.both.lr.baf.snp.lists.path)
+
+min.cons.segs.df.path <- paste0(PLOT_OUTPUT_DIR, patient, "_min_cons_segs_df.RDS")
+saveRDS(min.cons.segs.df, file=min.cons.segs.df.path)
+
+ploidy.est.vec.path <- paste0(PLOT_OUTPUT_DIR, patient, "_ploidy_est_vec.RDS")
+saveRDS(ploidy.est.vec, file=ploidy.est.vec.path)
+
+purity.est.vec.path <- paste0(PLOT_OUTPUT_DIR, patient, "_purity_est_vec.RDS")
+saveRDS(purity.est.vec, file=purity.est.vec.path)
 
 all.seg.phasing.info.list <- getCombinedBAFDipTestPhasing(asas.lr.baf.lists = asas.SNPs.w.both.lr.baf.snp.lists,
                                             min.cons.segs.df = min.cons.segs.df,
@@ -355,15 +407,16 @@ all.seg.phasing.info.list <- getCombinedBAFDipTestPhasing(asas.lr.baf.lists = as
                                             comb.wilcox.snp.sep.p.val.threshold = PVAL_COMB_WILCOX_PH_THRESH,
                                             allow.dip.test.without.ASCAT.to.phase = ALLOW_DIPTEST_ALONE_PH_FLAG
                                             )
-
-
+all.seg.phasing.info.list.path <- paste0(PLOT_OUTPUT_DIR, patient, "_all_seg_phasing_info_list.RDS")
+saveRDS(all.seg.phasing.info.list.path, file=all.seg.phasing.info.list.path)
 #Todo unsure of what to do with the baf logr lists which have positions that only have logr here, at the moment exclude them but how
 #does that affect later run
 patient.phased.BAF.df.list <- createAllSegsPhasedBAFDataFrame(asas.lr.baf.lists = asas.SNPs.w.both.lr.baf.snp.lists,
                                                          sample.to.phase.seg.list = all.seg.phasing.info.list,
                                                          min.num.hz.snp.phasing = MIN_NUM_HZ_SNP_PHASING
                                                          )
-
+patient.phased.BAF.df.list.path <- paste0(PLOT_OUTPUT_DIR, patient, "_phased_BAF_df_list.RDS")
+saveRDS(patient.phased.BAF.df.list, file=patient.phased.BAF.df.list.path)
 
 #Todo check wha happens to the missing rows, are these segments that contained less than 5 snps and thus didn't have something created?
 
@@ -407,7 +460,8 @@ for (i in 1:(length(sample.vec) - 1)) {
   }#end for (i in 1:(length(sample.vec) - 1)) {
 
 }#end for(j in (i + 1):length(sample.vec)) {
-
+all.pw.cn.het.comp.lists.path <- paste0(PLOT_OUTPUT_DIR, patient, "_all_pw_cn_het_comp_lists.RDS")
+saveRDS(all.pw.cn.het.comp.lists, file=all.pw.cn.het.comp.lists.path)
 
 
 #Let's get the CCF
@@ -420,7 +474,6 @@ for ( samp in sample.vec ) {
 }#end for ( samp in sample.vec ) {   
 
 
-source("/home/camp/watkint/working/watkint/scripts/multiregioncopynum/cancer_cell_fraction_calculation_functions.R")
 all.seg.CCF.list <- list()
 all.seg.int.ob.xp.cpn.df.list <- list()
 all.seg.CCF.diff.from.exp.list <- list()
@@ -428,6 +481,9 @@ all.seg.clonal.in.all.samps.list <- list()
 all.seg.greater.than.two.diff.list <- list()
 #next assess for each chromosome and region, what are the the raw values underlying CN calls, these will be used to help test for subclonality.
 samps.int.cpn.raw.cpn.by.chr.list <- generateAllSamplesByChromIntCPNUnderlyingRawValuesLists(all.pw.cn.het.comp.lists, sample.vec, seg.name.vec)
+samps.int.cpn.raw.cpn.by.chr.list.path <- paste0(PLOT_OUTPUT_DIR, patient, "_samps_int_cpn_raw_cpn_by_chr_list.RDS")
+saveRDS(samps.int.cpn.raw.cpn.by.chr.list, file=samps.int.cpn.raw.cpn.by.chr.list.path)
+
 
 for (cpnX in c("cpnA", "cpnB")) {
 
@@ -539,6 +595,21 @@ for (cpnX in c("cpnA", "cpnB")) {
 
 }#end for (cpnX in c("cpnA", "cpnB")) {
 
+all.seg.CCF.list.path <- paste0(PLOT_OUTPUT_DIR, patient, "_all_seg_CCF_list.RDS")
+saveRDS(all.seg.CCF.list, file=all.seg.CCF.list.path)
+
+all.seg.int.ob.xp.cpn.df.list.path <- paste0(PLOT_OUTPUT_DIR, patient, "_all_seg_int_ob_xp_cpn_df_list.RDS")
+saveRDS(all.seg.int.ob.xp.cpn.df.list, file=all.seg.int.ob.xp.cpn.df.list.path)
+
+all.seg.CCF.diff.from.exp.list.path <- paste0(PLOT_OUTPUT_DIR, patient, "_all_seg_CCF_diff_from_exp_list.RDS")
+saveRDS(all.seg.CCF.diff.from.exp.list, file=all.seg.CCF.diff.from.exp.list.path)
+
+all.seg.clonal.in.all.samps.list.path <- paste0(PLOT_OUTPUT_DIR, patient, "_all_seg_clonal_in_all_samps_list.RDS")
+saveRDS(all.seg.clonal.in.all.samps.list, file=all.seg.clonal.in.all.samps.list.path)
+
+all.seg.greater.than.two.diff.list.path <- paste0(PLOT_OUTPUT_DIR, patient, "_all_seg_greater_than_two_diff_list.RDS")
+saveRDS(all.seg.greater.than.two.diff.list, file=all.seg.greater.than.two.diff.list.path)
+
 #Todo remove the dataframe initialisation from the function and modify it to work on a segment by segment basis.
 #Todo rename clonal.pval to be more meaningful...
 #Todo Check [1] "B_MET019_MT-M2:1:762496:53608176" to see if LOW/HIGH fraction working properly.
@@ -587,13 +658,11 @@ full.joint.segs.w.phasing.and.raw.df <- addOriginalCPNValuesToOutputSegmentation
 #Todo plot how much of the original segmentation actually comes all the way through the code.
 full.joint.segs.df <- full.joint.segs.w.phasing.and.raw.df
 
+full.joint.segs.df.path <- paste0(PLOT_OUTPUT_DIR, patient, "_full_joint_segs_df.RDS")
+saveRDS(full.joint.segs.df, file=full.joint.segs.df.path)
 
 
-
-source("/home/camp/watkint/working/watkint/scripts/multiregioncopynum/CN_heterogeneity_plotting_functions.R")
-
-
-png(file = paste(PLOT_OUTPUT_DIR, "CCF_cpnA", ".png", sep = ""), width = 1200, height = 1400)
+png(file = paste(PLOT_OUTPUT_DIR, patient, "_CCF_cpnA", ".png", sep = ""), width = 1200, height = 1400)
 
 plotAllSampleCCFsAcrossGenome(all.pw.cn.het.comp.lists = all.pw.cn.het.comp.lists,
                               full.joint.segs.df = full.joint.segs.w.phasing.df,
@@ -603,7 +672,7 @@ plotAllSampleCCFsAcrossGenome(all.pw.cn.het.comp.lists = all.pw.cn.het.comp.list
 
 dev.off()
 
-png(file = paste(PLOT_OUTPUT_DIR, "CCF_cpnB", ".png", sep = ""), width = 1200, height = 1400)
+png(file = paste(PLOT_OUTPUT_DIR, patient, "_CCF_cpnB", ".png", sep = ""), width = 1200, height = 1400)
 
 plotAllSampleCCFsAcrossGenome(all.pw.cn.het.comp.lists = all.pw.cn.het.comp.lists,
                               full.joint.segs.df = full.joint.segs.w.phasing.df,
@@ -613,7 +682,7 @@ plotAllSampleCCFsAcrossGenome(all.pw.cn.het.comp.lists = all.pw.cn.het.comp.list
 dev.off()
 
 #Now let's plot baf
-png(file = paste(PLOT_OUTPUT_DIR, "BAF_phased", ".png", sep=""), width = 1200, height = 1400)
+png(file = paste(PLOT_OUTPUT_DIR, patient, "_BAF_phased", ".png", sep=""), width = 1200, height = 1400)
 
 plotAllSampleBAFsAcrossGenome(sample.vec, patient.phased.BAF.df.list, cpnA.allele.color = '#de2d2699', cpnB.allele.color= '#3182bd99')
 
@@ -625,4 +694,6 @@ plotOldNewComparisonOfAllCPN(sample.vec, full.joint.segs.df, plot.output.dir = P
 
 
 plotAllSamplePairwiseComparisonSegmentCPN(sample.vec, full.joint.segs.df, plot.output.dir = PLOT_OUTPUT_DIR)
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 
+
+
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               
