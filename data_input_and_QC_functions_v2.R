@@ -159,7 +159,7 @@ getSNPDataForTRACERxWGS <- function(pt.file.paths.df) {
 ##
 ##Returns:
 ##
-processOriginalCopyNumberSegments <- function(pt.id, orig.cpn.segs.df){
+errorCheckAndAddPloidyAdjRawCPNToSegDF <- function(pt.id, orig.cpn.segs.df){
 
   #TODO add checks that that:
   #all samples have the same number of chromosomes
@@ -175,13 +175,12 @@ processOriginalCopyNumberSegments <- function(pt.id, orig.cpn.segs.df){
 
   samples <- unique(orig.cpn.segs.df$sample)
 
-  orig.cpn.segs.df$tot_raw_cpn <- as.numeric(orig.cpn.segs.df$nAraw) + as.numeric(orig.cpn.segs.df$nBraw)  
-  orig.cpn.segs.df$max_raw_cpn <- apply(cbind(orig.cpn.segs.df$nAraw, orig.cpn.segs.df$nBraw), 1, max)
+  orig.cpn.segs.df$tot_raw_cpn <- as.numeric(orig.cpn.segs.df$nAraw) + as.numeric(orig.cpn.segs.df$nBraw)
   orig.cpn.segs.df$min_raw_cpn <- apply(cbind(orig.cpn.segs.df$nAraw, orig.cpn.segs.df$nBraw), 1, min)
+  orig.cpn.segs.df$max_raw_cpn <- apply(cbind(orig.cpn.segs.df$nAraw, orig.cpn.segs.df$nBraw), 1, max)
   orig.cpn.segs.df$cpn_to_use <- orig.cpn.segs.df$tot_raw_cpn
 
-  orig.cpn.segs.df$ploidy_adj_tot_cpn <- log2(orig.cpn.segs.df$tot_raw_cpn/orig.cpn.segs.df$Ploidy)
-
+  orig.cpn.segs.df$ploidy_adj_tot_cpn <- log2(as.numeric(orig.cpn.segs.df$tot_raw_cpn) / as.numeric(orig.cpn.segs.df$Ploidy))
 
   return(orig.cpn.segs.df)
 }
@@ -488,3 +487,4 @@ cleanAndErrorCheckSNPs <- function(all.samp.SNP.list, min.cons.seg.df, allow.log
 
 }#end <- function(all.samp.SNP.list, min.cons.seg.df)
 
+ 

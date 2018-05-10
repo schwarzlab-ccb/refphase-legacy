@@ -16,7 +16,7 @@ generateAllSamplesByChromIntCPNUnderlyingRawValuesLists <- function(all.pw.cn.he
 
                           next
                     }#end if (is.na(all.pw.cn.het.comp.lists[[1]][[seg.name]]$ph_cpnA_vec[1]) | is.na(all.pw.cn.het.comp.lists[[1]][[seg.name]]$ph_cpnB_vec[1])) {
-                  }
+                  }#if (reduced.seg.flag == FALSE) {
 
                   for ( cpnX in cpnX.vec ) {
 
@@ -39,7 +39,6 @@ generateAllSamplesByChromIntCPNUnderlyingRawValuesLists <- function(all.pw.cn.he
                       sample.chr.int.cpn.raw.vals.list[[samp]][[as.character(samp.seg.int.cpnX.val)]][[chr]][[paste0("all_seg_",cpnX,"_vec")]] <- c(
                             sample.chr.int.cpn.raw.vals.list[[samp]][[as.character(samp.seg.int.cpnX.val)]][[chr]][[paste0("all_seg_",cpnX,"_vec")]], 
                             all.pw.cn.het.comp.lists[[seg.name]][[paste0(cpnX,"_orig_ph_obs_",cpnX,"_vec")]])
-
 
                     }
                   }#end  for ( cpnX in cpnX.vec ) {

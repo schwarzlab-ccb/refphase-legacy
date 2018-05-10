@@ -496,14 +496,13 @@ calculatePairwiseCNHeterogeneity <- function(samp.one,
                s.one.two.comparison[[seg.name]][[samp.one.two.string]]$comb_cpnA_cpnB_diff_by_size_het <- seg.cpnA.het.size.by.diff + seg.cpnB.het.size.by.diff
                s.one.two.comparison[[seg.name]][[samp.one.two.string]]$MSAI <- 0
 
-
                if (tTestWithErrorHandling(phased.s.one.s.cpnA.cpnB.df[, 1], phased.s.one.s.cpnA.cpnB.df[, 2], paired=TRUE)$p.val < 0.001 &
                     tTestWithErrorHandling(phased.s.two.s.cpnA.cpnB.df[, 1], phased.s.two.s.cpnA.cpnB.df[,2], paired=TRUE)$p.val < 0.001) {
 
                     if( (mean(phased.s.one.s.cpnA.cpnB.df[, 1] - phased.s.one.s.cpnA.cpnB.df[, 2]) > 0 & 
-                         mean(phased.s.two.s.cpnA.cpnB.df[, 1] - phased.s.one.s.cpnA.cpnB.df[, 2]) < 0) | 
+                         mean(phased.s.two.s.cpnA.cpnB.df[, 1] - phased.s.two.s.cpnA.cpnB.df[, 2]) < 0) | 
                         (mean(phased.s.one.s.cpnA.cpnB.df[, 2] - phased.s.one.s.cpnA.cpnB.df[, 1]) < 0 & 
-                         mean(phased.s.two.s.cpnA.cpnB.df[, 2] - phased.s.one.s.cpnA.cpnB.df[, 1]) > 0) ){
+                         mean(phased.s.two.s.cpnA.cpnB.df[, 2] - phased.s.two.s.cpnA.cpnB.df[, 1]) > 0) ){
 
                          s.one.two.comparison[[seg.name]][[samp.one.two.string]]$MSAI <- 1
 
@@ -550,4 +549,4 @@ calculatePairwiseCNHeterogeneity <- function(samp.one,
 
      return(s.one.two.comparison)
 
-}#End calculatePairwiseCNHeterogeneity <- function(samp
+}#End calculatePairwiseCNHeterogeneity <- function(samp                                                                                                                                                                                                                                                                                                                                                                                                                                                     

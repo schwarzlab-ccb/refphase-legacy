@@ -196,10 +196,10 @@ generateFinalSegmentationOutput <- function(seg.name.vec
                         ss.mean.cpnX.obs <- mean(ph.cpnX.vec)
                         ss.mean.cpnX.obs <- ifelse(ss.mean.cpnX.obs < 0, 0, ss.mean.cpnX.obs)
 
-                        all.seg.df[samp.seg.name,]$nBraw <- ifelse(median(as.numeric(ph.cpnA.vec)) < 0 , 0, median(as.numeric(ph.cpnA.vec)))
-                        all.seg.df[samp.seg.name,]$nAraw <- ifelse(median(as.numeric(ph.cpnB.vec)) < 0 , 0, median(as.numeric(ph.cpnB.vec)))
-                        all.seg.df[samp.seg.name,]$nMinor <-  round(as.numeric(all.seg.df[samp.seg.name,]$nAraw))
-                        all.seg.df[samp.seg.name,]$nMajor <-  round(as.numeric(all.seg.df[samp.seg.name,]$nBraw))
+                        all.seg.df[samp.seg.name,]$nBraw <- ifelse(median(as.numeric(ph.cpnB.vec)) < 0 , 0, median(as.numeric(ph.cpnB.vec)))
+                        all.seg.df[samp.seg.name,]$nAraw <- ifelse(median(as.numeric(ph.cpnA.vec)) < 0 , 0, median(as.numeric(ph.cpnA.vec)))
+                        all.seg.df[samp.seg.name,]$nMinor <-  round(as.numeric(all.seg.df[samp.seg.name,]$nBraw))
+                        all.seg.df[samp.seg.name,]$nMajor <-  round(as.numeric(all.seg.df[samp.seg.name,]$nAraw))
                         all.seg.df[samp.seg.name,]$cnTotal <- as.numeric(all.seg.df[samp.seg.name,]$nMinor) + as.numeric(all.seg.df[samp.seg.name,]$nMajor)
                         #end of double assignment
                         all.seg.df[samp.seg.name, paste0("poss_sc_",cpnX, "_low")] <- median(as.numeric(seg.CCF.val.list[[paste0("poss_sc_",cpnX, "_low")]]))
@@ -255,7 +255,7 @@ generateFinalSegmentationOutput <- function(seg.name.vec
                         #Todo, is it true that the hetA or hetB means that there is always some heterogeneity across the samples..., go back through code for edge cases.
                         all.seg.df[samp.seg.name, paste0("het_", cpnX, "_acc_samps_present")] <- all.seg.df[samp.seg.name, paste0("poss_sc_", cpnX, "_low")] != all.seg.df[samp.seg.name,paste0("poss_sc_",cpnX, "_high")]
 
-                        if(all.seg.df[samp.seg.name, paste0("frac_psc_",cpnX,"_low")] > 1 |
+                        if (all.seg.df[samp.seg.name, paste0("frac_psc_",cpnX,"_low")] > 1 |
                            all.seg.df[samp.seg.name, paste0("frac_psc_",cpnX,"_high")] > 1 |
                            all.seg.df[samp.seg.name, paste0("sc_",cpnX,"_vs_min_CCF_pval")] >= clonal.pval |
                            all.seg.df[samp.seg.name, paste0("vs_other_chrs_same_",cpnX,"_pval")] >= diff.from.oth.p.val) {
@@ -279,6 +279,27 @@ generateFinalSegmentationOutput <- function(seg.name.vec
 }#end generateFinalSegmentationOutput <- function(...)
 
 
+testFinalOutputDataframe <- function(final.joint.segs.df) {
+
+    #Tests that should hold for the final output:
+    potential.msai.vec <- ! is.na(final.joint.segs.df$nAraw) & (final.joint.segs.df$nAraw < final.joint.segs.df$nBraw)
+    if ( ! all(as.logical(final.joint.segs.df[potential.msai.vec == TRUE,]$MSAI) == TRUE) ) {
+
+        stop("MSAI column not flled in correctly")
+
+    }
+
+    #Test original adding
+
+    if ( ! all(final.joint.segs.df$orig_nMajor < final.joint.segs.df$orig_nMinor) ) {
+
+        stop("Original nMajor not always greter than orginal nMinor")
+
+    }#end if ( ! all(final.joint.segs.df$orig_nMajor < final.joint.segs.df$orig_nMinor) ) {
+
+
+}#end testFinalOutputDataframe
+
 initialiseAllSegFullDataframe <- function(seg.name.vec, sample.vec, make.row.names.seg.name.alone=FALSE) { 
 
         seg.chr.vec <- sapply(seg.name.vec, function(x) as.numeric(unlist(strsplit(x,split=":"))[1]))
@@ -290,52 +311,99 @@ initialiseAllSegFullDataframe <- function(seg.name.vec, sample.vec, make.row.nam
             sample.rows <- c(sample.rows, rep(samp, length(seg.name.vec)))
         }
         all.seg.df <- data.frame(
+                #New processed calls we might want
                 sample_name = sample.rows,
-                seg_name= rep(seg.name.vec, length(sample.vec)),
+                seg_name = rep(seg.name.vec, length(sample.vec)),
                 chr = rep(seg.chr.vec, length(sample.vec)),
                 startpos = rep(seg.startpos.vec, length(sample.vec)),
                 endpos = rep(seg.endpos.vec, length(sample.vec)),
                 n.het = rep(NA, nr),
-                cnTotal = rep(NA, nr),         
+                cnTotal = rep(NA, nr),
+                nMinor = rep(NA, nr),         
                 nMajor = rep(NA, nr),
-                nMinor = rep(NA, nr),
                 Ploidy = rep(NA, nr),
                 ACF = rep(NA, nr),
                 nAraw = rep(NA, nr),
                 nBraw = rep(NA, nr),
+                sc_cpnA_present = rep(NA, nr),
+                sc_cpnA_high_or_low_dominate = rep(NA, nr),
                 poss_sc_cpnA_low = rep(NA, nr),
                 poss_sc_cpnA_high = rep(NA, nr),
+                sc_cpnB_present = rep(NA, nr),
+                sc_cpnB_high_or_low_dominate = rep(NA, nr),
                 poss_sc_cpnB_low = rep(NA, nr),
                 poss_sc_cpnB_high = rep(NA, nr),
-                frac_psc_cpnA_low = rep(NA, nr),
-                frac_psc_cpnA_high = rep(NA, nr),
-                frac_psc_cpnB_low = rep(NA, nr),
-                frac_psc_cpnB_high = rep(NA, nr),
-                orig_cpnA_raw  = rep(NA, nr),
-                orig_cpnB_raw = rep(NA, nr),
-                orig_nMinor = rep(NA, nr),
-                orig_nMajor = rep(NA, nr),
-                orig_cnTotal= rep(NA, nr),
-                sc_cpnA_present = rep(NA, nr),
-                sc_cpnB_present = rep(NA, nr),
-                het_cpnA_acc_samps_present = rep(NA, nr),
-                het_cpnB_acc_samps_present = rep(NA, nr),
+                #Copy number event calling:
+                cpn_event_vs_ploidy = rep(NA, nr),
                 median_BAF = rep(NA, nr),
                 median_logr = rep(NA, nr),
+                mean_BAF = rep(NA, nr),
+                mean_logr = rep(NA, nr),
+                stdev_BAF = rep(NA, nr),
+                stdev_logr = rep(NA, nr),
+                num_logr_only = rep(NA, nr),
+                num_both_logr_BAF = rep(NA, nr),
                 gain_pval = rep(NA, nr),
                 amp_pval = rep(NA, nr),
                 loss_pval = rep(NA, nr),
                 deep_loss_pval = rep(NA, nr),
-                sc_cpnA_high_or_low_dominate = rep(NA, nr),
+                #information for subclonal calling:
+                ancestral_cpn_state = rep(NA, nr),#if lost or gained ccf different? what i it relative to, ancestral stated medicc
+                loss_vs_gain_ccf = rep(NA, nr),
                 sc_cpnA_vs_min_CCF_pval = rep(NA, nr),
-                sc_cpnB_high_or_low_dominate = rep(NA, nr),
-                sc_cpnB_vs_min_CCF_pval = rep(NA, nr),
-                num_other_chrs_same_cpnA_cpn = rep(NA, nr),
+                frac_psc_cpnA_low = rep(NA, nr),
+                frac_psc_cpnA_high = rep(NA, nr),
                 vs_other_chrs_same_cpnA_pval = rep(NA, nr),
-                num_other_chrs_same_cpnB_cpn = rep(NA, nr),
+                num_other_chrs_same_cpnA_cpn = rep(NA, nr),
+                sc_cpnB_vs_min_CCF_pval = rep(NA, nr),
+                frac_psc_cpnB_low = rep(NA, nr),
+                frac_psc_cpnB_high = rep(NA, nr),
                 vs_other_chrs_same_cpnB_pval = rep(NA, nr),
+                num_other_chrs_same_cpnB_cpn = rep(NA, nr),
+                #Link back to original segmentation
+                orig_seg_name = rep(NA, nr),
+                orig_nMinor = rep(NA, nr),
+                orig_nMajor = rep(NA, nr),
+                orig_cpnA_raw  = rep(NA, nr),
+                orig_cpnB_raw = rep(NA, nr),
+                orig_cnTotal= rep(NA, nr),
+                nMinor_change = rep(NA, nr),
+                nMajor_change = rep(NA, nr),
+                new_clonal_AI_detected = rep(NA, nr),
+                new_sc_AI_detected = rep(NA, nr),
+                orig_arm_or_focal = rep(NA, nr),
+                #joined
+                #joined_arm_or_focal = rep(NA, nr),
+                #Allelic imabalance information
+                clonal_AI_present = rep(NA, nr),
+                sc_AI_present =  rep(NA, nr),
+                LOH_present =  rep(NA, nr),
+                sc_LOH_present = rep(NA, nr),
                 samp_used_to_phase  = rep(NA, nr),
                 MSAI = rep(NA, nr),#Todo, decide whether this is used or diff from ref samp
+                dominant_allele = rep(NA, nr),
+                is_parallel_gain_loss = rep(NA, nr),
+                #disease level stats
+                sc_cpnA_acc_samps = rep(NA, nr),
+                sc_cpnB_acc_samps = rep(NA, nr), 
+                het_cpnA_acc_samps = rep(NA, nr),#
+                het_cpnB_acc_samps = rep(NA, nr),#
+                clonal_cpn_event = rep(NA, nr),
+                sc_cpn_events_present = rep(NA, nr),
+                #sample summary data that could go into a different dataframe
+                wgii = rep(NA, nr),
+                cl_wgii = rep(NA, nr),
+                sc_wgii = rep(NA, nr),
+                logr_data_quality = rep(NA, nr),
+                TRACRERx_het_measure = rep(NA, nr),
+                mphase_het_measure = rep(NA, nr),
+                #GD = rep(NA, nr),#don't use until we are actually using GD input for something.
+                cpn_fit_quality = rep(NA, nr),
+                #Purity adjusted thresholds for calling gains/losses
+                purity_adj_logr_thresh_gain = rep(NA, nr),
+                purity_adj_logr_thresh_loss = rep(NA, nr),
+                purity_adj_logr_thresh_deep_loss = rep(NA, nr),
+                purity_adj_logr_thresh_amp = rep(NA, nr),
                 stringsAsFactors = FALSE
                 )
         if (make.row.names.seg.name.alone == TRUE ) {
@@ -353,3 +421,73 @@ initialiseAllSegFullDataframe <- function(seg.name.vec, sample.vec, make.row.nam
         return(all.seg.df)
 
 }
+
+
+# #Original segmentation dataframe:
+# all.seg.df <- data.frame(
+#         sample_name = sample.rows,
+#         seg_name = rep(seg.name.vec, length(sample.vec)),
+#         chr = rep(seg.chr.vec, length(sample.vec)),
+#         startpos = rep(seg.startpos.vec, length(sample.vec)),
+#         endpos = rep(seg.endpos.vec, length(sample.vec)),
+#         n.het = rep(NA, nr),
+#         cnTotal = rep(NA, nr),
+#         nMinor = rep(NA, nr),         
+#         nMajor = rep(NA, nr),
+#         Ploidy = rep(NA, nr),
+#         ACF = rep(NA, nr),
+#         nAraw = rep(NA, nr),
+#         nBraw = rep(NA, nr),
+#         sc_cpnA_present = rep(NA, nr),
+#         sc_cpnB_present = rep(NA, nr),
+#         poss_sc_cpnA_low = rep(NA, nr),
+#         poss_sc_cpnA_high = rep(NA, nr),
+#         poss_sc_cpnB_low = rep(NA, nr),
+#         poss_sc_cpnB_high = rep(NA, nr),
+#         frac_psc_cpnA_low = rep(NA, nr),
+#         frac_psc_cpnA_high = rep(NA, nr),
+#         frac_psc_cpnB_low = rep(NA, nr),
+#         frac_psc_cpnB_high = rep(NA, nr),
+#         orig_seg_name = rep(NA, nr),
+#         orig_nMinor = rep(NA, nr),
+#         orig_nMajor = rep(NA, nr),
+#         orig_cpnA_raw  = rep(NA, nr),
+#         orig_cpnB_raw = rep(NA, nr),
+#         orig_cnTotal= rep(NA, nr),
+#         median_BAF = rep(NA, nr),
+#         median_logr = rep(NA, nr),
+#         gain_pval = rep(NA, nr),
+#         amp_pval = rep(NA, nr),
+#         loss_pval = rep(NA, nr),
+#         deep_loss_pval = rep(NA, nr),
+#         sc_cpnA_high_or_low_dominate = rep(NA, nr),
+#         sc_cpnA_vs_min_CCF_pval = rep(NA, nr),
+#         sc_cpnB_high_or_low_dominate = rep(NA, nr),
+#         sc_cpnB_vs_min_CCF_pval = rep(NA, nr),
+#         num_other_chrs_same_cpnA_cpn = rep(NA, nr),
+#         vs_other_chrs_same_cpnA_pval = rep(NA, nr),
+#         num_other_chrs_same_cpnB_cpn = rep(NA, nr),
+#         vs_other_chrs_same_cpnB_pval = rep(NA, nr),
+#         samp_used_to_phase  = rep(NA, nr),
+#         MSAI = rep(NA, nr),#Todo, decide whether this is used or diff from ref samp
+#         dominant_allele = rep(NA, nr),
+#         cpn_event_vs_ploidy = rep(NA, nr),
+#         is_parallel_cpn_event = rep(NA, nr),
+#         AI_present = rep(NA, nr),
+#         LOH_present = rep(NA, nr),
+#         new_AI_present = rep(NA, nr),
+#         nMinor_change = rep(NA, nr),
+#         nMajor_change = rep(NA, nr),
+#         het_cpnA_acc_samps_present = rep(NA, nr),
+#         het_cpnB_acc_samps_present = rep(NA, nr),
+#         stringsAsFactors = FALSE
+#         )
+
+
+
+
+
+
+
+
+                                                              
