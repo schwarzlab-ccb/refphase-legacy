@@ -453,7 +453,7 @@ initialiseAllSegFullDataframe <- function(seg.name.vec, sample.vec, make.row.nam
                 psc_cpnA_low = rep(NA, nr),
                 psc_cpnA_high = rep(NA, nr),
                 within_s_sc_cpnB_present = rep(NA, nr),
-                within_s_sc_cpnA_present_using_min_cpn_diff = rep(NA, nr),
+                within_s_sc_cpnB_present_using_min_cpn_diff = rep(NA, nr),
                 sc_cpnB_high_or_low_dominate = rep(NA, nr),
                 psc_cpnB_low = rep(NA, nr),
                 psc_cpnB_high = rep(NA, nr),
