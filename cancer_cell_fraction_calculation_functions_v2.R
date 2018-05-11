@@ -68,7 +68,6 @@ calculateWhetherSegCPNDiffFromIntegerExpectedAndAllMatchingSampCPN <- function(a
 
       samp.pvals.diff.from.exp.list <- list()
 
-
       sample.vec <- rownames(s.samps.int.ob.xp.cpn.df)
 
       for ( samp in sample.vec ) {
@@ -77,9 +76,8 @@ calculateWhetherSegCPNDiffFromIntegerExpectedAndAllMatchingSampCPN <- function(a
 
       }
 
-
       chr <- strsplit(seg.name, split=":")[1]
-      chrs.for.ccf.comp.vec <- chrs.can.use.for.ccf.test[ ! chrs.can.use.for.ccf.test%in% chr] #Going to be used to assess CCFs across the each sample
+      chrs.for.ccf.comp.vec <- chrs.can.use.for.ccf.test[ ! chrs.can.use.for.ccf.test %in% chr] #Going to be used to assess CCFs across the each sample
       
       #Todo refacor so doesn't need the reduced seg flag.
       if (reduced.seg.flag == FALSE) {
@@ -639,3 +637,4 @@ chooseLowHighSubclonalCPNWithMoreThanTwoPossibilities <- function(s.samps.int.ob
     return(c(ss.poss.sc.cpnX.low, ss.poss.sc.cpnX.high))
 
 }
+ 
