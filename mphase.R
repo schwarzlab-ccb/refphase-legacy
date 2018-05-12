@@ -58,7 +58,7 @@ print(current.dir)
 # #MEDICC format for TRACERx example
 # medicc.mphase.command <- paste("Rscript", mphase.script.path, patient, allow.dip.test.phasing.flag, data.format.to.use, snp.file.path, seg.file.path, sep=" ")
 
-#Debugging option parameters:
+##Debugging option parameters:
 patient <- "MET048"
 allow.dip.test.phasing.flag = FALSE
 output.directory.base.path <- "/home/camp/watkint/working/watkint/data/brastianos/release_v2/B_MET048/exome/CN_het_TRACERx_no_diptest/"
@@ -69,6 +69,19 @@ seg.file.path <- "/home/camp/watkint/working/watkint/data/brastianos/release_v2/
 mphase.script.path <- "/home/camp/watkint/working/watkint/scripts/multiregioncopynum/mphase.R"
 #TRACERx format for TRACERx example
 tracerx.mphase.command <- paste("Rscript", mphase.script.path, patient, allow.dip.test.phasing.flag, data.format.to.use, snp.file.path, seg.file.path, sep= " ")
+
+# #Debugging option parameters:
+# patient <- "MET048"
+# allow.dip.test.phasing.flag  <- FALSE
+# output.directory.base.path <- "/home/camp/watkint/working/watkint/data/brastianos/release_v2/B_MET048/exome/CN_het"
+# data.format.to.use <- "MEDICC"
+# snp.file.path <- "/home/camp/watkint/working/watkint/data/brastianos/release_v2/B_MET048/exome/MSAI/MET048_joint_snps.txt"
+# seg.file.path <- "/home/camp/watkint/working/watkint/data/brastianos/release_v2/B_MET048/exome/MSAI/MET048_joint_segs_all_ascat_info.txt"
+# ##########
+# mphase.script.path <- "/home/camp/watkint/working/watkint/scripts/multiregioncopynum/mphase.R"
+# #MEDICC format for TRACERx example
+# medicc.mphase.command <- paste("Rscript", mphase.script.path, patient, allow.dip.test.phasing.flag, data.format.to.use, snp.file.path, seg.file.path, sep=" ")
+
 
 print("patient")
 print(patient)
@@ -291,11 +304,19 @@ if (data.format.to.use == "MEDICC") {
 
 #Todo add saving of all relevent files in correct positions....
 
+#we can create a dataframe of the logr snps, we don't need to pass them all around in lists like the ccfs
+
+#append dataframes
+
 
 #####Get relevant libraries:
 #Todo check this is the only required library.
 library(diptest)
 library(gplots)
+library(gdata)
+
+
+
 
 ###############This is past the input stage and into the analysis:
 #Set constants for all analyses here... eventually these can be command line set
@@ -355,42 +376,6 @@ if ( ! file.exists(seg.file.path)) {
 
 
 
-# snp.file.df <- read.table(snp.file.path, stringsAsFactors=FALSE, sep="\t", header=TRUE)
-# #Note this should be the full oen
-# seg.file.df <- read.table(seg.file.path, stringsAsFactors=FALSE, sep="\t", header=TRUE)
-# #Designed to handle the MSAI nput files
-# seg.file.df$sample <- gsub("\\.", "-", gsub("_LogR", "", seg.file.df$sample))
-# seg.file.df$callState <- NULL
-# seg.file.df$patient <- patient
-# seg.file.df$sample_name <- paste(patient,sapply(seg.file.df$sample, function(x) strsplit(x, split="-")[[1]][2]), sep=":")
-
-# processed.orig.cpn.segs.df <- processOriginalCopyNumberSegments(patient, seg.file.df)
-
-# sample.vec <- unique(processed.orig.cpn.segs.df$sample)
-
-# purity.est.vec <- processed.orig.cpn.segs.df[ ! duplicated(processed.orig.cpn.segs.df$sample), "ACF"]
-# names(purity.est.vec) <- sample.vec
-
-# ploidy.est.vec <- processed.orig.cpn.segs.df[ ! duplicated(processed.orig.cpn.segs.df$sample), "Ploidy"]
-# names(ploidy.est.vec) <- sample.vec
-
-# #Todo accept precomputed mininmum consistent segmentation
-# min.cons.segs.df <- generateMinimumConsistentSegmentation(processed.orig.cpn.segs.df, chroms=1:22, col.to.use="ploidy_adj_tot_cpn")
-# print(head(min.cons.segs.df))
-
-# min.cons.segs.df <- cleanAndErrorCheckMinConsSegs(min.cons.segs.df)
-# #colnames(min.cons.segs.df)[1:3] <- c("chrom", "startpos", "endpos")
-# print(head(min.cons.segs.df))
-
-
-
-# asas.SNPs.w.both.lr.baf.snp.lists <- cleanAndErrorCheckSNPsMPhase(all.samp.SNP.list, min.cons.segs.df, allow.logr.only.flag = FALSE)
-# print(head(str(asas.SNPs.w.both.lr.baf.snp.lists[[1]], max = 1)))
-
-# asas.SNPS.lr.and.or.baf.lists <- cleanAndErrorCheckSNPsMPhase(all.samp.SNP.list, min.cons.segs.df, allow.logr.only.flag = TRUE)
-
-# print(head(str(asas.SNPs.w.both.lr.baf.snp.lists[[1]], max = 1)))
-
 #Todo, further refactor code so that everything is done at the level of a segment
 #Todo, add options to phase using baf dip test not just ascat regions
 #Todo, reduce the number of parameters per function
@@ -399,16 +384,16 @@ if ( ! file.exists(seg.file.path)) {
 #Todo, check if the mixture phasing is ever being selected... in the example with B_MET002 no mixture phasing called.
 
 asas.SNPs.w.both.lr.baf.snp.lists.path <- paste0(PLOT_OUTPUT_DIR, patient, "_asas_SNPs_w_both_lr_baf_snp_lists.RDS")
-saveRDS(asas.SNPs.w.both.lr.baf.snp.lists, file=asas.SNPs.w.both.lr.baf.snp.lists.path)
+saveRDS(asas.SNPs.w.both.lr.baf.snp.lists, file = asas.SNPs.w.both.lr.baf.snp.lists.path)
 
 min.cons.segs.df.path <- paste0(PLOT_OUTPUT_DIR, patient, "_min_cons_segs_df.RDS")
-saveRDS(min.cons.segs.df, file=min.cons.segs.df.path)
+saveRDS(min.cons.segs.df, file = min.cons.segs.df.path)
 
 ploidy.est.vec.path <- paste0(PLOT_OUTPUT_DIR, patient, "_ploidy_est_vec.RDS")
-saveRDS(ploidy.est.vec, file=ploidy.est.vec.path)
+saveRDS(ploidy.est.vec, file = ploidy.est.vec.path)
 
 purity.est.vec.path <- paste0(PLOT_OUTPUT_DIR, patient, "_purity_est_vec.RDS")
-saveRDS(purity.est.vec, file=purity.est.vec.path)
+saveRDS(purity.est.vec, file = purity.est.vec.path)
 
 all.seg.phasing.info.list <- getCombinedBAFDipTestPhasing(asas.lr.baf.lists = asas.SNPs.w.both.lr.baf.snp.lists,
                                             min.cons.segs.df = min.cons.segs.df,
@@ -422,7 +407,7 @@ all.seg.phasing.info.list <- getCombinedBAFDipTestPhasing(asas.lr.baf.lists = as
                                             allow.dip.test.without.ASCAT.to.phase = ALLOW_DIPTEST_ALONE_PH_FLAG
                                             )
 all.seg.phasing.info.list.path <- paste0(PLOT_OUTPUT_DIR, patient, "_all_seg_phasing_info_list.RDS")
-saveRDS(all.seg.phasing.info.list.path, file=all.seg.phasing.info.list.path)
+saveRDS(all.seg.phasing.info.list.path, file = all.seg.phasing.info.list.path)
 #Todo unsure of what to do with the baf logr lists which have positions that only have logr here, at the moment exclude them but how
 #does that affect later run
 patient.phased.BAF.df.list <- createAllSegsPhasedBAFDataFrame(asas.lr.baf.lists = asas.SNPs.w.both.lr.baf.snp.lists,
@@ -430,11 +415,62 @@ patient.phased.BAF.df.list <- createAllSegsPhasedBAFDataFrame(asas.lr.baf.lists 
                                                          min.num.hz.snp.phasing = MIN_NUM_HZ_SNP_PHASING
                                                          )
 patient.phased.BAF.df.list.path <- paste0(PLOT_OUTPUT_DIR, patient, "_phased_BAF_df_list.RDS")
-saveRDS(patient.phased.BAF.df.list, file=patient.phased.BAF.df.list.path)
+saveRDS(patient.phased.BAF.df.list, file = patient.phased.BAF.df.list.path)
 
 #Todo check wha happens to the missing rows, are these segments that contained less than 5 snps and thus didn't have something created?
 
 sample.vec <- names(asas.SNPs.w.both.lr.baf.snp.lists)
+
+
+#Get the logr dataframe list we'll use to add gain/loss calls:
+
+#This will be used to work out a total raw and used for logr 
+all.samp.logr.df.list <- list()
+
+for ( samp in sample.vec ) {
+
+	samp.logr.baf.df <- do.call(rbind, asas.SNPS.lr.and.or.baf.lists[[samp]])
+
+	if ( nrow(samp.logr.baf.df[is.na(samp.logr.baf.df$BAF) ,]) > 0 ) {
+
+		samp.logr.df <- samp.logr.baf.df[ ! is.na(samp.logr.baf.df$BAF) ,]
+
+	} else if ( nrow(samp.logr.baf.df[samp.logr.baf.df$BAF == 2 ,]) > 0) {
+
+		samp.logr.df <- samp.logr.baf.df[ samp.logr.baf.df$BAF == 2 ,]
+
+	} else {
+
+		print("No logr only SNPs, 0 row dataframe will be passed to functions.")
+		samp.logr.df <- samp.logr.baf.df[ samp.logr.baf.df$BAF == 2 ,]
+
+	}
+
+
+	if (nrow(samp.logr.baf.df) > 0 ) {
+		print("head(samp.logr.df)")
+		print(head(samp.logr.df))
+ 		mock.cpnA.cpnB.logr.df <- calculateSNPsCopyNumberAB(logr.vec = samp.logr.df$logR,
+	                                                        baf.vec = rep(0.5, nrow(samp.logr.df)),
+	                                                        tumor.ploidy = ploidy.est.vec[samp],
+	                                                        tumor.purity = purity.est.vec[samp],
+	                                                        gamma.val = GAMMA_VAL)
+ 		samp.logr.df$tot_raw_un_ph_cpn <- unlist(rowSums(mock.cpnA.cpnB.logr.df))
+ 		print("head(samp.logr.df)")
+ 		print(head(samp.logr.df))
+		#samp.logr.df$tot_raw_un_ph_cpn <- rowSums(mock.cpnA.cpnB.logr.df)
+
+	}
+
+	all.samp.logr.df.list[[samp]] <- samp.logr.df
+	
+}
+
+## how to make total raw, even though no baf value
+
+
+
+
 
 all.pw.cn.het.comp.lists <- list()
 for (i in 1:(length(sample.vec) - 1)) {
@@ -640,36 +676,67 @@ saveRDS(all.seg.greater.than.two.diff.list, file=all.seg.greater.than.two.diff.l
 
 #empty.unjoined.mcr.segs.df <- initialiseAllSegFullDataframe(seg.name.vec, sample.vec, make.row.names.seg.name.alone = FALSE)
 #So no
-full.joint.segs.df <- generateFinalSegmentationOutput(seg.name.vec = names(all.pw.cn.het.comp.lists[[1]])
-                                ,all.samp.ph.BAF.df.list = patient.phased.BAF.df.list     
+
+
+empty.full.joint.segs.df <- initialiseFullOutputDataframe(seg.name.vec = names(all.pw.cn.het.comp.lists[[1]]),
+														ploidy.est.vec = ploidy.est.vec,
+														purity.est.vec = purity.est.vec,
+														make.row.names.seg.name.alone = FALSE) 
+
+
+#This adds the raw cpn for both segments that could be phased and those that couldn't
+source("final_output_segmentation_file_generation_functions_v2.R")
+new.cpn.full.joint.segs.df <- addNewRawAndIntCPNCallsToFinalSegmentation(seg.name.vec = names(all.pw.cn.het.comp.lists[[1]]),
+																		sample.vec = names(purity.est.vec),
+																		all.samp.logr.df.list = all.samp.logr.df.list,
+																		all.samp.ph.BAF.df.list = patient.phased.BAF.df.list,
+																		all.seg.CCF.vals.list = all.seg.CCF.list,
+																		asas.lr.baf.lists = asas.SNPs.w.both.lr.baf.snp.lists,
+																		all.seg.df = empty.full.joint.segs.df,
+																		cpnX.vec = c("cpnA", "cpnB")
+																		)
+
+
+#We also need to add the original
+
+#Add CCF information and within sample clonality information to the dataframe...
+clonality.and.ccf.joint.segs.df <- addWithinSampleClonalityAndCCFToFinalSegmentation(seg.name.vec = names(all.pw.cn.het.comp.lists[[1]])
                                 ,all.seg.CCF.vals.list = all.seg.CCF.list
                                 ,all.seg.CCF.diff.from.exp.list = all.seg.CCF.diff.from.exp.list
-                                ,ploidy.est.vec =  ploidy.est.vec
-                                ,purity.est.vec = purity.est.vec
+                                ,all.seg.df = empty.full.joint.segs.df
+                                ,sample.vec = names(purity.est.vec)
                                 ,clonal.pval = PVAL_THRESH_VS_MIN_CCF
                                 ,diff.from.oth.p.val = PVAL_THRESH_VS_OTH_CHRS_SAME_CPN
                                 ,min.CCF.to.consider.val = MIN_CCF_TO_CONSIDER
                                 ,min.cpn.to.consider.val = MIN_CPN_TO_CONSIDER
                                 ,min.num.other.chrs = MIN_NUM_CHRS
-                                ,gain.threshold    = GAIN_LOGR_THRESH
-                                ,loss.threshold    = LOSS_LOGR_THRESH
-                                ,amp.threshold     = AMP_LOGR_THRESH
-                                ,deep.loss.threshold = DEEP_LOSS_LOGR_THRESH
-                                ,tot.cpn.vs.ploidy.pval.thresh = PVAL_THRESH_VS_LOGR_FOR_CPN_EVENT
                                 ,chrs.to.use.vec = CHRS_TO_USE_VEC
                                 ,cpnX.vec = c("cpnA", "cpnB")
-                                ,reduced.seg.flag = FALSE
                                 ,max.cpn.val = MAX_CPN_FOR_SUBCLONALITY
                                 )
+
+
+#This will also add it to segments that were too small for 
+full.joint.segs.df.w.cpn.vs.ploidy.df <- addLogrDefinedCPNEventsToOutputSegmentation(purity.vec = purity.vec,
+																					ploidy.vec = ploidy.vec,	
+                                                        							seg.name.vec = names(all.pw.cn.het.comp.lists[[1]]),
+                                                        							all.seg.df = clonality.and.ccf.joint.segs.df,
+                                                        							all.samp.logr.df.list = all.samp.logr.df.list,
+                                                        							all.samp.ph.BAF.df.list = patient.phased.BAF.df.list,     
+                                                       								gain.threshold = GAIN_LOGR_THRESH,
+                                                        							loss.threshold = LOSS_LOGR_THRESH,
+                                                        							amp.threshold = AMP_LOGR_THRESH,  
+                                                        							deep.loss.threshold = DEEP_LOSS_LOGR_THRESH,
+                                                        							tot.cpn.vs.ploidy.pval.thresh = PVAL_THRESH_VS_LOGR_FOR_CPN_EVENT)
 
 #These are kept in separate functions as the original segmentaiton was refactored so it could run when segments are rejoined at the end of the script.
 full.joint.segs.w.phasing.df <- addPhasingInformationToOutputSegmentation(sample.vec = names(purity.est.vec),
                                         seg.name.vec = names(all.pw.cn.het.comp.lists[[1]]), 
                                         sample.to.phase.seg.list = all.seg.phasing.info.list,
                                         all.pw.cn.het.comp.lists = all.pw.cn.het.comp.lists,
-                                        all.segs.df = full.joint.segs.df)
+                                        all.segs.df = full.joint.segs.df.w.cpn.vs.ploidy.df)
 
-full.joint.segs.w.phasing.and.raw.df <- addOriginalCPNValuesToOutputSegmentation(sample.vec,
+full.joint.segs.w.phasing.and.raw.df <- addOriginalCPNValuesAndCallsVsPloidyToOutputSegmentation(sample.vec,
                                         seg.name.vec = names(all.pw.cn.het.comp.lists[[1]]), 
                                         processed.orig.cpn.segs.df,
                                         full.joint.segs.w.phasing.df)
@@ -717,4 +784,4 @@ plotAllSamplePairwiseComparisonSegmentCPN(sample.vec, full.joint.segs.df, plot.o
 
 testFinalOutputDataframe(full.joint.segs.df)
 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        

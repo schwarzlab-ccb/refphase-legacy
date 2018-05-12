@@ -126,7 +126,7 @@ plotAllSampleCCFsAcrossGenome <- function(all.pw.cn.het.comp.lists, full.joint.s
       
       #So now very quickly we can check wehter that segment has been called significantly subclonal or not:
 
-      sc.present <- full.joint.segs.df[paste0(samp,":",seg.name), paste0("sc_",cpnX,"_present")]
+      sc.present <- full.joint.segs.df[paste0(samp,":",seg.name), paste0("within_s_sc_",cpnX,"_present")]
 
       if (sc.present == TRUE) {
 

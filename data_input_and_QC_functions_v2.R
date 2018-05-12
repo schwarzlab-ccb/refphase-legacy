@@ -397,6 +397,8 @@ cleanAndErrorCheckSNPsMPhase <- function(all.samp.SNP.list, min.cons.seg.df, all
 
   all.samps.prob.SNPs.vec <- unique(all.samps.prob.SNPs.vec)
 
+  print("Number of problem SNPs being removed:")
+  print(length(all.samps.prob.SNPs.vec))
   for ( sample in sample.vec ) {
 
     for (seg.idx in 1:nrow(min.cpn.vals.df)) {
@@ -472,7 +474,8 @@ cleanAndErrorCheckSNPs <- function(all.samp.SNP.list, min.cons.seg.df, allow.log
   }#end for ( sample in samples.vec ) {
 
   all.samps.prob.SNPs.vec <- unique(all.samps.prob.SNPs.vec)
-
+  print("Number of problem SNPs being removed:")
+  print(length(all.samps.prob.SNPs.vec))
   for ( sample in sample.vec ) {
 
     for (seg.idx in 1:nrow(min.cpn.vals.df)) {

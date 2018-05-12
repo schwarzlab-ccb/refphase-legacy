@@ -114,7 +114,7 @@ calcExpectedBAF <- function(exp.intA, exp.intB, tumor.purity) {
 checkSegGainOrLossSignificance <- function(ss.baf.lr.baf.df, samp.to.check, ploidy.est.vec, purity.est.vec, threshold, cpn.change.type="gain") {
 
   min.thresh.raw.exp.samp       <-  ploidy.est.vec[samp.to.check] * (2 ^ (threshold))
-  min.thresh.logr.exp.for.samp      <-  calcExpectedLogR(min.thresh.raw.exp.samp, 0, ploidy.est.vec[samp.to.check], purity.est.vec[samp.to.check])
+  min.thresh.logr.exp.for.samp   <-  calcExpectedLogR(min.thresh.raw.exp.samp, 0, ploidy.est.vec[samp.to.check], purity.est.vec[samp.to.check])
   median.seg.logr                  <- median(ss.baf.lr.baf.df$logR)
   
   if (nrow(ss.baf.lr.baf.df) >= 3) {
@@ -198,7 +198,7 @@ calculatePairwiseCNHeterogeneity <- function(samp.one,
 
   #Todo, why are we using seg.name or the index of the seg, choose one throughout code and stick to it 
 	for ( i in 1:length(chr.start.end.string.vec) ) {
-
+    #This is the sample comparison ppart 
 		seg.name <- chr.start.end.string.vec[i]
     print(seg.name)
           samp.one.two.string <- paste(samp.one, samp.two, sep=":")
@@ -306,7 +306,7 @@ calculatePairwiseCNHeterogeneity <- function(samp.one,
 
                next;
 
-          }#end f (nrow(s.one.s.b.lr.baf.df) < min.num.hz.snp.phasing) {
+          }#end if (nrow(s.one.s.b.lr.baf.df) < min.num.hz.snp.phasing) {
 
           if (nrow(s.one.s.b.lr.baf.df) > min.num.hz.snp.phasing) {
 
