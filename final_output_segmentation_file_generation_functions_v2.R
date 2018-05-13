@@ -187,17 +187,14 @@ addNewRawAndIntCPNCallsToFinalSegmentation <- function(seg.name.vec,
                 ss.baf.lr.baf.df <- datapoints.w.BAF.df[datapoints.w.BAF.df$chrom == as.numeric(chr.start.end.vec[1]) &
                                                 datapoints.w.BAF.df$pos >= as.numeric(chr.start.end.vec[2]) &
                                                 datapoints.w.BAF.df$pos <= as.numeric(chr.start.end.vec[3]), ,drop=FALSE]
+                                                
                 all.seg.df[samp.seg.name,]$median_BAF  <- ss.baf.lr.baf.df$ph_median_segmented_BAF[1]
-                all.seg.df[samp.seg.name,]$mean_BAF
-                all.seg.df[samp.seg.name,]$stdev_BAF
+                all.seg.df[samp.seg.name,]$mean_BAF <- mean(ss.baf.lr.baf.df$BAF)
+                all.seg.df[samp.seg.name,]$stdev_BAF <- sd(ss.baf.lr.baf.df$BAF)
 
-                all.seg.df[samp.seg.name,]$median_hz_logr
-                all.seg.df[samp.seg.name,]$mean_hz_logr
-                all.seg.df[samp.seg.name,]$stdev_hz_logr
-
-                all.seg.df[samp.seg.name,]$median_hz_logr = rep(NA, nr),
-                all.seg.df[samp.seg.name,]$mean_hz_logr = rep(NA, nr),
-                all.seg.df[samp.seg.name,]$stdev_hz_logr = rep(NA, nr),
+                all.seg.df[samp.seg.name,]$median_hz_logr <- median(ss.baf.lr.baf.df$BAF)
+                all.seg.df[samp.seg.name,]$mean_hz_logr <- mean(ss.baf.lr.baf.df$logr)
+                all.seg.df[samp.seg.name,]$stdev_hz_logr <- sd(ss.baf.lr.baf.df$logr)
 
 
                 all.seg.df[samp.seg.name,]$num_ph_both_logr_BAF <- nrow(ss.baf.lr.baf.df)
@@ -218,9 +215,9 @@ addNewRawAndIntCPNCallsToFinalSegmentation <- function(seg.name.vec,
                     all.seg.df[samp.seg.name,]$num_logr_only <- nrow(ss.dp.w.logr.only.df)
 
                     #in future we could try and have the ph_cnTotal too for the SNPs that fell under the threshold, but ignore for now.
-                    all.seg.df[samp.seg.name,]$median_non_hz_logr <- ss.dp.w.logr.only.df
-                    all.seg.df[samp.seg.name,]$mean_non_hz_logr <- ss.dp.w.logr.only.df
-                    all.seg.df[samp.seg.name,]$stdev_non_hz_logr <- ss.dp.w.logr.only.df
+                    all.seg.df[samp.seg.name,]$median_non_hz_logr <- median(ss.dp.w.logr.only.df)
+                    all.seg.df[samp.seg.name,]$mean_non_hz_logr <- mean(ss.dp.w.logr.only.df)
+                    all.seg.df[samp.seg.name,]$stdev_non_hz_logr <- sd(ss.dp.w.logr.only.df)
 
 
                     #To make his a little more similar to how we generated the nAraw and nBraw
