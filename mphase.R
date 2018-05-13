@@ -58,29 +58,29 @@ print(current.dir)
 # #MEDICC format for TRACERx example
 # medicc.mphase.command <- paste("Rscript", mphase.script.path, patient, allow.dip.test.phasing.flag, data.format.to.use, snp.file.path, seg.file.path, sep=" ")
 
-##Debugging option parameters:
-patient <- "MET048"
-allow.dip.test.phasing.flag = FALSE
-output.directory.base.path <- "/home/camp/watkint/working/watkint/data/brastianos/release_v2/B_MET048/exome/CN_het_TRACERx_no_diptest/"
-data.format.to.use <- "TRACERx_exome"
-snp.file.path <- paste0(output.directory.base.path, "MET048_TRACERx_input_paths_df.txt")
-seg.file.path <- "/home/camp/watkint/working/watkint/data/brastianos/release_v2/B_MET048/exome/MSAI/MET048_joint_segs_all_ascat_info.txt"
-##########
-mphase.script.path <- "/home/camp/watkint/working/watkint/scripts/multiregioncopynum/mphase.R"
-#TRACERx format for TRACERx example
-tracerx.mphase.command <- paste("Rscript", mphase.script.path, patient, allow.dip.test.phasing.flag, data.format.to.use, snp.file.path, seg.file.path, sep= " ")
-
-# #Debugging option parameters:
+# ##Debugging option parameters:
 # patient <- "MET048"
-# allow.dip.test.phasing.flag  <- FALSE
-# output.directory.base.path <- "/home/camp/watkint/working/watkint/data/brastianos/release_v2/B_MET048/exome/CN_het"
-# data.format.to.use <- "MEDICC"
-# snp.file.path <- "/home/camp/watkint/working/watkint/data/brastianos/release_v2/B_MET048/exome/MSAI/MET048_joint_snps.txt"
+# allow.dip.test.phasing.flag = FALSE
+# output.directory.base.path <- "/home/camp/watkint/working/watkint/data/brastianos/release_v2/B_MET048/exome/CN_het_TRACERx_no_diptest/"
+# data.format.to.use <- "TRACERx_exome"
+# snp.file.path <- paste0(output.directory.base.path, "MET048_TRACERx_input_paths_df.txt")
 # seg.file.path <- "/home/camp/watkint/working/watkint/data/brastianos/release_v2/B_MET048/exome/MSAI/MET048_joint_segs_all_ascat_info.txt"
 # ##########
 # mphase.script.path <- "/home/camp/watkint/working/watkint/scripts/multiregioncopynum/mphase.R"
-# #MEDICC format for TRACERx example
-# medicc.mphase.command <- paste("Rscript", mphase.script.path, patient, allow.dip.test.phasing.flag, data.format.to.use, snp.file.path, seg.file.path, sep=" ")
+# #TRACERx format for TRACERx example
+# tracerx.mphase.command <- paste("Rscript", mphase.script.path, patient, allow.dip.test.phasing.flag, data.format.to.use, snp.file.path, seg.file.path, sep= " ")
+
+#Debugging option parameters:
+patient <- "MET048"
+allow.dip.test.phasing.flag  <- FALSE
+output.directory.base.path <- "/Users/watkint/Desktop/MET048_mPhase_data/CN_het_output/"
+data.format.to.use <- "MEDICC"
+snp.file.path <- "/Users/watkint/Desktop/MET048_mPhase_data/MET048_joint_snps.txt"
+seg.file.path <- "/Users/watkint/Desktop/MET048_mPhase_data/MET048_joint_segs_all_ascat_info.txt"
+##########
+mphase.script.path <- "/Users/watkint/code/multiregioncopynum/mphase.R"
+#MEDICC format for TRACERx example
+medicc.mphase.command <- paste("Rscript", mphase.script.path, patient, allow.dip.test.phasing.flag, data.format.to.use, snp.file.path, seg.file.path, sep=" ")
 
 
 print("patient")
@@ -685,7 +685,6 @@ empty.full.joint.segs.df <- initialiseFullOutputDataframe(seg.name.vec = names(a
 
 
 #This adds the raw cpn for both segments that could be phased and those that couldn't
-source("final_output_segmentation_file_generation_functions_v2.R")
 new.cpn.full.joint.segs.df <- addNewRawAndIntCPNCallsToFinalSegmentation(seg.name.vec = names(all.pw.cn.het.comp.lists[[1]]),
 																		sample.vec = names(purity.est.vec),
 																		all.samp.logr.df.list = all.samp.logr.df.list,
@@ -716,9 +715,9 @@ clonality.and.ccf.joint.segs.df <- addWithinSampleClonalityAndCCFToFinalSegmenta
                                 )
 
 
-#This will also add it to segments that were too small for 
-full.joint.segs.df.w.cpn.vs.ploidy.df <- addLogrDefinedCPNEventsToOutputSegmentation(purity.vec = purity.vec,
-																					ploidy.vec = ploidy.vec,	
+#This will also add it to segments that were too small for
+source("final_output_segmentation_file_generation_functions_v2.R")
+full.joint.segs.df.w.cpn.vs.ploidy.df <- addLogrDefinedCPNEventsToOutputSegmentation(sample.vec = names(purity.est.vec),
                                                         							seg.name.vec = names(all.pw.cn.het.comp.lists[[1]]),
                                                         							all.seg.df = clonality.and.ccf.joint.segs.df,
                                                         							all.samp.logr.df.list = all.samp.logr.df.list,

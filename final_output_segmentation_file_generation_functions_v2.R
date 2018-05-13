@@ -178,8 +178,7 @@ addNewRawAndIntCPNCallsToFinalSegmentation <- function(seg.name.vec,
                 #Now we cant get new estimate $nAraw or $nBraw as there weren't any heterozygous snps but we can use the estimate of the total we calculated
                 #originally by using a dummy BAF value of 0.5 for both A and B versions and taking the total, held in the columm "tot_raw_un_ph_cpn"
                 seg.asas.lr.baf.df <- asas.lr.baf.lists[[samp]][[seg.name]]
-                print("head(seg.asas.lr.baf.df)")
-                print(head(seg.asas.lr.baf.df))
+
                 #So now we want to load inh
                 datapoints.w.BAF.df <- all.samp.ph.BAF.df.list[[samp]]
 
@@ -187,15 +186,24 @@ addNewRawAndIntCPNCallsToFinalSegmentation <- function(seg.name.vec,
                 #sample seg positions with both baf and logr values
                 ss.baf.lr.baf.df <- datapoints.w.BAF.df[datapoints.w.BAF.df$chrom == as.numeric(chr.start.end.vec[1]) &
                                                 datapoints.w.BAF.df$pos >= as.numeric(chr.start.end.vec[2]) &
-                                                datapoints.w.BAF.df$pos <= as.numeric(chr.start.end.vec[3]),,drop=FALSE]
+                                                datapoints.w.BAF.df$pos <= as.numeric(chr.start.end.vec[3]), ,drop=FALSE]
                 all.seg.df[samp.seg.name,]$median_BAF  <- ss.baf.lr.baf.df$ph_median_segmented_BAF[1]
+                all.seg.df[samp.seg.name,]$mean_BAF
+                all.seg.df[samp.seg.name,]$stdev_BAF
+
+                all.seg.df[samp.seg.name,]$median_hz_logr
+                all.seg.df[samp.seg.name,]$mean_hz_logr
+                all.seg.df[samp.seg.name,]$stdev_hz_logr
+
+                all.seg.df[samp.seg.name,]$median_hz_logr = rep(NA, nr),
+                all.seg.df[samp.seg.name,]$mean_hz_logr = rep(NA, nr),
+                all.seg.df[samp.seg.name,]$stdev_hz_logr = rep(NA, nr),
+
+
                 all.seg.df[samp.seg.name,]$num_ph_both_logr_BAF <- nrow(ss.baf.lr.baf.df)
 
                 if (nrow(ss.baf.lr.baf.df) == 0) {
-                    print("Adding unphased heterozygous!")
-                    print("nrow(seg.asas.lr.baf.df)")
-                    print(nrow(seg.asas.lr.baf.df))
-                    readline(prompt="Press [enter] to continue")
+
                     all.seg.df[samp.seg.name,]$num_un_ph_both_logr_BAF <- nrow(seg.asas.lr.baf.df)
 
                 }
@@ -210,6 +218,10 @@ addNewRawAndIntCPNCallsToFinalSegmentation <- function(seg.name.vec,
                     all.seg.df[samp.seg.name,]$num_logr_only <- nrow(ss.dp.w.logr.only.df)
 
                     #in future we could try and have the ph_cnTotal too for the SNPs that fell under the threshold, but ignore for now.
+                    all.seg.df[samp.seg.name,]$median_non_hz_logr <- ss.dp.w.logr.only.df
+                    all.seg.df[samp.seg.name,]$mean_non_hz_logr <- ss.dp.w.logr.only.df
+                    all.seg.df[samp.seg.name,]$stdev_non_hz_logr <- ss.dp.w.logr.only.df
+
 
                     #To make his a little more similar to how we generated the nAraw and nBraw
                     #Should we actually sort into preten "A" and "B", take the median of each and then add these to get the median?
@@ -239,9 +251,9 @@ addNewRawAndIntCPNCallsToFinalSegmentation <- function(seg.name.vec,
 
 
 addWithinSampleClonalityAndCCFToFinalSegmentation <- function(seg.name.vec
-                                 ,all.samp.ph.BAF.df.list      
                                  ,all.seg.CCF.vals.list
                                  ,all.seg.CCF.diff.from.exp.list
+                                 ,all.seg.df
                                  ,sample.vec
                                  ,clonal.pval = 0.001
                                  ,diff.from.oth.p.val = 0.01
@@ -265,15 +277,13 @@ addWithinSampleClonalityAndCCFToFinalSegmentation <- function(seg.name.vec
                         samp.seg.name <- seg.name
                     }
 
-                    #for now add cpnX initialisation
-                    cpnX <- "cpnA"
-                    if ( ! seg.name %in% names(all.seg.CCF.vals.list[[cpnX]]) ) {
+                    if ( ! seg.name %in% names(all.seg.CCF.vals.list[[cpnX.vec[1]]]) ) {
 
                         all.seg.df[samp.seg.name,]$samp_used_to_phase <- "too_few_SNPs"
                         next
 
                     }
-                    if ( length(all.seg.CCF.vals.list[[cpnX]][[seg.name]]) == 1 ) {
+                    if ( length(all.seg.CCF.vals.list[[cpnX.vec[1]]][[seg.name]]) == 1 ) {
 
                         all.seg.df[samp.seg.name,]$samp_used_to_phase <- "too_few_SNPs"
                         next
@@ -284,6 +294,8 @@ addWithinSampleClonalityAndCCFToFinalSegmentation <- function(seg.name.vec
 
                         seg.CCF.val.list <- all.seg.CCF.vals.list[[cpnX]][[seg.name]][[samp]]
                         seg.diff.from.others.list <- all.seg.CCF.diff.from.exp.list[[cpnX]][[seg.name]][[samp]]
+                        ph.cpnX.vec <- seg.CCF.val.list[[paste0(cpnX, "_orig_ph_obs_", cpnX, "_vec")]]
+
 
                         all.seg.df[samp.seg.name, paste0("psc_",cpnX, "_low")] <- median(as.numeric(seg.CCF.val.list[[paste0("poss_sc_",cpnX, "_low")]]))
                         all.seg.df[samp.seg.name, paste0("psc_",cpnX, "_high")] <- median(as.numeric(seg.CCF.val.list[[paste0("poss_sc_",cpnX, "_high")]]))
@@ -392,7 +404,7 @@ addWithinSampleClonalityAndCCFToFinalSegmentation <- function(seg.name.vec
 ##
 ##Returns:
 ##
-addBAFAndLogrDefinedCPNEventsToOutputSegmentation <- function(sample.vec,
+addLogrDefinedCPNEventsToOutputSegmentation <- function(sample.vec,
                                                         seg.name.vec,
                                                         all.seg.df,
                                                         all.samp.logr.df.list,
@@ -416,20 +428,38 @@ addBAFAndLogrDefinedCPNEventsToOutputSegmentation <- function(sample.vec,
                 chr.start.end.vec <- unlist(strsplit(seg.name, split=":"))
                 #sample seg phased baf dataframe
                 #Now let's also get any positions that only had logr values that come within this sample and segment
-
+                datapoints.w.BAF.df <- all.samp.ph.BAF.df.list[[samp]]
+                ss.baf.lr.baf.df <- datapoints.w.BAF.df[datapoints.w.BAF.df$chrom == as.numeric(chr.start.end.vec[1]) &
+                                                datapoints.w.BAF.df$pos >= as.numeric(chr.start.end.vec[2]) &
+                                                datapoints.w.BAF.df$pos <= as.numeric(chr.start.end.vec[3]), ,drop=FALSE]
+                print("after only all.samp.ph.BAF.df.list")
+                print(nrow(ss.baf.lr.baf.df))
 
                 datapoints.w.logr.only.df <-  all.samp.logr.df.list[[samp]]
-
-                if (nrow(ss.dp.w.logr.only.df) > 0) {
+                # print("head(datapoints.w.logr.only.df)")
+                # print(head(datapoints.w.logr.only.df))
+                if (nrow(datapoints.w.logr.only.df) > 0) {
 
                     ss.dp.w.logr.only.df <- datapoints.w.logr.only.df[datapoints.w.logr.only.df$chrom == as.numeric(chr.start.end.vec[1]) & 
-                                                                        datapoints.w.logr.only.df$pos == as.numeric(chr.start.end.vec[2]) &
-                                                                        datapoints.w.logr.only.df$pos == as.numeric(chr.start.end.vec[3]) , ,drop=FALSE]
+                                                                        datapoints.w.logr.only.df$pos >= as.numeric(chr.start.end.vec[2]) &
+                                                                        datapoints.w.logr.only.df$pos <= as.numeric(chr.start.end.vec[3]) , ,drop=FALSE]
 
+                    # print("head(ss.dp.w.logr.only.df)")
+                    # print(head(ss.dp.w.logr.only.df))
 
                     #now we can simply add these data points to the dataframe that contained the datapoints that had both logr and BAF, do we need to re-sort? leave for now.
-                    ss.baf.lr.baf.df <- rbind(ss.baf.lr.baf.df[, c("chrom", "pos", "BAF", "BAFsegmented", "logR", "logRsegmented")],
-                                          ss.dp.w.logr.only.df[, c("chrom", "pos", "BAF", "BAFsegmented", "logR", "logRsegmented")])
+                    if (nrow(ss.dp.w.logr.only.df) > 0) {
+
+                        print("Adding logr data points that don't have baf values")
+                        print(nrow(ss.baf.lr.baf.df))
+                        print("to")
+
+                        ss.baf.lr.baf.df <- rbind(ss.baf.lr.baf.df[, c("chrom", "pos", "BAF", "BAFsegmented", "logR", "logRsegmented")],
+                                            ss.dp.w.logr.only.df[, c("chrom", "pos", "BAF", "BAFsegmented", "logR", "logRsegmented")])
+
+                        print(nrow(ss.baf.lr.baf.df))
+                        print("#######")
+                    }#end if (nrow(ss.dp.w.logr.only.df) > 0) {
 
                 }#end  if (nrow(ss.dp.w.logr.only.df) > 0) {
 
@@ -596,18 +626,25 @@ initialiseFullOutputDataframe <- function(seg.name.vec, ploidy.est.vec, purity.e
                 un_ph_cnTotal = rep(NA, nr),
                 cpn_event_vs_ploidy = rep(NA, nr),
                 median_BAF = rep(NA, nr),
-                median_logr = rep(NA, nr),
                 mean_BAF = rep(NA, nr),
-                mean_logr = rep(NA, nr),
                 stdev_BAF = rep(NA, nr),
-                stdev_logr = rep(NA, nr),
+                median_hz_logr = rep(NA, nr),
+                mean_hz_logr = rep(NA, nr),
+                stdev_hz_logr = rep(NA, nr),
+                median_non_hz_logr = rep(NA, nr),
+                mean_non_hz_logr = rep(NA, nr),
+                stdev_non_hz_logr = rep(NA, nr),
                 num_un_ph_both_logr_BAF = rep(NA, nr),
                 num_ph_both_logr_BAF = rep(NA, nr),
                 num_logr_only = rep(NA, nr),
-                gain_pval = rep(NA, nr),
-                amp_pval = rep(NA, nr),
-                loss_pval = rep(NA, nr),
-                deep_loss_pval = rep(NA, nr),
+                gain_hz_logr_pval = rep(NA, nr),
+                amp_hz_logr_pval = rep(NA, nr),
+                loss_hz_pval = rep(NA, nr),
+                deep_loss_hz_pval = rep(NA, nr),
+                gain_all_logr_pval = rep(NA, nr),
+                amp_all_logr_pval = rep(NA, nr),
+                loss_all_pval = rep(NA, nr),
+                deep_loss_all_pval = rep(NA, nr),
                 #information for subclonal calling:
                 ancestral_cpn_state = rep(NA, nr),#if lost or gained ccf different? what i it relative to, ancestral stated medicc
                 loss_vs_gain_ccf = rep(NA, nr),
@@ -755,6 +792,34 @@ initialiseFullOutputDataframe <- function(seg.name.vec, ploidy.est.vec, purity.e
 #         stringsAsFactors = FALSE
 #         )
 
+
+#Nicolai's potential missing segment code....
+
+    # #### Added here, 20180427, per segment analysis of LogR, to catch particularly HER2 amplifications hidden between SNPs (ASCAT requires SNPs to make segments)
+    # psi <- ascat.output$psi
+    # rho <- acf
+    # min_difference <- 1
+    # subsegment_max<- rep(NA,nrow(seg))
+    # subsegment_start<- rep(NA,nrow(seg))
+    # subsegment_stop<- rep(NA,nrow(seg))
+    # for(j in 1:nrow(seg)){
+    #     #grab logR probe values
+    #     logr_vals <- tumor.baf_logr[tumor.baf_logr[,1] %in% seg[j,2] & tumor.baf_logr[,2] <= seg[j,4] & tumor.baf_logr[,2] >= seg[j,3],c(1,2,4)]
+    #     logr_vals[,3] <- logr2cn.fn(logr_vals[,3], rho=rho, psi=psi)
+    #     if(nrow(logr_vals) < 100){next}
+    #     #Use PCF segmentation to identify possible missed segments. I set kmin to 50, and gamma to 200, as it seems to work okayish.
+    #     test<-pcf(logr_vals,kmin=50,gamma=200)
+    #     if(nrow(test)>1){
+    #         test_dif <- abs(test[,'mean'] - rowSums(seg[j,c('nAraw','nBraw')]))
+    #         if(any(abs(test_dif)>min_difference)){
+    #             new_segs <- test[test_dif > min_difference,,drop=F]
+    #             subsegment_max[j] <- paste(new_segs[,'mean'],collapse=';')
+    #             subsegment_start[j] <- paste(new_segs[,'start.pos'],collapse=';')
+    #             subsegment_stop[j] <- paste(new_segs[,'end.pos'],collapse=';')
+    #         }
+    #     }
+    # }
+    # seg <- cbind(seg, subsegment_max,subsegment_start, subsegment_stop)
 
 
 
