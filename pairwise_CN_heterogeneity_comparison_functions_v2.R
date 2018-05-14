@@ -111,13 +111,13 @@ calcExpectedBAF <- function(exp.intA, exp.intB, tumor.purity) {
 
 
 
-checkSegGainOrLossSignificance <- function(ss.baf.lr.baf.df, samp.to.check, ploidy.est.vec, purity.est.vec, threshold, cpn.change.type="gain") {
+checkSegGainOrLossSignificance <- function(ss.baf.lr.baf.df, samp.to.check, ploidy.est.vec, purity.est.vec, threshold, cpn.change.type="gain", min.num.for.logr.test = 3) {
 
   min.thresh.raw.exp.samp       <-  ploidy.est.vec[samp.to.check] * (2 ^ (threshold))
   min.thresh.logr.exp.for.samp   <-  calcExpectedLogR(min.thresh.raw.exp.samp, 0, ploidy.est.vec[samp.to.check], purity.est.vec[samp.to.check])
   median.seg.logr                  <- median(ss.baf.lr.baf.df$logR)
   
-  if (nrow(ss.baf.lr.baf.df) >= 3) {
+  if (nrow(ss.baf.lr.baf.df) >= min.num.for.logr.test) {
 
      gen.t.test.results        <- tTestWithErrorHandling(ss.baf.lr.baf.df$logR, mu = min.thresh.logr.exp.for.samp)
 
@@ -223,10 +223,10 @@ calculatePairwiseCNHeterogeneity <- function(samp.one,
                                                                  tumor.purity = purity.est.vec[samp.two],
                                                                  gamma.val = gamma.val)
 
-               seg.paired.p.vals.vec<- c(tTestWithErrorHandling(s.one.s.cpnA.cpnB.df[,1],s.two.s.cpnA.cpnB.df[,1],paired=TRUE)$p.val,
+               seg.paired.p.vals.vec <- c(tTestWithErrorHandling(s.one.s.cpnA.cpnB.df[,1],s.two.s.cpnA.cpnB.df[,1],paired=TRUE)$p.val,
                                          tTestWithErrorHandling(s.one.s.cpnA.cpnB.df[,2],s.two.s.cpnA.cpnB.df[,2],paired=TRUE)$p.val)
-               combined.cpnA.cpnB.paired.pval   <- seg.paired.p.vals.vec[1]
-               seg.unpaired.p.vals.vec  <- c(tTestWithErrorHandling(s.one.s.cpnA.cpnB.df[,1],s.two.s.cpnA.cpnB.df[,1])$p.val,
+               combined.cpnA.cpnB.paired.pval <- seg.paired.p.vals.vec[1]
+               seg.unpaired.p.vals.vec <- c(tTestWithErrorHandling(s.one.s.cpnA.cpnB.df[,1],s.two.s.cpnA.cpnB.df[,1])$p.val,
                                              tTestWithErrorHandling(s.one.s.cpnA.cpnB.df[,2],s.two.s.cpnA.cpnB.df[,2])$p.val)
                combined.cpnA.cpnB.unpaired.pval <- seg.unpaired.p.vals.vec[1]#pchisq((sum(log(PValsUnPaired))*-2), df=length(PValsUnPaired)*2, lower.tail=F)
                

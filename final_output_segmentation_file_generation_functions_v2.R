@@ -248,7 +248,40 @@ addNewRawAndIntCPNCallsToFinalSegmentation <- function(seg.name.vec,
 
 }
 
+determineAcrossSampleClonalityOfLogrEventsVsPloidy <- function(sample.vec,
+                                                       seg.name.vec,
+                                                       all.seg.df,
+                                                       all.samp.logr.df.list,
+                                                       all.samp.ph.BAF.df.list,     
+                                                       gain.threshold,
+                                                       loss.threshold,
+                                                       amp.threshold,  
+                                                       deep.loss.threshold,
+                                                       tot.cpn.vs.ploidy.pval.thresh) {
 
+
+
+    for ( seg.name in seg.name.vec ) {
+
+
+       sample.seg.vec <- paste(sample.vec, ":", seg.name)
+
+        #If the first value is NA then all others will be and we should move on
+       if (is.na)
+        unique(all.seg.df[sample.seg.vec,]$cpn_event_vs_ploidy)
+    }# end for ( seg.name in seg.name.vec ) {
+    #So the logic here is, for each segment to check what the chosen copy number event is, and, if it is the same in all regions mark it as clonal for that segment
+
+    #The only exception for now will be calling apmplications, need to write function for checking gain vs amps from different regions.
+
+    #Check with Nicky whether we want to d the same thing for depe losses
+
+    #
+
+
+
+
+}#end determineAcrossSampleClonalityOfLogrEvents
 
 addWithinSampleClonalityAndCCFToFinalSegmentation <- function(seg.name.vec
                                  ,all.seg.CCF.vals.list
@@ -435,10 +468,10 @@ addLogrDefinedCPNEventsToOutputSegmentation <- function(sample.vec,
                                                 datapoints.w.BAF.df$pos >= as.numeric(chr.start.end.vec[2]) &
                                                 datapoints.w.BAF.df$pos <= as.numeric(chr.start.end.vec[3]), ,drop=FALSE]
   
-                gain.hz.only.samp.df <- checkSegGainOrLossSignificance(ss.baf.lr.baf.df, samp, ploidy.est.vec, purity.est.vec, gain.threshold, "gain")
-                amp.hz.only.samp.df <- checkSegGainOrLossSignificance(ss.baf.lr.baf.df, samp, ploidy.est.vec, purity.est.vec, amp.threshold, "gain")
-                loss.hz.only.samp.df <- checkSegGainOrLossSignificance(ss.baf.lr.baf.df, samp, ploidy.est.vec, purity.est.vec, loss.threshold, "loss")
-                deep.loss.hz.only.samp.df <- checkSegGainOrLossSignificance(ss.baf.lr.baf.df, samp, ploidy.est.vec, purity.est.vec, deep.loss.threshold, "loss")
+                gain.hz.only.samp.df <- checkSegGainOrLossSignificance(ss.baf.lr.baf.df, samp, ploidy.est.vec, purity.est.vec, gain.threshold, "gain",,  min.num.for.logr.test = 3)
+                amp.hz.only.samp.df <- checkSegGainOrLossSignificance(ss.baf.lr.baf.df, samp, ploidy.est.vec, purity.est.vec, amp.threshold, "gain",  min.num.for.logr.test = 3)
+                loss.hz.only.samp.df <- checkSegGainOrLossSignificance(ss.baf.lr.baf.df, samp, ploidy.est.vec, purity.est.vec, loss.threshold, "loss",  min.num.for.logr.test = 3)
+                deep.loss.hz.only.samp.df <- checkSegGainOrLossSignificance(ss.baf.lr.baf.df, samp, ploidy.est.vec, purity.est.vec, deep.loss.threshold, "loss",  min.num.for.logr.test = 3)
                 all.seg.df[samp.seg.name,]$gain_hz_logr_pval <- amp.hz.only.samp.df[, 7]
                 all.seg.df[samp.seg.name,]$amp_hz_logr_pval <-  amp.hz.only.samp.df[, 7]
                 all.seg.df[samp.seg.name,]$loss_hz_logr_pval <- loss.hz.only.samp.df[, 7]
@@ -452,10 +485,10 @@ addLogrDefinedCPNEventsToOutputSegmentation <- function(sample.vec,
                                                                         datapoints.w.logr.only.df$pos >= as.numeric(chr.start.end.vec[2]) &
                                                                         datapoints.w.logr.only.df$pos <= as.numeric(chr.start.end.vec[3]), ,drop=FALSE]
 
-                    gain.non.hz.samp.df <- checkSegGainOrLossSignificance(ss.dp.w.logr.only.df, samp, ploidy.est.vec, purity.est.vec, gain.threshold, "gain")
-                    amp.non.hz.samp.df <- checkSegGainOrLossSignificance(ss.dp.w.logr.only.df, samp, ploidy.est.vec, purity.est.vec, amp.threshold, "gain")
-                    loss.non.hz.samp.df <- checkSegGainOrLossSignificance(ss.dp.w.logr.only.df, samp, ploidy.est.vec, purity.est.vec, loss.threshold, "loss")
-                    deep.loss.non.hz.samp.df <- checkSegGainOrLossSignificance(ss.dp.w.logr.only.df, samp, ploidy.est.vec, purity.est.vec, deep.loss.threshold, "loss")
+                    gain.non.hz.samp.df <- checkSegGainOrLossSignificance(ss.dp.w.logr.only.df, samp, ploidy.est.vec, purity.est.vec, gain.threshold, "gain",  min.num.for.logr.test = 3)
+                    amp.non.hz.samp.df <- checkSegGainOrLossSignificance(ss.dp.w.logr.only.df, samp, ploidy.est.vec, purity.est.vec, amp.threshold, "gain",  min.num.for.logr.test = 3)
+                    loss.non.hz.samp.df <- checkSegGainOrLossSignificance(ss.dp.w.logr.only.df, samp, ploidy.est.vec, purity.est.vec, loss.threshold, "loss",  min.num.for.logr.test = 3)
+                    deep.loss.non.hz.samp.df <- checkSegGainOrLossSignificance(ss.dp.w.logr.only.df, samp, ploidy.est.vec, purity.est.vec, deep.loss.threshold, "loss",  min.num.for.logr.test = 3)
                     all.seg.df[samp.seg.name,]$gain_non_hz_logr_pval <- gain.non.hz.samp.df[, 7]
                     all.seg.df[samp.seg.name,]$amp_non_hz_logr_pval <-  amp.non.hz.samp.df[, 7]
                     all.seg.df[samp.seg.name,]$loss_non_hz_pval <- loss.non.hz.samp.df[, 7]
@@ -475,10 +508,10 @@ addLogrDefinedCPNEventsToOutputSegmentation <- function(sample.vec,
 
                 }#end  if (nrow(ss.dp.w.logr.only.df) > 0) {
 
-                gain.comb.logr.samp.df <- checkSegGainOrLossSignificance(ss.comb.baf.lr.baf.df, samp, ploidy.est.vec, purity.est.vec, gain.threshold, "gain")
-                amp.comb.logr.samp.df <- checkSegGainOrLossSignificance(ss.comb.baf.lr.baf.df, samp, ploidy.est.vec, purity.est.vec, amp.threshold, "gain")
-                loss.comb.logr.samp.df <- checkSegGainOrLossSignificance(ss.comb.baf.lr.baf.df, samp, ploidy.est.vec, purity.est.vec, loss.threshold, "loss")
-                deep.loss.comb.logr.samp.df <- checkSegGainOrLossSignificance(ss.comb.baf.lr.baf.df, samp, ploidy.est.vec, purity.est.vec, deep.loss.threshold, "loss")
+                gain.comb.logr.samp.df <- checkSegGainOrLossSignificance(ss.comb.baf.lr.baf.df, samp, ploidy.est.vec, purity.est.vec, gain.threshold, "gain",  min.num.for.logr.test = 3)
+                amp.comb.logr.samp.df <- checkSegGainOrLossSignificance(ss.comb.baf.lr.baf.df, samp, ploidy.est.vec, purity.est.vec, amp.threshold, "gain",  min.num.for.logr.test = 3)
+                loss.comb.logr.samp.df <- checkSegGainOrLossSignificance(ss.comb.baf.lr.baf.df, samp, ploidy.est.vec, purity.est.vec, loss.threshold, "loss",  min.num.for.logr.test = 3)
+                deep.loss.comb.logr.samp.df <- checkSegGainOrLossSignificance(ss.comb.baf.lr.baf.df, samp, ploidy.est.vec, purity.est.vec, deep.loss.threshold, "loss",  min.num.for.logr.test = 3)
                 all.seg.df[samp.seg.name,]$gain_comb_logr_pval <- gain.comb.logr.samp.df[, 7]
                 all.seg.df[samp.seg.name,]$amp_comb_logr_pval <-  amp.comb.logr.samp.df[, 7]
                 all.seg.df[samp.seg.name,]$loss_comb_logr_pval <- loss.comb.logr.samp.df[, 7]
@@ -487,23 +520,33 @@ addLogrDefinedCPNEventsToOutputSegmentation <- function(sample.vec,
                 cpn.event.vs.ploidy.vec <- as.numeric(c(gain.comb.logr.samp.df[, 7],  amp.comb.logr.samp.df[, 7],  loss.comb.logr.samp.df[, 7], deep.loss.comb.logr.samp.df[, 7]))
                 names(cpn.event.vs.ploidy.vec) <- c("gain", "amp", "loss", "deep_loss")
                 non.na.seg.cpn.event <- cpn.event.vs.ploidy.vec[! is.na(cpn.event.vs.ploidy.vec)]
-                significant.seg.cpn.event <- non.na.seg.cpn.event[non.na.seg.cpn.event <= tot.cpn.vs.ploidy.pval.thresh]
-                #Error check here:
-                if (length(significant.seg.cpn.event) > 1) {
-                    #Note need to check that this makes sense
-                    print("More than one total cpn event vs ploidy is signficant by thresholds")
-                    print(cpn.event.vs.ploidy.vec)
-                    all.seg.df[samp.seg.name,]$cpn_event_vs_ploidy <- names(significant.seg.cpn.event)[1]
 
-                } else if (length(significant.seg.cpn.event) == 1) {
+                if (length(non.na.seg.cpn.event) == 0) {
 
-                    all.seg.df[samp.seg.name,]$cpn_event_vs_ploidy <- names(significant.seg.cpn.event)
+                    all.seg.df[samp.seg.name,]$cpn_event_vs_ploidy <- NA #had less than min.num of datapoints to examine for a logr event.
 
                 } else {
 
-                    all.seg.df[samp.seg.name,]$cpn_event_vs_ploidy <- "none"
+                    significant.seg.cpn.event <- non.na.seg.cpn.event[non.na.seg.cpn.event <= tot.cpn.vs.ploidy.pval.thresh]
+                    #Error check here:
+                    if (length(significant.seg.cpn.event) > 1) {
+                        #Note need to check that this makes sense
+                        print("More than one total cpn event vs ploidy is signficant by thresholds")
+                        print(cpn.event.vs.ploidy.vec)
+                        all.seg.df[samp.seg.name,]$cpn_event_vs_ploidy <- names(significant.seg.cpn.event)[1]
+
+                    } else if (length(significant.seg.cpn.event) == 1) {
+
+                        all.seg.df[samp.seg.name,]$cpn_event_vs_ploidy <- names(significant.seg.cpn.event)
+
+                    } else {
+
+                        all.seg.df[samp.seg.name,]$cpn_event_vs_ploidy <- "none"
+
+                    }
 
                 }
+
 
         }#end for ( seg.name in seg.name.vec ) {
 

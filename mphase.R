@@ -58,29 +58,29 @@ print(current.dir)
 # #MEDICC format for TRACERx example
 # medicc.mphase.command <- paste("Rscript", mphase.script.path, patient, allow.dip.test.phasing.flag, data.format.to.use, snp.file.path, seg.file.path, sep=" ")
 
-##Debugging option parameters:
-patient <- "MET048"
-allow.dip.test.phasing.flag = FALSE
-output.directory.base.path <- "/home/camp/watkint/working/watkint/data/brastianos/release_v2/B_MET048/exome/CN_het_TRACERx_no_diptest/"
-data.format.to.use <- "TRACERx_exome"
-snp.file.path <- paste0(output.directory.base.path, "MET048_TRACERx_input_paths_df.txt")
-seg.file.path <- "/home/camp/watkint/working/watkint/data/brastianos/release_v2/B_MET048/exome/MSAI/MET048_joint_segs_all_ascat_info.txt"
-##########
-mphase.script.path <- "/home/camp/watkint/working/watkint/scripts/multiregioncopynum/mphase.R"
-#TRACERx format for TRACERx example
-tracerx.mphase.command <- paste("Rscript", mphase.script.path, patient, allow.dip.test.phasing.flag, data.format.to.use, snp.file.path, seg.file.path, sep= " ")
-
-# #Debugging option parameters:
+# ##Debugging option parameters:
 # patient <- "MET048"
-# allow.dip.test.phasing.flag  <- FALSE
-# output.directory.base.path <- "/Users/watkint/Desktop/MET048_mPhase_data/CN_het_output/"
-# data.format.to.use <- "MEDICC"
-# snp.file.path <- "/Users/watkint/Desktop/MET048_mPhase_data/MET048_joint_snps.txt"
-# seg.file.path <- "/Users/watkint/Desktop/MET048_mPhase_data/MET048_joint_segs_all_ascat_info.txt"
+# allow.dip.test.phasing.flag = FALSE
+# output.directory.base.path <- "/home/camp/watkint/working/watkint/data/brastianos/release_v2/B_MET048/exome/CN_het_TRACERx_no_diptest/"
+# data.format.to.use <- "TRACERx_exome"
+# snp.file.path <- paste0(output.directory.base.path, "MET048_TRACERx_input_paths_df.txt")
+# seg.file.path <- "/home/camp/watkint/working/watkint/data/brastianos/release_v2/B_MET048/exome/MSAI/MET048_joint_segs_all_ascat_info.txt"
 # ##########
-# mphase.script.path <- "/Users/watkint/code/multiregioncopynum/mphase.R"
-# #MEDICC format for TRACERx example
-# medicc.mphase.command <- paste("Rscript", mphase.script.path, patient, allow.dip.test.phasing.flag, data.format.to.use, snp.file.path, seg.file.path, sep=" ")
+# mphase.script.path <- "/home/camp/watkint/working/watkint/scripts/multiregioncopynum/mphase.R"
+# #TRACERx format for TRACERx example
+# tracerx.mphase.command <- paste("Rscript", mphase.script.path, patient, allow.dip.test.phasing.flag, data.format.to.use, snp.file.path, seg.file.path, sep= " ")
+
+#Debugging option parameters:
+patient <- "MET048"
+allow.dip.test.phasing.flag  <- FALSE
+output.directory.base.path <- "/Users/watkint/Desktop/MET048_mPhase_data/CN_het_output/"
+data.format.to.use <- "MEDICC"
+snp.file.path <- "/Users/watkint/Desktop/MET048_mPhase_data/MET048_joint_snps.txt"
+seg.file.path <- "/Users/watkint/Desktop/MET048_mPhase_data/MET048_joint_segs_all_ascat_info.txt"
+##########
+mphase.script.path <- "/Users/watkint/code/multiregioncopynum/mphase.R"
+#MEDICC format for TRACERx example
+medicc.mphase.command <- paste("Rscript", mphase.script.path, patient, allow.dip.test.phasing.flag, data.format.to.use, snp.file.path, seg.file.path, sep=" ")
 
 
 print("patient")
@@ -696,6 +696,8 @@ new.cpn.full.joint.segs.df <- addNewRawAndIntCPNCallsToFinalSegmentation(seg.nam
 																		)
 
 
+
+
 #We also need to add the original
 
 #Add CCF information and within sample clonality information to the dataframe...
@@ -727,6 +729,17 @@ full.joint.segs.df.w.cpn.vs.ploidy.df <- addLogrDefinedCPNEventsToOutputSegmenta
                                                         							amp.threshold = AMP_LOGR_THRESH,  
                                                         							deep.loss.threshold = DEEP_LOSS_LOGR_THRESH,
                                                         							tot.cpn.vs.ploidy.pval.thresh = PVAL_THRESH_VS_LOGR_FOR_CPN_EVENT)
+
+full.joint.segs.logr.vs.ploidy.clonality.df<- determineAcrossSampleClonalityOfLogrEvents(sample.vec = names(purity.est.vec),
+                                                        							seg.name.vec = names(all.pw.cn.het.comp.lists[[1]]),
+                                                        							all.seg.df = full.joint.segs.df.w.cpn.vs.ploidy.df,
+                                                        							all.samp.logr.df.list = all.samp.logr.df.list,
+                                                        							all.samp.ph.BAF.df.list = patient.phased.BAF.df.list,     
+                                                       								gain.threshold = GAIN_LOGR_THRESH,
+                                                        							loss.threshold = LOSS_LOGR_THRESH,
+                                                        							amp.threshold = AMP_LOGR_THRESH,  
+                                                        							deep.loss.threshold = DEEP_LOSS_LOGR_THRESH,
+                                                        							tot.cpn.vs.ploidy.pval.thresh = PVAL_THRESH_VS_LOGR_FOR_CPN_EVENT
 
 #These are kept in separate functions as the original segmentaiton was refactored so it could run when segments are rejoined at the end of the script.
 full.joint.segs.w.phasing.df <- addPhasingInformationToOutputSegmentation(sample.vec = names(purity.est.vec),
