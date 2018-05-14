@@ -58,29 +58,29 @@ print(current.dir)
 # #MEDICC format for TRACERx example
 # medicc.mphase.command <- paste("Rscript", mphase.script.path, patient, allow.dip.test.phasing.flag, data.format.to.use, snp.file.path, seg.file.path, sep=" ")
 
-# ##Debugging option parameters:
-# patient <- "MET048"
-# allow.dip.test.phasing.flag = FALSE
-# output.directory.base.path <- "/home/camp/watkint/working/watkint/data/brastianos/release_v2/B_MET048/exome/CN_het_TRACERx_no_diptest/"
-# data.format.to.use <- "TRACERx_exome"
-# snp.file.path <- paste0(output.directory.base.path, "MET048_TRACERx_input_paths_df.txt")
-# seg.file.path <- "/home/camp/watkint/working/watkint/data/brastianos/release_v2/B_MET048/exome/MSAI/MET048_joint_segs_all_ascat_info.txt"
-# ##########
-# mphase.script.path <- "/home/camp/watkint/working/watkint/scripts/multiregioncopynum/mphase.R"
-# #TRACERx format for TRACERx example
-# tracerx.mphase.command <- paste("Rscript", mphase.script.path, patient, allow.dip.test.phasing.flag, data.format.to.use, snp.file.path, seg.file.path, sep= " ")
-
-#Debugging option parameters:
+##Debugging option parameters:
 patient <- "MET048"
-allow.dip.test.phasing.flag  <- FALSE
-output.directory.base.path <- "/Users/watkint/Desktop/MET048_mPhase_data/CN_het_output/"
-data.format.to.use <- "MEDICC"
-snp.file.path <- "/Users/watkint/Desktop/MET048_mPhase_data/MET048_joint_snps.txt"
-seg.file.path <- "/Users/watkint/Desktop/MET048_mPhase_data/MET048_joint_segs_all_ascat_info.txt"
+allow.dip.test.phasing.flag = FALSE
+output.directory.base.path <- "/home/camp/watkint/working/watkint/data/brastianos/release_v2/B_MET048/exome/CN_het_TRACERx_no_diptest/"
+data.format.to.use <- "TRACERx_exome"
+snp.file.path <- paste0(output.directory.base.path, "MET048_TRACERx_input_paths_df.txt")
+seg.file.path <- "/home/camp/watkint/working/watkint/data/brastianos/release_v2/B_MET048/exome/MSAI/MET048_joint_segs_all_ascat_info.txt"
 ##########
-mphase.script.path <- "/Users/watkint/code/multiregioncopynum/mphase.R"
-#MEDICC format for TRACERx example
-medicc.mphase.command <- paste("Rscript", mphase.script.path, patient, allow.dip.test.phasing.flag, data.format.to.use, snp.file.path, seg.file.path, sep=" ")
+mphase.script.path <- "/home/camp/watkint/working/watkint/scripts/multiregioncopynum/mphase.R"
+#TRACERx format for TRACERx example
+tracerx.mphase.command <- paste("Rscript", mphase.script.path, patient, allow.dip.test.phasing.flag, data.format.to.use, snp.file.path, seg.file.path, sep= " ")
+
+# #Debugging option parameters:
+# patient <- "MET048"
+# allow.dip.test.phasing.flag  <- FALSE
+# output.directory.base.path <- "/Users/watkint/Desktop/MET048_mPhase_data/CN_het_output/"
+# data.format.to.use <- "MEDICC"
+# snp.file.path <- "/Users/watkint/Desktop/MET048_mPhase_data/MET048_joint_snps.txt"
+# seg.file.path <- "/Users/watkint/Desktop/MET048_mPhase_data/MET048_joint_segs_all_ascat_info.txt"
+# ##########
+# mphase.script.path <- "/Users/watkint/code/multiregioncopynum/mphase.R"
+# #MEDICC format for TRACERx example
+# medicc.mphase.command <- paste("Rscript", mphase.script.path, patient, allow.dip.test.phasing.flag, data.format.to.use, snp.file.path, seg.file.path, sep=" ")
 
 
 print("patient")
@@ -677,6 +677,7 @@ saveRDS(all.seg.greater.than.two.diff.list, file=all.seg.greater.than.two.diff.l
 #empty.unjoined.mcr.segs.df <- initialiseAllSegFullDataframe(seg.name.vec, sample.vec, make.row.names.seg.name.alone = FALSE)
 #So no
 
+source("final_output_segmentation_file_generation_functions_v2.R")
 
 empty.full.joint.segs.df <- initialiseFullOutputDataframe(seg.name.vec = names(all.pw.cn.het.comp.lists[[1]]),
 														ploidy.est.vec = ploidy.est.vec,
@@ -698,7 +699,21 @@ new.cpn.full.joint.segs.df <- addNewRawAndIntCPNCallsToFinalSegmentation(seg.nam
 
 
 
-#We also need to add the original
+#We also need to add the original copy number calling vs ploidy and whether the event was part of an arm/focal event.
+#What was the original segment's name
+#Using simple thresholds (TRACERx2017) was it a deep_loss, loss, neutral, gain, amp
+#was it an arm level or focal event?
+source("final_output_segmentation_file_generation_functions_v2.R")
+full.joint.segs.w.old.cpn.vs.ploidy.df <- addOriginalSegmentInfoToFinalSegmentation(seg.name.vec = names(all.pw.cn.het.comp.lists[[1]]),
+																					sample.vec = names(purity.est.vec),
+																					processed.orig.cpn.segs.df = processed.orig.cpn.segs.df,
+																					gain.threshold = GAIN_LOGR_THRESH,
+																					loss.threshold = LOSS_LOGR_THRESH,
+																					amp.threshold = AMP_LOGR_THRESH,  
+																					deep.loss.threshold = DEEP_LOSS_LOGR_THRESH,
+																					all.seg.df = empty.full.joint.segs.df
+																					)
+
 
 #Add CCF information and within sample clonality information to the dataframe...
 clonality.and.ccf.joint.segs.df <- addWithinSampleClonalityAndCCFToFinalSegmentation(seg.name.vec = names(all.pw.cn.het.comp.lists[[1]])
@@ -716,9 +731,10 @@ clonality.and.ccf.joint.segs.df <- addWithinSampleClonalityAndCCFToFinalSegmenta
                                 ,max.cpn.val = MAX_CPN_FOR_SUBCLONALITY
                                 )
 
+#Add summary statistics for the ccf derived data e.g. whether there is any  
+
 
 #This will also add it to segments that were too small for
-source("final_output_segmentation_file_generation_functions_v2.R")
 full.joint.segs.df.w.cpn.vs.ploidy.df <- addLogrDefinedCPNEventsToOutputSegmentation(sample.vec = names(purity.est.vec),
                                                         							seg.name.vec = names(all.pw.cn.het.comp.lists[[1]]),
                                                         							all.seg.df = clonality.and.ccf.joint.segs.df,
@@ -729,8 +745,14 @@ full.joint.segs.df.w.cpn.vs.ploidy.df <- addLogrDefinedCPNEventsToOutputSegmenta
                                                         							amp.threshold = AMP_LOGR_THRESH,  
                                                         							deep.loss.threshold = DEEP_LOSS_LOGR_THRESH,
                                                         							tot.cpn.vs.ploidy.pval.thresh = PVAL_THRESH_VS_LOGR_FOR_CPN_EVENT)
+print(full.joint.segs.df.w.cpn.vs.ploidy.df[,"cpn_event_vs_ploidy"])
 
-full.joint.segs.logr.vs.ploidy.clonality.df<- determineAcrossSampleClonalityOfLogrEvents(sample.vec = names(purity.est.vec),
+#Todo, add the "wiggle" room for the amplifications, i.e. if we find a subclonal amplification we want to reanalyse all the other gains to check whether they should 
+#perhaps be an amplification
+
+
+
+full.joint.segs.logr.vs.ploidy.clonality.df <- determineAcrossSampleClonalityOfLogrEventsVsPloidy(sample.vec = names(purity.est.vec),
                                                         							seg.name.vec = names(all.pw.cn.het.comp.lists[[1]]),
                                                         							all.seg.df = full.joint.segs.df.w.cpn.vs.ploidy.df,
                                                         							all.samp.logr.df.list = all.samp.logr.df.list,
@@ -739,14 +761,20 @@ full.joint.segs.logr.vs.ploidy.clonality.df<- determineAcrossSampleClonalityOfLo
                                                         							loss.threshold = LOSS_LOGR_THRESH,
                                                         							amp.threshold = AMP_LOGR_THRESH,  
                                                         							deep.loss.threshold = DEEP_LOSS_LOGR_THRESH,
-                                                        							tot.cpn.vs.ploidy.pval.thresh = PVAL_THRESH_VS_LOGR_FOR_CPN_EVENT
+                                                        							tot.cpn.vs.ploidy.pval.thresh = PVAL_THRESH_VS_LOGR_FOR_CPN_EVENT)
+
+print(full.joint.segs.logr.vs.ploidy.clonality.df[,c("across_s_cl_cpn_vs_ploidy_present","across_s_sc_cpn_vs_ploidy_present")])
+
 
 #These are kept in separate functions as the original segmentaiton was refactored so it could run when segments are rejoined at the end of the script.
 full.joint.segs.w.phasing.df <- addPhasingInformationToOutputSegmentation(sample.vec = names(purity.est.vec),
                                         seg.name.vec = names(all.pw.cn.het.comp.lists[[1]]), 
                                         sample.to.phase.seg.list = all.seg.phasing.info.list,
                                         all.pw.cn.het.comp.lists = all.pw.cn.het.comp.lists,
-                                        all.segs.df = full.joint.segs.df.w.cpn.vs.ploidy.df)
+                                        all.segs.df = full.joint.segs.logr.vs.ploidy.clonality.df)
+
+
+#Now we want to add in the allelic imbalance clonal and subclonal inrormation to the final data frame.
 
 full.joint.segs.w.phasing.and.raw.df <- addOriginalCPNValuesAndCallsVsPloidyToOutputSegmentation(sample.vec,
                                         seg.name.vec = names(all.pw.cn.het.comp.lists[[1]]), 
@@ -796,4 +824,4 @@ plotAllSamplePairwiseComparisonSegmentCPN(sample.vec, full.joint.segs.df, plot.o
 
 testFinalOutputDataframe(full.joint.segs.df)
 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   

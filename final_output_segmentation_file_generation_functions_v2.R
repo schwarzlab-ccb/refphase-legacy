@@ -41,6 +41,122 @@ addOriginalCPNValuesAndCallsVsPloidyToOutputSegmentation <- function(sample.vec,
 }#end addOriginalRawValuesToOutputSegmentation
 
 
+#### Function to calculate arm events
+get.arm.event <- function(seg, chrominfo, gain.threshold=log2(2.5/2),loss.threshold= log2(1.5/2),logscale=TRUE,loh_frac=0.75, min.arm.size=0.75,purity=0, use.raw=TRUE){
+  
+  chrominfo <- chrominfo[chrominfo[,1] %in% seg[,2],]
+  
+  seg<- seg[seg[,10] >= purity,]
+  if(use.raw){
+    seg[,6] <- seg[,'nAraw']+seg[,'nBraw']
+  }
+  output <- matrix(0, nrow=2*nrow(chrominfo), ncol=7)
+  rownames(output) <- 1:nrow(output)
+  rownames(output)[seq(1,nrow(output),by=2)] <- paste(chrominfo[,1], 'p', sep='')
+  rownames(output)[seq(2,nrow(output),by=2)] <- paste(chrominfo[,1], 'q', sep='')
+  colnames(output) <- c('Chr','Start','End','Size','Gained','Lost','Call')
+  for(i in 1:nrow(chrominfo)){
+    chr.seg <- seg[seg[,2] %in% chrominfo[i,1],,drop=F]
+    p.seg <- chr.seg[chr.seg[,3] <= chrominfo[i,'centstart'],,drop=F]
+    q.seg <- chr.seg[chr.seg[,4] >= chrominfo[i,'centend'],,drop=F]
+    tmp <- p.seg
+    if(nrow(tmp) > 0){
+      tmp[nrow(tmp),4] <- chrominfo[i,'centstart']
+      armlength <- sum(tmp[,4]- tmp[,3])
+      if(logscale){
+        tmp[,6] <- log2(tmp[,6] / tmp[,9])
+        tmp[tmp[,6] == '-Inf',6] <- -3
+        tmp[tmp[,6] == 'Inf',6] <- 3
+      }
+      if(!logscale){
+        tmp[,6] <- tmp[,6] - tmp[,9]
+      }
+      tmp[nrow(tmp),4] <- chrominfo[i,'centstart']
+      gainlength <- losslength <- 0
+      gainlength_seg <- tmp[tmp[,6] >= gain.threshold,,drop=F]
+      if(nrow(gainlength_seg) > 0){gainlength <- sum(gainlength_seg[,4] - gainlength_seg[,3])}
+      losslength_seg <- tmp[tmp[,6] <= loss.threshold,,drop=F]
+      if(nrow(losslength_seg) > 0){losslength <- sum(losslength_seg[,4] - losslength_seg[,3])}
+      gainlength_frac <- gainlength/armlength
+      losslength_frac <- losslength/armlength
+      
+      output[paste(chrominfo[i,1],'p',sep=''),'Chr'] <- i
+      output[paste(chrominfo[i,1],'p',sep=''),'Start'] <- tmp[1,3]
+      output[paste(chrominfo[i,1],'p',sep=''),'End'] <- tmp[nrow(tmp),4]
+      output[paste(chrominfo[i,1],'p',sep=''),'Size'] <- armlength
+      output[paste(chrominfo[i,1],'p',sep=''),'Gained'] <- gainlength
+      output[paste(chrominfo[i,1],'p',sep=''),'Lost'] <- losslength
+      
+      if(gainlength_frac >= min.arm.size){
+        output[paste(chrominfo[i,1],'p',sep=''),'Call'] <- 1
+      }
+      if(losslength_frac >= min.arm.size){
+        losslength_loh_seg <- losslength_seg[losslength_seg[,7] ==0 | losslength_seg[,8] ==0,,drop=F]
+        #check length of LOH, if it's at least... 75%, we'll call it as an LOH loss, ie pre-GD in GD samples
+        loss_type <- -1
+        if(sum(losslength_loh_seg[,4]-losslength_loh_seg[,3])/losslength > loh_frac){
+          loss_type <- -2
+        }
+        output[paste(chrominfo[i,1],'p',sep=''),'Call'] <- loss_type
+      }
+    }
+    #q arm
+    tmp <- q.seg
+    tmp[1,3] <- chrominfo[i,'centend']
+    armlength <- sum(tmp[,4]- tmp[,3])
+    if(logscale){
+      tmp[,6] <- log2(tmp[,6] / tmp[,9])
+    }
+    if(!logscale){
+      tmp[,6] <- tmp[,6] - tmp[,9]
+    }
+    tmp[tmp[,6] == '-Inf',6] <- -3
+    tmp[tmp[,6] == 'Inf',6] <- 3
+    tmp[1,3] <- chrominfo[i,'centend']
+    gainlength <- losslength <- 0
+    gainlength_seg <- tmp[tmp[,6] >= gain.threshold,,drop=F]
+    if(nrow(gainlength_seg) > 0){gainlength <- sum(gainlength_seg[,4] - gainlength_seg[,3])}
+    losslength_seg <- tmp[tmp[,6] <= loss.threshold,,drop=F]
+    if(nrow(losslength_seg) > 0){losslength <- sum(losslength_seg[,4] - losslength_seg[,3])}
+    gainlength_frac <- gainlength/armlength
+    losslength_frac <- losslength/armlength
+    
+    output[paste(chrominfo[i,1],'q',sep=''),'Chr'] <- i
+    output[paste(chrominfo[i,1],'q',sep=''),'Start'] <- tmp[1,3]
+    output[paste(chrominfo[i,1],'q',sep=''),'End'] <- tmp[nrow(tmp),4]
+    output[paste(chrominfo[i,1],'q',sep=''),'Size'] <- armlength
+    output[paste(chrominfo[i,1],'q',sep=''),'Gained'] <- gainlength
+    output[paste(chrominfo[i,1],'q',sep=''),'Lost'] <- losslength
+    
+    if(gainlength_frac >= min.arm.size){
+      output[paste(chrominfo[i,1],'q',sep=''),'Call'] <- 1
+    }
+    if(losslength_frac >= min.arm.size){
+      losslength_loh_seg <- losslength_seg[losslength_seg[,7] ==0 | losslength_seg[,8] ==0,,drop=F]
+      #check length of LOH, if it's at least... 75%, we'll call it as an LOH loss, ie pre-GD in GD samples
+      loss_type <- -1
+      if(sum(losslength_loh_seg[,4]-losslength_loh_seg[,3])/losslength > loh_frac){
+        loss_type <- -2
+      }
+      output[paste(chrominfo[i,1],'q',sep=''),'Call'] <- loss_type
+    }
+  }
+  #remove X
+  output<-output[!grepl(23,rownames(output)),]
+  #1=clonal gain, if LOH for loss, -2, loss, no LOH =-1
+  output2 <- cbind(rep(unique(seg[,1]),nrow(output)), rownames(output),as.data.frame(output))
+  colnames(output2)[1:2] <- c('SampleID','ChrArm')
+  return(output2)
+}
+
+
+
+
+
+
+
+
+
 
 #Todo refactor and remove this function.... can probably just be done in a for loop in main after the addition of the CCF values..
 addPhasingInformationToOutputSegmentation <- function(sample.vec,
@@ -189,10 +305,10 @@ addNewRawAndIntCPNCallsToFinalSegmentation <- function(seg.name.vec,
                                                 datapoints.w.BAF.df$pos <= as.numeric(chr.start.end.vec[3]), ,drop=FALSE]
                                                 
                 all.seg.df[samp.seg.name,]$median_BAF  <- ss.baf.lr.baf.df$ph_median_segmented_BAF[1]
-                all.seg.df[samp.seg.name,]$mean_BAF <- mean(ss.baf.lr.baf.df$BAF)
-                all.seg.df[samp.seg.name,]$stdev_BAF <- sd(ss.baf.lr.baf.df$BAF)
+                all.seg.df[samp.seg.name,]$mean_BAF <- mean(ss.baf.lr.baf.df$BAF)#Todo, change to mirrored?
+                all.seg.df[samp.seg.name,]$stdev_BAF <- sd(ss.baf.lr.baf.df$BAF)#Todo, change to mirrored?
 
-                all.seg.df[samp.seg.name,]$median_hz_logr <- median(ss.baf.lr.baf.df$BAF)
+                all.seg.df[samp.seg.name,]$median_hz_logr <- median(ss.baf.lr.baf.df$logR)
                 all.seg.df[samp.seg.name,]$mean_hz_logr <- mean(ss.baf.lr.baf.df$logR)
                 all.seg.df[samp.seg.name,]$stdev_hz_logr <- sd(ss.baf.lr.baf.df$logR)
 
@@ -221,6 +337,11 @@ addNewRawAndIntCPNCallsToFinalSegmentation <- function(seg.name.vec,
                         all.seg.df[samp.seg.name,]$median_non_hz_logr <- median(ss.dp.w.logr.only.df$logR)
                         all.seg.df[samp.seg.name,]$mean_non_hz_logr <- mean(ss.dp.w.logr.only.df$logR)
                         all.seg.df[samp.seg.name,]$stdev_non_hz_logr <- sd(ss.dp.w.logr.only.df$logR)
+
+
+                        all.seg.df[samp.seg.name,]$median_comb_logr <- median(c(ss.baf.lr.baf.df$logR, ss.dp.w.logr.only.df$logR))
+                        all.seg.df[samp.seg.name,]$mean_comb_logr <- mean(c(ss.baf.lr.baf.df$logR, ss.dp.w.logr.only.df$logR))
+                        all.seg.df[samp.seg.name,]$stdev_comb_logr <- sd(c(ss.baf.lr.baf.df$logR,  ss.dp.w.logr.only.df$logR))
                     }
 
                     #To make his a little more similar to how we generated the nAraw and nBraw
@@ -248,6 +369,114 @@ addNewRawAndIntCPNCallsToFinalSegmentation <- function(seg.name.vec,
 
 }
 
+
+addOriginalSegmentInfoToFinalSegmentation <- function(seg.name.vec,
+                                                    sample.vec,
+                                                    processed.orig.cpn.segs.df,
+                                                    gain.threshold,
+                                                    loss.threshold,
+                                                    amp.threshold,  
+                                                    deep.loss.threshold,
+                                                    all.seg.df
+                                                    ) {
+
+    #We need to work out which segment this one originally came from in the input.
+    #Data we need for this?
+
+    #The original segmentation...
+
+    for ( samp in sample.vec ) {
+
+        for ( seg.name in seg.name.vec ) {
+
+            if (length(sample.vec) > 1) {
+                samp.seg.name <- paste0(samp, ":", seg.name)
+            } else {
+                samp.seg.name <- seg.name
+            }
+
+            chr.start.end.vec <- unlist(strsplit(seg.name, split=":"))
+
+            chr.samp.seg.df <- processed.orig.cpn.segs.df[processed.orig.cpn.segs.df$sample == samp
+                                        & as.numeric(processed.orig.cpn.segs.df$chr) == as.numeric(chr.start.end.vec[1])
+                                        , ,drop = FALSE]
+
+            matching.chr.samp.seg.df <- chr.samp.seg.df[chr.samp.seg.df$startpos == as.numeric(chr.start.end.vec[2])
+                            | chr.samp.seg.df$endpos == as.numeric(chr.start.end.vec[3])
+                            | (chr.samp.seg.df$startpos >= as.numeric(chr.start.end.vec[2]) & chr.samp.seg.df$endpos <= as.numeric(chr.start.end.vec[3])) 
+                            | (as.numeric(chr.start.end.vec[2]) >= chr.samp.seg.df$startpos & as.numeric(chr.start.end.vec[3]) <= chr.samp.seg.df$endpos) ,  ,drop = FALSE ]
+
+
+            #add a column defining gain and loss
+            matching.chr.samp.seg.df$orig_cpn_call_vs_ploidy <- "neutral"
+            matching.chr.samp.seg.df[log2(matching.chr.samp.seg.df$nAraw + matching.chr.samp.seg.df$nBraw) / matching.chr.samp.seg.df$Ploidy >= log2(2.5 / 2) ,]$orig_cpn_call_vs_ploidy <- "gain"
+            matching.chr.samp.seg.df[log2((matching.chr.samp.seg.df$nAraw + matching.chr.samp.seg.df$nBraw) / matching.chr.samp.seg.df$Ploidy <= log2(1.5 / 2) ,]$orig_cpn_call_vs_ploidy <- "loss"
+            matching.chr.samp.seg.df[(matching.chr.samp.seg.df$nAraw + matching.chr.samp.seg.df$nBraw) >= ((2 * matching.chr.samp.seg.df$Ploidy) + 1) ,]$orig_cpn_call_vs_ploidy <- "amp"
+            matching.chr.samp.seg.df[(matching.chr.samp.seg.df$nAraw + matching.chr.samp.seg.df$nBraw) <= 0.5 ,] <- "deep_loss"
+
+            if (nrow(matching.chr.samp.seg.df) > 2 ) {
+                print(chr.samp.seg.df)
+                print(samp)
+                print(seg.name)
+                print(matching.chr.samp.seg.df)
+                #stop("Error, minimum consistent region segmentation maps back to more than one original segment")
+                readline(prompt="Error, minimum consistent region segmentation maps back to more than two original segments")
+
+            } else if (nrow(matching.chr.samp.seg.df) == 2 ) {
+
+                #Defualt to larger segment... that contains
+                print(chr.samp.seg.df)
+                print(samp)
+                print(seg.name)
+                print(matching.chr.samp.seg.df)
+                reordered.matching.chr.samp.seg.df <- matching.chr.samp.seg.df[with(matching.chr.samp.seg.df, order(-n.het)), ]
+
+                print(reordered.matching.chr.samp.seg.df)
+                STOP
+                all.seg.df[samp.seg.name, ]$orig_seg_name <- paste(reordered.matching.chr.samp.seg.df[1,]$chr, reordered.matching.chr.samp.seg.df[1,]$startpos, reordered.matching.chr.samp.seg.df[1,]$endpos, sep=":")
+                all.seg.df[samp.seg.name, ]$orig_cpn_call_vs_ploidy <- reordered.matching.chr.samp.seg.df[1 ,]$orig_cpn_call_vs_ploidy
+
+
+            } else if (nrow(matching.chr.samp.seg.df) == 0) {
+                print(chr.samp.seg.df)
+                print(samp)
+                print(seg.name)
+                print(matching.chr.samp.seg.df)
+                stop("Error, minimum consistent region segmentation doesn't map back to any original segments")
+
+            } else {
+
+                all.seg.df[samp.seg.name, ]$orig_cpn_call_vs_ploidy <- matching.chr.samp.seg.df[1 ,]$orig_cpn_call_vs_ploidy
+                all.seg.df[samp.seg.name, ]$orig_seg_name <- paste(matching.chr.samp.seg.df$chr, matching.chr.samp.seg.df$startpos, matching.chr.samp.seg.df$endpos, sep=":")
+
+            }
+            #Ok so now let's get the original name from something looking like this:
+            #           sample chr  startpos    endpos n.het cnTotal nMajor nMinor   Ploidy  ACF     nAraw       nBraw patient sample_name tot_raw_cpn min_raw_cpn max_raw_cpn cpn_to_use ploidy_adj_tot_cpn
+            # 1 B_MET048_MT-M1   1    762496   4834651  4329       2      1      1 2.293931 0.83 0.8747692 0.874769163  MET048   MET048:M1   1.7495383 0.874769163   0.8747692  1.7495383         -0.3908477
+
+        }#end for ( seg.name in seg.name.vec ) {
+
+    }#end  for ( samp in seg.name.vec ) {
+
+    return(all.seg.df)
+
+}
+
+
+
+# any_across_s_MSAI = rep(NA, nr),
+# any_within_s_sc_cpnA_present = rep(NA, nr),
+# any_within_s_sc_cpnB_present = rep(NA, nr),
+# across_s_cl_cpnA = rep(NA, nr),#
+# across_s_sc_cpnA = rep(NA, nr),#
+# across_s_cl_cpnB = rep(NA, nr),#
+# across_s_sc_cpnB = rep(NA, nr),#
+# across_s_cl_AI = rep(NA, nr),
+# across_s_sc_AI = rep(NA, nr),
+# across_s_cl_LOH = rep(NA, nr),
+# across_s_sc_LOH = rep(NA, nr),
+# across_s_cl_cpn_vs_ploidy_present = rep(NA, nr),
+# across_s_sc_cpn_vs_ploidy_present = rep(NA, nr),
 determineAcrossSampleClonalityOfLogrEventsVsPloidy <- function(sample.vec,
                                                        seg.name.vec,
                                                        all.seg.df,
@@ -258,28 +487,67 @@ determineAcrossSampleClonalityOfLogrEventsVsPloidy <- function(sample.vec,
                                                        amp.threshold,  
                                                        deep.loss.threshold,
                                                        tot.cpn.vs.ploidy.pval.thresh) {
-
-
+    #This vector is used to record a summary of the calls vs ploidy if there subclonal instances
+    #We can think about adding MSAI to this at a later date, for the moment if MSAI s detected as being recorded
+    #We will make sure everything is recorded as subclonal.
+    cpn.event.name.vec <- c("deep_loss", "loss", "neutral", "gain", "amp")
 
     for ( seg.name in seg.name.vec ) {
 
+       sample.seg.vec <- paste0(sample.vec, ":", seg.name)
+       cpn.events.vs.ploidy.vec <- all.seg.df[sample.seg.vec,]$cpn_event_vs_ploidy
 
-       sample.seg.vec <- paste(sample.vec, ":", seg.name)
+       uniq.cpn.events.vec <- unique(all.seg.df[sample.seg.vec,]$cpn_event_vs_ploidy)
+
+       
+       if (length(uniq.cpn.events.vec) == 1) {
+
+            if (is.na(uniq.cpn.events.vec[1])){
+
+                all.seg.df[sample.seg.vec,]$across_s_cl_cpn_vs_ploidy_present <-  NA
+                all.seg.df[sample.seg.vec,]$across_s_sc_cpn_vs_ploidy_present <-  NA
+
+            } else {
+
+                all.seg.df[sample.seg.vec,]$across_s_cl_cpn_vs_ploidy_present <- uniq.cpn.events.vec[1]
+                all.seg.df[sample.seg.vec,]$across_s_sc_cpn_vs_ploidy_present <- "no_subclonal_events"
+                print("Clonal")
+                
+            } 
+            #So what are the colkumn names that we need for this.
+       } else {#So now we know that some subclonal events are present, if there is an NA present in the vector now it must be an error
+
+            if (length(uniq.cpn.events.vec[is.na(uniq.cpn.events.vec)]) > 0) {
+
+                stop("ERROR Shouldn't be a mixture of NA and cpn event vs ploidy results for the same segment")
+
+            } else if (all(is.na(all.seg.df[sample.seg.vec,]$MSAI)) | all(as.logical(all.seg.df[sample.seg.vec,]$MSAI)) == FALSE) {
+
+                #So now to make this easy, would be good to have a sterotyped way of reporting the cpn events. e.g. deep_loss:0:loss:0:neutral:0:gain:0:amp:0
+                #Do we want to report the samples themselves? no, too much detail can easily look them up...
+                cpn.event.count.vec <- rep(0, length(cpn.event.name.vec))
+                names(cpn.event.count.vec) <- cpn.event.name.vec
+                for ( cpn.event in cpn.event.name.vec ) {
+
+                    cpn.event.count.vec[cpn.event] <- length(cpn.events.vs.ploidy.vec[cpn.events.vs.ploidy.vec == cpn.event])
+
+                }#end for ( cpn.event in cpn.event.name.vec ) {
+                #This interleaves the names and counts into a single vector that's collapsed into a single string.
+                cpn.event.count.string.df <- cbind(names(cpn.event.count.vec), rep("=", length(cpn.event.count.vec)), cpn.event.count.vec)
+                paste(apply(cpn.event.count.string.df, 1, paste, collapse = ""), collapse = ";")
+
+                all.seg.df[sample.seg.vec,]$across_s_sc_cpn_vs_ploidy_present <- paste(apply(cpn.event.count.string.df, 1, paste, collapse = ""), collapse = ";")
+                all.seg.df[sample.seg.vec,]$across_s_cl_cpn_vs_ploidy_present <- "subclonal_events_present"
+
+            }
+
+       }
 
         #If the first value is NA then all others will be and we should move on
-       if (is.na)
-        unique(all.seg.df[sample.seg.vec,]$cpn_event_vs_ploidy)
+
     }# end for ( seg.name in seg.name.vec ) {
-    #So the logic here is, for each segment to check what the chosen copy number event is, and, if it is the same in all regions mark it as clonal for that segment
 
-    #The only exception for now will be calling apmplications, need to write function for checking gain vs amps from different regions.
-
-    #Check with Nicky whether we want to d the same thing for depe losses
-
-    #
-
-
-
+    return(all.seg.df)
 
 }#end determineAcrossSampleClonalityOfLogrEvents
 
@@ -468,7 +736,7 @@ addLogrDefinedCPNEventsToOutputSegmentation <- function(sample.vec,
                                                 datapoints.w.BAF.df$pos >= as.numeric(chr.start.end.vec[2]) &
                                                 datapoints.w.BAF.df$pos <= as.numeric(chr.start.end.vec[3]), ,drop=FALSE]
   
-                gain.hz.only.samp.df <- checkSegGainOrLossSignificance(ss.baf.lr.baf.df, samp, ploidy.est.vec, purity.est.vec, gain.threshold, "gain",,  min.num.for.logr.test = 3)
+                gain.hz.only.samp.df <- checkSegGainOrLossSignificance(ss.baf.lr.baf.df, samp, ploidy.est.vec, purity.est.vec, gain.threshold, "gain",  min.num.for.logr.test = 3)
                 amp.hz.only.samp.df <- checkSegGainOrLossSignificance(ss.baf.lr.baf.df, samp, ploidy.est.vec, purity.est.vec, amp.threshold, "gain",  min.num.for.logr.test = 3)
                 loss.hz.only.samp.df <- checkSegGainOrLossSignificance(ss.baf.lr.baf.df, samp, ploidy.est.vec, purity.est.vec, loss.threshold, "loss",  min.num.for.logr.test = 3)
                 deep.loss.hz.only.samp.df <- checkSegGainOrLossSignificance(ss.baf.lr.baf.df, samp, ploidy.est.vec, purity.est.vec, deep.loss.threshold, "loss",  min.num.for.logr.test = 3)
@@ -518,7 +786,10 @@ addLogrDefinedCPNEventsToOutputSegmentation <- function(sample.vec,
                 all.seg.df[samp.seg.name,]$deep_loss_comb_logr_pval <- deep.loss.comb.logr.samp.df[, 7]
                 
                 cpn.event.vs.ploidy.vec <- as.numeric(c(gain.comb.logr.samp.df[, 7],  amp.comb.logr.samp.df[, 7],  loss.comb.logr.samp.df[, 7], deep.loss.comb.logr.samp.df[, 7]))
+
                 names(cpn.event.vs.ploidy.vec) <- c("gain", "amp", "loss", "deep_loss")
+                print("print(cpn.event.vs.ploidy.vec)")
+                print(cpn.event.vs.ploidy.vec)
                 non.na.seg.cpn.event <- cpn.event.vs.ploidy.vec[! is.na(cpn.event.vs.ploidy.vec)]
 
                 if (length(non.na.seg.cpn.event) == 0) {
@@ -541,7 +812,7 @@ addLogrDefinedCPNEventsToOutputSegmentation <- function(sample.vec,
 
                     } else {
 
-                        all.seg.df[samp.seg.name,]$cpn_event_vs_ploidy <- "none"
+                        all.seg.df[samp.seg.name,]$cpn_event_vs_ploidy <- "neutral"
 
                     }
 
@@ -895,4 +1166,4 @@ initialiseFullOutputDataframe <- function(seg.name.vec, ploidy.est.vec, purity.e
 
 
 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               
