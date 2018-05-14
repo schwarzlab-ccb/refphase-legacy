@@ -715,6 +715,9 @@ full.joint.segs.w.old.cpn.vs.ploidy.df <- addOriginalSegmentInfoToFinalSegmentat
 																					)
 
 
+
+
+
 #Add CCF information and within sample clonality information to the dataframe...
 clonality.and.ccf.joint.segs.df <- addWithinSampleClonalityAndCCFToFinalSegmentation(seg.name.vec = names(all.pw.cn.het.comp.lists[[1]])
                                 ,all.seg.CCF.vals.list = all.seg.CCF.list
@@ -731,6 +734,8 @@ clonality.and.ccf.joint.segs.df <- addWithinSampleClonalityAndCCFToFinalSegmenta
                                 ,max.cpn.val = MAX_CPN_FOR_SUBCLONALITY
                                 )
 
+
+
 #Add summary statistics for the ccf derived data e.g. whether there is any  
 
 
@@ -745,11 +750,14 @@ full.joint.segs.df.w.cpn.vs.ploidy.df <- addLogrDefinedCPNEventsToOutputSegmenta
                                                         							amp.threshold = AMP_LOGR_THRESH,  
                                                         							deep.loss.threshold = DEEP_LOSS_LOGR_THRESH,
                                                         							tot.cpn.vs.ploidy.pval.thresh = PVAL_THRESH_VS_LOGR_FOR_CPN_EVENT)
+
+
+
 print(full.joint.segs.df.w.cpn.vs.ploidy.df[,"cpn_event_vs_ploidy"])
 
 #Todo, add the "wiggle" room for the amplifications, i.e. if we find a subclonal amplification we want to reanalyse all the other gains to check whether they should 
 #perhaps be an amplification
-
+#Also add information as to what was the closest event... e.g. gain/loss/amp/deep_loss so that if we have have a subclonal event
 
 
 full.joint.segs.logr.vs.ploidy.clonality.df <- determineAcrossSampleClonalityOfLogrEventsVsPloidy(sample.vec = names(purity.est.vec),
