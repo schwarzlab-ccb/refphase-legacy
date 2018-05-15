@@ -153,6 +153,17 @@ get.arm.event <- function(seg, chrominfo, gain.threshold=log2(2.5/2),loss.thresh
 
 
 
+retestSubclonalAmps <- function(all.seg.df, seg.name, sample.vec, gain.threshold, amp.threshold) {
+
+
+  #So qwe ned to pull out the samples that were significantly amplified
+
+  
+
+
+
+}
+
 
 
 
