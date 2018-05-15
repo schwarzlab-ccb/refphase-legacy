@@ -162,6 +162,21 @@ checkSegGainOrLossSignificance <- function(ss.baf.lr.baf.df, samp.to.check, ploi
 }#end checkSegGainOrLossSignificance <- function(ss.baf.lr.baf.df, samp.to.check, ploidy.est.vec, purity.est.vec, threshold) {
 
 
+
+
+
+
+calculatePairwiseLogrCNHeterogeneity <- function(samp.one, samp.two, asas.both.lr.baf.lists, asas.lr.and.or.baf.lists) {
+
+
+
+
+
+}
+
+
+
+
 #Todo harmonise > or >= for minimum SNP number throughout code.
 #Todo add in 0.001 threshold as a parameter that can be varied
 calculatePairwiseCNHeterogeneity <- function(samp.one,
@@ -177,8 +192,8 @@ calculatePairwiseCNHeterogeneity <- function(samp.one,
                                              loss.threshold = log2(1.5 / 2),
                                              amp.threshold = log2(4 / 2),
                                              deep.loss.threshold = log2(0.5 / 2),
-                                             min.num.hz.snp.phasing=5
-                                             ){
+                                             min.num.hz.snp.phasing = 5
+                                             ) {
 
      cpn.event.names.vec <- c('median_seg_logr','low_ci_logr_vs_exp_logr','high_ci_logr_vs_exp_logr'
                                         ,'min_exp_logr_gain','gain_pval'
@@ -197,10 +212,8 @@ calculatePairwiseCNHeterogeneity <- function(samp.one,
 
 
   #Todo, why are we using seg.name or the index of the seg, choose one throughout code and stick to it 
-	for ( i in 1:length(chr.start.end.string.vec) ) {
+	for ( seg.name in chr.start.end.string.vec ) {
     #This is the sample comparison ppart 
-		seg.name <- chr.start.end.string.vec[i]
-    print(seg.name)
           samp.one.two.string <- paste(samp.one, samp.two, sep=":")
           s.one.s.b.lr.baf.df <- asas.both.lr.baf.lists[[samp.one]][[seg.name]]
           s.two.s.b.lr.baf.df <- asas.both.lr.baf.lists[[samp.two]][[seg.name]]
@@ -209,6 +222,7 @@ calculatePairwiseCNHeterogeneity <- function(samp.one,
           s.two.s.ao.lr.baf.df <- asas.lr.and.or.baf.lists[[samp.two]][[seg.name]]
 
           s.one.two.comparison[[seg.name]] <- initialiseSampOneTwoSegPairwiseComparisonList(samp.one, samp.two, samp.one.two.string)
+
           print(nrow(s.one.s.b.lr.baf.df))
           if (nrow(s.one.s.b.lr.baf.df) < min.num.hz.snp.phasing) {
 
@@ -243,40 +257,15 @@ calculatePairwiseCNHeterogeneity <- function(samp.one,
                s.one.two.comparison[[seg.name]][[samp.two]]$chr_vec <- s.one.s.b.lr.baf.df$chrom
                s.one.two.comparison[[seg.name]][[samp.two]]$pos_vec <- s.one.s.b.lr.baf.df$pos
 
-               s.one.two.comparison[[seg.name]][[samp.one]]$ph_cpnA_vec <- NA
-               s.one.two.comparison[[seg.name]][[samp.one]]$ph_cpnB_vec <- NA
-               s.one.two.comparison[[seg.name]][[samp.one]]$mean_ph_cpnA <- NA
-               s.one.two.comparison[[seg.name]][[samp.one]]$mean_ph_cpnB <- NA
-
                s.one.two.comparison[[seg.name]][[samp.one]]$un_ph_cpn_total <- s.one.s.cpnA.cpnB.df[, 1] + s.one.s.cpnA.cpnB.df[, 2]
                s.one.two.comparison[[seg.name]][[samp.one]]$un_ph_cpn_total_mean <- mean(s.one.s.cpnA.cpnB.df[, 1] + s.one.s.cpnA.cpnB.df[, 2])
-
-               s.one.two.comparison[[seg.name]][[samp.two]]$ph_cpnA_vec <- NA
-               s.one.two.comparison[[seg.name]][[samp.two]]$ph_cpnB_vec <- NA
-               s.one.two.comparison[[seg.name]][[samp.two]]$mean_ph_cpnA <- NA
-               s.one.two.comparison[[seg.name]][[samp.two]]$mean_ph_cpnB <- NA
 
                s.one.two.comparison[[seg.name]][[samp.two]]$un_ph_cpn_total <- s.two.s.cpnA.cpnB.df[, 1] + s.two.s.cpnA.cpnB.df[, 2]
                s.one.two.comparison[[seg.name]][[samp.two]]$un_ph_cpn_total_mean <- mean(s.two.s.cpnA.cpnB.df[, 1] + s.two.s.cpnA.cpnB.df[, 2])
 
-               s.one.two.comparison[[seg.name]][[samp.one.two.string]]$ph_cpnA_het_paired_pval <- NA
-               s.one.two.comparison[[seg.name]][[samp.one.two.string]]$ph_cpnB_het_paired_pval <- NA
-               s.one.two.comparison[[seg.name]][[samp.one.two.string]]$ph_cpnA_het_unpaired_pval <- NA
-               s.one.two.comparison[[seg.name]][[samp.one.two.string]]$ph_cpnB_het_unpaired_pval <- NA
-
                s.one.two.comparison[[seg.name]][[samp.one.two.string]]$un_ph_cpnA_cpnB_het_comb_paired_pval    <- combined.cpnA.cpnB.paired.pval
                s.one.two.comparison[[seg.name]][[samp.one.two.string]]$un_ph_cpnA_cpnB_het_comb_unpaired_pval  <- combined.cpnA.cpnB.unpaired.pval
                s.one.two.comparison[[seg.name]][[samp.one.two.string]]$un_ph_combinedUnPairedPval      <- total.cpn.paired.pval
-
-               s.one.two.comparison[[seg.name]][[samp.one.two.string]]$ph_cpnA_cpnB_het_comb_paired_pval <- NA
-               s.one.two.comparison[[seg.name]][[samp.one.two.string]]$ph_cpnA_cpnB_het_comb_unpaired_pval <- NA
-               s.one.two.comparison[[seg.name]][[samp.one.two.string]]$ph_tot_cpn_paired_pval <- NA
-
-               s.one.two.comparison[[seg.name]][[samp.one.two.string]]$ph_cpnA_diff_by_size_het <- NA
-               s.one.two.comparison[[seg.name]][[samp.one.two.string]]$ph_cpnB_diff_by_size_het <- NA
-               s.one.two.comparison[[seg.name]][[samp.one.two.string]]$comb_cpnA_cpnB_diff_by_size_het <- NA
-               s.one.two.comparison[[seg.name]][[samp.one.two.string]]$MSAI <- NA
-
 
                gain.samp.one.df <- checkSegGainOrLossSignificance(s.one.s.ao.lr.baf.df, samp.one, ploidy.est.vec, purity.est.vec, gain.threshold, "gain")
                amp.samp.one.df <- checkSegGainOrLossSignificance(s.one.s.ao.lr.baf.df, samp.one, ploidy.est.vec, purity.est.vec, amp.threshold, "gain")
@@ -549,4 +538,4 @@ calculatePairwiseCNHeterogeneity <- function(samp.one,
 
      return(s.one.two.comparison)
 
-}#End calculatePairwiseCNHeterogeneity <- function(samp                                                                                                                                                                                                                                                                                                                                                                                                                                                     
+}#End calculatePairwiseCNHeterogeneity <- function(samp                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             

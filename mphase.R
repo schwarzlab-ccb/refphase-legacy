@@ -395,8 +395,10 @@ saveRDS(ploidy.est.vec, file = ploidy.est.vec.path)
 purity.est.vec.path <- paste0(PLOT_OUTPUT_DIR, patient, "_purity_est_vec.RDS")
 saveRDS(purity.est.vec, file = purity.est.vec.path)
 
+seg.name.vec <- paste(min.cons.segs.df[ ,1], min.cons.segs.df[ ,2], min.cons.segs.df[ ,3], sep=":")
+
 all.seg.phasing.info.list <- getCombinedBAFDipTestPhasing(asas.lr.baf.lists = asas.SNPs.w.both.lr.baf.snp.lists,
-                                            min.cons.segs.df = min.cons.segs.df,
+                                            seg.name.vec = seg.name.vec,
                                             ploidy.est.vec = ploidy.est.vec,
                                             purity.est.vec = purity.est.vec,
                                             gamma.val = GAMMA_VAL,
