@@ -147,11 +147,11 @@ calculateWhetherSegCPNDiffFromIntegerExpectedAndAllMatchingSampCPN <- function(a
 getSegObsExpCPNBySampleDF <- function(all.pw.cn.het.comp.lists, sample.vec, seg.name, cpnX.vec = c("cpnA", "cpnB"), reduced.seg.flag = FALSE) {
 
       num.samples <- length(sample.vec)
-      s.samps.obs.exp.cpn.df <- data.frame(round_int_cpnA = numeric(num.samples),
+      s.samps.obs.exp.cpn.df <- data.frame(round_int_cpnA = numeric(num.samples),#rounded
                                           round_int_cpnB = numeric(num.samples),
                                           mean_obs_cpnA = numeric(num.samples),
                                           mean_obs_cpnB = numeric(num.samples),
-                                          exp_cpnA = numeric(num.samples),
+                                          exp_cpnA = numeric(num.samples),#this expected is just to remove 0 values whi
                                           exp_cpnB = numeric(num.samples),
                                           stringsAsFactors = FALSE)
       rownames(s.samps.obs.exp.cpn.df) <- sample.vec    

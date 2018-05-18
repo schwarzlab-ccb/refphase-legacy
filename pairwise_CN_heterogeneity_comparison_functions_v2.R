@@ -166,7 +166,7 @@ checkSegGainOrLossSignificance <- function(ss.baf.lr.baf.df, samp.to.check, ploi
 
 
 
-calculatePairwiseLogrCNHeterogeneity <- function(samp.one, samp.two, asas.both.lr.baf.lists, asas.lr.and.or.baf.lists) {
+calculatePairwiseLogrCNHeterogeneity <- function(samp.one, samp.two, asas.both.lr.baf.lists, asas.lr.and.or.baf.lists, min.cons.segs.df, ploidy.est.vec, purity.est.vec) {
 
 
 
@@ -175,6 +175,14 @@ calculatePairwiseLogrCNHeterogeneity <- function(samp.one, samp.two, asas.both.l
 }
 
 
+
+#one issue we need to do do comparisons with and iwthout the extra logr and then combined like w've done in the final dataframe,
+#ideally these should be done so that the same funciton that does the comparison for the final joint segmentation should work for
+#
+ #we can do allele specific tests and total copy bnumber tests,,,]
+
+
+#let's pull out the total copy number stuff from both sections and compare:
 
 
 #Todo harmonise > or >= for minimum SNP number throughout code.
@@ -187,6 +195,7 @@ calculatePairwiseCNHeterogeneity <- function(samp.one,
                                              ploidy.est.vec,
                                              purity.est.vec,
                                              all.seg.phasing.info.list,
+                                             all.samp.seg.phased.raw.cpn.list,
                                              gamma.val,
                                              gain.threshold = log2(2.5 / 2),
                                              loss.threshold = log2(1.5 / 2),
@@ -202,11 +211,16 @@ calculatePairwiseCNHeterogeneity <- function(samp.one,
                                         ,'min_exp_logr_deep_loss','deep_loss_pval')
 
 
+  #debug parameters 
+  # samp.one <- "B_MET048_MT-M1"
+  # samp.two <- "B_MET048_T1-R1"
+
 	#assuming that there will always be a phasing vector
 	s.one.two.comparison <- list()
 	chr.start.end.string.vec <- paste(min.cons.segs.df[ , 1], min.cons.segs.df[ , 2], min.cons.segs.df[ , 3], sep=":")
 	pw.CN.het.score.vec <- c()
 	seg.size.vec <- c()
+
 
 
 
@@ -224,10 +238,12 @@ calculatePairwiseCNHeterogeneity <- function(samp.one,
           s.one.two.comparison[[seg.name]] <- initialiseSampOneTwoSegPairwiseComparisonList(samp.one, samp.two, samp.one.two.string)
 
           print(nrow(s.one.s.b.lr.baf.df))
+
+          
           if (nrow(s.one.s.b.lr.baf.df) < min.num.hz.snp.phasing) {
 
-               s.one.s.cpnA.cpnB.df <- calculateSNPsCopyNumberAB(logr.vec = s.two.s.ao.lr.baf.df$logR,
-                                                                 baf.vec = s.two.s.ao.lr.baf.df$BAF,
+               s.one.s.cpnA.cpnB.df <- calculateSNPsCopyNumberAB(logr.vec = s.one.s.ao.lr.baf.df$logR,
+                                                                 baf.vec = s.one.s.ao.lr.baf.df$BAF,
                                                                  tumor.ploidy = ploidy.est.vec[samp.one],
                                                                  tumor.purity = purity.est.vec[samp.one],
                                                                  gamma.val = gamma.val)
@@ -237,11 +253,11 @@ calculatePairwiseCNHeterogeneity <- function(samp.one,
                                                                  tumor.purity = purity.est.vec[samp.two],
                                                                  gamma.val = gamma.val)
 
-               seg.paired.p.vals.vec <- c(tTestWithErrorHandling(s.one.s.cpnA.cpnB.df[,1],s.two.s.cpnA.cpnB.df[,1],paired=TRUE)$p.val,
-                                         tTestWithErrorHandling(s.one.s.cpnA.cpnB.df[,2],s.two.s.cpnA.cpnB.df[,2],paired=TRUE)$p.val)
+               seg.paired.p.vals.vec <- c(tTestWithErrorHandling(s.one.s.cpnA.cpnB.df[, 1], s.two.s.cpnA.cpnB.df[, 1],paired=TRUE)$p.val,
+                                         tTestWithErrorHandling(s.one.s.cpnA.cpnB.df[, 2], s.two.s.cpnA.cpnB.df[, 2],paired=TRUE)$p.val)
                combined.cpnA.cpnB.paired.pval <- seg.paired.p.vals.vec[1]
-               seg.unpaired.p.vals.vec <- c(tTestWithErrorHandling(s.one.s.cpnA.cpnB.df[,1],s.two.s.cpnA.cpnB.df[,1])$p.val,
-                                             tTestWithErrorHandling(s.one.s.cpnA.cpnB.df[,2],s.two.s.cpnA.cpnB.df[,2])$p.val)
+               seg.unpaired.p.vals.vec <- c(tTestWithErrorHandling(s.one.s.cpnA.cpnB.df[, 1], s.two.s.cpnA.cpnB.df[,1])$p.val,
+                                             tTestWithErrorHandling(s.one.s.cpnA.cpnB.df[, 2], s.two.s.cpnA.cpnB.df[,2])$p.val)
                combined.cpnA.cpnB.unpaired.pval <- seg.unpaired.p.vals.vec[1]#pchisq((sum(log(PValsUnPaired))*-2), df=length(PValsUnPaired)*2, lower.tail=F)
                
                # also get a p-value that relates to both samples combined
@@ -271,11 +287,11 @@ calculatePairwiseCNHeterogeneity <- function(samp.one,
                amp.samp.one.df <- checkSegGainOrLossSignificance(s.one.s.ao.lr.baf.df, samp.one, ploidy.est.vec, purity.est.vec, amp.threshold, "gain")
                loss.samp.one.df <- checkSegGainOrLossSignificance(s.one.s.ao.lr.baf.df, samp.one, ploidy.est.vec, purity.est.vec, loss.threshold, "loss")
                deep.loss.samp.one.df <- checkSegGainOrLossSignificance(s.one.s.ao.lr.baf.df, samp.one, ploidy.est.vec, purity.est.vec, deep.loss.threshold, "loss")
-               samp.one.cpn.event.vec <- c(gain.samp.one.df[, 3:5, drop=FALSE]
-                                        ,gain.samp.one.df[, 2, drop=FALSE], gain.samp.one.df[, 7, drop=FALSE]
-                                        ,amp.samp.one.df[, 2,drop=FALSE], amp.samp.one.df[, 7, drop=FALSE]
-                                        ,loss.samp.one.df[, 2, drop=FALSE], loss.samp.one.df[, 7, drop=FALSE]
-                                        ,deep.loss.samp.one.df[, 2, drop=FALSE], deep.loss.samp.one.df[, 7, drop=FALSE])
+               samp.one.cpn.event.vec <- c(gain.samp.one.df[, 3:5, drop = FALSE]
+                                        ,gain.samp.one.df[, 2, drop = FALSE], gain.samp.one.df[, 7, drop = FALSE]
+                                        ,amp.samp.one.df[, 2,drop = FALSE], amp.samp.one.df[, 7, drop = FALSE]
+                                        ,loss.samp.one.df[, 2, drop = FALSE], loss.samp.one.df[, 7, drop = FALSE]
+                                        ,deep.loss.samp.one.df[, 2, drop = FALSE], deep.loss.samp.one.df[, 7, drop = FALSE])
                names(samp.one.cpn.event.vec) <- cpn.event.names.vec
 
                s.one.two.comparison[[seg.name]][[samp.one]]$seg_cpn_event_status_vec <- samp.one.cpn.event.vec
@@ -284,11 +300,11 @@ calculatePairwiseCNHeterogeneity <- function(samp.one,
                amp.samp.two.df <- checkSegGainOrLossSignificance(s.one.s.ao.lr.baf.df, samp.two, ploidy.est.vec, purity.est.vec, amp.threshold, "gain")
                loss.samp.two.df <- checkSegGainOrLossSignificance(s.one.s.ao.lr.baf.df, samp.two, ploidy.est.vec, purity.est.vec, loss.threshold, "loss")
                deep.loss.samp.two.df <- checkSegGainOrLossSignificance(s.one.s.ao.lr.baf.df, samp.two, ploidy.est.vec, purity.est.vec, deep.loss.threshold, "loss")
-               samp.two.cpn.event.vec <- c(gain.samp.two.df[, 3:5, drop=FALSE]
-                                        ,gain.samp.two.df[, 2, drop=FALSE], gain.samp.two.df[, 7, drop=FALSE]
-                                        ,amp.samp.two.df[, 2,drop=FALSE], amp.samp.two.df[, 7, drop=FALSE]
-                                        ,loss.samp.two.df[, 2, drop=FALSE], loss.samp.two.df[, 7, drop=FALSE]
-                                        ,deep.loss.samp.two.df[, 2, drop=FALSE], deep.loss.samp.two.df[, 7, drop=FALSE])
+               samp.two.cpn.event.vec <- c(gain.samp.two.df[, 3:5, drop = FALSE]
+                                        ,gain.samp.two.df[, 2, drop = FALSE], gain.samp.two.df[, 7, drop=FALSE]
+                                        ,amp.samp.two.df[, 2,drop = FALSE], amp.samp.two.df[, 7, drop=FALSE]
+                                        ,loss.samp.two.df[, 2, drop = FALSE], loss.samp.two.df[, 7, drop=FALSE]
+                                        ,deep.loss.samp.two.df[, 2, drop = FALSE], deep.loss.samp.two.df[, 7, drop=FALSE])
                names(samp.two.cpn.event.vec) <- cpn.event.names.vec
 
                s.one.two.comparison[[seg.name]][[samp.two]]$seg_cpn_event_status_vec <- samp.two.cpn.event.vec
@@ -299,116 +315,10 @@ calculatePairwiseCNHeterogeneity <- function(samp.one,
 
           if (nrow(s.one.s.b.lr.baf.df) > min.num.hz.snp.phasing) {
 
-               #Todo getting the major and A and B columns can be made into a function...
-               s.one.s.cpnA.cpnB.df <- calculateSNPsCopyNumberAB(logr.vec = s.one.s.b.lr.baf.df$logR,
-                                                                 baf.vec = s.one.s.b.lr.baf.df$BAF,
-                                                                 tumor.ploidy = ploidy.est.vec[samp.one],
-                                                                 tumor.purity = purity.est.vec[samp.one],
-                                                                 gamma.val = gamma.val)
-               s.two.s.cpnA.cpnB.df <- calculateSNPsCopyNumberAB(logr.vec = s.two.s.b.lr.baf.df$logR,
-                                                                 baf.vec = s.two.s.b.lr.baf.df$BAF,
-                                                                 tumor.ploidy = ploidy.est.vec[samp.two],
-                                                                 tumor.purity = purity.est.vec[samp.two],
-                                                                 gamma.val = gamma.val)
-               s.one.s.max.cpn.vec <- apply(s.one.s.cpnA.cpnB.df, 1, max)
-               s.two.s.max.cpn.vec <- apply(s.two.s.cpnA.cpnB.df, 1, max)
-               s.one.s.median.max.cpn <- median(s.one.s.max.cpn.vec)
-               s.two.s.median.max.cpn <- median(s.two.s.max.cpn.vec)
-               s.one.s.is.max.cpn.cpnA.cpnB.logical.df <- ifelse(s.one.s.cpnA.cpnB.df==s.one.s.max.cpn.vec, 1, 0)
-               s.two.s.is.max.cpn.cpnA.cpnB.logical.df <- ifelse(s.two.s.cpnA.cpnB.df==s.two.s.max.cpn.vec, 1, 0)
-
-               if (identical(s.one.s.is.max.cpn.cpnA.cpnB.logical.df, s.two.s.is.max.cpn.cpnA.cpnB.logical.df)) {
-                    s.one.s.classifier <- 0.05#Why these magic numbers...
-                    s.two.s.classifier <- 1#Why these magic numbers...
-               }#end if (identical(s.one.s.cpnA.cpnB.is.max.df, s.two.s.cpnA.cpnB.is.max.df)) {
-
-               if ( ! identical(s.one.s.is.max.cpn.cpnA.cpnB.logical.df, s.two.s.is.max.cpn.cpnA.cpnB.logical.df)) {
-                    #Testing Major vs minor cpn in samp two versus samp.one
-                    s.one.s.classifier <- tTestWithErrorHandling(c(s.two.s.cpnA.cpnB.df[which(s.one.s.is.max.cpn.cpnA.cpnB.logical.df[,1]==1), 1], 
-                                                                   s.two.s.cpnA.cpnB.df[which(s.one.s.is.max.cpn.cpnA.cpnB.logical.df[,2]==1), 1]),
-                                                                 c(s.two.s.cpnA.cpnB.df[which(s.one.s.is.max.cpn.cpnA.cpnB.logical.df[,1]!=1), 2],
-                                                                   s.two.s.cpnA.cpnB.df[which(s.one.s.is.max.cpn.cpnA.cpnB.logical.df[,2]!=1), 2]))$p.value
-                    #Tesing Major vs minor copn in samp one versus samp two
-                    s.two.s.classifier <- tTestWithErrorHandling(c(s.one.s.cpnA.cpnB.df[which(s.two.s.is.max.cpn.cpnA.cpnB.logical.df[,1]==1), 1], 
-                                                                   s.one.s.cpnA.cpnB.df[which(s.two.s.is.max.cpn.cpnA.cpnB.logical.df[,2]==1), 1]),
-                                                                 c(s.one.s.cpnA.cpnB.df[which(s.two.s.is.max.cpn.cpnA.cpnB.logical.df[,1]!=1), 2],
-                                                                   s.one.s.cpnA.cpnB.df[which(s.two.s.is.max.cpn.cpnA.cpnB.logical.df[,2]!=1), 2]))$p.value
-                    if (is.na(s.one.s.classifier)) {
-
-                        s.one.s.classifier <- 1
-                        
-                    }
-                    if (is.na(s.two.s.classifier)) {
-
-                        s.two.s.classifier <- 1
-
-                    }
-
-               }#end if ( ! identical(s.one.s.cpnA.cpnB.is.max.df, s.two.s.cpnA.cpnB.is.max.df)) {
-
-               if (s.one.s.classifier <= s.two.s.classifier) {
-
-                    maj.is.cpnA.idx.vec <- which(s.one.s.is.max.cpn.cpnA.cpnB.logical.df[ , 1] == 1)
-                    maj.is.cpnB.idx.vec <- which(s.one.s.is.max.cpn.cpnA.cpnB.logical.df[ , 2] == 1)
-
-               }#end if (s.one.s.classifier <= s.two.s.classifier)  {
-
-               if (s.two.s.classifier > s.two.s.classifier) {
-
-                    maj.is.cpnA.idx.vec <- which(s.one.s.is.max.cpn.cpnA.cpnB.logical.df[ , 1] == 1)
-                    maj.is.cpnB.idx.vec <- which(s.one.s.is.max.cpn.cpnA.cpnB.logical.df[ , 2] == 1)
-
-               }#end if (s.two.s.classifier > s.two.s.classifier) {
-
-               if (length(all.seg.phasing.info.list[[seg.name]]$maj_is_cpnA_idx_vec) > 0) {
-
-                    maj.is.cpnA.idx.vec <- all.seg.phasing.info.list[[seg.name]]$maj_is_cpnA_idx_vec
-                    
-                } else { #end if (length(all.seg.phasing.info.list[[seg.name]]$maj_is_cpnA_idx_vec) > 0)
-                
-                    maj.is.cpnA.idx.vec <- c()
-                }
-
-
-                if (length(all.seg.phasing.info.list[[seg.name]]$maj_is_cpnB_idx_vec) > 0) {
-
-                     maj.is.cpnA.idx.vec <- all.seg.phasing.info.list[[seg.name]]$maj_is_cpnB_idx_vec
-                     
-                 } else { #end if (length(all.seg.phasing.info.list[[seg.name]]$maj_is_cpnA_idx_vec) > 0)
-                 
-                     maj.is.cpnB.idx.vec <- c()
-                 }
-
-
-
-
-               maj.is.cpnB.idx.vec <- all.seg.phasing.info.list[[seg.name]]$maj_is_cpnB_idx_vec
-               #Now we need to apply the phasing/classifier to both samples
-
-              phased.s.one.s.cpnA.cpnB.df <- s.one.s.cpnA.cpnB.df
-              phased.s.two.s.cpnA.cpnB.df <- s.two.s.cpnA.cpnB.df
-
-               if (length(maj.is.cpnA.idx.vec) > 0) {
-
-                  phased.s.one.s.cpnA.cpnB.df[maj.is.cpnA.idx.vec, 1] <- s.one.s.cpnA.cpnB.df[maj.is.cpnA.idx.vec, 1]
-                  phased.s.one.s.cpnA.cpnB.df[maj.is.cpnA.idx.vec, 2] <- s.one.s.cpnA.cpnB.df[maj.is.cpnA.idx.vec, 2]
-
-                  phased.s.two.s.cpnA.cpnB.df[maj.is.cpnA.idx.vec, 1] <- s.two.s.cpnA.cpnB.df[maj.is.cpnA.idx.vec, 1]
-                  phased.s.two.s.cpnA.cpnB.df[maj.is.cpnA.idx.vec, 2] <- s.two.s.cpnA.cpnB.df[maj.is.cpnA.idx.vec, 2]
-
-               }
-
-               if (length(maj.is.cpnB.idx.vec) > 0) {
-
-                  phased.s.one.s.cpnA.cpnB.df[maj.is.cpnB.idx.vec, 1] <- s.one.s.cpnA.cpnB.df[maj.is.cpnB.idx.vec, 2]
-                  phased.s.one.s.cpnA.cpnB.df[maj.is.cpnB.idx.vec, 2] <- s.one.s.cpnA.cpnB.df[maj.is.cpnB.idx.vec, 1]
-
-                  phased.s.two.s.cpnA.cpnB.df[maj.is.cpnB.idx.vec, 1] <- s.two.s.cpnA.cpnB.df[maj.is.cpnB.idx.vec, 2]
-                  phased.s.two.s.cpnA.cpnB.df[maj.is.cpnB.idx.vec, 2] <- s.two.s.cpnA.cpnB.df[maj.is.cpnB.idx.vec, 1]
-
-               }
-
-
+              phased.s.one.s.cpnA.cpnB.list <- all.samp.seg.phased.raw.cpn.list[[seg.name]][[samp.one]]
+              phased.s.one.s.cpnA.cpnB.df <- as.matrix(cbind(phased.s.one.s.cpnA.cpnB.list$ph_cpnA_vec, phased.s.one.s.cpnA.cpnB.list$ph_cpnB_vec))
+              phased.s.two.s.cpnA.cpnB.list <- all.samp.seg.phased.raw.cpn.list[[seg.name]][[samp.two]]
+              phased.s.two.s.cpnA.cpnB.df <- as.matrix(cbind(phased.s.two.s.cpnA.cpnB.list$ph_cpnA_vec, phased.s.two.s.cpnA.cpnB.list$ph_cpnB_vec))
 
                seg.paired.p.vals.vec <- c(tTestWithErrorHandling(phased.s.one.s.cpnA.cpnB.df[, 1],
                                                                  phased.s.two.s.cpnA.cpnB.df[, 1], paired = TRUE)$p.val,
@@ -437,14 +347,14 @@ calculatePairwiseCNHeterogeneity <- function(samp.one,
                #Todo make the 0.001 a parameter..
                if (seg.paired.p.vals.vec[1] < 0.001) {
 
-                    cpnA.diff.amplitude <- abs(mean(as.numeric(phased.s.one.s.cpnA.cpnB.df[,1])) - mean(as.numeric(phased.s.two.s.cpnA.cpnB.df[,1])))
+                    cpnA.diff.amplitude <- abs(mean(as.numeric(phased.s.one.s.cpnA.cpnB.df[, 1])) - mean(as.numeric(phased.s.two.s.cpnA.cpnB.df[, 1])))
                     seg.cpnA.het.size.by.diff <- seg.size * cpnA.diff.amplitude
 
                }#end if (seg.paired.p.vals.vec[1] < 0.001) {
 
                if (seg.paired.p.vals.vec[2] < 0.001) {
 
-                    cpnB.diff.amplitude <- abs(mean(as.numeric(phased.s.one.s.cpnA.cpnB.df[,2])) - mean(as.numeric(phased.s.two.s.cpnA.cpnB.df[,2])))
+                    cpnB.diff.amplitude <- abs(mean(as.numeric(phased.s.one.s.cpnA.cpnB.df[, 2])) - mean(as.numeric(phased.s.two.s.cpnA.cpnB.df[, 2])))
                     seg.cpnB.het.size.by.diff <- seg.size * cpnB.diff.amplitude
 
                }#end if (seg.paired.p.vals.vec[2] < 0.001) { 
@@ -456,17 +366,21 @@ calculatePairwiseCNHeterogeneity <- function(samp.one,
                s.one.two.comparison[[seg.name]][[samp.one]]$chr_vec <- s.one.s.b.lr.baf.df$chrom
                s.one.two.comparison[[seg.name]][[samp.one]]$pos_vec <- s.one.s.b.lr.baf.df$pos
 
-               s.one.two.comparison[[seg.name]][[samp.one]]$ph_cpnA_vec <- as.numeric(phased.s.one.s.cpnA.cpnB.df[,1])
-               s.one.two.comparison[[seg.name]][[samp.one]]$ph_cpnB_vec <- as.numeric(phased.s.one.s.cpnA.cpnB.df[,2])
-               s.one.two.comparison[[seg.name]][[samp.one]]$mean_ph_cpnA <- mean(as.numeric(phased.s.one.s.cpnA.cpnB.df[,1]))
-               s.one.two.comparison[[seg.name]][[samp.one]]$mean_ph_cpnB <- mean(as.numeric(phased.s.one.s.cpnA.cpnB.df[,2]))
+
+
+
+
+               s.one.two.comparison[[seg.name]][[samp.one]]$ph_cpnA_vec <- as.numeric(phased.s.one.s.cpnA.cpnB.df[, 1])
+               s.one.two.comparison[[seg.name]][[samp.one]]$ph_cpnB_vec <- as.numeric(phased.s.one.s.cpnA.cpnB.df[, 2])
+               s.one.two.comparison[[seg.name]][[samp.one]]$mean_ph_cpnA <- mean(as.numeric(phased.s.one.s.cpnA.cpnB.df[, 1]))
+               s.one.two.comparison[[seg.name]][[samp.one]]$mean_ph_cpnB <- mean(as.numeric(phased.s.one.s.cpnA.cpnB.df[, 2]))
                s.one.two.comparison[[seg.name]][[samp.one]]$un_ph_cpn_total <- NA
                s.one.two.comparison[[seg.name]][[samp.one]]$un_ph_cpn_total_mean <- NA
 
-               s.one.two.comparison[[seg.name]][[samp.two]]$ph_cpnA_vec <- as.numeric(phased.s.two.s.cpnA.cpnB.df[,1])
-               s.one.two.comparison[[seg.name]][[samp.two]]$ph_cpnB_vec <- as.numeric(phased.s.two.s.cpnA.cpnB.df[,2])
-               s.one.two.comparison[[seg.name]][[samp.two]]$mean_ph_cpnA <- mean(as.numeric(phased.s.two.s.cpnA.cpnB.df[,1]))
-               s.one.two.comparison[[seg.name]][[samp.two]]$mean_ph_cpnB <- mean(as.numeric(phased.s.two.s.cpnA.cpnB.df[,2]))
+               s.one.two.comparison[[seg.name]][[samp.two]]$ph_cpnA_vec <- as.numeric(phased.s.two.s.cpnA.cpnB.df[, 1])
+               s.one.two.comparison[[seg.name]][[samp.two]]$ph_cpnB_vec <- as.numeric(phased.s.two.s.cpnA.cpnB.df[, 2])
+               s.one.two.comparison[[seg.name]][[samp.two]]$mean_ph_cpnA <- mean(as.numeric(phased.s.two.s.cpnA.cpnB.df[, 1]))
+               s.one.two.comparison[[seg.name]][[samp.two]]$mean_ph_cpnB <- mean(as.numeric(phased.s.two.s.cpnA.cpnB.df[, 2]))
                s.one.two.comparison[[seg.name]][[samp.two]]$un_ph_cpn_total <- NA
                s.one.two.comparison[[seg.name]][[samp.two]]$un_ph_cpn_total_mean <- NA
 
@@ -486,7 +400,7 @@ calculatePairwiseCNHeterogeneity <- function(samp.one,
                s.one.two.comparison[[seg.name]][[samp.one.two.string]]$MSAI <- 0
 
                if (tTestWithErrorHandling(phased.s.one.s.cpnA.cpnB.df[, 1], phased.s.one.s.cpnA.cpnB.df[, 2], paired=TRUE)$p.val < 0.001 &
-                    tTestWithErrorHandling(phased.s.two.s.cpnA.cpnB.df[, 1], phased.s.two.s.cpnA.cpnB.df[,2], paired=TRUE)$p.val < 0.001) {
+                    tTestWithErrorHandling(phased.s.two.s.cpnA.cpnB.df[, 1], phased.s.two.s.cpnA.cpnB.df[, 2], paired=TRUE)$p.val < 0.001) {
 
                     if( (mean(phased.s.one.s.cpnA.cpnB.df[, 1] - phased.s.one.s.cpnA.cpnB.df[, 2]) > 0 & 
                          mean(phased.s.two.s.cpnA.cpnB.df[, 1] - phased.s.two.s.cpnA.cpnB.df[, 2]) < 0) | 
@@ -505,11 +419,11 @@ calculatePairwiseCNHeterogeneity <- function(samp.one,
                amp.samp.one.df <- checkSegGainOrLossSignificance(s.one.s.ao.lr.baf.df, samp.one, ploidy.est.vec, purity.est.vec, amp.threshold, "gain")
                loss.samp.one.df <- checkSegGainOrLossSignificance(s.one.s.ao.lr.baf.df, samp.one, ploidy.est.vec, purity.est.vec, loss.threshold, "loss")
                deep.loss.samp.one.df <- checkSegGainOrLossSignificance(s.one.s.ao.lr.baf.df, samp.one, ploidy.est.vec, purity.est.vec, deep.loss.threshold, "loss")
-               samp.one.cpn.event.vec <- c(gain.samp.one.df[, 3:5, drop=FALSE]
-                                        ,gain.samp.one.df[, 2, drop=FALSE], gain.samp.one.df[, 7, drop=FALSE]
-                                        ,amp.samp.one.df[, 2,drop=FALSE], amp.samp.one.df[, 7, drop=FALSE]
-                                        ,loss.samp.one.df[, 2, drop=FALSE], loss.samp.one.df[, 7, drop=FALSE]
-                                        ,deep.loss.samp.one.df[, 2, drop=FALSE], deep.loss.samp.one.df[, 7, drop=FALSE])
+               samp.one.cpn.event.vec <- c(gain.samp.one.df[, 3:5, drop = FALSE]
+                                        ,gain.samp.one.df[, 2, drop = FALSE], gain.samp.one.df[, 7, drop = FALSE]
+                                        ,amp.samp.one.df[, 2,drop = FALSE], amp.samp.one.df[, 7, drop = FALSE]
+                                        ,loss.samp.one.df[, 2, drop = FALSE], loss.samp.one.df[, 7, drop = FALSE]
+                                        ,deep.loss.samp.one.df[, 2, drop = FALSE], deep.loss.samp.one.df[, 7, drop = FALSE])
                names(samp.one.cpn.event.vec) <- cpn.event.names.vec
 
                s.one.two.comparison[[seg.name]][[samp.one]]$seg_cpn_event_status_vec <- samp.one.cpn.event.vec
@@ -518,11 +432,11 @@ calculatePairwiseCNHeterogeneity <- function(samp.one,
                amp.samp.two.df <- checkSegGainOrLossSignificance(s.one.s.ao.lr.baf.df, samp.two, ploidy.est.vec, purity.est.vec, amp.threshold, "gain")
                loss.samp.two.df <- checkSegGainOrLossSignificance(s.one.s.ao.lr.baf.df, samp.two, ploidy.est.vec, purity.est.vec, loss.threshold, "loss")
                deep.loss.samp.two.df <- checkSegGainOrLossSignificance(s.one.s.ao.lr.baf.df, samp.two, ploidy.est.vec, purity.est.vec, deep.loss.threshold, "loss")
-               samp.two.cpn.event.df <- c(gain.samp.two.df[, 3:5, drop=FALSE]
-                                        ,gain.samp.two.df[, 2, drop=FALSE], gain.samp.two.df[, 7, drop=FALSE]
-                                        ,amp.samp.two.df[, 2,drop=FALSE], amp.samp.two.df[, 7, drop=FALSE]
-                                        ,loss.samp.two.df[, 2, drop=FALSE], loss.samp.two.df[, 7, drop=FALSE]
-                                        ,deep.loss.samp.two.df[, 2, drop=FALSE], deep.loss.samp.two.df[, 7, drop=FALSE])
+               samp.two.cpn.event.df <- c(gain.samp.two.df[, 3:5, drop = FALSE]
+                                        ,gain.samp.two.df[, 2, drop = FALSE], gain.samp.two.df[, 7, drop = FALSE]
+                                        ,amp.samp.two.df[, 2, drop = FALSE], amp.samp.two.df[, 7, drop = FALSE]
+                                        ,loss.samp.two.df[, 2, drop = FALSE], loss.samp.two.df[, 7, drop = FALSE]
+                                        ,deep.loss.samp.two.df[, 2, drop = FALSE], deep.loss.samp.two.df[, 7, drop = FALSE])
                samp.two.cpn.event.vec <- cpn.event.names.vec
 
                s.one.two.comparison[[seg.name]][[samp.two]]$seg_cpn_event_status_vec <- samp.two.cpn.event.vec
@@ -538,4 +452,4 @@ calculatePairwiseCNHeterogeneity <- function(samp.one,
 
      return(s.one.two.comparison)
 
-}#End calculatePairwiseCNHeterogeneity <- function(samp                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             
+}#End calculatePairwiseCNHeterogeneity <- function(samp                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            
