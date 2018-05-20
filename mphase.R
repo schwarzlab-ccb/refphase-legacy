@@ -550,7 +550,7 @@ all.seg.greater.than.two.diff.list <- list()
 #Check that has list structure so that not testing the the values from a segment against itself...
 samps.int.cpn.raw.cpn.by.chr.list <- generateAllSamplesByChromIntCPNUnderlyingRawValuesLists(all.pw.cn.het.comp.lists, sample.vec, seg.name.vec)
 samps.int.cpn.raw.cpn.by.chr.list.path <- paste0(PLOT_OUTPUT_DIR, patient, "_samps_int_cpn_raw_cpn_by_chr_list.RDS")
-saveRDS(samps.int.cpn.raw.cpn.by.chr.list, file=samps.int.cpn.raw.cpn.by.chr.list.path)
+saveRDS(samps.int.cpn.raw.cpn.by.chr.list, file = samps.int.cpn.raw.cpn.by.chr.list.path)
 
 
 for (cpnX in c("cpnA", "cpnB")) {
@@ -664,19 +664,19 @@ for (cpnX in c("cpnA", "cpnB")) {
 }#end for (cpnX in c("cpnA", "cpnB")) {
 
 all.seg.CCF.list.path <- paste0(PLOT_OUTPUT_DIR, patient, "_all_seg_CCF_list.RDS")
-saveRDS(all.seg.CCF.list, file=all.seg.CCF.list.path)
+saveRDS(all.seg.CCF.list, file = all.seg.CCF.list.path)
 
 all.seg.int.ob.xp.cpn.df.list.path <- paste0(PLOT_OUTPUT_DIR, patient, "_all_seg_int_ob_xp_cpn_df_list.RDS")
-saveRDS(all.seg.int.ob.xp.cpn.df.list, file=all.seg.int.ob.xp.cpn.df.list.path)
+saveRDS(all.seg.int.ob.xp.cpn.df.list, file = all.seg.int.ob.xp.cpn.df.list.path)
 
 all.seg.CCF.diff.from.exp.list.path <- paste0(PLOT_OUTPUT_DIR, patient, "_all_seg_CCF_diff_from_exp_list.RDS")
-saveRDS(all.seg.CCF.diff.from.exp.list, file=all.seg.CCF.diff.from.exp.list.path)
+saveRDS(all.seg.CCF.diff.from.exp.list, file = all.seg.CCF.diff.from.exp.list.path)
 
 all.seg.clonal.in.all.samps.list.path <- paste0(PLOT_OUTPUT_DIR, patient, "_all_seg_clonal_in_all_samps_list.RDS")
-saveRDS(all.seg.clonal.in.all.samps.list, file=all.seg.clonal.in.all.samps.list.path)
+saveRDS(all.seg.clonal.in.all.samps.list, file = all.seg.clonal.in.all.samps.list.path)
 
 all.seg.greater.than.two.diff.list.path <- paste0(PLOT_OUTPUT_DIR, patient, "_all_seg_greater_than_two_diff_list.RDS")
-saveRDS(all.seg.greater.than.two.diff.list, file=all.seg.greater.than.two.diff.list.path)
+saveRDS(all.seg.greater.than.two.diff.list, file = all.seg.greater.than.two.diff.list.path)
 
 #Todo remove the dataframe initialisation from the function and modify it to work on a segment by segment basis.
 #Todo rename clonal.pval to be more meaningful...
@@ -709,9 +709,6 @@ new.cpn.full.joint.segs.df <- addNewRawAndIntCPNCallsToFinalSegmentation(seg.nam
 																		cpnX.vec = c("cpnA", "cpnB")
 																		)
 
-
-
-
 #We also need to add the original copy number calling vs ploidy and whether the event was part of an arm/focal event.
 #What was the original segment's name
 #Using simple thresholds (TRACERx2017) was it a deep_loss, loss, neutral, gain, amp
@@ -726,9 +723,6 @@ full.joint.segs.w.old.cpn.vs.ploidy.df <- addOriginalSegmentInfoToFinalSegmentat
 																					deep.loss.threshold = DEEP_LOSS_LOGR_THRESH,
 																					all.seg.df = empty.full.joint.segs.df
 																					)
-
-
-
 
 
 #Add CCF information and within sample clonality information to the dataframe...
@@ -750,7 +744,6 @@ clonality.and.ccf.joint.segs.df <- addWithinSampleClonalityAndCCFToFinalSegmenta
 
 
 #Add summary statistics for the ccf derived data e.g. whether there is any  
-
 
 #This will also add it to segments that were too small for
 full.joint.segs.df.w.cpn.vs.ploidy.df <- addLogrDefinedCPNEventsToOutputSegmentation(sample.vec = names(purity.est.vec),
@@ -839,7 +832,6 @@ dev.off()
 #Now for these sample by sample comparisons the names of PNGs should contain the two samples being being compared really so we'll have to the plotting within the functions
 
 plotOldNewComparisonOfAllCPN(sample.vec, full.joint.segs.df, plot.output.dir = PLOT_OUTPUT_DIR)
-
 
 plotAllSamplePairwiseComparisonSegmentCPN(sample.vec, full.joint.segs.df, plot.output.dir = PLOT_OUTPUT_DIR)
 

@@ -176,13 +176,180 @@ calculatePairwiseLogrCNHeterogeneity <- function(samp.one, samp.two, asas.both.l
 
 
 
+  ##Todo, check fif the final segmentation functions can also use this instead of calling the check GainSegloss repeatedly
+##Params:
+##
+##Returns:
+##
+getSampLogRSegCPNEventVec <- function(samp, samp.seg.ao.lr.baf.df, purity.est.vec, ploidy.est.vec, gain.threshold, amp.threshold, loss.threshold, deep.loss.threshold) {
+
+  cpn.event.names.vec <- c('median_seg_logr','low_ci_logr_vs_exp_logr','high_ci_logr_vs_exp_logr'
+                                     ,'min_exp_logr_gain','gain_pval'
+                                     ,'min_exp_logr_amp','amp_pval'
+                                     ,'min_exp_logr_loss','loss_pval'
+                                     ,'min_exp_logr_deep_loss','deep_loss_pval')
+
+  gain.samp.df <- checkSegGainOrLossSignificance(samp.seg.ao.lr.baf.df, samp, ploidy.est.vec, purity.est.vec, gain.threshold, "gain")
+  amp.samp.df <- checkSegGainOrLossSignificance(samp.seg.ao.lr.baf.df, samp, ploidy.est.vec, purity.est.vec, amp.threshold, "gain")
+  loss.samp.df <- checkSegGainOrLossSignificance(samp.seg.ao.lr.baf.df, samp, ploidy.est.vec, purity.est.vec, loss.threshold, "loss")
+  deep.loss.samp.df <- checkSegGainOrLossSignificance(samp.seg.ao.lr.baf.df, samp, ploidy.est.vec, purity.est.vec, deep.loss.threshold, "loss")
+  samp.one.cpn.event.vec <- c(gain.samp.df[, 3:5, drop = FALSE]
+                           ,gain.samp.df[, 2, drop = FALSE], gain.samp.df[, 7, drop = FALSE]
+                           ,amp.samp.df[, 2,drop = FALSE], amp.samp.df[, 7, drop = FALSE]
+                           ,loss.samp.df[, 2, drop = FALSE], loss.samp.df[, 7, drop = FALSE]
+                           ,deep.loss.samp.df[, 2, drop = FALSE], deep.loss.samp.df[, 7, drop = FALSE])
+  names(samp.one.cpn.event.vec) <- cpn.event.names.vec
+
+  return(samp.one.cpn.event.vec)
+
+}#end getSampLogRSegCPNEventVec (..)
+
+
+
+##
+##Params:
+##
+##Returns:
+##
+testPairOfSamplesSegForMSAIWithCPN <- function(seg.name, samp.one, samp.two, all.samp.seg.phased.raw.cpn.list) {
+
+  phased.s.one.s.cpnA.cpnB.list <- all.samp.seg.phased.raw.cpn.list[[seg.name]][[samp.one]]
+  phased.s.one.s.cpnA.cpnB.df <- as.matrix(cbind(phased.s.one.s.cpnA.cpnB.list$ph_cpnA_vec, phased.s.one.s.cpnA.cpnB.list$ph_cpnB_vec))
+  phased.s.two.s.cpnA.cpnB.list <- all.samp.seg.phased.raw.cpn.list[[seg.name]][[samp.two]]
+  phased.s.two.s.cpnA.cpnB.df <- as.matrix(cbind(phased.s.two.s.cpnA.cpnB.list$ph_cpnA_vec, phased.s.two.s.cpnA.cpnB.list$ph_cpnB_vec))
+
+  if (tTestWithErrorHandling(phased.s.one.s.cpnA.cpnB.df[, 1], phased.s.one.s.cpnA.cpnB.df[, 2], paired=TRUE)$p.val < 0.001 &
+       tTestWithErrorHandling(phased.s.two.s.cpnA.cpnB.df[, 1], phased.s.two.s.cpnA.cpnB.df[, 2], paired=TRUE)$p.val < 0.001) {
+
+       if( (mean(phased.s.one.s.cpnA.cpnB.df[, 1] - phased.s.one.s.cpnA.cpnB.df[, 2]) > 0 & 
+            mean(phased.s.two.s.cpnA.cpnB.df[, 1] - phased.s.two.s.cpnA.cpnB.df[, 2]) < 0) | 
+           (mean(phased.s.one.s.cpnA.cpnB.df[, 2] - phased.s.one.s.cpnA.cpnB.df[, 1]) < 0 & 
+            mean(phased.s.two.s.cpnA.cpnB.df[, 2] - phased.s.two.s.cpnA.cpnB.df[, 1]) > 0) ){
+
+            #s.one.two.comparison[[seg.name]][[samp.one.two.string]]$MSAI <- 1
+            return(TRUE)
+
+       }
+
+  }#end if (tTestWithErrorHandling(phased.s.one.s.cpnA.cpnB.df[, 1], phased.s.one.s.cpnA.cpnB.df[, 2], paired=TRUE)$p.val < 0.001 &
+       #tTestWithErrorHandling(phased.s.two.s.cpnA.cpnB.df[, 1], phased.s.two.s.cpnA.cpnB.df[,2], paired=TRUE)$p.val < 0.001) {
+
+  return(FALSE)
+
+}#testPairOfSamplesSegForMSAIWithCPN function(....)
+
+
+
+
 #one issue we need to do do comparisons with and iwthout the extra logr and then combined like w've done in the final dataframe,
 #ideally these should be done so that the same funciton that does the comparison for the final joint segmentation should work for
 #
  #we can do allele specific tests and total copy bnumber tests,,,]
 
 
-#let's pull out the total copy number stuff from both sections and compare:
+#let's pull out the total copy number stuff from both sections and compare
+
+
+#We want the pawixs classification of copy number wteen all regions but do we also want the actual measure based of them to be computed at the same time?
+
+#Not really as we might have many different measures we woish to apply to the same data... let's try and keep it separate...
+
+
+
+
+seg.name.split.vec <- strsplit(chr.start.end.string.vec[i], split=":")
+seg.size <- as.numeric(unlist(seg.name.split.vec)[3]) - as.numeric(unlist(seg.name.split.vec)[2])
+
+pw.CN.het.score.vec <- c()
+seg.size.vec <- c()
+
+seg.cpnA.het.size.by.diff <- 0            
+seg.cpnB.het.size.by.diff <- 0
+
+
+#Todo make the 0.001 a parameter..
+if (seg.paired.p.vals.vec[1] < 0.001) {
+
+     cpnA.diff.amplitude <- abs(mean(as.numeric(phased.s.one.s.cpnA.cpnB.df[, 1])) - mean(as.numeric(phased.s.two.s.cpnA.cpnB.df[, 1])))
+     seg.cpnA.het.size.by.diff <- seg.size * cpnA.diff.amplitude
+
+}#end if (seg.paired.p.vals.vec[1] < 0.001) {
+
+if (seg.paired.p.vals.vec[2] < 0.001) {
+
+     cpnB.diff.amplitude <- abs(mean(as.numeric(phased.s.one.s.cpnA.cpnB.df[, 2])) - mean(as.numeric(phased.s.two.s.cpnA.cpnB.df[, 2])))
+     seg.cpnB.het.size.by.diff <- seg.size * cpnB.diff.amplitude
+
+}#end if (seg.paired.p.vals.vec[2] < 0.001) { 
+
+
+  seg.tot.cpnA.cpnB.het <- seg.cpnA.het.size.by.diff + seg.cpnB.het.size.by.diff
+  pw.CN.het.score.vec <- c(pw.CN.het.score.vec, seg.tot.cpnA.cpnB.het)
+  seg.size.vec <- c(seg.size.vec, seg.size)
+
+
+  s.one.two.comparison[[seg.name]][[samp.one.two.string]]$ph_cpnA_diff_by_size_het <- seg.cpnA.het.size.by.diff
+  s.one.two.comparison[[seg.name]][[samp.one.two.string]]$ph_cpnB_diff_by_size_het <- seg.cpnB.het.size.by.diff
+  s.one.two.comparison[[seg.name]][[samp.one.two.string]]$comb_cpnA_cpnB_diff_by_size_het <- seg.cpnA.het.size.by.diff + seg.cpnB.het.size.by.diff
+
+
+
+
+#So now do the p value tests:
+
+seg.paired.p.vals.vec <- c(tTestWithErrorHandling(s.one.s.cpnA.cpnB.df[, 1], s.two.s.cpnA.cpnB.df[, 1], paired=TRUE)$p.val,
+                          tTestWithErrorHandling(s.one.s.cpnA.cpnB.df[, 2], s.two.s.cpnA.cpnB.df[, 2], paired=TRUE)$p.val)
+combined.cpnA.cpnB.paired.pval <- seg.paired.p.vals.vec[1]
+seg.unpaired.p.vals.vec <- c(tTestWithErrorHandling(s.one.s.cpnA.cpnB.df[, 1], s.two.s.cpnA.cpnB.df[,1])$p.val,
+                              tTestWithErrorHandling(s.one.s.cpnA.cpnB.df[, 2], s.two.s.cpnA.cpnB.df[,2])$p.val)
+combined.cpnA.cpnB.unpaired.pval <- seg.unpaired.p.vals.vec[1]#pchisq((sum(log(PValsUnPaired))*-2), df=length(PValsUnPaired)*2, lower.tail=F)
+
+# also get a p-value that relates to both samples combined
+total.cpn.paired.pval <- tTestWithErrorHandling(c(phased.s.one.s.cpnA.cpnB.df[, 1] + phased.s.one.s.cpnA.cpnB.df[, 2]),
+                                                c(phased.s.two.s.cpnA.cpnB.df[, 1] + phased.s.two.s.cpnA.cpnB.df[, 2]), paired = TRUE)$p.val
+
+#Froms the phased copy number
+
+seg.paired.p.vals.vec <- c(tTestWithErrorHandling(phased.s.one.s.cpnA.cpnB.df[, 1],
+                                                  phased.s.two.s.cpnA.cpnB.df[, 1], paired = TRUE)$p.val,
+                           tTestWithErrorHandling(phased.s.one.s.cpnA.cpnB.df[, 2],
+                                                  phased.s.two.s.cpnA.cpnB.df[, 2], paired = TRUE)$p.val)
+
+seg.comb.paired.p.val <- pchisq((sum(log(seg.paired.p.vals.vec)) * - 2), df = length(seg.paired.p.vals.vec) * 2, lower.tail = FALSE)
+
+seg.unpaired.p.vals.vec <- c(tTestWithErrorHandling(phased.s.one.s.cpnA.cpnB.df[, 1],
+                                                    phased.s.two.s.cpnA.cpnB.df[, 1])$p.val,
+                             tTestWithErrorHandling(phased.s.one.s.cpnA.cpnB.df[, 2],
+                                                    phased.s.two.s.cpnA.cpnB.df[, 2])$p.val)
+
+seg.comb.unpaired.p.val <- pchisq((sum(log(seg.unpaired.p.vals.vec)) * - 2), df = length(seg.unpaired.p.vals.vec) * 2, lower.tail = FALSE)
+
+# also get a p-value that relates to both samples combined
+total.cpn.paired.pval <- tTestWithErrorHandling(c(phased.s.one.s.cpnA.cpnB.df[, 1] + phased.s.one.s.cpnA.cpnB.df[, 2]),
+                                                c(phased.s.two.s.cpnA.cpnB.df[, 1] + phased.s.two.s.cpnA.cpnB.df[, 2]), paired = TRUE)$p.val
+
+
+s.one.two.comparison[[seg.name]][[samp.one.two.string]]$un_ph_cpnA_cpnB_het_comb_paired_pval    <- combined.cpnA.cpnB.paired.pval
+s.one.two.comparison[[seg.name]][[samp.one.two.string]]$un_ph_cpnA_cpnB_het_comb_unpaired_pval  <- combined.cpnA.cpnB.unpaired.pval
+s.one.two.comparison[[seg.name]][[samp.one.two.string]]$un_ph_combinedUnPairedPval      <- total.cpn.paired.pval
+
+s.one.two.comparison[[seg.name]][[samp.one.two.string]]$un_ph_cpnA_cpnB_het_comb_paired_pval    <- NA
+s.one.two.comparison[[seg.name]][[samp.one.two.string]]$un_ph_cpnA_cpnB_het_comb_unpaired_pval  <- NA
+
+s.one.two.comparison[[seg.name]][[samp.one.two.string]]$ph_cpnA_het_paired_pval <- seg.paired.p.vals.vec[1]
+s.one.two.comparison[[seg.name]][[samp.one.two.string]]$ph_cpnB_het_paired_pval <- seg.paired.p.vals.vec[2]
+s.one.two.comparison[[seg.name]][[samp.one.two.string]]$ph_cpnA_het_unpaired_pval <- seg.unpaired.p.vals.vec[1]
+s.one.two.comparison[[seg.name]][[samp.one.two.string]]$ph_cpnB_het_unpaired_pval <- seg.unpaired.p.vals.vec[2]
+s.one.two.comparison[[seg.name]][[samp.one.two.string]]$ph_cpnA_cpnB_het_comb_paired_pval <- seg.comb.paired.p.val
+s.one.two.comparison[[seg.name]][[samp.one.two.string]]$ph_cpnA_cpnB_het_comb_unpaired_pval <- seg.comb.unpaired.p.val
+s.one.two.comparison[[seg.name]][[samp.one.two.string]]$ph_tot_cpn_paired_pval <- total.cpn.paired.pval
+
+
+
+
+
+
+
 
 
 #Todo harmonise > or >= for minimum SNP number throughout code.
@@ -191,7 +358,7 @@ calculatePairwiseCNHeterogeneity <- function(samp.one,
                                              samp.two,
                                              asas.both.lr.baf.lists,
                                              asas.lr.and.or.baf.lists,
-                                             min.cons.segs.df,
+                                             seg.name.vec,
                                              ploidy.est.vec,
                                              purity.est.vec,
                                              all.seg.phasing.info.list,
@@ -204,12 +371,6 @@ calculatePairwiseCNHeterogeneity <- function(samp.one,
                                              min.num.hz.snp.phasing = 5
                                              ) {
 
-     cpn.event.names.vec <- c('median_seg_logr','low_ci_logr_vs_exp_logr','high_ci_logr_vs_exp_logr'
-                                        ,'min_exp_logr_gain','gain_pval'
-                                        ,'min_exp_logr_amp','amp_pval'
-                                        ,'min_exp_logr_loss','loss_pval'
-                                        ,'min_exp_logr_deep_loss','deep_loss_pval')
-
 
   #debug parameters 
   # samp.one <- "B_MET048_MT-M1"
@@ -217,16 +378,54 @@ calculatePairwiseCNHeterogeneity <- function(samp.one,
 
 	#assuming that there will always be a phasing vector
 	s.one.two.comparison <- list()
-	chr.start.end.string.vec <- paste(min.cons.segs.df[ , 1], min.cons.segs.df[ , 2], min.cons.segs.df[ , 3], sep=":")
-	pw.CN.het.score.vec <- c()
-	seg.size.vec <- c()
 
+  #What's the input data for all these comparions?
+
+  #The phased cpnA cpnB values if the segmnet had greater than min.num.hz.snp.phasing
+
+  phased.s.one.s.cpnA.cpnB.list <- all.samp.seg.phased.raw.cpn.list[[seg.name]][[samp.one]]
+  phased.s.one.s.cpnA.cpnB.df <- as.matrix(cbind(phased.s.one.s.cpnA.cpnB.list$ph_cpnA_vec, phased.s.one.s.cpnA.cpnB.list$ph_cpnB_vec))
+  phased.s.two.s.cpnA.cpnB.list <- all.samp.seg.phased.raw.cpn.list[[seg.name]][[samp.two]]
+  phased.s.two.s.cpnA.cpnB.df <- as.matrix(cbind(phased.s.two.s.cpnA.cpnB.list$ph_cpnA_vec, phased.s.two.s.cpnA.cpnB.list$ph_cpnB_vec))
+
+  #Any unphased cpnA cpnB if it's present, ie there were hz positions but fewer than than min.num.hz.snp.phasing so they weren't phased
+
+  s.one.s.b.lr.baf.df <- asas.both.lr.baf.lists[[samp.one]][[seg.name]]
+  s.two.s.b.lr.baf.df <- asas.both.lr.baf.lists[[samp.two]][[seg.name]]
+
+  #snps that didn't logr positions that weren't hz but do have a total copy number
+
+  s.one.s.ao.lr.baf.df <- asas.lr.and.or.baf.lists[[samp.one]][[seg.name]]
+  s.two.s.ao.lr.baf.df <- asas.lr.and.or.baf.lists[[samp.two]][[seg.name]]
+
+
+  #Now before these comparisons we want to put together a datastrucure that contains all the information we need for this segment
+  #So should we want to come back to it we will be able to recalculate any measures we want
+
+  s.one.two.comparison[[seg.name]][[samp.one]]$ph_cpnA_vec <- as.numeric(phased.s.one.s.cpnA.cpnB.df[, 1])
+  s.one.two.comparison[[seg.name]][[samp.one]]$ph_cpnB_vec <- as.numeric(phased.s.one.s.cpnA.cpnB.df[, 2])
+  s.one.two.comparison[[seg.name]][[samp.one]]$mean_ph_cpnA <- mean(as.numeric(phased.s.one.s.cpnA.cpnB.df[, 1]))
+  s.one.two.comparison[[seg.name]][[samp.one]]$mean_ph_cpnB <- mean(as.numeric(phased.s.one.s.cpnA.cpnB.df[, 2]))
+  s.one.two.comparison[[seg.name]][[samp.one]]$un_ph_cpn_total <- NA
+  s.one.two.comparison[[seg.name]][[samp.one]]$un_ph_cpn_total_mean <- NA
+
+
+
+
+  #The tests, where possible should be performed on ph hz alone, un ph hz alone ,non hz alone and combined for completeness
+  #Not sure how realistic this is, however we then need to split our tests into those that need:
+
+  #Total copy number only
+
+  #Phased copy number only 
+
+  #Logr Only 
 
 
 
 
   #Todo, why are we using seg.name or the index of the seg, choose one throughout code and stick to it 
-	for ( seg.name in chr.start.end.string.vec ) {
+	for ( seg.name in seg.name.vec ) {
     #This is the sample comparison ppart 
           samp.one.two.string <- paste(samp.one, samp.two, sep=":")
           s.one.s.b.lr.baf.df <- asas.both.lr.baf.lists[[samp.one]][[seg.name]]
@@ -242,6 +441,7 @@ calculatePairwiseCNHeterogeneity <- function(samp.one,
           
           if (nrow(s.one.s.b.lr.baf.df) < min.num.hz.snp.phasing) {
 
+
                s.one.s.cpnA.cpnB.df <- calculateSNPsCopyNumberAB(logr.vec = s.one.s.ao.lr.baf.df$logR,
                                                                  baf.vec = s.one.s.ao.lr.baf.df$BAF,
                                                                  tumor.ploidy = ploidy.est.vec[samp.one],
@@ -253,8 +453,8 @@ calculatePairwiseCNHeterogeneity <- function(samp.one,
                                                                  tumor.purity = purity.est.vec[samp.two],
                                                                  gamma.val = gamma.val)
 
-               seg.paired.p.vals.vec <- c(tTestWithErrorHandling(s.one.s.cpnA.cpnB.df[, 1], s.two.s.cpnA.cpnB.df[, 1],paired=TRUE)$p.val,
-                                         tTestWithErrorHandling(s.one.s.cpnA.cpnB.df[, 2], s.two.s.cpnA.cpnB.df[, 2],paired=TRUE)$p.val)
+               seg.paired.p.vals.vec <- c(tTestWithErrorHandling(s.one.s.cpnA.cpnB.df[, 1], s.two.s.cpnA.cpnB.df[, 1], paired=TRUE)$p.val,
+                                         tTestWithErrorHandling(s.one.s.cpnA.cpnB.df[, 2], s.two.s.cpnA.cpnB.df[, 2], paired=TRUE)$p.val)
                combined.cpnA.cpnB.paired.pval <- seg.paired.p.vals.vec[1]
                seg.unpaired.p.vals.vec <- c(tTestWithErrorHandling(s.one.s.cpnA.cpnB.df[, 1], s.two.s.cpnA.cpnB.df[,1])$p.val,
                                              tTestWithErrorHandling(s.one.s.cpnA.cpnB.df[, 2], s.two.s.cpnA.cpnB.df[,2])$p.val)
@@ -283,30 +483,13 @@ calculatePairwiseCNHeterogeneity <- function(samp.one,
                s.one.two.comparison[[seg.name]][[samp.one.two.string]]$un_ph_cpnA_cpnB_het_comb_unpaired_pval  <- combined.cpnA.cpnB.unpaired.pval
                s.one.two.comparison[[seg.name]][[samp.one.two.string]]$un_ph_combinedUnPairedPval      <- total.cpn.paired.pval
 
-               gain.samp.one.df <- checkSegGainOrLossSignificance(s.one.s.ao.lr.baf.df, samp.one, ploidy.est.vec, purity.est.vec, gain.threshold, "gain")
-               amp.samp.one.df <- checkSegGainOrLossSignificance(s.one.s.ao.lr.baf.df, samp.one, ploidy.est.vec, purity.est.vec, amp.threshold, "gain")
-               loss.samp.one.df <- checkSegGainOrLossSignificance(s.one.s.ao.lr.baf.df, samp.one, ploidy.est.vec, purity.est.vec, loss.threshold, "loss")
-               deep.loss.samp.one.df <- checkSegGainOrLossSignificance(s.one.s.ao.lr.baf.df, samp.one, ploidy.est.vec, purity.est.vec, deep.loss.threshold, "loss")
-               samp.one.cpn.event.vec <- c(gain.samp.one.df[, 3:5, drop = FALSE]
-                                        ,gain.samp.one.df[, 2, drop = FALSE], gain.samp.one.df[, 7, drop = FALSE]
-                                        ,amp.samp.one.df[, 2,drop = FALSE], amp.samp.one.df[, 7, drop = FALSE]
-                                        ,loss.samp.one.df[, 2, drop = FALSE], loss.samp.one.df[, 7, drop = FALSE]
-                                        ,deep.loss.samp.one.df[, 2, drop = FALSE], deep.loss.samp.one.df[, 7, drop = FALSE])
-               names(samp.one.cpn.event.vec) <- cpn.event.names.vec
 
+               samp.one.cpn.event.vec <- getSampLogRSegCPNEventVec(samp.one, s.one.s.ao.lr.baf.df, purity.est.vec, ploidy.est.vec,
+                                                                  gain.threshold, amp.threshold, loss.threshold, deep.loss.threshold)
                s.one.two.comparison[[seg.name]][[samp.one]]$seg_cpn_event_status_vec <- samp.one.cpn.event.vec
 
-               gain.samp.two.df <- checkSegGainOrLossSignificance(s.one.s.ao.lr.baf.df, samp.two, ploidy.est.vec, purity.est.vec, gain.threshold, "gain")
-               amp.samp.two.df <- checkSegGainOrLossSignificance(s.one.s.ao.lr.baf.df, samp.two, ploidy.est.vec, purity.est.vec, amp.threshold, "gain")
-               loss.samp.two.df <- checkSegGainOrLossSignificance(s.one.s.ao.lr.baf.df, samp.two, ploidy.est.vec, purity.est.vec, loss.threshold, "loss")
-               deep.loss.samp.two.df <- checkSegGainOrLossSignificance(s.one.s.ao.lr.baf.df, samp.two, ploidy.est.vec, purity.est.vec, deep.loss.threshold, "loss")
-               samp.two.cpn.event.vec <- c(gain.samp.two.df[, 3:5, drop = FALSE]
-                                        ,gain.samp.two.df[, 2, drop = FALSE], gain.samp.two.df[, 7, drop=FALSE]
-                                        ,amp.samp.two.df[, 2,drop = FALSE], amp.samp.two.df[, 7, drop=FALSE]
-                                        ,loss.samp.two.df[, 2, drop = FALSE], loss.samp.two.df[, 7, drop=FALSE]
-                                        ,deep.loss.samp.two.df[, 2, drop = FALSE], deep.loss.samp.two.df[, 7, drop=FALSE])
-               names(samp.two.cpn.event.vec) <- cpn.event.names.vec
-
+               samp.two.cpn.event.vec <- getSampLogRSegCPNEventVec(samp.two, s.two.s.ao.lr.baf.df, purity.est.vec, ploidy.est.vec,
+                                                                  gain.threshold, amp.threshold, loss.threshold, deep.loss.threshold)
                s.one.two.comparison[[seg.name]][[samp.two]]$seg_cpn_event_status_vec <- samp.two.cpn.event.vec
 
                next;
@@ -366,10 +549,6 @@ calculatePairwiseCNHeterogeneity <- function(samp.one,
                s.one.two.comparison[[seg.name]][[samp.one]]$chr_vec <- s.one.s.b.lr.baf.df$chrom
                s.one.two.comparison[[seg.name]][[samp.one]]$pos_vec <- s.one.s.b.lr.baf.df$pos
 
-
-
-
-
                s.one.two.comparison[[seg.name]][[samp.one]]$ph_cpnA_vec <- as.numeric(phased.s.one.s.cpnA.cpnB.df[, 1])
                s.one.two.comparison[[seg.name]][[samp.one]]$ph_cpnB_vec <- as.numeric(phased.s.one.s.cpnA.cpnB.df[, 2])
                s.one.two.comparison[[seg.name]][[samp.one]]$mean_ph_cpnA <- mean(as.numeric(phased.s.one.s.cpnA.cpnB.df[, 1]))
@@ -397,48 +576,16 @@ calculatePairwiseCNHeterogeneity <- function(samp.one,
                s.one.two.comparison[[seg.name]][[samp.one.two.string]]$ph_cpnA_diff_by_size_het <- seg.cpnA.het.size.by.diff
                s.one.two.comparison[[seg.name]][[samp.one.two.string]]$ph_cpnB_diff_by_size_het <- seg.cpnB.het.size.by.diff
                s.one.two.comparison[[seg.name]][[samp.one.two.string]]$comb_cpnA_cpnB_diff_by_size_het <- seg.cpnA.het.size.by.diff + seg.cpnB.het.size.by.diff
-               s.one.two.comparison[[seg.name]][[samp.one.two.string]]$MSAI <- 0
-
-               if (tTestWithErrorHandling(phased.s.one.s.cpnA.cpnB.df[, 1], phased.s.one.s.cpnA.cpnB.df[, 2], paired=TRUE)$p.val < 0.001 &
-                    tTestWithErrorHandling(phased.s.two.s.cpnA.cpnB.df[, 1], phased.s.two.s.cpnA.cpnB.df[, 2], paired=TRUE)$p.val < 0.001) {
-
-                    if( (mean(phased.s.one.s.cpnA.cpnB.df[, 1] - phased.s.one.s.cpnA.cpnB.df[, 2]) > 0 & 
-                         mean(phased.s.two.s.cpnA.cpnB.df[, 1] - phased.s.two.s.cpnA.cpnB.df[, 2]) < 0) | 
-                        (mean(phased.s.one.s.cpnA.cpnB.df[, 2] - phased.s.one.s.cpnA.cpnB.df[, 1]) < 0 & 
-                         mean(phased.s.two.s.cpnA.cpnB.df[, 2] - phased.s.two.s.cpnA.cpnB.df[, 1]) > 0) ){
-
-                         s.one.two.comparison[[seg.name]][[samp.one.two.string]]$MSAI <- 1
-
-                    }
-
-               }#end if (tTestWithErrorHandling(phased.s.one.s.cpnA.cpnB.df[, 1], phased.s.one.s.cpnA.cpnB.df[, 2], paired=TRUE)$p.val < 0.001 &
-                    #tTestWithErrorHandling(phased.s.two.s.cpnA.cpnB.df[, 1], phased.s.two.s.cpnA.cpnB.df[,2], paired=TRUE)$p.val < 0.001) {
 
 
-               gain.samp.one.df <- checkSegGainOrLossSignificance(s.one.s.ao.lr.baf.df, samp.one, ploidy.est.vec, purity.est.vec, gain.threshold, "gain")
-               amp.samp.one.df <- checkSegGainOrLossSignificance(s.one.s.ao.lr.baf.df, samp.one, ploidy.est.vec, purity.est.vec, amp.threshold, "gain")
-               loss.samp.one.df <- checkSegGainOrLossSignificance(s.one.s.ao.lr.baf.df, samp.one, ploidy.est.vec, purity.est.vec, loss.threshold, "loss")
-               deep.loss.samp.one.df <- checkSegGainOrLossSignificance(s.one.s.ao.lr.baf.df, samp.one, ploidy.est.vec, purity.est.vec, deep.loss.threshold, "loss")
-               samp.one.cpn.event.vec <- c(gain.samp.one.df[, 3:5, drop = FALSE]
-                                        ,gain.samp.one.df[, 2, drop = FALSE], gain.samp.one.df[, 7, drop = FALSE]
-                                        ,amp.samp.one.df[, 2,drop = FALSE], amp.samp.one.df[, 7, drop = FALSE]
-                                        ,loss.samp.one.df[, 2, drop = FALSE], loss.samp.one.df[, 7, drop = FALSE]
-                                        ,deep.loss.samp.one.df[, 2, drop = FALSE], deep.loss.samp.one.df[, 7, drop = FALSE])
-               names(samp.one.cpn.event.vec) <- cpn.event.names.vec
+               s.one.two.comparison[[seg.name]][[samp.one.two.string]]$MSAI <- testPairOfSamplesSegForMSAIWithCPN(seg.name, samp.one, samp.two, all.samp.seg.phased.raw.cpn.list) 
 
+               samp.one.cpn.event.vec <- getSampLogRSegCPNEventVec(samp.one, s.one.s.ao.lr.baf.df, purity.est.vec, ploidy.est.vec,
+                                                                  gain.threshold, amp.threshold, loss.threshold, deep.loss.threshold)
                s.one.two.comparison[[seg.name]][[samp.one]]$seg_cpn_event_status_vec <- samp.one.cpn.event.vec
 
-               gain.samp.two.df <- checkSegGainOrLossSignificance(s.one.s.ao.lr.baf.df, samp.two, ploidy.est.vec, purity.est.vec, gain.threshold, "gain")
-               amp.samp.two.df <- checkSegGainOrLossSignificance(s.one.s.ao.lr.baf.df, samp.two, ploidy.est.vec, purity.est.vec, amp.threshold, "gain")
-               loss.samp.two.df <- checkSegGainOrLossSignificance(s.one.s.ao.lr.baf.df, samp.two, ploidy.est.vec, purity.est.vec, loss.threshold, "loss")
-               deep.loss.samp.two.df <- checkSegGainOrLossSignificance(s.one.s.ao.lr.baf.df, samp.two, ploidy.est.vec, purity.est.vec, deep.loss.threshold, "loss")
-               samp.two.cpn.event.df <- c(gain.samp.two.df[, 3:5, drop = FALSE]
-                                        ,gain.samp.two.df[, 2, drop = FALSE], gain.samp.two.df[, 7, drop = FALSE]
-                                        ,amp.samp.two.df[, 2, drop = FALSE], amp.samp.two.df[, 7, drop = FALSE]
-                                        ,loss.samp.two.df[, 2, drop = FALSE], loss.samp.two.df[, 7, drop = FALSE]
-                                        ,deep.loss.samp.two.df[, 2, drop = FALSE], deep.loss.samp.two.df[, 7, drop = FALSE])
-               samp.two.cpn.event.vec <- cpn.event.names.vec
-
+               samp.two.cpn.event.vec <- getSampLogRSegCPNEventVec(samp.two, s.two.s.ao.lr.baf.df, purity.est.vec, ploidy.est.vec,
+                                                                  gain.threshold, amp.threshold, loss.threshold, deep.loss.threshold)
                s.one.two.comparison[[seg.name]][[samp.two]]$seg_cpn_event_status_vec <- samp.two.cpn.event.vec
 
 
