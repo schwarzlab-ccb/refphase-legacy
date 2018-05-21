@@ -187,8 +187,8 @@ getAllSegsMirroredSubclonalAllelicImbalanceDetectionFromBAFList <- function(seg.
       for ( samp in sample.vec ) {
 
         all.samp.seg.baf.df[[samp]] <- asas.SNPs.w.both.lr.baf.snp.lists[[samp]][[seg.name]]$BAF
-        all.samp.seg.baf.df[[paste0(samp, "_ltnpd_in_lower")]] <-  getLogTruncNormProbabilityDensitiesBAFvsLowerOrUpper(lower.or.upper.mu = 0.33, baf.vector = asas.SNPs.w.both.lr.baf.snp.lists[[samp]][[seg.name]]$BAF)
-        all.samp.seg.baf.df[[paste0(samp, "_ltnpd_in_upper")]] <-  getLogTruncNormProbabilityDensitiesBAFvsLowerOrUpper(lower.or.upper.mu = 0.66, baf.vector = asas.SNPs.w.both.lr.baf.snp.lists[[samp]][[seg.name]]$BAF)
+        all.samp.seg.baf.df[[paste0(samp, "_ltnpd_in_lower")]] <- getLogTruncNormProbabilityDensitiesBAFvsLowerOrUpper(lower.or.upper.mu = 0.33, baf.vector = asas.SNPs.w.both.lr.baf.snp.lists[[samp]][[seg.name]]$BAF)
+        all.samp.seg.baf.df[[paste0(samp, "_ltnpd_in_upper")]] <- getLogTruncNormProbabilityDensitiesBAFvsLowerOrUpper(lower.or.upper.mu = 0.66, baf.vector = asas.SNPs.w.both.lr.baf.snp.lists[[samp]][[seg.name]]$BAF)
 
       }#end for ( samp in sample.vec ) {
 
@@ -611,7 +611,8 @@ getAllSegAllSamplePhasedRawCPNList <- function(sample.vec, ploidy.est.vec, purit
       for ( samp in sample.vec ) {
         all.samples.phased.cpn.list[[seg.name]][[samp]] <- list()
         all.samples.phased.cpn.list[[seg.name]][[samp]]$chr_vec <- NA 
-        all.samples.phased.cpn.list[[seg.name]][[samp]]$pos_vec
+        all.samples.phased.cpn.list[[seg.name]][[samp]]$pos_vec <- NA
+        all.samples.phased.cpn.list[[seg.name]][[samp]]$logr_vec <- NA
         all.samples.phased.cpn.list[[seg.name]][[samp]]$ph_cpnA_vec <- NA
         all.samples.phased.cpn.list[[seg.name]][[samp]]$ph_cpnB_vec <- NA
         all.samples.phased.cpn.list[[seg.name]][[samp]]$mean_ph_cpnA <- NA
@@ -640,6 +641,7 @@ getAllSegAllSamplePhasedRawCPNList <- function(sample.vec, ploidy.est.vec, purit
 
           all.samples.phased.cpn.list[[seg.name]][[samp]]$chr_vec <- samp.b.lr.baf.df$chrom
           all.samples.phased.cpn.list[[seg.name]][[samp]]$pos_vec <- samp.b.lr.baf.df$pos
+          all.samples.phased.cpn.list[[seg.name]][[samp]]$logr_vec <- samp.b.lr.baf.df$logR
           all.samples.phased.cpn.list[[seg.name]][[samp]]$un_ph_cpn_total <- samp.seg.cpnA.cpnB.df[, 1] + samp.seg.cpnA.cpnB.df[, 2]
           all.samples.phased.cpn.list[[seg.name]][[samp]]$un_ph_cpn_total_mean <- mean(samp.seg.cpnA.cpnB.df[, 1] + samp.seg.cpnA.cpnB.df[, 2])
 
@@ -669,6 +671,7 @@ getAllSegAllSamplePhasedRawCPNList <- function(sample.vec, ploidy.est.vec, purit
           #Store this information in the list:
           all.samples.phased.cpn.list[[seg.name]][[samp]]$chr_vec <- samp.b.lr.baf.df$chrom
           all.samples.phased.cpn.list[[seg.name]][[samp]]$pos_vec <- samp.b.lr.baf.df$pos
+          all.samples.phased.cpn.list[[seg.name]][[samp]]$logr_vec <- samp.b.lr.baf.df$logR
           all.samples.phased.cpn.list[[seg.name]][[samp]]$ph_cpnA_vec <- as.numeric(phased.samp.seg.cpnA.cpnB.df[,1])
           all.samples.phased.cpn.list[[seg.name]][[samp]]$ph_cpnB_vec <- as.numeric(phased.samp.seg.cpnA.cpnB.df[,2])
           all.samples.phased.cpn.list[[seg.name]][[samp]]$mean_ph_cpnA <- mean(as.numeric(phased.samp.seg.cpnA.cpnB.df[,1]))

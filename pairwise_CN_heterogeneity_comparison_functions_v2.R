@@ -241,6 +241,107 @@ testPairOfSamplesSegForMSAIWithCPN <- function(seg.name, samp.one, samp.two, all
 
 
 
+##Note for now we're missing heterozygous SNPs that couldn't be phased...
+##Params:
+##
+##Returns:
+##
+createAllSegInputForHetComparisons <- function(seg.name,
+                                              samp.one,
+                                              samp.two,
+                                              ploidy.est.vec,
+                                              purity.est.vec,
+                                              all.samp.seg.phased.raw.cpn.list,
+                                              asas.both.lr.baf.lists,
+                                              all.samp.non.hz.logr.and.tot.cpn.df.list,
+                                              min.num.hz.snp.phasing) {
+
+  seg.samp.one.two.comp.data.list <- list()
+  seg.samp.one.two.comp.data.list[[samp.one]] <- list()
+  seg.samp.one.two.comp.data.list[[samp.two]] <- list()
+
+
+
+  #Any unphased cpnA cpnB if it's present, ie there were hz positions but fewer than than min.num.hz.snp.phasing so they weren't phased
+  # s.one.s.b.lr.baf.df <- asas.both.lr.baf.lists[[samp.one]][[seg.name]]
+  # s.two.s.b.lr.baf.df <- asas.both.lr.baf.lists[[samp.two]][[seg.name]]
+
+  seg.name.split.vec <- strsplit(chr.start.end.string.vec[i], split=":")
+  samp.one.non.hz.df <- all.samp.non.hz.logr.and.tot.cpn.df.list[[samp.one]]
+  samp.seg.one.non.hz.df <- samp.one.non.hz.df[samp.one.non.hz.df$Chr == as.numeric(seg.name.split.vec[1]) &
+                                               samp.one.non.hz.df$Position >= as.numeric(seg.name.split.vec[2]) &
+                                               samp.one.non.hz.df$Position <= as.numeric(seg.name.split.vec[3])
+                                               ,]
+  samp.two.non.hz.df <- all.samp.non.hz.logr.and.tot.cpn.df.list[[samp.two]]
+  samp.seg.two.non.hz.df <- samp.two.non.hz.df[samp.two.non.hz.df$Chr == as.numeric(seg.name.split.vec[1]) &
+                                               samp.two.non.hz.df$Position >= as.numeric(seg.name.split.vec[2]) &
+                                               samp.two.non.hz.df$Position <= as.numeric(seg.name.split.vec[3])
+                                               ,]
+
+  if (nrow(samp.seg.one.non.hz.df) > 0) {
+
+    seg.samp.one.two.comp.data.list[[samp.one]]$non_hz_chr_vec <- samp.one.non.hz.df$Chr
+    seg.samp.one.two.comp.data.list[[samp.one]]$non_hz_pos_vec <- samp.one.non.hz.df$Position
+
+    seg.samp.one.two.comp.data.list[[samp.one]]$non_hz_logr_vec <- samp.one.non.hz.df$logR
+    seg.samp.one.two.comp.data.list[[samp.one]]$non_hz_tot_raw_cpn_vec <- samp.one.non.hz.df$tot_raw_un_ph_cpn
+
+    seg.samp.one.two.comp.data.list[[samp.two]]$non_hz_chr_vec <- samp.two.non.hz.df$Chr
+    seg.samp.one.two.comp.data.list[[samp.two]]$non_hz_pos_vec <- samp.two.non.hz.df$Position
+
+    seg.samp.one.two.comp.data.list[[samp.two]]$non_hz_logr_vec <- samp.two.non.hz.df$logR
+    seg.samp.one.two.comp.data.list[[samp.two]]$non_hz_logr_vec <- samp.two.non.hz.df$logR
+    seg.samp.one.two.comp.data.list[[samp.two]]$non_hz_tot_raw_cpn_vec <- samp.two.non.hz.df$tot_raw_un_ph_cpn
+
+
+  }#end   
+
+  phased.s.one.s.cpnA.cpnB.list <- all.samp.seg.phased.raw.cpn.list[[seg.name]][[samp.one]]
+  num.non.na.ph <- length(phased.s.one.s.cpnA.cpnB.list$ph_cpnA_vec[is.na(phased.s.one.s.cpnA.cpnB.list$ph_cpnA_vec)])
+  if ( num.non.na.ph >= min.num.hz.snp.phasing) {
+
+    phased.s.one.s.cpnA.cpnB.df <- as.matrix(cbind(phased.s.one.s.cpnA.cpnB.list$ph_cpnA_vec, phased.s.one.s.cpnA.cpnB.list$ph_cpnB_vec))
+    phased.s.two.s.cpnA.cpnB.list <- all.samp.seg.phased.raw.cpn.list[[seg.name]][[samp.two]]
+    phased.s.two.s.cpnA.cpnB.df <- as.matrix(cbind(phased.s.two.s.cpnA.cpnB.list$ph_cpnA_vec, phased.s.two.s.cpnA.cpnB.list$ph_cpnB_vec))
+
+
+    seg.samp.one.two.comp.data.list[[samp.one]]$ph_cpnA_vec <- as.numeric(phased.s.one.s.cpnA.cpnB.df[, 1])
+    seg.samp.one.two.comp.data.list[[samp.one]]$ph_cpnB_vec <- as.numeric(phased.s.one.s.cpnA.cpnB.df[, 2])
+    seg.samp.one.two.comp.data.list[[samp.one]]$mean_ph_cpnA <- mean(as.numeric(phased.s.one.s.cpnA.cpnB.df[, 1]))
+    seg.samp.one.two.comp.data.list[[samp.one]]$mean_ph_cpnB <- mean(as.numeric(phased.s.one.s.cpnA.cpnB.df[, 2]))
+
+    seg.samp.one.two.comp.data.list[[samp.two]]$ph_cpnA_vec <- as.numeric(phased.s.two.s.cpnA.cpnB.df[, 1])
+    seg.samp.one.two.comp.data.list[[samp.two]]$ph_cpnB_vec <- as.numeric(phased.s.two.s.cpnA.cpnB.df[, 2])
+    seg.samp.one.two.comp.data.list[[samp.two]]$mean_ph_cpnA <- mean(as.numeric(phased.s.two.s.cpnA.cpnB.df[, 1]))
+    seg.samp.one.two.comp.data.list[[samp.two]]$mean_ph_cpnB <- mean(as.numeric(phased.s.two.s.cpnA.cpnB.df[, 2]))
+
+  } else if (num.non.na.ph < min.num.hz.snp.phasing & num.non.na.ph > 0 ) {
+
+    #not sure about this add them to
+    seg.samp.one.two.comp.data.list[[samp.one]]$un_ph_hz_logr_vec <- phased.s.one.s.cpnA.cpnB.list$logr_vec
+    seg.samp.one.two.comp.data.list[[samp.one]]$un_ph_hz_tot_raw_cpn_vec <- phased.s.one.s.cpnA.cpnB.list$tot_raw_un_ph_cpn
+
+    seg.samp.one.two.comp.data.list[[samp.two]]$un_ph_hz_logr_vec <- phased.s.one.s.cpnA.cpnB.list$logr_vec
+    seg.samp.one.two.comp.data.list[[samp.two]]$un_ph_hz_tot_raw_cpn_vec <- phased.s.one.s.cpnA.cpnB.list$tot_raw_un_ph_cpn
+
+
+  } 
+
+                                     
+
+
+  #Now before these comparisons we want to put together a datastrucure that contains all the information we need for this segment
+  #So should we want to come back to it we will be able to recalculate any measures we want
+  
+  #So let's also work out what data it's possible to compare?
+
+
+
+  return(seg.samp.one.two.comp.data.list)
+
+
+}#end createAllSegInputForHetComparisons
+
 #one issue we need to do do comparisons with and iwthout the extra logr and then combined like w've done in the final dataframe,
 #ideally these should be done so that the same funciton that does the comparison for the final joint segmentation should work for
 #
@@ -253,6 +354,29 @@ testPairOfSamplesSegForMSAIWithCPN <- function(seg.name, samp.one, samp.two, all
 #We want the pawixs classification of copy number wteen all regions but do we also want the actual measure based of them to be computed at the same time?
 
 #Not really as we might have many different measures we woish to apply to the same data... let's try and keep it separate...
+
+
+
+##
+##Params:
+##
+##Returns:
+##
+performSegPairwiseComparisons <- function(seg.name, seg.samp.one.two.comp.data.list) {
+
+  #If we can perform total copy number comparisons, do so here:
+
+
+
+
+  return(object)
+
+}
+
+
+
+
+
 
 
 
