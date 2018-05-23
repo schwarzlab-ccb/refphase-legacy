@@ -218,7 +218,7 @@ if (data.format.to.use == "MEDICC") {
 
 
 	#Todo accept precomputed mininmum consistent segmentation
-	min.cons.segs.df <- generateMinimumConsistentSegmentation(processed.orig.cpn.segs.df, chroms=1:22, col.to.use="ploidy_adj_tot_cpn")
+	min.cons.segs.df <- generateMinimumConsistentSegmentation(processed.orig.cpn.segs.df, chroms = 1:22, col.to.use = "ploidy_adj_tot_cpn")
 	print(head(min.cons.segs.df))
 
 
@@ -316,9 +316,6 @@ library(diptest)
 library(gplots)
 library(gdata)
 
-
-
-
 ###############This is past the input stage and into the analysis:
 #Set constants for all analyses here... eventually these can be command line set
 MIN_NUM_HZ_SNP_PHASING <- 5
@@ -362,6 +359,7 @@ ALLOW_DIPTEST_ALONE_PH_FLAG <- allow.dip.test.phasing.flag
 MSAI_BAF_LTNPD_PVAL_THRESHOLD <- 0.001
 MSAI_CPNX_PVAL_THRESHOLD <- 0.001
 
+PVAL_THRESH_CONVERT_GAIN_TO_AMP  <- 0.01
 
 if (is.null(output.directory.base.path)) {
 
@@ -421,6 +419,7 @@ all.seg.phasing.info.list <- getCombinedBAFDipTestPhasing(asas.lr.baf.lists = as
                                             comb.wilcox.snp.sep.p.val.threshold = PVAL_COMB_WILCOX_PH_THRESH,
                                             allow.dip.test.without.ASCAT.to.phase = ALLOW_DIPTEST_ALONE_PH_FLAG
                                             )
+
 all.seg.phasing.info.list.path <- paste0(PLOT_OUTPUT_DIR, patient, "_all_seg_phasing_info_list.RDS")
 saveRDS(all.seg.phasing.info.list.path, file = all.seg.phasing.info.list.path)
 #Todo unsure of what to do with the baf logr lists which have positions that only have logr here, at the moment exclude them but how
@@ -437,11 +436,19 @@ print(sample.vec)
 
 
 #Detect MSAI in the original BAF before it is processed alongside logr to get the Raw allele specifc cpn to be used in the rest of the analysis.
-all.seg.MSAI.by.BAF.ltnpd.present.list <- getAllSegsMirroredSubclonalAllelicImbalanceDetectionFromBAFList(seg.name.vec = seg.name.vec,
-																										   sample.vec  = sample.vec,
-																										   asas.SNPS.lr.and.or.baf.lists = asas.SNPS.lr.and.or.baf.lists,
-																										   all.seg.phasing.info.list = all.seg.phasing.info.list,
-																										   MSAI.BAF.LTPND.pval.thresh = MSAI_BAF_LTNPD_PVAL_THRESHOLD)
+all.seg.MSAI.by.BAF.ltnpd.present.list <- getAllSegsMSAIDetectionFromBAFListLTNPD(seg.name.vec = seg.name.vec,
+																				  sample.vec  = sample.vec,
+																				  asas.SNPS.lr.and.or.baf.lists = asas.SNPS.lr.and.or.baf.lists,
+																				  all.seg.phasing.info.list = all.seg.phasing.info.list,
+																				  MSAI.BAF.LTPND.pval.thresh = MSAI_BAF_LTNPD_PVAL_THRESHOLD)
+
+
+#Todo add another method of detecting MSAI using only the BAF and a paired T est.
+# all.seg.MSAI.by.BAF.ltnpd.present.list <- getAllSegsMirroredSubclonalAllelicImbalanceDetectionFromBAFList(seg.name.vec = seg.name.vec,
+# 																										   sample.vec  = sample.vec,
+# 																										   asas.SNPS.lr.and.or.baf.lists = asas.SNPS.lr.and.or.baf.lists,
+# 																										   all.seg.phasing.info.list = all.seg.phasing.info.list,
+# 																										   MSAI.BAF.LTPND.pval.thresh = MSAI_BAF_LTNPD_PVAL_THRESHOLD)
 
 # str(all.seg.phasing.info.list[["9:84606266:141071646"]], max = 1)
 # str(asas.SNPs.w.both.lr.baf.snp.lists[[samp]][["9:84606266:141071646"]], max = 1 )
@@ -457,11 +464,8 @@ all.samp.non.hz.logr.and.tot.cpn.df.list <- getAllSampLogrAlonePositionsLogrAndT
 
 
 
-source(paste0(current.dir, "/allelic_imbalance_phasing_functions_v2.R"))
-
-
 #Add this the unphaseable stuff too maybe? Not necessary.
-all.samp.seg.phased.raw.cpn.list <- getAllSegAllSamplePhasedRawCPNList(sample.vec = sample.vec,
+asas.ph.raw.cpn.lists <- getAllSegAllSamplePhasedRawCPNList(sample.vec = sample.vec,
 																ploidy.est.vec = ploidy.est.vec,
 																purity.est.vec = purity.est.vec,
 																min.cons.segs.df = min.cons.segs.df,
@@ -471,19 +475,8 @@ all.samp.seg.phased.raw.cpn.list <- getAllSegAllSamplePhasedRawCPNList(sample.ve
 																min.num.hz.snp.phasing = MIN_NUM_HZ_SNP_PHASING)
 
 
-
-#Todo check wha happens to the missing rows, are these segments that contained less than 5 snps and thus didn't have something created?
-
-
-
-#Get the logr dataframe list we'll use to add gain/loss calls:
-
-#This will be used to work out a total raw and used for logr 
-
-
-## how to make total raw, even though no baf value
-
-
+#Perform all pairwise comparisons of all samples, the use of much of this has been deprecated but we can revisit it,
+#We can add to this later if we want to redo the
 all.pw.cn.het.comp.lists <- list()
 for (i in 1:(length(sample.vec) - 1)) {
 
@@ -498,11 +491,10 @@ for (i in 1:(length(sample.vec) - 1)) {
 
     for ( seg.name in seg.name.vec ) {
 
-  
     	s.one.two.comp.input.list[[seg.name]] <- createAllSegInputForHetComparisons(seg.name = seg.name,
                                                   samp.one = samp.one,
                                                   samp.two = samp.two,
-                                                  all.samp.seg.phased.raw.cpn.list = all.samp.seg.phased.raw.cpn.list,
+                                                  asas.ph.raw.cpn.lists = asas.ph.raw.cpn.lists,
                                                   asas.both.lr.baf.lists = asas.both.lr.baf.lists,
                                                   all.samp.non.hz.logr.and.tot.cpn.df.list = all.samp.non.hz.logr.and.tot.cpn.df.list,
                                                   min.num.hz.snp.phasing = MIN_NUM_HZ_SNP_PHASING)
@@ -531,55 +523,33 @@ for (i in 1:(length(sample.vec) - 1)) {
 		all.pw.cn.het.comp.lists[[samp.one.two]] <- list()
 		all.pw.cn.het.comp.lists[[samp.one.two]]$comparison_input_list <- s.one.two.comp.input.list
 		all.pw.cn.het.comp.lists[[samp.one.two]]$comparison_output_list <- s.one.two.comparison.list
-		all.pw.cn.het.comp.lists[[samp.one.two]]$s.one.two.pw.het.list <- s.one.two.pw.het.list
+		all.pw.cn.het.comp.lists[[samp.one.two]]$s_one_two_pw_het_list <- s.one.two.pw.het.list
 
 
   }#end for (i in 1:(length(sample.vec) - 1)) {
 
 }#end for(j in (i + 1):length(sample.vec)) {
-
-
-
 all.pw.cn.het.comp.lists.path <- paste0(PLOT_OUTPUT_DIR, patient, "_all_pw_cn_het_comp_lists.RDS")
 saveRDS(all.pw.cn.het.comp.lists, file = all.pw.cn.het.comp.lists.path)
 
 
-# samp.one.two.comparison.list <- calculatePairwiseCNHeterogeneity(samp.one = samp.one,
-#                                                               samp.two = samp.two,
-#                                                               asas.both.lr.baf.lists = asas.SNPs.w.both.lr.baf.snp.lists,
-#                                                               asas.lr.and.or.baf.lists = asas.SNPS.lr.and.or.baf.lists,
-#                                                               seg.name.vec = seg.name.vec,
-#                                                               ploidy.est.vec = ploidy.est.vec,
-#                                                               purity.est.vec = purity.est.vec,
-#                                                               all.seg.phasing.info.list = all.seg.phasing.info.list,
-#                                                               all.samp.seg.phased.raw.cpn.list = all.samp.seg.phased.raw.cpn.list,
-#                                                               gamma.val = GAMMA_VAL,
-#                                                               min.num.hz.snp.phasing = MIN_NUM_HZ_SNP_PHASING,
-#                                                               gain.threshold = GAIN_LOGR_THRESH,
-#                                                               loss.threshold = LOSS_LOGR_THRESH,
-#                                                               amp.threshold = AMP_LOGR_THRESH,
-#                                                               deep.loss.threshold = DEEP_LOSS_LOGR_THRESH
-#                                                               )
 
-# #Todo, no need to keep reassigning here...
-# for ( seg.name in names(samp.one.two.comparison.list) ) {
 
-#   all.pw.cn.het.comp.lists[[samp.one]][[seg.name]] <- samp.one.two.comparison.list[[seg.name]][[samp.one]]
-#   all.pw.cn.het.comp.lists[[samp.two]][[seg.name]] <- samp.one.two.comparison.list[[seg.name]][[samp.two]]
-#   all.pw.cn.het.comp.lists[[samp.one.two]][[seg.name]] <- samp.one.two.comparison.list[[seg.name]][[samp.one.two]]
-
-# }
-
-# all.pw.cn.het.comp.lists[[samp.one.two]]$pairwise_avg_cn_het_score <- samp.one.two.comparison.list[[seg.name]][[samp.one.two]]$pairwise_avg_cn_het_score
 
 #Let's get the CCF
-seg.name.vec <- names(all.pw.cn.het.comp.lists[[1]])
+seg.name.vec <- names(asas.ph.raw.cpn.lists[[1]])
 #Check to make sure that all segments are present in all samples... might not be necessary todo, check.
 for ( samp in sample.vec ) {
 
-      seg.name.vec <- intersect(seg.name.vec, names(all.pw.cn.het.comp.lists[[samp]]))
+      seg.name.vec <- intersect(seg.name.vec, names(asas.ph.raw.cpn.lists[[samp]]))
 
-}#end for ( samp in sample.vec ) {   
+}#end for ( samp in sample.vec ) { 
+
+if (length(seg.name.vec) == 0) {
+
+	stop("No shared segments for some reason, go back and check")
+
+}
 
 
 all.seg.CCF.list <- list()
@@ -593,7 +563,12 @@ all.seg.greater.than.two.diff.list <- list()
 #next assess for each chromosome and region, what are the the raw values underlying CN calls, these will be used to help test for subclonality.
 
 #Check that has list structure so that not testing the the values from a segment against itself...
-samps.int.cpn.raw.cpn.by.chr.list <- generateAllSamplesByChromIntCPNUnderlyingRawValuesLists(all.pw.cn.het.comp.lists, sample.vec, seg.name.vec)
+
+samps.int.cpn.raw.cpn.by.chr.list <- generateAllSamplesByChromIntCPNUnderlyingRawValuesLists(asas.ph.raw.cpn.lists = asas.ph.raw.cpn.lists,
+																							 sample.vec = sample.vec,
+																							 seg.name.vec = seg.name.vec,
+																							 cpnX.vec=c("cpnA", "cpnB"),
+																							 reduced.seg.flag = FALSE)
 samps.int.cpn.raw.cpn.by.chr.list.path <- paste0(PLOT_OUTPUT_DIR, patient, "_samps_int_cpn_raw_cpn_by_chr_list.RDS")
 saveRDS(samps.int.cpn.raw.cpn.by.chr.list, file = samps.int.cpn.raw.cpn.by.chr.list.path)
 
@@ -619,7 +594,7 @@ for (cpnX in c("cpnA", "cpnB")) {
 
   for (seg.name in seg.name.vec) {
 
-    if (is.na(all.pw.cn.het.comp.lists[[1]][[seg.name]]$ph_cpnA_vec[1])) {
+    if (is.na(asas.ph.raw.cpn.lists[[1]][[seg.name]]$ph_cpnA_vec[1])) {
 
       all.seg.CCF.list[[cpnX]][[seg.name]] <- NA
       all.seg.int.ob.xp.cpn.df.list[[cpnX]][[seg.name]] <- NA
@@ -631,14 +606,14 @@ for (cpnX in c("cpnA", "cpnB")) {
     }
 
     #does both A and B, todo, refactor so only does one
-    s.samps.int.ob.xp.cpn.df <- getSegObsExpCPNBySampleDF(all.pw.cn.het.comp.lists = all.pw.cn.het.comp.lists,
+    s.samps.int.ob.xp.cpn.df <- getSegObsExpCPNBySampleDF(asas.ph.raw.cpn.lists = asas.ph.raw.cpn.lists,
                                                           sample.vec = sample.vec,
                                                           seg.name = seg.name,
                                                           cpnX.vec = cpnX,
                                                           reduced.seg.flag = FALSE) 
 
     #does only cpnX
-    seg.cpnX.diff.from.exp.list <- calculateWhetherSegCPNDiffFromIntegerExpectedAndAllMatchingSampCPN(all.pw.cn.het.comp.lists = all.pw.cn.het.comp.lists,
+    seg.cpnX.diff.from.exp.list <- calculateWhetherSegCPNDiffFromIntegerExpectedAndAllMatchingSampCPN(asas.ph.raw.cpn.lists = asas.ph.raw.cpn.lists,
                                                                                                       s.samps.int.ob.xp.cpn.df = s.samps.int.ob.xp.cpn.df,
                                                                                                       seg.name = seg.name,
                                                                                                       samps.int.cpn.raw.cpn.by.chr.list = samps.int.cpn.raw.cpn.by.chr.list,
@@ -648,6 +623,7 @@ for (cpnX in c("cpnA", "cpnB")) {
     #does only cpnX
     is.segment.clonal.in.all.samps.flag <- determineCCFClonalityOfSegment(s.samps.int.ob.xp.cpn.df = s.samps.int.ob.xp.cpn.df,
                                                                           seg.name = seg.name,
+                                                                          asas.ph.raw.cpn.lists = asas.ph.raw.cpn.lists,
                                                                           all.samp.ph.BAF.df.list = patient.phased.BAF.df.list,
                                                                           purity.est.vec = purity.est.vec,
                                                                           cpnX = cpnX,
@@ -669,6 +645,8 @@ for (cpnX in c("cpnA", "cpnB")) {
                                                                                                 all.clonal.flag = is.segment.clonal.in.all.samps.flag,
                                                                                                 two.value.diff.flag = is.there.cpnX.difference.greater.than.two.flag,
                                                                                                 min.CCF.to.consider.val = MIN_CCF_TO_CONSIDER)
+
+
     seg.psc.cpnX.low  <- seg.psc.low.high.cpn.and.use.preset.ccf.flag.vec[1]
     seg.psc.cpnX.high  <- seg.psc.low.high.cpn.and.use.preset.ccf.flag.vec[2]
     seg.use.default.ccf <- as.logical(seg.psc.low.high.cpn.and.use.preset.ccf.flag.vec[3])
@@ -677,7 +655,8 @@ for (cpnX in c("cpnA", "cpnB")) {
     for ( samp  in sample.vec ) {
 
       all.seg.CCF.list[[cpnX]][[seg.name]][[samp]] <- list()
-      ss.ph.cpnX.vals.vec <- all.pw.cn.het.comp.lists[[samp]][[seg.name]][[paste0("ph_", cpnX, "_vec")]]
+      #ss.ph.cpnX.vals.vec <- all.pw.cn.het.comp.lists[[samp]][[seg.name]][[paste0("ph_", cpnX, "_vec")]]
+      ss.ph.cpnX.vals.vec <- asas.ph.raw.cpn.lists[[samp]][[seg.name]][[paste0("ph_", cpnX, "_vec")]]
 
       seg.samp.CCF.psc.cpn.df <- getSegCPNXMeanAndAllRawCCFsDF(ss.mean.cpnX.obs = s.samps.int.ob.xp.cpn.df[samp, paste0("mean_obs_", cpnX)],
                                                               ss.ph.cpnX.vals.vec = ss.ph.cpnX.vals.vec,
@@ -691,8 +670,8 @@ for (cpnX in c("cpnA", "cpnB")) {
       all.seg.CCF.list[[cpnX]][[seg.name]][[samp]][[paste0("poss_sc_", cpnX, "_high")]] <- seg.samp.CCF.psc.cpn.df$poss_sc_cpnX_high
       all.seg.CCF.list[[cpnX]][[seg.name]][[samp]][[paste0("mean_frac_", cpnX, "_low")]] <- seg.samp.CCF.psc.cpn.df$mean_frac_cpnX_low
       all.seg.CCF.list[[cpnX]][[seg.name]][[samp]][[paste0("mean_frac_", cpnX, "_high")]] <- seg.samp.CCF.psc.cpn.df$mean_frac_cpnX_high
-      all.seg.CCF.list[[cpnX]][[seg.name]][[samp]][[paste0(cpnX, "_orig_ph_obs_cpnA_vec")]]   <- all.pw.cn.het.comp.lists[[samp]][[seg.name]][[paste0("ph_cpnA_vec")]]
-      all.seg.CCF.list[[cpnX]][[seg.name]][[samp]][[paste0(cpnX, "_orig_ph_obs_cpnB_vec")]]   <- all.pw.cn.het.comp.lists[[samp]][[seg.name]][[paste0("ph_cpnB_vec")]]
+      all.seg.CCF.list[[cpnX]][[seg.name]][[samp]][[paste0(cpnX, "_orig_ph_obs_cpnA_vec")]]   <- asas.ph.raw.cpn.lists[[samp]][[seg.name]][[paste0("ph_cpnA_vec")]]
+      all.seg.CCF.list[[cpnX]][[seg.name]][[samp]][[paste0(cpnX, "_orig_ph_obs_cpnB_vec")]]   <- asas.ph.raw.cpn.lists[[samp]][[seg.name]][[paste0("ph_cpnB_vec")]]
       all.seg.CCF.list[[cpnX]][[seg.name]][[samp]][[paste0("clean_ph_obs_", cpnX, "_vec")]]   <- seg.samp.CCF.psc.cpn.df$clean_ph_obs_cpnX
       all.seg.CCF.list[[cpnX]][[seg.name]][[samp]][[paste0("frac_", cpnX, "_low_vec")]]  <- seg.samp.CCF.psc.cpn.df$frac_cpnX_low 
       all.seg.CCF.list[[cpnX]][[seg.name]][[samp]][[paste0("frac_", cpnX, "_high_vec")]]  <- seg.samp.CCF.psc.cpn.df$frac_cpnX_high
@@ -727,24 +706,17 @@ saveRDS(all.seg.greater.than.two.diff.list, file = all.seg.greater.than.two.diff
 #Todo rename clonal.pval to be more meaningful...
 #Todo Check [1] "B_MET019_MT-M2:1:762496:53608176" to see if LOW/HIGH fraction working properly.
 
-#Ok so our issue is we're always getting the low because the CCFs are not being recalculated correctly.
-#We need to record whether a segment is clonal within a sample or not
-
+source("final_output_segmentation_file_generation_functions_v2.R")
 #Let's initialise the first joint output:
 
-#empty.unjoined.mcr.segs.df <- initialiseAllSegFullDataframe(seg.name.vec, sample.vec, make.row.names.seg.name.alone = FALSE)
-#So no
-
-source("final_output_segmentation_file_generation_functions_v2.R")
-
-empty.full.joint.segs.df <- initialiseFullOutputDataframe(seg.name.vec = names(all.pw.cn.het.comp.lists[[1]]),
+empty.full.joint.segs.df <- initialiseFullOutputDataframe(seg.name.vec = names(asas.ph.raw.cpn.lists[[1]]),
 														ploidy.est.vec = ploidy.est.vec,
 														purity.est.vec = purity.est.vec,
 														make.row.names.seg.name.alone = FALSE) 
 
 
 #This adds the raw cpn for both segments that could be phased and those that couldn't
-new.cpn.full.joint.segs.df <- addNewRawAndIntCPNCallsToFinalSegmentation(seg.name.vec = names(all.pw.cn.het.comp.lists[[1]]),
+new.cpn.full.joint.segs.df <- addNewRawAndIntCPNCallsToFinalSegmentation(seg.name.vec = names(asas.ph.raw.cpn.lists[[1]]),
 																		sample.vec = names(purity.est.vec),
 																		all.samp.logr.df.list = all.samp.non.hz.logr.and.tot.cpn.df.list,
 																		all.samp.ph.BAF.df.list = patient.phased.BAF.df.list,
@@ -759,7 +731,7 @@ new.cpn.full.joint.segs.df <- addNewRawAndIntCPNCallsToFinalSegmentation(seg.nam
 #Using simple thresholds (TRACERx2017) was it a deep_loss, loss, neutral, gain, amp
 #was it an arm level or focal event?
 source("final_output_segmentation_file_generation_functions_v2.R")
-full.joint.segs.w.old.cpn.vs.ploidy.df <- addOriginalSegmentInfoToFinalSegmentation(seg.name.vec = names(all.pw.cn.het.comp.lists[[1]]),
+full.joint.segs.w.old.cpn.vs.ploidy.df <- addOriginalSegmentInfoToFinalSegmentation(seg.name.vec = names(asas.ph.raw.cpn.lists[[1]]),
 																					sample.vec = names(purity.est.vec),
 																					processed.orig.cpn.segs.df = processed.orig.cpn.segs.df,
 																					gain.threshold = GAIN_LOGR_THRESH,
@@ -771,7 +743,7 @@ full.joint.segs.w.old.cpn.vs.ploidy.df <- addOriginalSegmentInfoToFinalSegmentat
 
 
 #Add CCF information and within sample clonality information to the dataframe...
-clonality.and.ccf.joint.segs.df <- addWithinSampleClonalityAndCCFToFinalSegmentation(seg.name.vec = names(all.pw.cn.het.comp.lists[[1]])
+clonality.and.ccf.joint.segs.df <- addWithinSampleClonalityAndCCFToFinalSegmentation(seg.name.vec = names(asas.ph.raw.cpn.lists[[1]])
                                 ,all.seg.CCF.vals.list = all.seg.CCF.list
                                 ,all.seg.CCF.diff.from.exp.list = all.seg.CCF.diff.from.exp.list
                                 ,all.seg.df = new.cpn.full.joint.segs.df
@@ -787,12 +759,9 @@ clonality.and.ccf.joint.segs.df <- addWithinSampleClonalityAndCCFToFinalSegmenta
                                 )
 
 
-
-#Add summary statistics for the ccf derived data e.g. whether there is any  
-
-#This will also add it to segments that were too small for
+#This will also add it to segments that were too small for CCF calculation
 full.joint.segs.df.w.cpn.vs.ploidy.df <- addLogrDefinedCPNEventsToOutputSegmentation(sample.vec = names(purity.est.vec),
-                                                        							seg.name.vec = names(all.pw.cn.het.comp.lists[[1]]),
+                                                        							seg.name.vec = names(asas.ph.raw.cpn.lists[[1]]),
                                                         							all.seg.df = clonality.and.ccf.joint.segs.df,
                                                         							all.samp.logr.df.list = all.samp.non.hz.logr.and.tot.cpn.df.list,
                                                         							all.samp.ph.BAF.df.list = patient.phased.BAF.df.list,     
@@ -802,17 +771,10 @@ full.joint.segs.df.w.cpn.vs.ploidy.df <- addLogrDefinedCPNEventsToOutputSegmenta
                                                         							deep.loss.threshold = DEEP_LOSS_LOGR_THRESH,
                                                         							tot.cpn.vs.ploidy.pval.thresh = PVAL_THRESH_VS_LOGR_FOR_CPN_EVENT)
 
-
-
 print(full.joint.segs.df.w.cpn.vs.ploidy.df[,"cpn_event_vs_ploidy"])
 
-#Todo, add the "wiggle" room for the amplifications, i.e. if we find a subclonal amplification we want to reanalyse all the other gains to check whether they should 
-#perhaps be an amplification
-#Also add information as to what was the closest event... e.g. gain/loss/amp/deep_loss so that if we have have a subclonal event
-
-
 full.joint.segs.logr.vs.ploidy.clonality.df <- determineAcrossSampleClonalityOfLogrEventsVsPloidy(sample.vec = names(purity.est.vec),
-                                                        							seg.name.vec = names(all.pw.cn.het.comp.lists[[1]]),
+                                                        							seg.name.vec = names(asas.ph.raw.cpn.lists[[1]]),
                                                         							all.seg.df = full.joint.segs.df.w.cpn.vs.ploidy.df,
                                                         							all.samp.logr.df.list = all.samp.non.hz.logr.and.tot.cpn.df.list,
                                                         							all.samp.ph.BAF.df.list = patient.phased.BAF.df.list,     
@@ -822,27 +784,91 @@ full.joint.segs.logr.vs.ploidy.clonality.df <- determineAcrossSampleClonalityOfL
                                                         							deep.loss.threshold = DEEP_LOSS_LOGR_THRESH,
                                                         							tot.cpn.vs.ploidy.pval.thresh = PVAL_THRESH_VS_LOGR_FOR_CPN_EVENT)
 
+
+
+source(paste0(current.dir, "/final_output_segmentation_file_generation_functions_v2.R"))
+full.joint.check.amps.vs.ploidy.clonality.df <- retestSubclonalAmps(all.seg.df = full.joint.segs.logr.vs.ploidy.clonality.df,
+																	all.samp.logr.df.list = all.samp.non.hz.logr.and.tot.cpn.df.list,
+																	all.samp.ph.BAF.df.list = patient.phased.BAF.df.list,   
+																	gain.threshold = GAIN_LOGR_THRESH,
+																	amp.threshold = AMP_LOGR_THRESH,
+																	p.val.for.converting.gain.to.amp = PVAL_THRESH_CONVERT_GAIN_TO_AMP)
+
 print(full.joint.segs.logr.vs.ploidy.clonality.df[,c("across_s_cl_cpn_vs_ploidy_present","across_s_sc_cpn_vs_ploidy_present")])
 
 
 #These are kept in separate functions as the original segmentaiton was refactored so it could run when segments are rejoined at the end of the script.
 full.joint.segs.w.phasing.df <- addPhasingInformationToOutputSegmentation(sample.vec = names(purity.est.vec),
-                                        seg.name.vec = names(all.pw.cn.het.comp.lists[[1]]), 
+                                        seg.name.vec = names(asas.ph.raw.cpn.lists[[1]]), 
                                         sample.to.phase.seg.list = all.seg.phasing.info.list,
                                         all.pw.cn.het.comp.lists = all.pw.cn.het.comp.lists,
                                         all.segs.df = full.joint.segs.logr.vs.ploidy.clonality.df)
 
 
+
+##
+##Params:
+##
+##Returns:
+##
+addMSAIDetectionByLTNPDToOutputSegmentation <- function(sample.vec,
+                                        			    seg.name.vec, 
+                                        				all.seg.MSAI.by.BAF.ltnpd.present.list,
+                                        				all.segs.df) {
+
+	for ( seg.name in seg.name.vec ) {
+
+		seg.MSAI.info.list <- all.seg.MSAI.by.BAF.ltnpd.present.list[[seg.name]]
+		samp.seg.name.vec <- paste0(sample.vec, ":", seg.name)
+
+		if (seg.MSAI.info.list$MSAI_detection_feasible == FALSE) {
+
+			#so now get all the relevant segments and mark them as not being possible to mark 
+			all.segs.df[samp.seg.name.vec ,]$MSAI  <- NA
+			all.segs.df[samp.seg.name.vec ,]$any_across_s_MSAI  <- NA
+
+
+		} else if (seg.MSAI.info.list$MSAI_detection_feasible == TRUE) {
+
+			if (seg.MSAI.info.list$MSAI_present_any_sample_by_thresh == FALSE) {
+
+				all.segs.df[samp.seg.name.vec ,]$any_across_s_MSAI  <- FALSE
+				all.segs.df[samp.seg.name.vec ,]$MSAI  <- FALSE
+				all.segs.df[samp.seg.name.vec ,]$dominant_allele  <- "cpnA"
+			} else if (seg.MSAI.info.list$MSAI_present_any_sample_by_thresh == TRUE) {
+
+				all.segs.df[samp.seg.name.vec ,]$any_across_s_MSAI  <- TRUE
+				#So now regernate the samp.seg.name.vec to be sure it's in the same order as the MSAI df
+				seg.MSAI.df <- seg.MSAI.info.list$MSAI_by_sample_df
+				samp.seg.name.vec <- paste0(seg.MSAI.df$sample_name, ":", seg.name)
+				all.segs.df[samp.seg.name.vec ,]$MSAI <- seg.MSAI.df$MSAI_pval_passed_thresh
+				all.segs.df[samp.seg.name.vec ,]$dominant_allele <- seg.MSAI.df$poss_dominant_allele
+
+			}#end else if (seg.MSAI.info.list$MSAI_present_any_sample_by_thresh == TRUE) 
+
+		}#end else if (seg.MSAI.info.list$MSAI_detection_feasible == TRUE) 
+
+	}#end for ( seg.name in seg.name.vec )
+
+	return(all.segs.df)
+}
+
+
 #Now we want to add in the allelic imbalance clonal and subclonal inrormation to the final data frame.
 
 full.joint.segs.w.phasing.and.raw.df <- addOriginalCPNValuesAndCallsVsPloidyToOutputSegmentation(sample.vec,
-                                        seg.name.vec = names(all.pw.cn.het.comp.lists[[1]]), 
+                                        seg.name.vec = names(asas.ph.raw.cpn.lists[[1]]), 
                                         processed.orig.cpn.segs.df,
                                         full.joint.segs.w.phasing.df)
 
+full.joint.segs.w.ltnpd.MSAI.df <- addMSAIDetectionByLTNPDToOutputSegmentation(sample.vec = sample.vec,
+											seg.name.vec = names(asas.ph.raw.cpn.lists[[1]]),
+											all.seg.MSAI.by.BAF.ltnpd.present.list = all.seg.MSAI.by.BAF.ltnpd.present.list,
+											all.segs.df = full.joint.segs.w.phasing.and.raw.df)
+
 
 #Todo plot how much of the original segmentation actually comes all the way through the code.
-full.joint.segs.df <- full.joint.segs.w.phasing.and.raw.df
+full.joint.segs.df <- full.joint.segs.w.ltnpd.MSAI.df
 
 full.joint.segs.df.path <- paste0(PLOT_OUTPUT_DIR, patient, "_full_joint_segs_df.RDS")
 saveRDS(full.joint.segs.df, file=full.joint.segs.df.path)
@@ -850,7 +876,7 @@ saveRDS(full.joint.segs.df, file=full.joint.segs.df.path)
 
 png(file = paste(PLOT_OUTPUT_DIR, patient, "_CCF_cpnA", ".png", sep = ""), width = 1200, height = 1400)
 
-plotAllSampleCCFsAcrossGenome(all.pw.cn.het.comp.lists = all.pw.cn.het.comp.lists,
+plotAllSampleCCFsAcrossGenome(asas.ph.raw.cpn.lists = asas.ph.raw.cpn.lists,
                               full.joint.segs.df = full.joint.segs.w.phasing.df,
                               sample.vec = sample.vec,
                               all.seg.CCF.vals.list = all.seg.CCF.list,
@@ -860,7 +886,7 @@ dev.off()
 
 png(file = paste(PLOT_OUTPUT_DIR, patient, "_CCF_cpnB", ".png", sep = ""), width = 1200, height = 1400)
 
-plotAllSampleCCFsAcrossGenome(all.pw.cn.het.comp.lists = all.pw.cn.het.comp.lists,
+plotAllSampleCCFsAcrossGenome(asas.ph.raw.cpn.lists = asas.ph.raw.cpn.lists,
                               full.joint.segs.df = full.joint.segs.w.phasing.df,
                               sample.vec = sample.vec,
                               all.seg.CCF.vals.list = all.seg.CCF.list,
@@ -882,4 +908,4 @@ plotAllSamplePairwiseComparisonSegmentCPN(sample.vec, full.joint.segs.df, plot.o
 
 testFinalOutputDataframe(full.joint.segs.df)
 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    

@@ -3,7 +3,7 @@
 ##
 ##Returns:
 ##
-generateAllSamplesByChromIntCPNUnderlyingRawValuesLists <- function(all.pw.cn.het.comp.lists, sample.vec, seg.name.vec, cpnX.vec=c("cpnA", "cpnB"), reduced.seg.flag=FALSE) {
+generateAllSamplesByChromIntCPNUnderlyingRawValuesLists <- function(asas.ph.raw.cpn.lists, sample.vec, seg.name.vec, cpnX.vec=c("cpnA", "cpnB"), reduced.seg.flag=FALSE) {
       sample.chr.int.cpn.raw.vals.list <- list()
       #s.samps.obs.exp.cpn.df <- data.frame()
       #But really the datastructure organisation overall needs to change if we speed.
@@ -12,33 +12,34 @@ generateAllSamplesByChromIntCPNUnderlyingRawValuesLists <- function(all.pw.cn.he
             for ( seg.name in seg.name.vec ) {
 
                   if (reduced.seg.flag == FALSE) {
-                    if (is.na(all.pw.cn.het.comp.lists[[1]][[seg.name]]$ph_cpnA_vec[1]) | is.na(all.pw.cn.het.comp.lists[[1]][[seg.name]]$ph_cpnB_vec[1])) {
+                    print("here")
+                    print(samp)
+                    print(seg.name)
+                    print(asas.ph.raw.cpn.lists[[1]][[seg.name]])
+                    if (is.na(asas.ph.raw.cpn.lists[[1]][[seg.name]]$ph_cpnA_vec[1]) | is.na(asas.ph.raw.cpn.lists[[1]][[seg.name]]$ph_cpnB_vec[1])) {
 
                           next
-                    }#end if (is.na(all.pw.cn.het.comp.lists[[1]][[seg.name]]$ph_cpnA_vec[1]) | is.na(all.pw.cn.het.comp.lists[[1]][[seg.name]]$ph_cpnB_vec[1])) {
+                    }#end if (is.na(asas.ph.raw.cpn.lists[[1]][[seg.name]]$ph_cpnA_vec[1]) | is.na(asas.ph.raw.cpn.lists[[1]][[seg.name]]$ph_cpnB_vec[1])) {
                   }#if (reduced.seg.flag == FALSE) {
 
                   for ( cpnX in cpnX.vec ) {
 
                     if(reduced.seg.flag == FALSE) {
-                      samp.seg.int.cpnX.val <- round(all.pw.cn.het.comp.lists[[samp]][[seg.name]][[paste0("mean_ph_",cpnX)]])
+                      samp.seg.int.cpnX.val <- round(asas.ph.raw.cpn.lists[[samp]][[seg.name]][[paste0("mean_ph_",cpnX)]])
 
                       chr <- unlist(strsplit(seg.name, split=":"))[1]
                       sample.chr.int.cpn.raw.vals.list[[samp]][[as.character(samp.seg.int.cpnX.val)]][[chr]][[paste0("all_seg_",cpnX,"_vec")]] <- c(
                             sample.chr.int.cpn.raw.vals.list[[samp]][[as.character(samp.seg.int.cpnX.val)]][[chr]][[paste0("all_seg_",cpnX,"_vec")]], 
-                            all.pw.cn.het.comp.lists[[samp]][[seg.name]][[paste0("ph_",cpnX,"_vec")]])
+                            asas.ph.raw.cpn.lists[[samp]][[seg.name]][[paste0("ph_",cpnX,"_vec")]])
 
                     } else {
 
-                      #print(str(all.pw.cn.het.comp.lists, max=1))
-                      #print(str(all.pw.cn.het.comp.lists[[1]], max=1))
-                      samp.seg.int.cpnX.val <- round(mean(all.pw.cn.het.comp.lists[[seg.name]][[paste0(cpnX,"_orig_ph_obs_",cpnX,"_vec")]]))
-                      #print("print(samp.seg.int.cpnX.val)")
-                      #print(samp.seg.int.cpnX.val)
+                      samp.seg.int.cpnX.val <- round(mean(asas.ph.raw.cpn.lists[[seg.name]][[paste0(cpnX,"_orig_ph_obs_",cpnX,"_vec")]]))
+
                       chr <- unlist(strsplit(seg.name, split=":"))[1]
                       sample.chr.int.cpn.raw.vals.list[[samp]][[as.character(samp.seg.int.cpnX.val)]][[chr]][[paste0("all_seg_",cpnX,"_vec")]] <- c(
                             sample.chr.int.cpn.raw.vals.list[[samp]][[as.character(samp.seg.int.cpnX.val)]][[chr]][[paste0("all_seg_",cpnX,"_vec")]], 
-                            all.pw.cn.het.comp.lists[[seg.name]][[paste0(cpnX,"_orig_ph_obs_",cpnX,"_vec")]])
+                            asas.ph.raw.cpn.lists[[seg.name]][[paste0(cpnX,"_orig_ph_obs_",cpnX,"_vec")]])
 
                     }
                   }#end  for ( cpnX in cpnX.vec ) {
@@ -58,7 +59,7 @@ generateAllSamplesByChromIntCPNUnderlyingRawValuesLists <- function(all.pw.cn.he
 ##Returns:
 ##
 #Todo no sure this is well written...
-calculateWhetherSegCPNDiffFromIntegerExpectedAndAllMatchingSampCPN <- function(all.pw.cn.het.comp.lists,
+calculateWhetherSegCPNDiffFromIntegerExpectedAndAllMatchingSampCPN <- function(asas.ph.raw.cpn.lists,
                                                                               s.samps.int.ob.xp.cpn.df,
                                                                               seg.name,
                                                                               samps.int.cpn.raw.cpn.by.chr.list,
@@ -81,7 +82,7 @@ calculateWhetherSegCPNDiffFromIntegerExpectedAndAllMatchingSampCPN <- function(a
       
       #Todo refacor so doesn't need the reduced seg flag.
       if (reduced.seg.flag == FALSE) {
-        if (is.na(all.pw.cn.het.comp.lists[[1]][[seg.name]]$ph_cpnA_vec[1]) | is.na(all.pw.cn.het.comp.lists[[1]][[seg.name]]$ph_cpnB_vec[1])) {
+        if (is.na(asas.ph.raw.cpn.lists[[1]][[seg.name]]$ph_cpnA_vec[1]) | is.na(asas.ph.raw.cpn.lists[[1]][[seg.name]]$ph_cpnB_vec[1])) {
 
             next
         }
@@ -108,11 +109,11 @@ calculateWhetherSegCPNDiffFromIntegerExpectedAndAllMatchingSampCPN <- function(a
 
             if (reduced.seg.flag == FALSE) {
 
-              seg.raw.cpn.vals <- all.pw.cn.het.comp.lists[[samp]][[seg.name]][[paste0("ph_",cpnX,"_vec")]]
+              seg.raw.cpn.vals <- asas.ph.raw.cpn.lists[[samp]][[seg.name]][[paste0("ph_",cpnX,"_vec")]]
 
             } else {
 
-              seg.raw.cpn.vals <- all.pw.cn.het.comp.lists[[seg.name]][[paste0(cpnX,"_orig_ph_obs_",cpnX,"_vec")]]
+              seg.raw.cpn.vals <- asas.ph.raw.cpn.lists[[seg.name]][[paste0(cpnX,"_orig_ph_obs_",cpnX,"_vec")]]
 
             }
 
@@ -144,7 +145,7 @@ calculateWhetherSegCPNDiffFromIntegerExpectedAndAllMatchingSampCPN <- function(a
 ##
 ##Returns:
 ##
-getSegObsExpCPNBySampleDF <- function(all.pw.cn.het.comp.lists, sample.vec, seg.name, cpnX.vec = c("cpnA", "cpnB"), reduced.seg.flag = FALSE) {
+getSegObsExpCPNBySampleDF <- function(asas.ph.raw.cpn.lists, sample.vec, seg.name, cpnX.vec = c("cpnA", "cpnB"), reduced.seg.flag = FALSE) {
 
       num.samples <- length(sample.vec)
       s.samps.obs.exp.cpn.df <- data.frame(round_int_cpnA = numeric(num.samples),#rounded
@@ -159,16 +160,16 @@ getSegObsExpCPNBySampleDF <- function(all.pw.cn.het.comp.lists, sample.vec, seg.
 
         for ( samp in sample.vec ) {
               
-              #print(str(all.pw.cn.het.comp.lists[[seg.name]][[paste0(cpnX,"_orig_ph_obs_",cpnX,"_vec")]], max=1))
+              #print(str(asas.ph.raw.cpn.lists[[seg.name]][[paste0(cpnX,"_orig_ph_obs_",cpnX,"_vec")]], max=1))
 
               if (reduced.seg.flag == FALSE) {
 
-                mean.cpnX <- all.pw.cn.het.comp.lists[[samp]][[seg.name]][[paste0("mean_ph_",cpnX)]]
+                mean.cpnX <- asas.ph.raw.cpn.lists[[samp]][[seg.name]][[paste0("mean_ph_",cpnX)]]
                 s.samps.obs.exp.cpn.df[samp, paste0("round_int_",cpnX)] <- round(mean.cpnX)
 
 
               } else {
-                mean.cpnX <- mean(all.pw.cn.het.comp.lists[[seg.name]][[paste0(cpnX,"_orig_ph_obs_",cpnX,"_vec")]])
+                mean.cpnX <- mean(asas.ph.raw.cpn.lists[[seg.name]][[paste0(cpnX,"_orig_ph_obs_",cpnX,"_vec")]])
                 s.samps.obs.exp.cpn.df[samp, paste0("round_int_",cpnX)] <- round(mean.cpnX)
               }
               #print("mean.cpnX")
@@ -309,6 +310,7 @@ getPossibleLowAndHighSubclonalCPNStates <- function(seg.name,
 
 #Can be refactored further...
 determineCCFClonalityOfSegment <- function(s.samps.int.ob.xp.cpn.df,
+                    asas.ph.raw.cpn.lists,
                     seg.name,
                     all.samp.ph.BAF.df.list,
                     purity.est.vec,
@@ -321,7 +323,7 @@ determineCCFClonalityOfSegment <- function(s.samps.int.ob.xp.cpn.df,
   all.samp.cpnX.clonal.t.test <- TRUE
   for ( samp in sample.vec ) {
         #sample seg phased cpnX vector of values...
-        ss.ph.cpnX.vec <- all.pw.cn.het.comp.lists[[samp]][[seg.name]][[paste0("ph_", cpnX, "_vec")]]
+        ss.ph.cpnX.vec <- asas.ph.raw.cpn.lists[[samp]][[seg.name]][[paste0("ph_", cpnX, "_vec")]]
         samp.ph.cpnX.vs.samp.round.mean.obs.cpnX.test <- tTestWithErrorHandling(ss.ph.cpnX.vec, mu = ss.round.mean.obs.cpn, conf.level = confidence.interval.threshold)
 
         if (samp.ph.cpnX.vs.samp.round.mean.obs.cpnX.test$p.val < 1 - confidence.interval.threshold) {
@@ -637,4 +639,4 @@ chooseLowHighSubclonalCPNWithMoreThanTwoPossibilities <- function(s.samps.int.ob
     return(c(ss.poss.sc.cpnX.low, ss.poss.sc.cpnX.high))
 
 }
- 
+                                                                                                                                                                                                                                                                                     
