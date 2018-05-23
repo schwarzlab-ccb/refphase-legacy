@@ -273,6 +273,7 @@ addNewRawAndIntCPNCallsToFinalSegmentation <- function(seg.name.vec,
                     all.seg.df[samp.seg.name,]$nMinor <-  min(round(as.numeric(all.seg.df[samp.seg.name,]$nBraw)), round(as.numeric(all.seg.df[samp.seg.name,]$nAraw)))
                     all.seg.df[samp.seg.name,]$nMajor <-  max(round(as.numeric(all.seg.df[samp.seg.name,]$nBraw)), round(as.numeric(all.seg.df[samp.seg.name,]$nAraw)))
                     all.seg.df[samp.seg.name,]$cnTotal <- as.numeric(all.seg.df[samp.seg.name,]$nMinor) + as.numeric(all.seg.df[samp.seg.name,]$nMajor)
+                    all.seg.df[samp.seg.name,]$n.het <- length(ph.cpnA.vec)
                     all.seg.df[samp.seg.name,]$num_ph_hz_sites <- length(ph.cpnA.vec)
                     all.seg.df[samp.seg.name,]$ph_raw_cpnA <- ifelse(median(as.numeric(ph.cpnA.vec)) < 0 , 0, median(as.numeric(ph.cpnA.vec)))
                     all.seg.df[samp.seg.name,]$ph_raw_cpnB <- ifelse(median(as.numeric(ph.cpnB.vec)) < 0 , 0, median(as.numeric(ph.cpnB.vec)))
@@ -588,6 +589,7 @@ addWithinSampleChangeToCpnAndAllelicImbalanceCalls <- function(all.seg.df) {
 
             all.seg.df[samp.seg.name, ]$within_samp_cl_LOH_present <- min(all.seg.df[samp.seg.name, ]$nMinor, all.seg.df[samp.seg.name, ]$nMajor) == 0
 
+            #Todo, Should this be exor?
             all.seg.df[samp.seg.name, ]$within_samp_sc_AI_present <- (all.seg.df[samp.seg.name, ]$nMinor == all.seg.df[samp.seg.name, ]$nMajor) & 
                                                               (all.seg.df[samp.seg.name, ]$within_samp_sc_cpnA_present == TRUE | all.seg.df[samp.seg.name, ]$within_samp_sc_cpnB_present == TRUE )
 
@@ -1079,6 +1081,48 @@ addParallelEventsByMSAIToOutputSegmentation <- function(all.segs.df) {
 }#end addParallelEventsByMSAIToOutputSegmentation <- function(all.segs.df) {
 
 
+##
+##Params:
+##
+##Returns:
+##
+addAcrossSampleAlleleSpecificClonalityCalls <- function(all.seg.df, sample.vec, seg.name.vec) {
+
+  #We want to fill in the following columns:
+  #rownames all.  
+  for ( seg.name in seg.name.vec ) {
+
+    samp.seg.name.vec <- paste0(sample.vec, ":", seg.name)
+    all.samps.seg.df <- all.seg.df[samp.seg.name.vec,]
+    if(is.na(all.seg.df[samp.seg.name.vec ,]$within_samp_sc_cpnA_present[1]) | is.na(all.seg.df[samp.seg.name.vec ,]$within_samp_sc_cpnB_present[1])) {
+
+      next
+
+    } else {
+
+      all.seg.df[samp.seg.name.vec ,]$any_within_samp_sc_cpnA <- any(all.seg.df[samp.seg.name.vec ,]$within_samp_sc_cpnA_present)
+      all.seg.df[samp.seg.name.vec ,]$any_within_samp_sc_cpnB <- any(all.seg.df[samp.seg.name.vec ,]$within_samp_sc_cpnB_present)
+
+      #Now do we want to bring in MSAI here? It's not really clonal if there is any instance of MSAI affecting any of the segments... Todo, figure this out.
+      all.seg.df[samp.seg.name.vec ,]$across_samp_cl_AI  <- all(all.seg.df[samp.seg.name.vec ,]$ph_int_cpnA != all.seg.df[samp.seg.name.vec ,]$ph_int_cpnB)
+      # across_samp_sc_AI = rep(NA, nr),
+      all.seg.df[samp.seg.name.vec ,]$across_samp_sc_AI  <- any(all.seg.df[samp.seg.name.vec ,]$ph_int_cpnA != all.seg.df[samp.seg.name.vec ,]$ph_int_cpnB) & 
+                                   (! all.seg.df[samp.seg.name.vec ,]$across_samp_cl_AI)
+      # across_samp_cl_LOH = rep(NA, nr),
+      all.seg.df[samp.seg.name.vec ,]$across_samp_cl_LOH  <- all(all.seg.df[samp.seg.name.vec ,]$min_int_cpnX == 0)
+      # across_samp_sc_LOH = rep(NA, nr),
+      all.seg.df[samp.seg.name.vec ,]$across_samp_sc_LOH  <- any(all.seg.df[samp.seg.name.vec ,]$min_int_cpnX == 0) & 
+                                   (! all.seg.df[samp.seg.name.vec ,]$across_samp_cl_LOH)
+
+    }#end  if( ! is.na(all.seg.df[samp.seg.name.vec ,]$within_samp_sc_cpnA_present[1]) | ! is.na(all.seg.df[samp.seg.name.vec ,]$within_samp_sc_cpnB_present[1])) {
+
+
+  }#end   for ( seg.name in seg.name.vec ) {
+
+  return(all.seg.df)
+}#end addAcrossSampleAlleleSpecificClonalityCalls <- function(all.seg.df, sample.vec, seg.name.vec) {
+
+
 
 
 testFinalOutputDataframe <- function(final.joint.segs.df) {
@@ -1093,7 +1137,7 @@ testFinalOutputDataframe <- function(final.joint.segs.df) {
 
     #Test original adding
 
-    if ( ! all(final.joint.segs.df$orig_nMajor < final.joint.segs.df$orig_nMinor) ) {
+    if ( ! all(final.joint.segs.df$orig_nMajor > final.joint.segs.df$orig_nMinor) ) {
 
         stop("Original nMajor not always greter than orginal nMinor")
 
@@ -1249,10 +1293,10 @@ initialiseFullOutputDataframe <- function(seg.name.vec, ploidy.est.vec, purity.e
                 any_across_samp_MSAI = rep(NA, nr),
                 any_within_samp_sc_cpnA = rep(NA, nr),
                 any_within_samp_sc_cpnB = rep(NA, nr),
-                across_samp_cl_cpnA = rep(NA, nr),#
-                across_samp_sc_cpnA = rep(NA, nr),#
-                across_samp_cl_cpnB = rep(NA, nr),#
-                across_samp_sc_cpnB = rep(NA, nr),#
+                #across_samp_cl_cpnA = rep(NA, nr),#
+                #across_samp_sc_cpnA = rep(NA, nr),#
+                #across_samp_cl_cpnB = rep(NA, nr),#
+                #across_samp_sc_cpnB = rep(NA, nr),#
                 across_samp_cl_AI = rep(NA, nr),
                 across_samp_sc_AI = rep(NA, nr),
                 across_samp_cl_LOH = rep(NA, nr),
