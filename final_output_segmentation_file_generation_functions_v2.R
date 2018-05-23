@@ -471,6 +471,10 @@ retestSubclonalAmps <- function(all.seg.df, all.samp.ph.BAF.df.list, all.samp.lo
 
 }#end retestSubclonalAmps <- function(all.seg.df, seg.name, sample.vec, gain.threshold, amp.threshold, p.val.for.converting.gain.to.amp = 0.01) {
 
+
+
+
+
 addOriginalSegmentInfoToFinalSegmentation <- function(seg.name.vec,
                                                     sample.vec,
                                                     processed.orig.cpn.segs.df,
@@ -515,7 +519,7 @@ addOriginalSegmentInfoToFinalSegmentation <- function(seg.name.vec,
             log.tot.raw.over.ploidy.cpn.vec <- log2(tot.raw.cpn.vec / matching.chr.samp.seg.df$Ploidy)
 
             cpn.call.state.vec[log.tot.raw.over.ploidy.cpn.vec >= log2(2.5 / 2)] <- "gain"
-            cpn.call.state.vec[log.tot.raw.over.ploidy.cpn.vec >= log2(1.5/ 2)] <- "loss"
+            cpn.call.state.vec[log.tot.raw.over.ploidy.cpn.vec <= log2(1.5/ 2)] <- "loss"
             cpn.call.state.vec[tot.raw.cpn.vec >= ((2 * chr.samp.seg.df$Ploidy[1]) + 1)] <- "amp"
             cpn.call.state.vec[tot.raw.cpn.vec <= 0.5] <- "deep_loss"
 
@@ -1005,6 +1009,56 @@ addLogrDefinedCPNEventsToOutputSegmentation <- function(sample.vec,
 
 
 
+
+##
+##Params:
+##
+##Returns:
+##
+addMSAIDetectionByLTNPDToOutputSegmentation <- function(sample.vec,
+                                                  seg.name.vec, 
+                                                all.seg.MSAI.by.BAF.ltnpd.present.list,
+                                                all.segs.df) {
+
+  for ( seg.name in seg.name.vec ) {
+
+    seg.MSAI.info.list <- all.seg.MSAI.by.BAF.ltnpd.present.list[[seg.name]]
+    samp.seg.name.vec <- paste0(sample.vec, ":", seg.name)
+
+    if (seg.MSAI.info.list$MSAI_detection_feasible == FALSE) {
+
+      #so now get all the relevant segments and mark them as not being possible to mark 
+      all.segs.df[samp.seg.name.vec ,]$MSAI  <- NA
+      all.segs.df[samp.seg.name.vec ,]$any_across_s_MSAI  <- NA
+
+
+    } else if (seg.MSAI.info.list$MSAI_detection_feasible == TRUE) {
+
+      if (seg.MSAI.info.list$MSAI_present_any_sample_by_thresh == FALSE) {
+
+        all.segs.df[samp.seg.name.vec ,]$any_across_s_MSAI  <- FALSE
+        all.segs.df[samp.seg.name.vec ,]$MSAI  <- FALSE
+        all.segs.df[samp.seg.name.vec ,]$dominant_allele  <- "cpnA"
+      } else if (seg.MSAI.info.list$MSAI_present_any_sample_by_thresh == TRUE) {
+
+        all.segs.df[samp.seg.name.vec ,]$any_across_s_MSAI  <- TRUE
+        #So now regernate the samp.seg.name.vec to be sure it's in the same order as the MSAI df
+        seg.MSAI.df <- seg.MSAI.info.list$MSAI_by_sample_df
+        samp.seg.name.vec <- paste0(seg.MSAI.df$sample_name, ":", seg.name)
+        all.segs.df[samp.seg.name.vec ,]$MSAI <- seg.MSAI.df$MSAI_pval_passed_thresh
+        all.segs.df[samp.seg.name.vec ,]$dominant_allele <- seg.MSAI.df$poss_dominant_allele
+
+      }#end else if (seg.MSAI.info.list$MSAI_present_any_sample_by_thresh == TRUE) 
+
+    }#end else if (seg.MSAI.info.list$MSAI_detection_feasible == TRUE) 
+
+  }#end for ( seg.name in seg.name.vec )
+
+  return(all.segs.df)
+}
+
+
+
 # ##
 # ##Params:
 # ##
@@ -1198,7 +1252,7 @@ initialiseFullOutputDataframe <- function(seg.name.vec, ploidy.est.vec, purity.e
                 new_within_s_sc_AI_detected = rep(NA, nr),
                 orig_part_of_arm_or_focal = rep(NA, nr),
                 samp_used_to_phase  = rep(NA, nr),
-                MSAI = rep(NA, nr),
+                MSAI = rep(NA, nr),#Means tha
                 raw_cpn_MSAI = rep(NA, nr),#Todo, decide whether this is used or diff from ref samp
                 dominant_allele = rep(NA, nr),
                 is_parallel_gain_loss = rep(NA, nr),
