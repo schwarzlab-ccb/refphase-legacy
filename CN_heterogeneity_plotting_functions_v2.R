@@ -12,15 +12,15 @@ plotAllSampleCCFsAcrossGenome <- function(asas.ph.raw.cpn.lists, full.joint.segs
   #phased.joint.segs.df <- full.joint.segs.df
   chr.start.end.df <- phased.joint.segs.df[,c("chr", "startpos", "endpos")]
   chr.start.end.df <- apply(chr.start.end.df, 2, as.numeric)
-  print("head(chr.start.end.df)")
-  print(head(chr.start.end.df))
+  #print("head(chr.start.end.df)")
+  #print(head(chr.start.end.df))
   chroms.length.vec <- getChromLengthsVec(chr.start.end.df)
   names(chroms.length.vec) <- 1:22
-  print("chroms.length.vec")
-  print(chroms.length.vec)
+  #print("chroms.length.vec")
+  #print(chroms.length.vec)
   chrom.segs.to.plot.df <- getCumulativeChromLengthsForPlottingDF(chr.start.end.df, chroms.length.vec)
-  print("head(chrom.segs.to.plot.df)")
-  print(head(chrom.segs.to.plot.df))
+  #print("head(chrom.segs.to.plot.df)")
+  #print(head(chrom.segs.to.plot.df))
   min.x               <- 0
   min.y               <- -0.5
   max.y               <- 8.5
@@ -67,7 +67,6 @@ plotAllSampleCCFsAcrossGenome <- function(asas.ph.raw.cpn.lists, full.joint.segs
     #"B_MET004_MT-M1"
     samp.vals.list <- asas.ph.raw.cpn.lists[[samp]]
     samp.one.vals.list <- asas.ph.raw.cpn.lists[[first.samp]]
-    print(str(samp.one.vals.list,max=1))
     seg.name.vec <- phased.joint.segs.df$seg_name #names(all.seg.CCF.vals.list)
     for ( seg.name in seg.name.vec ) {
 
@@ -80,15 +79,15 @@ plotAllSampleCCFsAcrossGenome <- function(asas.ph.raw.cpn.lists, full.joint.segs
 
       chr.start.end.vec <- unlist(strsplit(seg.name, split = ":"))
       seg.samp.cpnX.vals.list <- samp.vals.list[[seg.name]]
-      print("str(seg.samp.cpnX.vals.list, max=1)")
-      print(str(seg.samp.cpnX.vals.list, max=1))
+      #print("str(seg.samp.cpnX.vals.list, max=1)")
+      #print(str(seg.samp.cpnX.vals.list, max=1))
       seg.samp.one.cpnX.vals.list <- samp.one.vals.list[[seg.name]]
-      print("str(seg.samp.one.cpnX.vals.list, max=1)")
-      print(str(seg.samp.one.cpnX.vals.list, max=1))
+      #print("str(seg.samp.one.cpnX.vals.list, max=1)")
+      #print(str(seg.samp.one.cpnX.vals.list, max=1))
       seg.ccf.cpnX.frac.vec   <- all.seg.CCF.vals.list[[cpnX]][[seg.name]][[samp]][[paste0("frac_", cpnX, "_low_vec")]]
 
-      print("print(str(seg.ccf.cpnX.frac.vec))")
-      print(str(seg.ccf.cpnX.frac.vec))
+      #print("print(str(seg.ccf.cpnX.frac.vec))")
+      #print(str(seg.ccf.cpnX.frac.vec))
 
       seg.to.plot.df <- cbind(seg.samp.one.cpnX.vals.list$chr_vec,
                               seg.samp.one.cpnX.vals.list$pos_vec,
@@ -220,11 +219,9 @@ plotAllSampleBAFsAcrossGenome <- function(sample.vec, patient.phased.BAF.df.list
 
     }
 
-
     samp.BAF.df <- patient.phased.BAF.df.list[[samp]]
     samp.BAF.df$color_to_plot <- ifelse(samp.BAF.df$maj_is_cpnA_logic_vec == 1, cpnA.allele.color, cpnB.allele.color)
     samp.BAF.df$mphase_segmented_BAF <- 0.5
-
 
     samp.BAF.df[grepl("none", samp.BAF.df$sample_phased_by_this_sample),]$ph_median_segmented_BAF <- 0.5
     rownames(samp.BAF.df) <- 1:nrow(samp.BAF.df)
@@ -429,7 +426,7 @@ getCumulativeChromLengthsForPlottingDF <-function(seg, chrom.length){
   # This function adds the length of chromosome 1,...,(i - 1) to chromsomes 2,...,22
   # seg: first three columns of the minimum conistent samp matrix
   # chrom.length: output of fun.chrom.length(...)
-  print("called getCumulativeChromLengthsForPlottingDF")
+  #print("called getCumulativeChromLengthsForPlottingDF")
   if(1 %in% seg[, 1])
     seg.tmp <-  subset(seg, seg[, 1] == 1)
   else
@@ -442,8 +439,8 @@ getCumulativeChromLengthsForPlottingDF <-function(seg, chrom.length){
     sub.chrom[, 3] <- sub.chrom[, 3] + sum(chrom.length[1:(i - 1)])
     seg.tmp <- rbind(seg.tmp, sub.chrom)
   }
-  print("Returning with")
-  print(seg.tmp)
+  #print("Returning with")
+  #print(seg.tmp)
   return(seg.tmp)
 }
 
@@ -458,4 +455,4 @@ getChromMidpointsVec <-function(seg){
     
   }
   return(chrom.mean)
-}         
+}                                              

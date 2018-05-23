@@ -279,12 +279,6 @@ createAllSegInputForHetComparisons <- function(seg.name,
 
   }#end   
 
-  print(seg.name.split.vec)
-  print("seg.name")
-  print(seg.name)
-  print(samp.one)
-  print(" asas.ph.raw.cpn.lists[[seg.name]][[samp.one]]")
-  print(str(asas.ph.raw.cpn.lists[[samp.one]][[seg.name]], max = 1))
   phased.s.one.s.cpnA.cpnB.list <- asas.ph.raw.cpn.lists[[samp.one]][[seg.name]]
 
   num.non.na.ph <- length(phased.s.one.s.cpnA.cpnB.list$ph_cpnA_vec[ ! is.na(phased.s.one.s.cpnA.cpnB.list$ph_cpnA_vec)])
@@ -349,7 +343,7 @@ getSubsetSegInfoForHetComparison <- function(analysis.type, samp.one, samp.two, 
 
   if ((analysis.type == "hz_phased" & data.present.vec["hz_phased"] == TRUE) | (analysis.type == "combined" & data.present.vec["non_hz"] == FALSE & data.present.vec["hz_phased"] == TRUE)) {
     #Analysis
-    print("hzphased and is true")
+    #print("hzphased and is true")
     samp.one.logr.vec <- seg.samp.one.two.comp.data.list[[samp.one]]$ph_logr_vec
     samp.two.logr.vec <- seg.samp.one.two.comp.data.list[[samp.two]]$ph_logr_vec
     samp.one.tot.raw.cpn.vec <- seg.samp.one.two.comp.data.list[[samp.one]]$non_hz_tot_raw_cpn_vec
@@ -446,8 +440,6 @@ performSegPairwiseComparisons <- function(seg.name,
   #First do the hz alone if present
   analysis.type.vec <- c("hz_phased", "non_hz", "combined")
   data.present.vec <- seg.samp.one.two.comp.data.list$data_present_vec
-  print("data.present.vec")
-  print(data.present.vec)
 
   seg.het.data.list <- list() 
   seg.het.data.list$data_present_vec <- data.present.vec
@@ -456,11 +448,11 @@ performSegPairwiseComparisons <- function(seg.name,
   for ( analysis.type in analysis.type.vec ) {
 
     s.data.list <- getSubsetSegInfoForHetComparison(analysis.type, samp.one, samp.two, seg.samp.one.two.comp.data.list)
-
+    #Null will be returned if the form of analysis is not possible with the data present.
     if (is.null(s.data.list)) {
-      print("Analysis not performed:")
-      print(analysis.type)
-      print(seg.name)
+      # print("Analysis not performed:")
+      # print(analysis.type)
+      # print(seg.name)
       next
     }
 

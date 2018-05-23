@@ -12,10 +12,7 @@ generateAllSamplesByChromIntCPNUnderlyingRawValuesLists <- function(asas.ph.raw.
             for ( seg.name in seg.name.vec ) {
 
                   if (reduced.seg.flag == FALSE) {
-                    print("here")
-                    print(samp)
-                    print(seg.name)
-                    print(asas.ph.raw.cpn.lists[[1]][[seg.name]])
+
                     if (is.na(asas.ph.raw.cpn.lists[[1]][[seg.name]]$ph_cpnA_vec[1]) | is.na(asas.ph.raw.cpn.lists[[1]][[seg.name]]$ph_cpnB_vec[1])) {
 
                           next
