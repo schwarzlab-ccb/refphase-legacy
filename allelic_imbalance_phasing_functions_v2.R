@@ -765,8 +765,8 @@ getAllSegAllSamplePhasedRawCPNList <- function(sample.vec, ploidy.est.vec, purit
           if (length(all.seg.phasing.info.list[[seg.name]]$maj_is_cpnB_idx_vec) > 0) {
 
                is.lower.and.cpnB.in.ref.idx.vec <- all.seg.phasing.info.list[[seg.name]]$maj_is_cpnB_idx_vec
-               phased.samp.seg.cpnA.cpnB.df[is.lower.and.cpnB.in.ref.idx.vec, 1] <- phased.samp.seg.cpnA.cpnB.df[is.lower.and.cpnB.in.ref.idx.vec, 1]
-               phased.samp.seg.cpnA.cpnB.df[is.lower.and.cpnB.in.ref.idx.vec, 2] <- phased.samp.seg.cpnA.cpnB.df[is.lower.and.cpnB.in.ref.idx.vec, 2]
+               phased.samp.seg.cpnA.cpnB.df[is.lower.and.cpnB.in.ref.idx.vec, 1] <- phased.samp.seg.cpnA.cpnB.df[is.lower.and.cpnB.in.ref.idx.vec, 2]
+               phased.samp.seg.cpnA.cpnB.df[is.lower.and.cpnB.in.ref.idx.vec, 2] <- phased.samp.seg.cpnA.cpnB.df[is.lower.and.cpnB.in.ref.idx.vec, 1]
                
           } 
           #Store this information in the list:
