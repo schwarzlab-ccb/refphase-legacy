@@ -59,7 +59,7 @@ print(current.dir)
 # medicc.mphase.command <- paste("Rscript", mphase.script.path, patient, allow.dip.test.phasing.flag, data.format.to.use, snp.file.path, seg.file.path, sep=" ")
 
 ##Debugging option parameters:
-patient <- "MET003"
+patient <- "MET048"
 allow.dip.test.phasing.flag = FALSE
 output.directory.base.path <- paste("/home/camp/watkint/working/watkint/data/brastianos/release_v2/","B_", patient, "/exome/CN_het_TRACERx_no_diptest/", sep = "")
 data.format.to.use <- "TRACERx_exome"
@@ -407,7 +407,7 @@ saveRDS(purity.est.vec, file = purity.est.vec.path)
 seg.name.vec <- paste(min.cons.segs.df[ ,1], min.cons.segs.df[ ,2], min.cons.segs.df[ ,3], sep=":")
 sample.vec <- names(asas.SNPs.w.both.lr.baf.snp.lists)
 
-
+print("Getting phasing to apply to all samples...")
 all.seg.phasing.info.list <- getCombinedBAFDipTestPhasing(asas.lr.baf.lists = asas.SNPs.w.both.lr.baf.snp.lists,
                                             seg.name.vec = seg.name.vec,
                                             ploidy.est.vec = ploidy.est.vec,
@@ -424,6 +424,7 @@ all.seg.phasing.info.list.path <- paste0(PLOT_OUTPUT_DIR, patient, "_all_seg_pha
 saveRDS(all.seg.phasing.info.list.path, file = all.seg.phasing.info.list.path)
 #Todo unsure of what to do with the baf logr lists which have positions that only have logr here, at the moment exclude them but how
 #does that affect later run
+print("Generating phased BAF dataframes...")
 patient.phased.BAF.df.list <- createAllSegsPhasedBAFDataFrame(asas.lr.baf.lists = asas.SNPs.w.both.lr.baf.snp.lists,
                                                          sample.to.phase.seg.list = all.seg.phasing.info.list,
                                                          min.num.hz.snp.phasing = MIN_NUM_HZ_SNP_PHASING
@@ -431,10 +432,9 @@ patient.phased.BAF.df.list <- createAllSegsPhasedBAFDataFrame(asas.lr.baf.lists 
 patient.phased.BAF.df.list.path <- paste0(PLOT_OUTPUT_DIR, patient, "_phased_BAF_df_list.RDS")
 saveRDS(patient.phased.BAF.df.list, file = patient.phased.BAF.df.list.path)
 
-print("sample.vec")
-print(sample.vec)
 
 #Detect MSAI in the original BAF before it is processed alongside logr to get the Raw allele specifc cpn to be used in the rest of the analysis.
+print("Performing LTNPD MSAI detection on the BAF...")
 all.seg.MSAI.by.BAF.ltnpd.present.list <- getAllSegsMSAIDetectionFromBAFListLTNPD(seg.name.vec = seg.name.vec,
 																				  sample.vec  = sample.vec,
 																				  asas.SNPS.lr.and.or.baf.lists = asas.SNPS.lr.and.or.baf.lists,
@@ -453,7 +453,7 @@ all.seg.MSAI.by.BAF.ltnpd.present.list <- getAllSegsMSAIDetectionFromBAFListLTNP
 # str(asas.SNPs.w.both.lr.baf.snp.lists[[samp]][["9:84606266:141071646"]], max = 1 )
 # seg.name <- "9:84606266:141071646"
 # seg.name <- "1:145039562:249212481"
-
+print("Generating datapoints with LogR total cpn dataframes...")
 all.samp.non.hz.logr.and.tot.cpn.df.list <- getAllSampLogrAlonePositionsLogrAndTotalCPNDFsList(sample.vec = sample.vec,
 																			asas.SNPS.lr.and.or.baf.lists = asas.SNPS.lr.and.or.baf.lists,
 																			ploidy.est.vec = ploidy.est.vec,
@@ -464,6 +464,7 @@ all.samp.non.hz.logr.and.tot.cpn.df.list <- getAllSampLogrAlonePositionsLogrAndT
 
 
 #Add this the unphaseable stuff too maybe? Not necessary.
+print("Applying phasing to all samples to get phased raw cpn...")
 asas.ph.raw.cpn.lists <- getAllSegAllSamplePhasedRawCPNList(sample.vec = sample.vec,
 																ploidy.est.vec = ploidy.est.vec,
 																purity.est.vec = purity.est.vec,
@@ -476,6 +477,7 @@ asas.ph.raw.cpn.lists <- getAllSegAllSamplePhasedRawCPNList(sample.vec = sample.
 
 #Perform all pairwise comparisons of all samples, the use of much of this has been deprecated but we can revisit it,
 #We can add to this later if we want to redo the
+print("Performing pairwise comparisons of phased raw cpn...")
 all.pw.cn.het.comp.lists <- list()
 for (i in 1:(length(sample.vec) - 1)) {
 
@@ -487,7 +489,7 @@ for (i in 1:(length(sample.vec) - 1)) {
     s.one.two.comp.input.list <- list()
     s.one.two.comparison.list <- list()
     s.one.two.pw.het.list <- list()
-
+    print(samp.one.two)
     for ( seg.name in seg.name.vec ) {
 
     	s.one.two.comp.input.list[[seg.name]] <- createAllSegInputForHetComparisons(seg.name = seg.name,
@@ -536,6 +538,7 @@ saveRDS(all.pw.cn.het.comp.lists, file = all.pw.cn.het.comp.lists.path)
 
 
 #Let's get the CCF
+print("Checking all minimum consistent segments are present in each sample...")
 seg.name.vec <- names(asas.ph.raw.cpn.lists[[1]])
 #Check to make sure that all segments are present in all samples... might not be necessary todo, check.
 for ( samp in sample.vec ) {
@@ -551,6 +554,8 @@ if (length(seg.name.vec) == 0) {
 }
 
 
+
+print("Calculating CCFs using phased raw cpn....")
 all.seg.CCF.list <- list()
 all.seg.int.ob.xp.cpn.df.list <- list()
 all.seg.CCF.diff.from.exp.list <- list()
@@ -573,7 +578,7 @@ saveRDS(samps.int.cpn.raw.cpn.by.chr.list, file = samps.int.cpn.raw.cpn.by.chr.l
 
 
 for (cpnX in c("cpnA", "cpnB")) {
-
+  print(cpnX)
   #Here is where we're going to have iniatalise on all the lists
   all.seg.CCF.list[[cpnX]] <- list()
   all.seg.int.ob.xp.cpn.df.list[[cpnX]] <- list()
@@ -706,7 +711,7 @@ saveRDS(all.seg.greater.than.two.diff.list, file = all.seg.greater.than.two.diff
 #Todo Check [1] "B_MET019_MT-M2:1:762496:53608176" to see if LOW/HIGH fraction working properly.
 
 #Let's initialise the first joint output:
-
+print("Initialising minimum consistent segmentation (MCS) output dataframe...")
 empty.full.joint.segs.df <- initialiseFullOutputDataframe(seg.name.vec = names(asas.ph.raw.cpn.lists[[1]]),
 														ploidy.est.vec = ploidy.est.vec,
 														purity.est.vec = purity.est.vec,
@@ -714,6 +719,7 @@ empty.full.joint.segs.df <- initialiseFullOutputDataframe(seg.name.vec = names(a
 
 
 #This adds the raw cpn for both segments that could be phased and those that couldn't
+print("Adding new copy number calls to MCS output based on the phased raw copy number...")
 new.cpn.full.joint.segs.df <- addNewRawAndIntCPNCallsToFinalSegmentation(seg.name.vec = names(asas.ph.raw.cpn.lists[[1]]),
 																		sample.vec = names(purity.est.vec),
 																		all.samp.logr.df.list = all.samp.non.hz.logr.and.tot.cpn.df.list,
@@ -724,10 +730,8 @@ new.cpn.full.joint.segs.df <- addNewRawAndIntCPNCallsToFinalSegmentation(seg.nam
 																		cpnX.vec = c("cpnA", "cpnB")
 																		)
 
-#We also need to add the original copy number calling vs ploidy and whether the event was part of an arm/focal event.
-#What was the original segment's name
-#Using simple thresholds (TRACERx2017) was it a deep_loss, loss, neutral, gain, amp
-#was it an arm level or focal event?
+
+print("Mapping MCS segments back to original input and copy number states...")
 full.joint.segs.w.old.cpn.vs.ploidy.df <- addOriginalSegmentInfoToFinalSegmentation(seg.name.vec = names(asas.ph.raw.cpn.lists[[1]]),
 																					sample.vec = names(purity.est.vec),
 																					processed.orig.cpn.segs.df = processed.orig.cpn.segs.df,
@@ -739,7 +743,7 @@ full.joint.segs.w.old.cpn.vs.ploidy.df <- addOriginalSegmentInfoToFinalSegmentat
 																					)
 
 
-#Add CCF information and within sample clonality information to the dataframe...
+print("Adding CCF information and subconal cpn calls to MCS output...")
 clonality.and.ccf.joint.segs.df <- addWithinSampleClonalityAndCCFToFinalSegmentation(seg.name.vec = names(asas.ph.raw.cpn.lists[[1]])
                                 ,all.seg.CCF.vals.list = all.seg.CCF.list
                                 ,all.seg.CCF.diff.from.exp.list = all.seg.CCF.diff.from.exp.list
@@ -755,8 +759,7 @@ clonality.and.ccf.joint.segs.df <- addWithinSampleClonalityAndCCFToFinalSegmenta
                                 ,max.cpn.val = MAX_CPN_FOR_SUBCLONALITY
                                 )
 
-
-#This will also add it to segments that were too small for CCF calculation
+print("Adding total copy number estimates to MCS output for segments with only logr information...")
 full.joint.segs.df.w.cpn.vs.ploidy.df <- addLogrDefinedCPNEventsToOutputSegmentation(sample.vec = names(purity.est.vec),
                                                         							seg.name.vec = names(asas.ph.raw.cpn.lists[[1]]),
                                                         							all.seg.df = clonality.and.ccf.joint.segs.df,
@@ -768,8 +771,8 @@ full.joint.segs.df.w.cpn.vs.ploidy.df <- addLogrDefinedCPNEventsToOutputSegmenta
                                                         							deep.loss.threshold = DEEP_LOSS_LOGR_THRESH,
                                                         							tot.cpn.vs.ploidy.pval.thresh = PVAL_THRESH_VS_LOGR_FOR_CPN_EVENT)
 
-print(full.joint.segs.df.w.cpn.vs.ploidy.df[,"cpn_event_vs_ploidy"])
-
+print(head(full.joint.segs.df.w.cpn.vs.ploidy.df[,"cpn_event_vs_ploidy"]))
+print("Adding cpn event vs ploidy by logr measures to MCS output...")
 full.joint.segs.logr.vs.ploidy.clonality.df <- determineAcrossSampleClonalityOfLogrEventsVsPloidy(sample.vec = names(purity.est.vec),
                                                         							seg.name.vec = names(asas.ph.raw.cpn.lists[[1]]),
                                                         							all.seg.df = full.joint.segs.df.w.cpn.vs.ploidy.df,
@@ -783,7 +786,7 @@ full.joint.segs.logr.vs.ploidy.clonality.df <- determineAcrossSampleClonalityOfL
 
 
 
-source(paste0(current.dir, "/final_output_segmentation_file_generation_functions_v2.R"))
+print("Testing whether any gains should be reclassified as amplifications...")
 full.joint.check.amps.vs.ploidy.clonality.df <- retestSubclonalAmps(all.seg.df = full.joint.segs.logr.vs.ploidy.clonality.df,
 																	all.samp.logr.df.list = all.samp.non.hz.logr.and.tot.cpn.df.list,
 																	all.samp.ph.BAF.df.list = patient.phased.BAF.df.list,   
@@ -791,10 +794,11 @@ full.joint.check.amps.vs.ploidy.clonality.df <- retestSubclonalAmps(all.seg.df =
 																	amp.threshold = AMP_LOGR_THRESH,
 																	p.val.for.converting.gain.to.amp = PVAL_THRESH_CONVERT_GAIN_TO_AMP)
 
-print(full.joint.segs.logr.vs.ploidy.clonality.df[,c("across_samp_cl_cpn_vs_ploidy_present","across_samp_sc_cpn_vs_ploidy_present")])
+print(head(full.joint.segs.logr.vs.ploidy.clonality.df[,c("across_samp_cl_cpn_vs_ploidy_present","across_samp_sc_cpn_vs_ploidy_present")]))
 
 
 #These are kept in separate functions as the original segmentaiton was refactored so it could run when segments are rejoined at the end of the script.
+print("Adding phasing information and MSAI detection by raw cpn calls to MCS output...")
 full.joint.segs.w.phasing.df <- addPhasingInformationToOutputSegmentation(sample.vec = names(purity.est.vec),
                                         seg.name.vec = names(asas.ph.raw.cpn.lists[[1]]), 
                                         sample.to.phase.seg.list = all.seg.phasing.info.list,
@@ -805,52 +809,50 @@ full.joint.segs.w.phasing.df <- addPhasingInformationToOutputSegmentation(sample
 
 
 #Now we want to add in the allelic imbalance clonal and subclonal inrormation to the final data frame.
-
+print("Adding across sample clonal/subclonal summary to MCS output...")
 full.joint.segs.w.phasing.and.raw.df <- addOriginalCPNValuesAndCallsVsPloidyToOutputSegmentation(sample.vec,
                                         seg.name.vec = names(asas.ph.raw.cpn.lists[[1]]), 
                                         processed.orig.cpn.segs.df,
                                         full.joint.segs.w.phasing.df)
 
+print("Adding MSAI detected by LTNPD method to the MCS output...")
 full.joint.segs.w.ltnpd.MSAI.df <- addMSAIDetectionByLTNPDToOutputSegmentation(sample.vec = sample.vec,
 											seg.name.vec = names(asas.ph.raw.cpn.lists[[1]]),
 											all.seg.MSAI.by.BAF.ltnpd.present.list = all.seg.MSAI.by.BAF.ltnpd.present.list,
 											all.segs.df = full.joint.segs.w.phasing.and.raw.df)
 
-print(full.joint.segs.w.ltnpd.MSAI.df[( ! is.na(full.joint.segs.w.ltnpd.MSAI.df$any_across_samp_MSAI)) & full.joint.segs.w.ltnpd.MSAI.df$any_across_samp_MSAI==TRUE,])
+
+print(head(full.joint.segs.w.ltnpd.MSAI.df[( ! is.na(full.joint.segs.w.ltnpd.MSAI.df$any_across_samp_MSAI)) &
+											full.joint.segs.w.ltnpd.MSAI.df$any_across_samp_MSAI == TRUE,
+											c("MSAI", "any_across_samp_MSAI")]))
 
 
-
+print("Defining any parallel gain or loss events detected via MSAI to MCS output...")
 full.joint.segs.w.parallel.cpn.events.df <- addParallelEventsByMSAIToOutputSegmentation(all.segs.df = full.joint.segs.w.ltnpd.MSAI.df)
 
 
-print(full.joint.segs.w.parallel.cpn.events.df[(! is.na(full.joint.segs.w.parallel.cpn.events.df$is_parallel_gain_loss)) ,])
+print(head(full.joint.segs.w.parallel.cpn.events.df[(! is.na(full.joint.segs.w.parallel.cpn.events.df$is_parallel_gain_loss)), c("any_across_samp_MSAI", "MSAI", "cpn_event_vs_ploidy", "is_parallel_gain_loss")]))
 
-
-source(paste0(current.dir, "/final_output_segmentation_file_generation_functions_v2.R"))
+print("Adding comparison between original cpn calls and MPhase copy number calling to MCS output...")
 full.joint.segs.within.and.changed.cpn.info.df <- addWithinSampleChangeToCpnAndAllelicImbalanceCalls(full.joint.segs.w.parallel.cpn.events.df)
 
 
-
-
-
-
-#Todo plot how much of the original segmentation actually comes all the way through the code.
-#Let's remove any segment that doesn't have any SNPs at all:
-
+print("Adding across sample estimates of allelic imbalance and LOH clonality to MCS output...")
 full.joint.segs.w.across.samp.AI.stats.df <- addAcrossSampleAlleleSpecificClonalityCalls(all.seg.df = full.joint.segs.w.parallel.cpn.events.df,
 																						sample.vec = sample.vec,
 																						seg.name.vec = seg.name.vec)
 
-print(full.joint.segs.w.across.samp.AI.stats.df[!is.na(full.joint.segs.w.across.samp.AI.stats.df$within_samp_sc_cpnA_present) ,c("any_within_samp_sc_cpnA",
+print(head(full.joint.segs.w.across.samp.AI.stats.df[!is.na(full.joint.segs.w.across.samp.AI.stats.df$within_samp_sc_cpnA_present) ,c("any_within_samp_sc_cpnA",
 "any_within_samp_sc_cpnB",
 "across_samp_cl_AI",
 "across_samp_sc_AI",
 "across_samp_cl_LOH",
-"across_samp_sc_LOH")])
+"across_samp_sc_LOH")]))
 
 full.joint.segs.df <- full.joint.segs.w.across.samp.AI.stats.df
 #Remove segments without any datapoints.
 #Todo, merge these int
+print("Removing any segments that do not have underlying datapoints, this is an artefact of the mimimum consistent segmentation performed by MPhase...")
 full.joint.segs.df <- full.joint.segs.df[full.joint.segs.df$num_un_ph_hz_sites != 0 | full.joint.segs.df$num_ph_hz_sites != 0  | full.joint.segs.df$num_non_hz_sites != 0,]
 
 
@@ -859,6 +861,7 @@ saveRDS(full.joint.segs.df, file=full.joint.segs.df.path)
 
 
 ####Plot all genome wide plots
+print("Plotting CCFs for cpnA and cpnB across the genome...")
 png(file = paste(PLOT_OUTPUT_DIR, patient, "_CCF_cpnA", ".png", sep = ""), width = 1200, height = 1400)
 
 plotAllSampleCCFsAcrossGenome(asas.ph.raw.cpn.lists = asas.ph.raw.cpn.lists,
@@ -881,35 +884,48 @@ dev.off()
 source(paste0(current.dir, "/CN_heterogeneity_plotting_functions_v2.R"))
 png(file = paste(PLOT_OUTPUT_DIR, patient, "_BAF_phased", ".png", sep=""), width = 1200, height = 1400)
 
-
+print("Plotting phased BAF across the genome...")
 plotAllSampleBAFsAcrossGenome(sample.vec, patient.phased.BAF.df.list, cpnA.allele.color = '#de2d2699', cpnB.allele.color= '#3182bd99')
 
 dev.off()
 
 #Plot the region comparison across genome plots, will need their own directories:
+old.vs.new.raw.cpn.dir <- paste(PLOT_OUTPUT_DIR, "old_raw_cpn_vs_MPhase_raw_cpn/", sep="")
+if( ! file.exists(old.vs.new.raw.cpn.dir)) {
 
+	dir.create(old.vs.new.raw.cpn.dir)
 
-plotOldNewComparisonOfAllCPN(sample.vec, full.joint.segs.df, plot.output.dir = PLOT_OUTPUT_DIR)
+}#end if( ! file.exists(by.chrom.CCF.plot.dir)) {
 
-plotAllSamplePairwiseComparisonSegmentCPN(sample.vec, full.joint.segs.df, plot.output.dir = PLOT_OUTPUT_DIR)
+print("Plotting comparison of old vs new MPhase raw cpn calls..")
+plotOldNewComparisonOfAllCPN(sample.vec, full.joint.segs.df, plot.output.dir = old.vs.new.raw.cpn.dir)
+
+pairwise.raw.cpn.dir <- paste(PLOT_OUTPUT_DIR, "pairwise_raw_cpn_comparisons/", sep="")
+if( ! file.exists(pairwise.raw.cpn.dir)) {
+
+	dir.create(pairwise.raw.cpn.dir)
+
+}#end if( ! file.exists(by.chrom.CCF.plot.dir)) {
+
+print("Plotting pairwise sample comparison between MPhase raw cpn calls across the whole genome...")
+plotAllSamplePairwiseComparisonSegmentCPN(sample.vec, full.joint.segs.df, plot.output.dir = pairwise.raw.cpn.dir)
 
 
 
 #Plot by chromosome plots:
 
 uniq.chrs <- unique(full.joint.segs.w.phasing.df$chr)
-by.chrom.CCF.plot.dir <- paste(PLOT_OUTPUT_DIR, "by_chrom_CCF", sep="")
+by.chrom.CCF.plot.dir <- paste(PLOT_OUTPUT_DIR, "CCF_by_chrom/", sep="")
 if( ! file.exists(by.chrom.CCF.plot.dir)) {
 
 	dir.create(by.chrom.CCF.plot.dir)
 
 }#end if( ! file.exists(by.chrom.CCF.plot.dir)) {
-
+print("Plotting by chromosome CCF estimates for cpnA and cpnB...")
 source(paste0(current.dir, "/CN_heterogeneity_plotting_functions_v2.R"))
-png(file = paste(PLOT_OUTPUT_DIR, patient, "_CCF_cpnA_","%02d", ".png", sep = ""), width = 1200, height = 1400)
+png(file = paste(by.chrom.CCF.plot.dir, "/", patient, "_CCF_cpnA_","%02d", ".png", sep = ""), width = 1200, height = 1400)
 for ( chrom in uniq.chrs ) {
 
-	print(full.joint.segs.w.phasing.df[full.joint.segs.w.phasing.df$chr == chrom,] )
 	plotAllSampleCCFsAcrossGenome(asas.ph.raw.cpn.lists = asas.ph.raw.cpn.lists,
                               full.joint.segs.df = full.joint.segs.w.phasing.df[full.joint.segs.w.phasing.df$chr == chrom,] ,
                               sample.vec = sample.vec,
@@ -921,10 +937,9 @@ for ( chrom in uniq.chrs ) {
 dev.off()
 
 source(paste0(current.dir, "/CN_heterogeneity_plotting_functions_v2.R"))
-png(file = paste(by.chrom.CCF.plot.dir, patient, "_CCF_cpnB_","%02d", ".png", sep = ""), width = 1200, height = 1400)
+png(file = paste(by.chrom.CCF.plot.dir, "/", patient, "_CCF_cpnB_","%02d", ".png", sep = ""), width = 1200, height = 1400)
 for ( chrom in uniq.chrs ) {
 
-	print(full.joint.segs.w.phasing.df[full.joint.segs.w.phasing.df$chr == chrom,] )
 	plotAllSampleCCFsAcrossGenome(asas.ph.raw.cpn.lists = asas.ph.raw.cpn.lists,
                               full.joint.segs.df = full.joint.segs.w.phasing.df[full.joint.segs.w.phasing.df$chr == chrom,] ,
                               sample.vec = sample.vec,
@@ -935,10 +950,17 @@ for ( chrom in uniq.chrs ) {
 }
 dev.off()
 
+by.chrom.BAF.plot.dir <- paste(PLOT_OUTPUT_DIR, "BAF_by_chrom/", sep="")
+if( ! file.exists(by.chrom.BAF.plot.dir)) {
+
+	dir.create(by.chrom.BAF.plot.dir)
+
+}#end if( ! file.exists(by.chrom.CCF.plot.dir)) {
 
 #Now let's plot baf
+print("Plotting by chromosome phased BAF...")
 source(paste0(current.dir, "/CN_heterogeneity_plotting_functions_v2.R"))
-png(file = paste(PLOT_OUTPUT_DIR, patient, "_BAF_phased_", "%02d", ".png", sep=""), width = 1200, height = 1400)
+png(file = paste(by.chrom.BAF.plot.dir, "/", patient, "_BAF_phased_", "%02d", ".png", sep=""), width = 1200, height = 1400)
 for ( chrom in uniq.chrs ) {
 
 	chr.pt.ph.BAF.df.list <- patient.phased.BAF.df.list
@@ -959,4 +981,4 @@ dev.off()
 
 testFinalOutputDataframe(full.joint.segs.df)
 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              

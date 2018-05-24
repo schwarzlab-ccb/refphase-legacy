@@ -16,8 +16,7 @@ tTestWithErrorHandling <- function(x, y = NULL, alternative = c("two.sided", "le
   test.results <- tryCatch({
     test.results <- t.test(x = x, y = y, alternative = alternative, mu = mu, paired = paired, var.equal = var.equal, conf.level = conf.level)
 
-    if (is.na(test.results[["p.val"]]) | is.nan(test.results[["p.val"]]) |
-      is.na(test.results[["p.value"]]) | is.nan(test.results[["p.value"]])) {
+    if ( is.na(test.results[["p.value"]]) | is.nan(test.results[["p.value"]])) {
 
       test.results[["stat"]] <- 1
       test.results[["conf.int"]] <- c(NA, NA)

@@ -366,16 +366,14 @@ getAllSampLogrAlonePositionsLogrAndTotalCPNDFsList <- function(sample.vec, asas.
 
 
     if (nrow(samp.logr.baf.df) > 0 ) {
-      print("head(samp.logr.df)")
-      print(head(samp.logr.df))
+
       mock.cpnA.cpnB.logr.df <- calculateSNPsCopyNumberAB(logr.vec = samp.logr.df$logR,
                                                             baf.vec = rep(0.5, nrow(samp.logr.df)),
                                                             tumor.ploidy = ploidy.est.vec[samp],
                                                             tumor.purity = purity.est.vec[samp],
                                                             gamma.val = gamma.val)
       samp.logr.df$tot_raw_un_ph_cpn <- unlist(rowSums(mock.cpnA.cpnB.logr.df))
-      print("head(samp.logr.df)")
-      print(head(samp.logr.df))
+
       #samp.logr.df$tot_raw_un_ph_cpn <- rowSums(mock.cpnA.cpnB.logr.df)
 
     }

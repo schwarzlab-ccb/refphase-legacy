@@ -17,8 +17,7 @@ plotAllSampleCCFsAcrossGenome <- function(asas.ph.raw.cpn.lists, full.joint.segs
   chr.vec <- unique(full.joint.segs.df[,"chr"])
   #print(head(chr.start.end.df))
   chroms.length.vec <- getChromLengthsVec(chr.start.end.df)
-  print("chroms.length.vec")
-  print(chroms.length.vec)
+
   names(chroms.length.vec) <- unique(chr.start.end.df[,1])
 
   #print("chroms.length.vec")
@@ -32,9 +31,7 @@ plotAllSampleCCFsAcrossGenome <- function(asas.ph.raw.cpn.lists, full.joint.segs
   max.y               <- 8.5
   max.x               <- as.numeric(max(chrom.segs.to.plot.df[, 3]))
 
-  print(chrom.segs.to.plot.df)
-  print("max.x")
-  print(max.x)
+
   num.samples  <- length(sample.vec)
   first.samp <- sample.vec[1] 
   last.samp <- sample.vec[length(sample.vec)] 
@@ -232,9 +229,6 @@ plotAllSampleBAFsAcrossGenome <- function(sample.vec, patient.phased.BAF.df.list
     }
 
     samp.BAF.df <- patient.phased.BAF.df.list[[samp]]
-
-    print(unique(samp.BAF.df$sample_phased_by_this_sample))
-
     samp.BAF.df$color_to_plot <- ifelse(samp.BAF.df$maj_is_cpnA_logic_vec == 1, cpnA.allele.color, cpnB.allele.color)
     samp.BAF.df$mphase_segmented_BAF <- 0.5
 
@@ -247,9 +241,7 @@ plotAllSampleBAFsAcrossGenome <- function(sample.vec, patient.phased.BAF.df.list
 
     rownames(samp.BAF.df) <- 1:nrow(samp.BAF.df)
 
-    print(str(chrom.segs.to.plot.df[, 2]))
 
-    print(str(samp.BAF.df$BAF))
     plot(chrom.segs.to.plot.df[, 2], samp.BAF.df$BAF, col = samp.BAF.df$color_to_plot, pch = 16, ylim = c(0, 1), cex = 1, main = samp, ylab = "BAF", xlab = "", las = 1, xaxt = 'n')
     mtext(side = 3,
           at = getChromMidpointsVec(chrom.segs.to.plot.df, unique(chr.start.end.df[,1])),
@@ -349,7 +341,7 @@ plotAllSamplePairwiseComparisonSegmentCPN <- function(sample.vec, full.joint.seg
       x.axis.samp <- sample.vec[x]
       y.axis.samp <- sample.vec[y]
 
-      png(file = paste(PLOT_OUTPUT_DIR, y.axis.samp, "_vs_", x.axis.samp, "_cpnA_cpnB_comparison", ".png", sep = ""), width = 1200, height = 1400)
+      png(file = paste(plot.output.dir, y.axis.samp, "_vs_", x.axis.samp, "_cpnA_cpnB_comparison", ".png", sep = ""), width = 1200, height = 1400)
 
       par(mfrow = c(2, 2))
 
@@ -431,7 +423,7 @@ plotAllSamplePairwiseComparisonSegmentCPN <- function(sample.vec, full.joint.seg
 
 #These small functions should bve quick to rewrite:
 #was fun.chrom.length
-getChromLengthsVec <- function(seg){
+getChromLengthsVec <- function(seg) {
   # This function returns the length of chromosome 1,...,22
   # seg: first three columns of the minimum conistent samp matrix
   chrom.length <- c()
@@ -445,7 +437,7 @@ getChromLengthsVec <- function(seg){
 }
 
 #Was fun.add.chrom
-getCumulativeChromLengthsForPlottingDF <-function(seg, chrom.length, chr.vec){
+getCumulativeChromLengthsForPlottingDF <-function(seg, chrom.length, chr.vec) {
   # This function adds the length of chromosome 1,...,(i - 1) to chromsomes 2,...,22
   # seg: first three columns of the minimum conistent samp matrix
   # chrom.length: output of fun.chrom.length(...)
@@ -457,7 +449,7 @@ getCumulativeChromLengthsForPlottingDF <-function(seg, chrom.length, chr.vec){
   if (start.chr %in% seg[, 1]) {
 
     seg.tmp <-  subset(seg, seg[, 1] == start.chr)
-    print(seg.tmp)
+    
     if (length(chr.vec) == 1) {
 
       return(seg.tmp)
@@ -489,7 +481,7 @@ getCumulativeChromLengthsForPlottingDF <-function(seg, chrom.length, chr.vec){
 }
 
 #was fun.chrom.mean
-getChromMidpointsVec <-function(seg, chr.vec){
+getChromMidpointsVec <-function(seg, chr.vec) {
   # This function finds the middle of the positions for each chromosome.
   # seg: Matrix with three columns, containing the positions.
   chrom.mean <- c()
@@ -501,4 +493,4 @@ getChromMidpointsVec <-function(seg, chr.vec){
     
   }
   return(chrom.mean)
-}                                              
+}                                                                                                                                                                                    
