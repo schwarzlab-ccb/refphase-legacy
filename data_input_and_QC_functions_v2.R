@@ -195,9 +195,7 @@ errorCheckAndAddPloidyAdjRawCPNToSegDF <- function(pt.id, orig.cpn.segs.df){
 getAllSNPsWithLogRatioDataTRACERxFormatASCATBC <- function(pt.id, array.type="exome", release.dir){
 
   pt.dir <- paste(release.dir, pt.id, "/", array.type, "/ASCAT/", sep="")
-  print(pt.dir)
   regions <- grep("FAILED",grep(".txt$|.complete$|*EXCLUDE*|*ManualQC*",list.files(pt.dir), value=TRUE, invert=TRUE), invert=TRUE, value=TRUE)
-  print(regions)
   all.regions.ASCAT.list <- list()
 
   for ( region in regions ) {
@@ -234,9 +232,7 @@ getAllSNPsWithLogRatioDataTRACERxFormatASCATBC <- function(pt.id, array.type="ex
 getSNPsWithBAFandLogRatioDataTRACERxFormatASCATBC <- function(pt.id, array.type="exome", release.dir){
 
   pt.dir <- paste(release.dir, pt.id, "/", array.type, "/ASCAT/", sep="")
-  print(pt.dir)
   regions <- grep("FAILED",grep(".txt$|.complete$|*EXCLUDE*|*ManualQC*",list.files(pt.dir), value=TRUE, invert=TRUE), invert=TRUE, value=TRUE)
-  print(regions)
   all.regions.ASCAT.list <- list()
 
   for ( region in regions ) {
@@ -435,35 +431,28 @@ cleanAndErrorCheckSNPs <- function(all.samp.SNP.list, min.cons.seg.df, allow.log
     for ( seg.idx in 1:nrow(min.cpn.vals.df) ) {
 
       samp.SNP.df <- all.samp.SNP.list[[sample]]
-      print("head(samp.SNP.df")
-      print(head(samp.SNP.df))
+
       samp.seg.logR.BAF.df <- samp.SNP.df[ samp.SNP.df$chrom == min.cons.seg.df[seg.idx, 1] & samp.SNP.df$pos >= min.cons.seg.df[seg.idx, 2] & samp.SNP.df$pos <= min.cons.seg.df[seg.idx, 3], ,drop=FALSE ]
-      print("head(samp.seg.logR.BAF.df)")
-      print(head(samp.seg.logR.BAF.df))
+
       #Catch any snp values that have a BAF but no logr in any region, these are likely incorrect
       samp.prob.SNPs.vec <- c(samp.prob.SNPs.vec, rownames(samp.seg.logR.BAF.df[ ! is.na(samp.seg.logR.BAF.df$BAFsegmented)
                                                                                  & (is.na(samp.seg.logR.BAF.df$logRsegmented)
                                                                                     | is.na(samp.seg.logR.BAF.df$logR))
                                                                                  ,]))
       #Remove any snps that have no logr but no BAF is the flag is false
-      print("length(samp.prob.SNPs.vec)")
-      print(length(samp.prob.SNPs.vec))
-
       if (allow.logr.only.flag == FALSE) {
-        print("allow.logr.only.flag is FALSE")
+
         samp.prob.SNPs.vec <- c(samp.prob.SNPs.vec, rownames(samp.seg.logR.BAF.df[is.na(samp.seg.logR.BAF.df$BAFsegmented),]))
         samp.seg.logR.BAF.df <- samp.seg.logR.BAF.df[samp.seg.logR.BAF.df$BAF != 2, ,drop=FALSE]
         samp.seg.logR.BAF.df <- samp.seg.logR.BAF.df[! is.na(samp.seg.logR.BAF.df$BAFsegmented), ,drop=FALSE]
 
-      }
+      }#end if (allow.logr.only.flag == FALSE) {
       #Todo,
       #There's one more case we need to consider that a only on or some samples might have a logr SNP or BAF SNP as NA but the others don't, if this were the case
       #We'd want to remove these SNPs
       #Todo,
       #Another case is that we might have any of the SNPs removed might be the start or end position of the joint segs, if this is the case it might break downstream
       #analyses, we should stop the analysis if this is the case and say clean up the input data.
-      print("head(samp.seg.logR.BAF.df)")
-      print(head(samp.seg.logR.BAF.df))
       working.all.samp.SNP.list[[sample]][[seg.name.vec[seg.idx]]] <- samp.seg.logR.BAF.df
 
 
@@ -490,4 +479,4 @@ cleanAndErrorCheckSNPs <- function(all.samp.SNP.list, min.cons.seg.df, allow.log
 
 }#end <- function(all.samp.SNP.list, min.cons.seg.df)
 
- 
+                                                                                                                                                                             

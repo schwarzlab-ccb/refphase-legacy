@@ -3,7 +3,7 @@
 ##
 ##Returns:
 ##
-plotAllSampleCCFsAcrossGenome <- function(asas.ph.raw.cpn.lists, full.joint.segs.df, sample.vec, all.seg.CCF.vals.list, cpnX) {
+plotAllSampleCCFsAcrossGenome <- function(asas.ph.raw.cpn.lists, full.joint.segs.df, sample.vec, all.seg.CCF.vals.list, cpnX, use.cpn.or.ccf.thresh = "CCF") {
 
   Colours <- colorpanel(100, 'steelblue4', '#deebf7', 'steelblue4')
   #First get the consensus segmentation, probably want to filter out the smallest segments:
@@ -130,8 +130,17 @@ plotAllSampleCCFsAcrossGenome <- function(asas.ph.raw.cpn.lists, full.joint.segs
       segColour <- Colours[(ifelse(segColour > 1, 1, segColour) * 100)]
       
       #So now very quickly we can check wehter that segment has been called significantly subclonal or not:
+      #Here we want to implement the two options.. either use the CCF threshold or the CPN threshold
 
-      sc.present <- full.joint.segs.df[paste0(samp, ":", seg.name), paste0("within_samp_sc_", cpnX, "_present")]
+      if (use.cpn.or.ccf.thresh == "CCF") {
+
+        sc.present <- full.joint.segs.df[paste0(samp, ":", seg.name), paste0("within_samp_sc_", cpnX, "_present")]
+
+      } else if (use.cpn.or.ccf.thresh == "CPN") {
+
+        sc.present <- full.joint.segs.df[paste0(samp, ":", seg.name), paste0("within_samp_sc_", cpnX, "_present_using_min_cpn_diff")]
+
+      }
 
       if (sc.present == TRUE) {
 
