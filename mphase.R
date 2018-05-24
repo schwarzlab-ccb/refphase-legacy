@@ -58,29 +58,29 @@ print(current.dir)
 # #MEDICC format for TRACERx example
 # medicc.mphase.command <- paste("Rscript", mphase.script.path, patient, allow.dip.test.phasing.flag, data.format.to.use, snp.file.path, seg.file.path, sep=" ")
 
-##Debugging option parameters:
-patient <- "MET048"
-allow.dip.test.phasing.flag = FALSE
-output.directory.base.path <- "/home/camp/watkint/working/watkint/data/brastianos/release_v2/B_MET048/exome/CN_het_TRACERx_no_diptest/"
-data.format.to.use <- "TRACERx_exome"
-snp.file.path <- paste0(output.directory.base.path, "MET048_TRACERx_input_paths_df.txt")
-seg.file.path <- "/home/camp/watkint/working/watkint/data/brastianos/release_v2/B_MET048/exome/MSAI/MET048_joint_segs_all_ascat_info.txt"
-##########
-mphase.script.path <- "/home/camp/watkint/working/watkint/scripts/multiregioncopynum/mphase.R"
-#TRACERx format for TRACERx example
-tracerx.mphase.command <- paste("Rscript", mphase.script.path, patient, allow.dip.test.phasing.flag, data.format.to.use, snp.file.path, seg.file.path, sep= " ")
-
-# #Debugging option parameters:
+# ##Debugging option parameters:
 # patient <- "MET048"
-# allow.dip.test.phasing.flag  <- FALSE
-# output.directory.base.path <- "/Users/watkint/Desktop/MET048_mPhase_data/CN_het_output/"
-# data.format.to.use <- "MEDICC"
-# snp.file.path <- "/Users/watkint/Desktop/MET048_mPhase_data/MET048_joint_snps.txt"
-# seg.file.path <- "/Users/watkint/Desktop/MET048_mPhase_data/MET048_joint_segs_all_ascat_info.txt"
+# allow.dip.test.phasing.flag = FALSE
+# output.directory.base.path <- "/home/camp/watkint/working/watkint/data/brastianos/release_v2/B_MET048/exome/CN_het_TRACERx_no_diptest/"
+# data.format.to.use <- "TRACERx_exome"
+# snp.file.path <- paste0(output.directory.base.path, "MET048_TRACERx_input_paths_df.txt")
+# seg.file.path <- "/home/camp/watkint/working/watkint/data/brastianos/release_v2/B_MET048/exome/MSAI/MET048_joint_segs_all_ascat_info.txt"
 # ##########
-# mphase.script.path <- "/Users/watkint/code/multiregioncopynum/mphase.R"
-# #MEDICC format for TRACERx example
-# medicc.mphase.command <- paste("Rscript", mphase.script.path, patient, allow.dip.test.phasing.flag, data.format.to.use, snp.file.path, seg.file.path, sep=" ")
+# mphase.script.path <- "/home/camp/watkint/working/watkint/scripts/multiregioncopynum/mphase.R"
+# #TRACERx format for TRACERx example
+# tracerx.mphase.command <- paste("Rscript", mphase.script.path, patient, allow.dip.test.phasing.flag, data.format.to.use, snp.file.path, seg.file.path, sep= " ")
+
+#Debugging option parameters:
+patient <- "MET048"
+allow.dip.test.phasing.flag  <- FALSE
+output.directory.base.path <- "/Users/watkint/Desktop/MET048_mPhase_data/CN_het_output/"
+data.format.to.use <- "MEDICC"
+snp.file.path <- "/Users/watkint/Desktop/MET048_mPhase_data/MET048_joint_snps.txt"
+seg.file.path <- "/Users/watkint/Desktop/MET048_mPhase_data/MET048_joint_segs_all_ascat_info.txt"
+##########
+mphase.script.path <- "/Users/watkint/code/multiregioncopynum/mphase.R"
+#MEDICC format for TRACERx example
+medicc.mphase.command <- paste("Rscript", mphase.script.path, patient, allow.dip.test.phasing.flag, data.format.to.use, snp.file.path, seg.file.path, sep=" ")
 
 
 print("patient")
@@ -857,6 +857,7 @@ full.joint.segs.df <- full.joint.segs.df[full.joint.segs.df$num_un_ph_hz_sites !
 full.joint.segs.df.path <- paste0(PLOT_OUTPUT_DIR, patient, "_full_joint_segs_df.RDS")
 saveRDS(full.joint.segs.df, file=full.joint.segs.df.path)
 
+uniq.chrs <- unique(full.joint.segs.w.phasing.df$chr)
 
 png(file = paste(PLOT_OUTPUT_DIR, patient, "_CCF_cpnA", ".png", sep = ""), width = 1200, height = 1400)
 
@@ -868,6 +869,22 @@ plotAllSampleCCFsAcrossGenome(asas.ph.raw.cpn.lists = asas.ph.raw.cpn.lists,
 
 dev.off()
 
+source(paste0(current.dir, "/CN_heterogeneity_plotting_functions_v2.R"))
+png(file = paste(PLOT_OUTPUT_DIR, patient, "_CCF_cpnA_","%02d", ".png", sep = ""), width = 1200, height = 1400)
+for ( chrom in uniq.chrs ) {
+
+	print(full.joint.segs.w.phasing.df[full.joint.segs.w.phasing.df$chr == chrom,] )
+	plotAllSampleCCFsAcrossGenome(asas.ph.raw.cpn.lists = asas.ph.raw.cpn.lists,
+                              full.joint.segs.df = full.joint.segs.w.phasing.df[full.joint.segs.w.phasing.df$chr == chrom,] ,
+                              sample.vec = sample.vec,
+                              all.seg.CCF.vals.list = all.seg.CCF.list,
+                              cpnX = "cpnA")
+
+
+}
+dev.off()
+
+
 png(file = paste(PLOT_OUTPUT_DIR, patient, "_CCF_cpnB", ".png", sep = ""), width = 1200, height = 1400)
 
 plotAllSampleCCFsAcrossGenome(asas.ph.raw.cpn.lists = asas.ph.raw.cpn.lists,
@@ -878,13 +895,51 @@ plotAllSampleCCFsAcrossGenome(asas.ph.raw.cpn.lists = asas.ph.raw.cpn.lists,
 dev.off()
 
 
+source(paste0(current.dir, "/CN_heterogeneity_plotting_functions_v2.R"))
+png(file = paste(PLOT_OUTPUT_DIR, patient, "_CCF_cpnB_","%02d", ".png", sep = ""), width = 1200, height = 1400)
+for ( chrom in uniq.chrs ) {
+
+	print(full.joint.segs.w.phasing.df[full.joint.segs.w.phasing.df$chr == chrom,] )
+	plotAllSampleCCFsAcrossGenome(asas.ph.raw.cpn.lists = asas.ph.raw.cpn.lists,
+                              full.joint.segs.df = full.joint.segs.w.phasing.df[full.joint.segs.w.phasing.df$chr == chrom,] ,
+                              sample.vec = sample.vec,
+                              all.seg.CCF.vals.list = all.seg.CCF.list,
+                              cpnX = "cpnB")
+
+
+}
+dev.off()
+
 
 #Now let's plot baf
+
+source(paste0(current.dir, "/CN_heterogeneity_plotting_functions_v2.R"))
 png(file = paste(PLOT_OUTPUT_DIR, patient, "_BAF_phased", ".png", sep=""), width = 1200, height = 1400)
+
 
 plotAllSampleBAFsAcrossGenome(sample.vec, patient.phased.BAF.df.list, cpnA.allele.color = '#de2d2699', cpnB.allele.color= '#3182bd99')
 
 dev.off()
+
+source(paste0(current.dir, "/CN_heterogeneity_plotting_functions_v2.R"))
+png(file = paste(PLOT_OUTPUT_DIR, patient, "_BAF_phased_", "%02d", ".png", sep=""), width = 1200, height = 1400)
+for ( chrom in uniq.chrs ) {
+
+	chr.pt.ph.BAF.df.list <- patient.phased.BAF.df.list
+
+	for ( samp in sample.vec ) {
+
+		chr.pt.ph.BAF.df.list[[samp]] <- chr.pt.ph.BAF.df.list[[samp]][chr.pt.ph.BAF.df.list[[samp]]$chrom == chrom,]
+
+	}#end for ( samp in sample.vec ) {
+
+	plotAllSampleBAFsAcrossGenome(sample.vec, chr.pt.ph.BAF.df.list, cpnA.allele.color = '#de2d2699', cpnB.allele.color= '#3182bd99')
+
+
+}#end for ( chrom in uniq.chrs ) {
+dev.off()
+
+
 
 #Now for these sample by sample comparisons the names of PNGs should contain the two samples being being compared really so we'll have to the plotting within the functions
 
