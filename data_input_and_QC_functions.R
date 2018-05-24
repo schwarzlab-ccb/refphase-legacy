@@ -479,4 +479,3 @@ cleanAndErrorCheckSNPs <- function(all.samp.SNP.list, min.cons.seg.df, allow.log
 
 }#end <- function(all.samp.SNP.list, min.cons.seg.df)
 
-                                                                                                                                                                             

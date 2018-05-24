@@ -106,4 +106,3 @@ mapOriginalCopyNumberToJointSegmentation <- function(chr.start.end.vec, orig.cpn
   return(joint.seg.cpn.by.samp.vec)               
 
 } #end mapOriginalCopyNumberToJointSegmentation <- function(...
-

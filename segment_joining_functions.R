@@ -156,13 +156,13 @@ wilcoxTestWithErrorHandling <- function(x, y = NULL,
           message(err)
           write(paste(err$message, "\n"), stderr())
           write("\n", stderr())
-          if(grepl("NULL", err$message) & "NULL"%in%errors.not.permitted){
+          if(grepl("NULL", err$message) & "NULL" %in% errors.not.permitted){
             stop("t.test ERROR with a NULL")
-          } else if (grepl("enough", err$message) & "enough"%in%errors.not.permitted){
+          } else if (grepl("enough", err$message) & "enough" %in% errors.not.permitted){
             stop("t.test ERROR with not enough")
-          } else if (grepl("constant", err$message) & "constant"%in%errors.not.permitted){
+          } else if (grepl("constant", err$message) & "constant" %in% errors.not.permitted){
             stop("t.test ERROR with constant data")
-          } else if(grepl("enough|constant|NULL", err$message) & "other"%in%errors.not.permitted){
+          } else if(grepl("enough|constant|NULL", err$message) & "other" %in% errors.not.permitted){
             stop(err$message)
           }
           # cat("\n")
