@@ -513,35 +513,71 @@ addOriginalSegmentInfoToFinalSegmentation <- function(seg.name.vec,
                                         & as.numeric(processed.orig.cpn.segs.df$chr) == as.numeric(chr.start.end.vec[1])
                                         , ,drop = FALSE]
 
+            cpn.call.state.vec <- rep("neutral", nrow(chr.samp.seg.df))
+            tot.raw.cpn.vec <- chr.samp.seg.df$nAraw + chr.samp.seg.df$nBraw
+            log.tot.raw.over.ploidy.cpn.vec <- log2(tot.raw.cpn.vec / chr.samp.seg.df$Ploidy)
+
+            cpn.call.state.vec[log.tot.raw.over.ploidy.cpn.vec >= log2(2.5 / 2)] <- "gain"
+            cpn.call.state.vec[log.tot.raw.over.ploidy.cpn.vec <= log2(1.5 / 2)] <- "loss"
+            cpn.call.state.vec[tot.raw.cpn.vec >= ((2 * chr.samp.seg.df$Ploidy[1]) + 1)] <- "amp"
+            cpn.call.state.vec[tot.raw.cpn.vec <= 0.5] <- "deep_loss"
+
+            chr.samp.seg.df$orig_cpn_call_vs_ploidy <- cpn.call.state.vec
+
+
             matching.chr.samp.seg.df <- chr.samp.seg.df[chr.samp.seg.df$startpos == as.numeric(chr.start.end.vec[2])
                             | chr.samp.seg.df$endpos == as.numeric(chr.start.end.vec[3])
                             | (chr.samp.seg.df$startpos >= as.numeric(chr.start.end.vec[2]) & chr.samp.seg.df$endpos <= as.numeric(chr.start.end.vec[3])) 
-                            | (as.numeric(chr.start.end.vec[2]) >= chr.samp.seg.df$startpos & as.numeric(chr.start.end.vec[3]) <= chr.samp.seg.df$endpos) ,  ,drop = FALSE ]
+                            | (as.numeric(chr.start.end.vec[2]) >= chr.samp.seg.df$startpos & as.numeric(chr.start.end.vec[3]) <= chr.samp.seg.df$endpos),  ,drop = FALSE ]
 
 
             #add a column defining gain and loss etc...
 
-            cpn.call.state.vec <- rep("neutral", nrow(matching.chr.samp.seg.df))
-            tot.raw.cpn.vec <- matching.chr.samp.seg.df$nAraw + matching.chr.samp.seg.df$nBraw
-            log.tot.raw.over.ploidy.cpn.vec <- log2(tot.raw.cpn.vec / matching.chr.samp.seg.df$Ploidy)
-
-            cpn.call.state.vec[log.tot.raw.over.ploidy.cpn.vec >= log2(2.5 / 2)] <- "gain"
-            cpn.call.state.vec[log.tot.raw.over.ploidy.cpn.vec <= log2(1.5/ 2)] <- "loss"
-            cpn.call.state.vec[tot.raw.cpn.vec >= ((2 * chr.samp.seg.df$Ploidy[1]) + 1)] <- "amp"
-            cpn.call.state.vec[tot.raw.cpn.vec <= 0.5] <- "deep_loss"
-
-            matching.chr.samp.seg.df$orig_cpn_call_vs_ploidy <- cpn.call.state.vec
+           
 
             if (nrow(matching.chr.samp.seg.df) == 0) {
-                    print(chr.samp.seg.df)
-                    print(samp)
-                    print(seg.name)
-                    print(matching.chr.samp.seg.df)
-                    stop("Error, minimum consistent region segmentation doesn't map back to any original segments")
+                print(chr.samp.seg.df)
+                print(samp)
+                print(seg.name)
+                print(matching.chr.samp.seg.df)
+                print("Error, minimum consistent region segmentation doesn't map back to any original segments")
 
-            }
-           
-            if (nrow(matching.chr.samp.seg.df) > 2 ) {
+                #So if the segment doesn't match back to any segment exactly...
+                #Which segment does it overlap most with...
+                chr.samp.seg.range.df <- chr.samp.seg.df[,c("chr", "startpos", "endpos")]
+                colnames(chr.samp.seg.range.df) <- c("Chromosome", "start", "end")
+                ref.gen.range <- makeGRangesFromDataFrame(chr.samp.seg.range.df)
+                seg.test.df <- data.frame(Chromosome = chr.start.end.vec[1],
+                          start = as.numeric(chr.start.end.vec[2]),
+                          end = as.numeric(chr.start.end.vec[3]),
+                          stringsAsFactors = FALSE)
+                test.gen.range <- makeGRangesFromDataFrame(seg.test.df)
+                #find overlaps:
+                hit.obj <- findOverlaps(ref.gen.range, test.gen.range)
+                #Compute percent overlap and filter the hits:
+                overlaps <- pintersect(ref.gen.range[queryHits(hit.obj)], test.gen.range[subjectHits(hit.obj)])
+                overlap.df <- as.data.frame(overlaps)
+                print("overlap.df")
+                print(overlap.df)
+
+                if (nrow(overlap.df) > 0) {
+
+                  overlap.df <- overlap.df[with(overlap.df, order(-width)), ]
+
+                  most.overlapping.seg.df <- chr.samp.seg.df[chr.samp.seg.df$chr == chr.samp.seg.df$seqnames & 
+                                                             chr.samp.seg.df$startpos == chr.samp.seg.df$start &
+                                                             chr.samp.seg.df$endpos == chr.samp.seg.df$end, ,drop = FALSE]
+
+                  all.seg.df[samp.seg.name, ]$orig_seg_name <- paste(most.overlapping.seg.df[1,]$chr, most.overlapping.seg.df[1,]$startpos, most.overlapping.seg.df[1,]$endpos, sep=":")
+                  all.seg.df[samp.seg.name, ]$orig_cpn_call_vs_ploidy <- most.overlapping.seg.df[1 ,]$orig_cpn_call_vs_ploidy
+
+                } else {
+
+                  stop("No seg exactly matches and no segment overlaps, error in the minimum consistent segmentation that needs to be investigated.")
+
+                }
+                
+            } else if (nrow(matching.chr.samp.seg.df) > 2 ) {
                 print(chr.samp.seg.df)
                 print(samp)
                 print(seg.name)
@@ -1351,4 +1387,4 @@ initialiseFullOutputDataframe <- function(seg.name.vec, ploidy.est.vec, purity.e
         rownames(all.seg.df) <- row.names.vec
         return(all.seg.df)
 
-}
+}                                                                                                                   

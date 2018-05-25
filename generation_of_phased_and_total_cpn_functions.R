@@ -31,7 +31,9 @@ getAllSegAllSamplePhasedRawCPNList <- function(sample.vec, ploidy.est.vec, purit
         #We may have the problem here that some segments don't have any snps in them at all, check for this perhaps? see if fails
           samp.b.lr.baf.df <- asas.both.lr.baf.lists[[samp]][[seg.name]]
           if (nrow(samp.b.lr.baf.df) == 0) {
+
             next
+            
           }#end   if (nrow(samp.b.lr.baf.df) == 0) {
 
           samp.seg.cpnA.cpnB.df <- calculateSNPsRawCopyNumberAB(logr.vec = samp.b.lr.baf.df$logR,

@@ -1118,8 +1118,8 @@ performAIphasing  <- function(regionList
 
           OtherRegionPvals   <- c(OtherRegionPvals,OtherRegionTtest$p.value)
           
-          regionSNPseparate_sameAsReference    <- length(which(c(AndBOtherRegion[MajorColumn1,1],AndBOtherRegion[MajorColumn2,2]) -c(c(AndBOtherRegion[MajorColumn1,2],AndBOtherRegion[MajorColumn2,1]))>0))/nrow(AndBOtherRegion)
-          regionSNPseparate_diffFromReference  <- length(which(c(AndBOtherRegion[MajorColumn1,1],AndBOtherRegion[MajorColumn2,2]) -c(c(AndBOtherRegion[MajorColumn1,2],AndBOtherRegion[MajorColumn2,1]))<0))/nrow(AndBOtherRegion)
+          regionSNPseparate_sameAsReference    <- length(which(c(AndBOtherRegion[MajorColumn1,1],AndBOtherRegion[MajorColumn2,2]) - c(c(AndBOtherRegion[MajorColumn1,2],AndBOtherRegion[MajorColumn2,1])) > 0)) / nrow(AndBOtherRegion)
+          regionSNPseparate_diffFromReference  <- length(which(c(AndBOtherRegion[MajorColumn1,1],AndBOtherRegion[MajorColumn2,2]) - c(c(AndBOtherRegion[MajorColumn1,2],AndBOtherRegion[MajorColumn2,1])) < 0)) / nrow(AndBOtherRegion)
           
           if(regionSNPseparate_sameAsReference>=regionSNPseparate_diffFromReference)
           {

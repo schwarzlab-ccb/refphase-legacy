@@ -56,7 +56,7 @@ current.dir <-  LocationOfThisScript()
 # medicc.mphase.command <- paste("Rscript", mphase.script.path, patient, allow.dip.test.phasing.flag, data.format.to.use, snp.file.path, seg.file.path, sep=" ")
 
 # ##Debugging option parameters:
-# patient <- "MET048"
+# patient <- "MET002"
 # allow.dip.test.phasing.flag  <- FALSE
 # output.directory.base.path <- paste("/home/camp/watkint/working/watkint/data/brastianos/release_v2/","B_", patient, "/exome/CN_het_TRACERx_no_diptest/", sep = "")
 # data.format.to.use <- "TRACERx_exome"
@@ -66,6 +66,21 @@ current.dir <-  LocationOfThisScript()
 # mphase.script.path <- "/home/camp/watkint/working/watkint/scripts/multiregioncopynum/mphase.R"
 # #TRACERx format for TRACERx example
 # tracerx.mphase.command <- paste("Rscript", mphase.script.path, patient, allow.dip.test.phasing.flag, data.format.to.use, snp.file.path, seg.file.path, sep= " ")
+
+#Debugging option parameters:
+patient <- "ETX014"
+allow.dip.test.phasing.flag  <- FALSE
+# M_ETX014/exome/CN_het_MEDICC_no_diptest
+output.directory.base.path <- paste("/home/camp/watkint/working/watkint/data/murugaesu/release/","M_", patient, "/exome/CN_het_TRACERx_no_diptest/", sep = "")
+data.format.to.use <- "TRACERx_exome"
+snp.file.path <- paste0(output.directory.base.path, patient, "_TRACERx_input_paths_df.txt")
+seg.file.path <- paste("/home/camp/watkint/working/watkint/data/murugaesu/release/", "M_", patient, "/exome/MSAI/", patient, "_joint_segs_all_ascat_info.txt", sep = "")
+##########
+mphase.script.path <- "/home/camp/watkint/working/watkint/scripts/multiregioncopynum/mphase.R"
+#TRACERx format for TRACERx example
+tracerx.mphase.command <- paste("Rscript", mphase.script.path, patient, allow.dip.test.phasing.flag, data.format.to.use, snp.file.path, seg.file.path, sep= " ")
+
+
 
 # # #Debugging option parameters:
 # # patient <- "MET048"
@@ -105,7 +120,7 @@ source(paste0(current.dir, "/MSAI_detection_functions.R"))
 ###Source relevant scripts, best to do this at the top to check for errors...
 source(paste0(current.dir, "/pairwise_cpn_comparison_and_heterogeneity_functions.R"))
 source(paste0(current.dir, "/cancer_cell_fraction_calculation_functions.R"))
-source(paste0(current.dir, "/final_output_segmentation_file_generation_functions.R"))
+source(paste0(current.dir, "/final_output_segmentation_file_generation_functions_v2.R"))
 source(paste0(current.dir, "/segment_joining_functions.R"))
 source(paste0(current.dir, "/cpn_heterogeneity_plotting_functions.R"))
 
@@ -298,6 +313,7 @@ if (data.format.to.use == "MEDICC") {
 library(diptest)
 library(gplots)
 library(gdata)
+library(GenomicRanges)
 
 ###############This is past the input stage and into the analysis:
 #Set constants for all analyses here... eventually these can be command line set
@@ -457,61 +473,61 @@ asas.ph.raw.cpn.lists <- getAllSegAllSamplePhasedRawCPNList(sample.vec = sample.
 
 #Perform all pairwise comparisons of all samples, the use of much of this has been deprecated but we can revisit it,
 #We can add to this later if we want to redo the
-print("Performing pairwise comparisons of phased raw cpn...")
-all.pw.cn.het.comp.lists <- list()
-for (i in 1:(length(sample.vec) - 1)) {
+# print("Performing pairwise comparisons of phased raw cpn...")
+# all.pw.cn.het.comp.lists <- list()
+# for (i in 1:(length(sample.vec) - 1)) {
 
-  for(j in (i + 1):length(sample.vec)) {
+#   for(j in (i + 1):length(sample.vec)) {
 
-    samp.one <- sample.vec[i]
-    samp.two <- sample.vec[j]
-    samp.one.two <- paste(samp.one, ":", samp.two, sep="")
-    s.one.two.comp.input.list <- list()
-    s.one.two.comparison.list <- list()
-    s.one.two.pw.het.list <- list()
-    print(samp.one.two)
-    for ( seg.name in seg.name.vec ) {
-    	print(seg.name)
-    	s.one.two.comp.input.list[[seg.name]] <- createAllSegInputForHetComparisons(seg.name = seg.name,
-                                                  samp.one = samp.one,
-                                                  samp.two = samp.two,
-                                                  asas.ph.raw.cpn.lists = asas.ph.raw.cpn.lists,
-                                                  asas.both.lr.baf.lists = asas.both.lr.baf.lists,
-                                                  all.samp.non.hz.logr.and.tot.cpn.df.list = all.samp.non.hz.logr.and.tot.cpn.df.list,
-                                                  min.num.hz.snp.phasing = MIN_NUM_HZ_SNP_PHASING)
+#     samp.one <- sample.vec[i]
+#     samp.two <- sample.vec[j]
+#     samp.one.two <- paste(samp.one, ":", samp.two, sep="")
+#     s.one.two.comp.input.list <- list()
+#     s.one.two.comparison.list <- list()
+#     s.one.two.pw.het.list <- list()
+#     print(samp.one.two)
+#     for ( seg.name in seg.name.vec ) {
+#     	print(seg.name)
+#     	s.one.two.comp.input.list[[seg.name]] <- createAllSegInputForHetComparisons(seg.name = seg.name,
+#                                                   samp.one = samp.one,
+#                                                   samp.two = samp.two,
+#                                                   asas.ph.raw.cpn.lists = asas.ph.raw.cpn.lists,
+#                                                   asas.both.lr.baf.lists = asas.both.lr.baf.lists,
+#                                                   all.samp.non.hz.logr.and.tot.cpn.df.list = all.samp.non.hz.logr.and.tot.cpn.df.list,
+#                                                   min.num.hz.snp.phasing = MIN_NUM_HZ_SNP_PHASING)
 
-    	#logr alone comparison: possible for all segments
-    	#raw ph cpn comparison: possible only for segments thad had greater than MIN_NUM_HZ_SNP_PHASING in them
-    	#raw tot cpn: possible for all segments
-    	#processed call comparisons: currently possible only for segments with phased copy number
-    	#Also there separate and combined logr and total cpn calls we can make that might come up as being different,
-    	#We need to separate these out early on and then run the same functions twice over them.
-	  	s.one.two.comparison.list[[seg.name]] <- performSegPairwiseComparisons(seg.name = seg.name,
-	  	                                          					samp.one = samp.one,
-	  	                                          					samp.two = samp.two,
-	  	                                          					seg.samp.one.two.comp.data.list = s.one.two.comp.input.list[[seg.name]],
-	  	                                          					purity.est.vec = purity.est.vec,
-	  	                                          					ploidy.est.vec = ploidy.est.vec,
-	  	                                          					gain.threshold = GAIN_LOGR_THRESH,
-	  	                                          					amp.threshold = LOSS_LOGR_THRESH,
-	  	                                          					loss.threshold = AMP_LOGR_THRESH,
-	  	                                          					deep.loss.threshold = DEEP_LOSS_LOGR_THRESH)
+#     	#logr alone comparison: possible for all segments
+#     	#raw ph cpn comparison: possible only for segments thad had greater than MIN_NUM_HZ_SNP_PHASING in them
+#     	#raw tot cpn: possible for all segments
+#     	#processed call comparisons: currently possible only for segments with phased copy number
+#     	#Also there separate and combined logr and total cpn calls we can make that might come up as being different,
+#     	#We need to separate these out early on and then run the same functions twice over them.
+# 	  	s.one.two.comparison.list[[seg.name]] <- performSegPairwiseComparisons(seg.name = seg.name,
+# 	  	                                          					samp.one = samp.one,
+# 	  	                                          					samp.two = samp.two,
+# 	  	                                          					seg.samp.one.two.comp.data.list = s.one.two.comp.input.list[[seg.name]],
+# 	  	                                          					purity.est.vec = purity.est.vec,
+# 	  	                                          					ploidy.est.vec = ploidy.est.vec,
+# 	  	                                          					gain.threshold = GAIN_LOGR_THRESH,
+# 	  	                                          					amp.threshold = LOSS_LOGR_THRESH,
+# 	  	                                          					loss.threshold = AMP_LOGR_THRESH,
+# 	  	                                          					deep.loss.threshold = DEEP_LOSS_LOGR_THRESH)
 
-	  	s.one.two.pw.het.list[[seg.name]] <- calculateSegPairwiseCNHeterogeneityMeasures(seg.samp.comp.het.analysis.list = s.one.two.comparison.list[[seg.name]],
-	  																					 pval.for.diff.amplitude.thresh = PW_CPNA_CPNB_DIFF_AMPLITUDE_THRESH) 
-	}#end for ( seg.name in seg.name.vec ) {
+# 	  	s.one.two.pw.het.list[[seg.name]] <- calculateSegPairwiseCNHeterogeneityMeasures(seg.samp.comp.het.analysis.list = s.one.two.comparison.list[[seg.name]],
+# 	  																					 pval.for.diff.amplitude.thresh = PW_CPNA_CPNB_DIFF_AMPLITUDE_THRESH) 
+# 	}#end for ( seg.name in seg.name.vec ) {
 
-		all.pw.cn.het.comp.lists[[samp.one.two]] <- list()
-		all.pw.cn.het.comp.lists[[samp.one.two]]$comparison_input_list <- s.one.two.comp.input.list
-		all.pw.cn.het.comp.lists[[samp.one.two]]$comparison_output_list <- s.one.two.comparison.list
-		all.pw.cn.het.comp.lists[[samp.one.two]]$s_one_two_pw_het_list <- s.one.two.pw.het.list
+# 		all.pw.cn.het.comp.lists[[samp.one.two]] <- list()
+# 		all.pw.cn.het.comp.lists[[samp.one.two]]$comparison_input_list <- s.one.two.comp.input.list
+# 		all.pw.cn.het.comp.lists[[samp.one.two]]$comparison_output_list <- s.one.two.comparison.list
+# 		all.pw.cn.het.comp.lists[[samp.one.two]]$s_one_two_pw_het_list <- s.one.two.pw.het.list
 
 
-  }#end for (i in 1:(length(sample.vec) - 1)) {
+#   }#end for (i in 1:(length(sample.vec) - 1)) {
 
-}#end for(j in (i + 1):length(sample.vec)) {
-all.pw.cn.het.comp.lists.path <- paste0(PLOT_OUTPUT_DIR, patient, "_all_pw_cn_het_comp_lists.RDS")
-saveRDS(all.pw.cn.het.comp.lists, file = all.pw.cn.het.comp.lists.path)
+# }#end for(j in (i + 1):length(sample.vec)) {
+# all.pw.cn.het.comp.lists.path <- paste0(PLOT_OUTPUT_DIR, patient, "_all_pw_cn_het_comp_lists.RDS")
+# saveRDS(all.pw.cn.het.comp.lists, file = all.pw.cn.het.comp.lists.path)
 
 
 
@@ -723,7 +739,7 @@ full.joint.segs.w.old.cpn.vs.ploidy.df <- addOriginalSegmentInfoToFinalSegmentat
 																					)
 
 
-print("Adding CCF information and subconal cpn calls to MCS output...")
+print("Adding CCF information and subclonal cpn calls to MCS output...")
 clonality.and.ccf.joint.segs.df <- addWithinSampleClonalityAndCCFToFinalSegmentation(seg.name.vec = names(asas.ph.raw.cpn.lists[[1]])
                                 ,all.seg.CCF.vals.list = all.seg.CCF.list
                                 ,all.seg.CCF.diff.from.exp.list = all.seg.CCF.diff.from.exp.list
@@ -782,7 +798,7 @@ print("Adding phasing information and MSAI detection by raw cpn calls to MCS out
 full.joint.segs.w.phasing.df <- addPhasingInformationToOutputSegmentation(sample.vec = names(purity.est.vec),
                                         seg.name.vec = names(asas.ph.raw.cpn.lists[[1]]), 
                                         sample.to.phase.seg.list = all.seg.phasing.info.list,
-                                        all.pw.cn.het.comp.lists = all.pw.cn.het.comp.lists,
+                                        all.pw.cn.het.comp.lists = NULL,
                                         all.segs.df = full.joint.segs.logr.vs.ploidy.clonality.df)
 
 
@@ -1009,4 +1025,4 @@ for ( chrom in uniq.chrs ) {
 }#end for ( chrom in uniq.chrs ) {
 dev.off()
 
-testFinalOutputDataframe(full.joint.segs.df)                                                                                                                                                                        
+testFinalOutputDataframe(full.joint.segs.df)                                                                                                                                                                                                                           

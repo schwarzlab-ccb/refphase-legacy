@@ -17,7 +17,7 @@ getCombinedBAFDipTestPhasing <- function(asas.lr.baf.lists,
   sample.to.phase.seg.list <- list()
 
   for ( seg.name in seg.name.vec ) {
-
+    
     first.ss.lr.baf.df <- asas.lr.baf.lists[[sample.vec[1]]][[seg.name]]
     if (nrow(first.ss.lr.baf.df) < min.num.hz.snp.phasing) {
       next;#If phasng not possible for this segment then move onto the next
@@ -31,10 +31,8 @@ getCombinedBAFDipTestPhasing <- function(asas.lr.baf.lists,
                                                                                                 gamma.val = gamma.val,
                                                                                                 min.num.hz.snp.phasing = min.num.hz.snp.phasing)
     sample.to.phase.seg.list[[seg.name]]$all_samp_phasing_comparison_list <- all.samp.seg.phasing.ability.list
-    a.s.sum.phas.df <- data.frame(mean_prop_SNPs_sep_across_samples = sapply(all.samp.seg.phasing.ability.list, function(x) x$mean_prop_SNPs_sep_across_samples),
-                                  diptest_for_AI_pval = sapply(all.samp.seg.phasing.ability.list, function(x) x$diptest_for_AI_pval),
+    a.s.sum.phas.df <- data.frame(diptest_for_AI_pval = sapply(all.samp.seg.phasing.ability.list, function(x) x$diptest_for_AI_pval),
                                   ASCAT_called_as_AI = sapply(all.samp.seg.phasing.ability.list, function(x) x$ASCAT_called_as_AI),
-                                  comb_pval_SNP_sep_across_samps = sapply(all.samp.seg.phasing.ability.list, function(x) x$comb_wilcox_sep_pval_across_samps),
                                   stringsAsFactors = FALSE)
     rownames(a.s.sum.phas.df) <- sample.vec
     #Reorder by which has best separation according to th eoriginal diptest, then subset to choose only samples that pass the threshold for having allelic imbalance.
@@ -50,11 +48,18 @@ getCombinedBAFDipTestPhasing <- function(asas.lr.baf.lists,
       poss.phas.s.df <- a.s.sum.phas.df[a.s.sum.phas.df$ASCAT_called_as_AI == TRUE, ,drop = FALSE] 
 
     }
+    #Now assess the samples that can actualy be phased...
+    #So now we need to recalculate the phasing stats over the samples which we think are actually have allelic imbalance and are phaseable...
+    a.s.sum.phas.df <- data.frame(mean_prop_SNPs_sep_across_samples = sapply(all.samp.seg.phasing.ability.list, function(x) x$mean_prop_SNPs_sep_across_samples),
+                                  diptest_for_AI_pval = sapply(all.samp.seg.phasing.ability.list, function(x) x$diptest_for_AI_pval),
+                                  ASCAT_called_as_AI = sapply(all.samp.seg.phasing.ability.list, function(x) x$ASCAT_called_as_AI),
+                                  comb_pval_SNP_sep_across_samps = sapply(all.samp.seg.phasing.ability.list, function(x) x$comb_wilcox_sep_pval_across_samps),
+                                  stringsAsFactors = FALSE)
 
     #If s more than one sample that passes either ASCAT or diptest
+    #initialise sthe seg mixture phasing to NULL so that, as a default, it won't be used:
     seg.mixture.phasing.list <- NULL
     if (nrow(poss.phas.s.df) > 0) {
-      #initialise sthe seg mixture phasing to NULL so that, as a default, it won't be used:
 
       if (nrow(poss.phas.s.df) == 1) {
         #If only one sample passes then choose this sample as the reference
@@ -63,7 +68,30 @@ getCombinedBAFDipTestPhasing <- function(asas.lr.baf.lists,
       } else if (nrow(poss.phas.s.df) > 1) {
         #If there are multiple alance instances called choose the top one and check mixture phasing
         sample.to.phase.seg <- rownames(poss.phas.s.df)[1]
-        seg.mixture.phasing.list <- getMixturePhasingResultsForSegment(sample.to.phase.seg, sample.vec, poss.phas.s.df, asas.lr.baf.lists, all.samp.seg.phasing.ability.list, seg.name, ploidy.est.vec, purity.est.vec, gamma.val, comb.wilcox.snp.sep.p.val.threshold, min.prop.snp.sep.threshold)
+        poss.phas.sample.vec <- rownames(poss.phas.s.df)
+        all.poss.phas.samp.seg.phasing.ability.list <- getAssessmentOfEachSamplesAbilityToPhaseAllOthersForSeg(asas.lr.baf.lists = asas.lr.baf.lists,
+                                                                                                    sample.vec = poss.phas.sample.vec,
+                                                                                                    seg.name = seg.name,
+                                                                                                    ploidy.est.vec = ploidy.est.vec,
+                                                                                                    purity.est.vec = purity.est.vec,
+                                                                                                    gamma.val = gamma.val,
+                                                                                                    min.num.hz.snp.phasing = min.num.hz.snp.phasing)
+        phas.s.df <- data.frame(diptest_for_AI_pval = sapply(all.poss.phas.samp.seg.phasing.ability.list, function(x) x$diptest_for_AI_pval),
+                                      ASCAT_called_as_AI = sapply(all.poss.phas.samp.seg.phasing.ability.list, function(x) x$ASCAT_called_as_AI),
+                                      mean_prop_SNPs_sep_across_samples = sapply(all.poss.phas.samp.seg.phasing.ability.list, function(x) x$mean_prop_SNPs_sep_across_samples),
+                                      comb_pval_SNP_sep_across_samps = sapply(all.poss.phas.samp.seg.phasing.ability.list, function(x) x$comb_wilcox_sep_pval_across_samps),
+                                      stringsAsFactors = FALSE)
+        seg.mixture.phasing.list <- getMixturePhasingResultsForSegment(sample.to.phase.seg = sample.to.phase.seg,
+                                                                      sample.vec = poss.phas.sample.vec,
+                                                                      poss.phas.s.df = phas.s.df,
+                                                                      asas.lr.baf.lists = asas.lr.baf.lists,
+                                                                      all.samp.seg.phasing.ability.list = all.poss.phas.samp.seg.phasing.ability.list,
+                                                                      seg.name = seg.name,
+                                                                      ploidy.est.vec = ploidy.est.vec,
+                                                                      purity.est.vec = purity.est.vec,
+                                                                      gamma.val = gamma.val,
+                                                                      comb.wilcox.snp.sep.p.val.threshold = comb.wilcox.snp.sep.p.val.threshold,
+                                                                      min.prop.snp.sep.threshold = min.prop.snp.sep.threshold)
 
       }  else {
 
@@ -164,22 +192,30 @@ assessPhasingAcrossSelectedSamples <- function(seg.name,
 
     oth.ss.lr.baf.df <- asas.lr.baf.lists[[other.samp]][[seg.name]]
 
-    oth.ss.cpnA.cpnB.df <- calculateSNPsRawCopyNumberAB(logr.vec=oth.ss.lr.baf.df$logR, baf.vec=oth.ss.lr.baf.df$BAF, tumor.ploidy=ploidy.est.vec[other.samp], tumor.purity=purity.est.vec[other.samp], gamma.val=gamma.val)
+    oth.ss.cpnA.cpnB.df <- calculateSNPsRawCopyNumberAB(logr.vec = oth.ss.lr.baf.df$logR,
+                                                        baf.vec = oth.ss.lr.baf.df$BAF,
+                                                        tumor.ploidy = ploidy.est.vec[other.samp],
+                                                        tumor.purity = purity.est.vec[other.samp],
+                                                        gamma.val = gamma.val)
 
     #old code had some checks here to make sure that these have the same number of rows, but if everything holds they should remain the same anyway...
     other.samp.wilcox.test <-  wilcox.test( c(oth.ss.cpnA.cpnB.df[ref.ss.maj.is.cpnA.idx.vec,  1], oth.ss.cpnA.cpnB.df[ref.ss.maj.is.cpnB.idx.vec, 2]), 
-                                            c(oth.ss.cpnA.cpnB.df[ref.ss.maj.is.cpnA.idx.vec,  2], oth.ss.cpnA.cpnB.df[ref.ss.maj.is.cpnB.idx.vec, 1]), paired=TRUE)
+                                            c(oth.ss.cpnA.cpnB.df[ref.ss.maj.is.cpnA.idx.vec,  2], oth.ss.cpnA.cpnB.df[ref.ss.maj.is.cpnB.idx.vec, 1]), paired = TRUE)
 
-    oth.ss.snps.same.as.ref <- length(which(c(oth.ss.cpnA.cpnB.df[ref.ss.maj.is.cpnA.idx.vec, 1],oth.ss.cpnA.cpnB.df[ref.ss.maj.is.cpnB.idx.vec, 2]) - 
-                                            c(oth.ss.cpnA.cpnB.df[ref.ss.maj.is.cpnA.idx.vec, 2],oth.ss.cpnA.cpnB.df[ref.ss.maj.is.cpnB.idx.vec, 1]) > 0)) / nrow(oth.ss.cpnA.cpnB.df)
-    oth.ss.snps.diff.to.ref <- length(which(c(oth.ss.cpnA.cpnB.df[ref.ss.maj.is.cpnA.idx.vec, 1],oth.ss.cpnA.cpnB.df[ref.ss.maj.is.cpnB.idx.vec, 2]) - 
-                                            c(oth.ss.cpnA.cpnB.df[ref.ss.maj.is.cpnA.idx.vec, 2],oth.ss.cpnA.cpnB.df[ref.ss.maj.is.cpnB.idx.vec, 1]) < 0)) / nrow(oth.ss.cpnA.cpnB.df)
+    oth.ss.snps.same.as.ref <- length(which(c(oth.ss.cpnA.cpnB.df[ref.ss.maj.is.cpnA.idx.vec, 1], oth.ss.cpnA.cpnB.df[ref.ss.maj.is.cpnB.idx.vec, 2]) - 
+                                            c(oth.ss.cpnA.cpnB.df[ref.ss.maj.is.cpnA.idx.vec, 2], oth.ss.cpnA.cpnB.df[ref.ss.maj.is.cpnB.idx.vec, 1]) > 0)) / nrow(oth.ss.cpnA.cpnB.df)
+    oth.ss.snps.diff.to.ref <- length(which(c(oth.ss.cpnA.cpnB.df[ref.ss.maj.is.cpnA.idx.vec, 1], oth.ss.cpnA.cpnB.df[ref.ss.maj.is.cpnB.idx.vec, 2]) - 
+                                            c(oth.ss.cpnA.cpnB.df[ref.ss.maj.is.cpnA.idx.vec, 2], oth.ss.cpnA.cpnB.df[ref.ss.maj.is.cpnB.idx.vec, 1]) < 0)) / nrow(oth.ss.cpnA.cpnB.df)
     #Updating the other sample segment phasing df
-    other.ss.phasing.df[other.samp,] <- c(other.samp.wilcox.test$p.val, max(oth.ss.snps.same.as.ref, oth.ss.snps.diff.to.ref), ifelse(oth.ss.snps.same.as.ref >= oth.ss.snps.diff.to.ref,1,-1))
+    other.ss.phasing.df[other.samp,]$separation_wilcox_pval  <- other.samp.wilcox.test$p.val
+    other.ss.phasing.df[other.samp,]$prop_separated <- max(oth.ss.snps.same.as.ref, oth.ss.snps.diff.to.ref)
+    other.ss.phasing.df[other.samp,]$concordant_w_ref <- ifelse(oth.ss.snps.same.as.ref >= oth.ss.snps.diff.to.ref, 1, -1)
 
   }#end for ( other.samp in sample.vec[ ! sample%in%sample.vec] )
 
-  sample.comparison.list[[samp]]$comb_wilcox_sep_pval_across_samps <- pchisq((sum(log(other.ss.phasing.df$separation_wilcox_pval))*-2), df=length(other.ss.phasing.df$separation_wilcox_pval)*2, lower.tail=F)
+  sample.comparison.list[[samp]]$comb_wilcox_sep_pval_across_samps <- pchisq((sum(log(other.ss.phasing.df$separation_wilcox_pval)) * -2),
+                                                                            df = length(other.ss.phasing.df$separation_wilcox_pval) * 2,
+                                                                            lower.tail = FALSE)
   sample.comparison.list[[samp]]$oth_samp_wilcox_sep_pvals_vec <- other.ss.phasing.df$separation_wilcox_pval
   sample.comparison.list[[samp]]$oth_samp_SNPs_sep_prop_vec <- other.ss.phasing.df$prop_separated
   sample.comparison.list[[samp]]$maj_is_cpnA_idx_vec <- ref.ss.maj.is.cpnA.idx.vec
@@ -222,25 +258,25 @@ getAssessmentOfEachSamplesAbilityToPhaseAllOthersForSeg <- function(asas.lr.baf.
       ref.ss.lr.baf.df <- asas.lr.baf.lists[[samp]][[seg.name]]
       if ( nrow(ref.ss.lr.baf.df) < min.num.hz.snp.phasing) {
 
-        next;#Might actally want this to be a break as they should all have too few snps as it is joint segmentation with the same SNPs...
+        next#Might actally want this to be a break as they should all have too few snps as it is joint segmentation with the same SNPs...
 
       }#end if( nrow(ref.ss.lr.baf.df) < min.hz.snp.phasing)
       #renaming the dataframe rows for the other samples, now we are trying a new reference sample
       rownames(other.ss.phasing.df) <- sample.vec[ ! sample.vec %in% samp ]
 
       #Get phasing, reference sample segment cpn A cpn B
-      ref.ss.cpnA.cpnB.df <- calculateSNPsRawCopyNumberAB(logr.vec=ref.ss.lr.baf.df$logR,
-                                                          baf.vec=ref.ss.lr.baf.df$BAF,
-                                                          tumor.ploidy=ploidy.est.vec[samp],
-                                                          tumor.purity=purity.est.vec[samp],
-                                                          gamma.val=gamma.val)
+      ref.ss.cpnA.cpnB.df <- calculateSNPsRawCopyNumberAB(logr.vec = ref.ss.lr.baf.df$logR,
+                                                          baf.vec = ref.ss.lr.baf.df$BAF,
+                                                          tumor.ploidy = ploidy.est.vec[samp],
+                                                          tumor.purity = purity.est.vec[samp],
+                                                          gamma.val = gamma.val)
       ref.ss.max.cpn.vec <- apply(ref.ss.cpnA.cpnB.df, 1, max)
-      ref.ss.is.max.cpn.cpnA.cpnB.logical.df <- ifelse(ref.ss.cpnA.cpnB.df>=ref.ss.max.cpn.vec, 1, 0)
-      ref.ss.maj.is.cpnA.idx.vec <- which(ref.ss.is.max.cpn.cpnA.cpnB.logical.df[,1]==1)
-      ref.ss.maj.is.cpnB.idx.vec <- which(ref.ss.is.max.cpn.cpnA.cpnB.logical.df[,2]==1)
+      ref.ss.is.max.cpn.cpnA.cpnB.logical.df <- ifelse(ref.ss.cpnA.cpnB.df >= ref.ss.max.cpn.vec, 1, 0)
+      ref.ss.maj.is.cpnA.idx.vec <- which(ref.ss.is.max.cpn.cpnA.cpnB.logical.df[, 1] == 1)
+      ref.ss.maj.is.cpnB.idx.vec <- which(ref.ss.is.max.cpn.cpnA.cpnB.logical.df[, 2] == 1)
 
       sample.comparison.list[[samp]]$diptest_for_AI_pval <- as.numeric(dip.test(ref.ss.lr.baf.df$BAF)$p.val)
-      sample.comparison.list[[samp]]$ASCAT_called_as_AI <- ifelse(ref.ss.lr.baf.df$BAFsegmented[1]!=0.5,TRUE,FALSE)
+      sample.comparison.list[[samp]]$ASCAT_called_as_AI <- ifelse(ref.ss.lr.baf.df$BAFsegmented[1] != 0.5, TRUE, FALSE)
       samples.to.test.vec <- sample.vec[ ! sample.vec %in%  samp]
       sample.comparison.list <- assessPhasingAcrossSelectedSamples(seg.name = seg.name,
                                                                   sample.comparison.list = sample.comparison.list,
@@ -302,13 +338,17 @@ getMixturePhasingResultsForSegment <- function(sample.to.phase.seg,
   for ( SNP.idx in 1:nrow(phas.ss.cpnA.cpnB.df) ) {
 
     if (SNP.idx %in% all.samp.seg.phasing.ability.list[[sample.to.phase.seg]]$maj_is_cpnA_idx_vec) {
+
       current.maj.cpn.col.idx <- 1
       current.min.cpn.col.idx <- 2
+
     }#end if (SNP.idx%in%all.samp.seg.phasing.ability.list[[sample.to.phase.seg]]$maj_is_cpnA_idx_vec)
 
     if (SNP.idx %in% all.samp.seg.phasing.ability.list[[sample.to.phase.seg]]$maj_is_cpnB_idx_vec) {
+
       current.maj.cpn.col.idx <- 2
       current.min.cpn.col.idx <- 1
+      
     }# end if (SNP.idx%in%all.samp.seg.phasing.ability.list[[sample.to.phase.seg]]$maj_is_cpnB_idx_vec)
     
     all.s.SNP.sep.scores <- c()
@@ -316,7 +356,11 @@ getMixturePhasingResultsForSegment <- function(sample.to.phase.seg,
     for ( samp in all.passing.samples.vec ) {
 
       ss.lr.baf.df <- asas.lr.baf.lists[[samp]][[seg.name]]
-      ss.cpnA.cpnB.df <- calculateSNPsRawCopyNumberAB(logr.vec=ss.lr.baf.df$logR, baf.vec=ss.lr.baf.df$BAF, tumor.ploidy=ploidy.est.vec[samp], tumor.purity=purity.est.vec[samp], gamma.val=gamma.val)
+      ss.cpnA.cpnB.df <- calculateSNPsRawCopyNumberAB(logr.vec = ss.lr.baf.df$logR,
+                                                      baf.vec = ss.lr.baf.df$BAF,
+                                                      tumor.ploidy = ploidy.est.vec[samp],
+                                                      tumor.purity = purity.est.vec[samp],
+                                                      gamma.val = gamma.val)
       ss.SNP.cpnA <- ss.cpnA.cpnB.df[SNP.idx, current.maj.cpn.col.idx]
       ss.SNP.cpnB <- ss.cpnA.cpnB.df[SNP.idx, current.min.cpn.col.idx]
 
@@ -327,8 +371,7 @@ getMixturePhasingResultsForSegment <- function(sample.to.phase.seg,
 
     }#end for ( samp in all.passing.samples.vec ) {
 
-    #
-    if (mean(all.s.SNP.sep.scores) >= 0) {
+    if (mean(all.s.SNP.sep.scores) > 0) {
 
       change.from.ref <- c(change.from.ref, 0)
 
@@ -382,3 +425,4 @@ getMixturePhasingResultsForSegment <- function(sample.to.phase.seg,
 }
 
 
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                
