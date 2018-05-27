@@ -3,7 +3,7 @@ args = commandArgs(trailingOnly=TRUE)
 patient <- args[1]
 allow.dip.test.phasing.flag <- as.logical(args[2])
 output.directory.base.path <- args[3]
-data.format.to.use <- args[4]#Defulat for this is MEDICC, but can specify TRACERx_exome, TRACERx_snp_array or TRACERx_WGS
+data.format.to.use <- args[4]#Default for this is MEDICC, but can specify TRACERx_exome, TRACERx_snp_array or TRACERx_WGS
 snp.file.path <- args[5]#Points towards the snp files, of whatever format they are given that should be used based on data.format to use.
 seg.file.path <- args[6]#Pintts towards the seg files, of whatever format they should be determined byh the data.format.to.use flag.
 
@@ -56,16 +56,16 @@ current.dir <-  LocationOfThisScript()
 # medicc.mphase.command <- paste("Rscript", mphase.script.path, patient, allow.dip.test.phasing.flag, data.format.to.use, snp.file.path, seg.file.path, sep=" ")
 
 ##Debugging option parameters:
-patient <- "MET073"
-allow.dip.test.phasing.flag  <- FALSE
-output.directory.base.path <- paste("/home/camp/watkint/working/watkint/data/brastianos/release_v2/","B_", patient, "/exome/CN_het_TRACERx_no_diptest/", sep = "")
-data.format.to.use <- "TRACERx_exome"
-snp.file.path <- paste0(output.directory.base.path, patient, "_TRACERx_input_paths_df.txt")
-seg.file.path <- paste("/home/camp/watkint/working/watkint/data/brastianos/release_v2/", "B_", patient, "/exome/MSAI/", patient, "_joint_segs_all_ascat_info.txt", sep = "")
-##########
-mphase.script.path <- "/home/camp/watkint/working/watkint/scripts/multiregioncopynum/mphase.R"
-#TRACERx format for TRACERx example
-tracerx.mphase.command <- paste("Rscript", mphase.script.path, patient, allow.dip.test.phasing.flag, data.format.to.use, snp.file.path, seg.file.path, sep= " ")
+# patient <- "MET073"
+# allow.dip.test.phasing.flag  <- FALSE
+# output.directory.base.path <- paste("/home/camp/watkint/working/watkint/data/brastianos/release_v2/","B_", patient, "/exome/CN_het_TRACERx_no_diptest/", sep = "")
+# data.format.to.use <- "TRACERx_exome"
+# snp.file.path <- paste0(output.directory.base.path, patient, "_TRACERx_input_paths_df.txt")
+# seg.file.path <- paste("/home/camp/watkint/working/watkint/data/brastianos/release_v2/", "B_", patient, "/exome/MSAI/", patient, "_joint_segs_all_ascat_info.txt", sep = "")
+# ##########
+# mphase.script.path <- "/home/camp/watkint/working/watkint/scripts/multiregioncopynum/mphase.R"
+# #TRACERx format for TRACERx example
+# tracerx.mphase.command <- paste("Rscript", mphase.script.path, patient, allow.dip.test.phasing.flag, data.format.to.use, snp.file.path, seg.file.path, sep= " ")
 
 # #Debugging option parameters:
 # patient <- "ETX014"
