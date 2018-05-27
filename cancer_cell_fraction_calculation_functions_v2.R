@@ -330,7 +330,6 @@ determineCCFClonalityOfSegment <- function(s.samps.int.ob.xp.cpn.df,
         }#end if (samp.ph.cpnX.vs.samp.round.mean.obs.cpnX.test$p.val < 1 - confidence.interval.threshold) {
 
   }#for ( samp in sample.vec ) {
-
   seg.chr.start.end.vec <- unlist(strsplit(seg.name, split=":"))
   chr <- as.numeric(seg.chr.start.end.vec[1])
   start <- as.numeric(seg.chr.start.end.vec[2])
@@ -353,7 +352,6 @@ determineCCFClonalityOfSegment <- function(s.samps.int.ob.xp.cpn.df,
         }#if (samp.maj.is.cpnA.cpnB.BAF.vs.exp.BAF.test$p.val < (1 - confidence.interval.threshold)) {
 
   }#end for ( samp in sample.vec ) {
-
   #Finally check what the CCF is of each region if we assume subclonality
   max.CCF <- 0
   poss.sc.cpnX.low <- min(unique(floor(s.samps.int.ob.xp.cpn.df[, paste0("mean_obs_", cpnX)])))
@@ -372,7 +370,6 @@ determineCCFClonalityOfSegment <- function(s.samps.int.ob.xp.cpn.df,
 
   }#end or (samp in sample.vec) {
   #Now determine whether to explore subclonality:
-
   if (all.samp.cpnX.clonal.t.test == TRUE | all.samp.BAF.clonal.t.test == TRUE | max.CCF < min.CCF.to.consider.val) {
 
     final.all.clonal.flag <- TRUE
@@ -635,4 +632,4 @@ chooseLowHighSubclonalCPNWithMoreThanTwoPossibilities <- function(s.samps.int.ob
 
     return(c(ss.poss.sc.cpnX.low, ss.poss.sc.cpnX.high))
 
-}
+}  
