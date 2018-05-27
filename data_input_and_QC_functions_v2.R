@@ -110,8 +110,6 @@ getSNPDataForTRACERxWGS <- function(pt.file.paths.df) {
 
     samp.logr.baf.path <- pt.file.paths.df[pt.file.paths.df$sample == samp, ]$samp_logr_baf_file_path
     load(samp.logr.baf.path)#gives tumor.baf_logr
-
-
     samp.seg.path <- pt.file.paths.df[pt.file.paths.df$sample == samp, ]$samp_seg_file_path
     load(samp.seg.path)#gives seg
 
@@ -123,8 +121,7 @@ getSNPDataForTRACERxWGS <- function(pt.file.paths.df) {
 
     all.regions.ASCAT.list <- list()
 
-
-      for ( j in 1:nrow(seg) ) {
+    for ( j in 1:nrow(seg) ) {
 
         if(nrow(ASCAT.summary[ASCAT.summary$chrom == seg[j ,]$chr 
                             & ASCAT.summary$pos >= seg[j ,]$startpos
@@ -513,3 +510,4 @@ cleanAndErrorCheckSNPs <- function(all.samp.SNP.list, min.cons.seg.df, allow.log
   return(working.all.samp.SNP.list)
 
 }#end <- function(all.samp.SNP.list, min.cons.seg.df)
+     
