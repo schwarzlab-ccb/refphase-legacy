@@ -632,4 +632,4 @@ chooseLowHighSubclonalCPNWithMoreThanTwoPossibilities <- function(s.samps.int.ob
 
     return(c(ss.poss.sc.cpnX.low, ss.poss.sc.cpnX.high))
 
-}  
+}
