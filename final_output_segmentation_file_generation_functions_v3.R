@@ -359,13 +359,13 @@ addNewRawAndIntCPNCallsToFinalSegmentation <- function(seg.name.vec,
                 #Now let's calculate the int toal copy number that we're going to use:
                 #Let's set the total copy number
 
-                if (nrow(ss.dp.w.logr.only.df) > 0 & seg.has.fewer.than.min.hz.flag == TRUE) {
+                if (nrow(datapoints.w.logr.only.df) > 0 & seg.has.fewer.than.min.hz.flag == TRUE) {
 
                     all.seg.df[samp.seg.name,]$non_hz_total_raw_cpn <- median(ss.dp.w.logr.only.df$tot_raw_un_ph_cpn)
                     all.seg.df[samp.seg.name,]$cnTotal <-  round(median(ss.dp.w.logr.only.df$tot_raw_un_ph_cpn))
 
 
-                } else if (nrow(ss.dp.w.logr.only.df) == 0 & nrow(ss.baf.lr.baf.df) > 0) {
+                } else if (nrow(datapoints.w.logr.only.df) == 0 & nrow(ss.baf.lr.baf.df) > 0) {
 
                   all.seg.df[samp.seg.name,]$total_raw_cpn <- median(c(ss.dp.w.logr.only.df$tot_raw_un_ph_cpn, (as.numeric(ph.cpnA.vec) + as.numeric(ph.cpnB.vec))))
 

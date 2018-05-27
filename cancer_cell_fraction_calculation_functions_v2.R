@@ -357,9 +357,9 @@ determineCCFClonalityOfSegment <- function(s.samps.int.ob.xp.cpn.df,
   poss.sc.cpnX.low <- min(unique(floor(s.samps.int.ob.xp.cpn.df[, paste0("mean_obs_", cpnX)])))
   poss.sc.cpnX.high <- max(unique(ceiling(s.samps.int.ob.xp.cpn.df[, paste0("mean_obs_", cpnX)])))
   for (samp in sample.vec) {
-
-        ss.mean.osbs.ph.cpnX  <- s.samps.int.ob.xp.cpn.df[samp, paste0("mean_obs_", cpnX)]
-        ss.fracs.to.use.vec <- getCCFractionNeeded(ss.mean.osbs.ph.cpnX, poss.sc.cpnX.low, poss.sc.cpnX.high)
+        print(s.samps.int.ob.xp.cpn.df)
+        ss.mean.obs.ph.cpnX  <- s.samps.int.ob.xp.cpn.df[samp, paste0("mean_obs_", cpnX)]
+        ss.fracs.to.use.vec <- getCCFractionNeeded(ss.mean.obs.ph.cpnX, poss.sc.cpnX.low, poss.sc.cpnX.high)
         ss.min.CCF <- min(ss.fracs.to.use.vec)
 
         if (ss.min.CCF > max.CCF) {
