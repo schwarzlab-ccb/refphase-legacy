@@ -34,7 +34,7 @@ addOriginalCPNValuesAndCallsVsPloidyToOutputSegmentation <- function(sample.vec,
             all.segs.df[samp.seg.name,]$orig_cnTotal <- all.segs.df[samp.seg.name,]$orig_nMinor + all.segs.df[samp.seg.name,]$orig_nMajor
 
         }#end for ( seg.name in seg.name.vec ) {
-          
+
     }#end for ( samp in sample.vec ) {
 
     return(all.segs.df)
@@ -280,10 +280,12 @@ addNewRawAndIntCPNCallsToFinalSegmentation <- function(seg.name.vec,
                     all.seg.df[samp.seg.name,]$ph_raw_cpnB <- ifelse(median(as.numeric(ph.cpnB.vec)) < 0 , 0, median(as.numeric(ph.cpnB.vec)))
                     all.seg.df[samp.seg.name,]$ph_int_cpnA <- round(as.numeric(all.seg.df[samp.seg.name,]$ph_raw_cpnA))
                     all.seg.df[samp.seg.name,]$ph_int_cpnB <- round(as.numeric(all.seg.df[samp.seg.name,]$ph_raw_cpnB))
-                    all.seg.df[samp.seg.name,]$ph_hz_total_raw_cpn <- as.numeric(all.seg.df[samp.seg.name,]$ph_int_cpnA) + as.numeric(all.seg.df[samp.seg.name,]$ph_int_cpnB)
+                    all.seg.df[samp.seg.name,]$ph_hz_total_raw_cpn <- as.numeric(all.seg.df[samp.seg.name,]$ph_raw_cpnA) + as.numeric(all.seg.df[samp.seg.name,]$ph_raw_cpnB)
                     all.seg.df[samp.seg.name,]$min_int_cpnX <- min(all.seg.df[samp.seg.name,]$ph_int_cpnA, all.seg.df[samp.seg.name,]$ph_int_cpnB)
                     all.seg.df[samp.seg.name,]$max_int_cpnX <- max(all.seg.df[samp.seg.name,]$ph_int_cpnA, all.seg.df[samp.seg.name,]$ph_int_cpnB)
 
+                    all.seg.df[samp.seg.name,]$ph_hz_total_cpn <- round(all.seg.df[samp.seg.name,]$ph_hz_total_raw_cpn)
+                    all.seg.df[samp.seg.name,]$non_hz_total_cpn <- round(all.seg.df[samp.seg.name,]$non_hz_total_raw_cpn)
 
                 }
                 #Load in all available BAF and LogR data to fill in the rest of the fields
@@ -434,7 +436,7 @@ retestSubclonalAmps <- function(all.seg.df, all.samp.ph.BAF.df.list, all.samp.lo
             c.g.samp.datapoints.w.BAF.df <- all.samp.ph.BAF.df.list[[current.gain.samp]]
             c.g.baf.lr.baf.df <- c.g.samp.datapoints.w.BAF.df[c.g.samp.datapoints.w.BAF.df$chrom == as.numeric(c.g.chr.start.end.vec[1]) &
                                                         c.g.samp.datapoints.w.BAF.df$pos >= as.numeric(c.g.chr.start.end.vec[2]) &
-                                                        c.g.samp.datapoints.w.BAF.df$pos <= as.numeric(c.g.chr.start.end.vec[3]), ,drop=FALSE]
+                                                        c.g.samp.datapoints.w.BAF.df$pos <= as.numeric(c.g.chr.start.end.vec[3]), ,drop = FALSE]
             c.g.samp.datapoints.w.logr.only.df <-  all.samp.logr.df.list[[current.gain.samp]]
 
             if (nrow(c.g.samp.datapoints.w.logr.only.df) > 0) {
@@ -499,6 +501,12 @@ addOriginalSegmentInfoToFinalSegmentation <- function(seg.name.vec,
     for ( samp in sample.vec ) {
 
         for ( seg.name in seg.name.vec ) {
+            # samp <- "B_MET072_T1-R1"
+            #samp <- "B_MET072_MT-M1"
+           # samp <- "B_MET072_T1-R1"
+
+            #seg.name <- "18:14796214:39661204"
+           # seg.name <- "18:14796214:39661204"
 
             if (length(sample.vec) > 1) {
                 samp.seg.name <- paste0(samp, ":", seg.name)
@@ -540,8 +548,6 @@ addOriginalSegmentInfoToFinalSegmentation <- function(seg.name.vec,
                 print(seg.name)
                 print(matching.chr.samp.seg.df)
                 print("Error, minimum consistent region segmentation doesn't map back to any original segments")
-
-                #So if the segment doesn't match back to any segment exactly...
                 #Which segment does it overlap most with...
                 chr.samp.seg.range.df <- chr.samp.seg.df[,c("chr", "startpos", "endpos")]
                 colnames(chr.samp.seg.range.df) <- c("Chromosome", "start", "end")
@@ -553,22 +559,49 @@ addOriginalSegmentInfoToFinalSegmentation <- function(seg.name.vec,
                 test.gen.range <- makeGRangesFromDataFrame(seg.test.df)
                 #find overlaps:
                 hit.obj <- findOverlaps(ref.gen.range, test.gen.range)
-                #Compute percent overlap and filter the hits:
                 overlaps <- pintersect(ref.gen.range[queryHits(hit.obj)], test.gen.range[subjectHits(hit.obj)])
                 overlap.df <- as.data.frame(overlaps)
-                print("overlap.df")
-                print(overlap.df)
+                percent.overlap.vec <- width(overlaps) / width(test.gen.range[subjectHits(hit.obj)])
+                overlap.df$percent_overlap <- as.numeric(percent.overlap.vec)
+                #Should probably do percent overlaps
+
+
 
                 if (nrow(overlap.df) > 0) {
 
                   overlap.df <- overlap.df[with(overlap.df, order(-width)), ]
 
-                  most.overlapping.seg.df <- chr.samp.seg.df[chr.samp.seg.df$chr == chr.samp.seg.df$seqnames & 
-                                                             chr.samp.seg.df$startpos == chr.samp.seg.df$start &
-                                                             chr.samp.seg.df$endpos == chr.samp.seg.df$end, ,drop = FALSE]
+                  print("chr.samp.seg.df")
+                  print(chr.samp.seg.df)
+                  print("overlap.df")
+                  print(overlap.df)
 
-                  all.seg.df[samp.seg.name, ]$orig_seg_name <- paste(most.overlapping.seg.df[1,]$chr, most.overlapping.seg.df[1,]$startpos, most.overlapping.seg.df[1,]$endpos, sep=":")
+                  most.overlapping.seg.df <- chr.samp.seg.df[chr.samp.seg.df$chr %in% overlap.df$seqnames & 
+                                                             chr.samp.seg.df$startpos %in% overlap.df$start &
+                                                             chr.samp.seg.df$endpos %in% overlap.df$end, ,drop = FALSE]
+
+                  all.seg.df[samp.seg.name, ]$orig_seg_name <- paste(most.overlapping.seg.df[1 ,]$chr, most.overlapping.seg.df[1 ,]$startpos, most.overlapping.seg.df[1 ,]$endpos, sep=":")
                   all.seg.df[samp.seg.name, ]$orig_cpn_call_vs_ploidy <- most.overlapping.seg.df[1 ,]$orig_cpn_call_vs_ploidy
+
+                  if (all.seg.df[samp.seg.name, ]$orig_seg_name == "NA:NA:NA") {
+
+                    nearest.obj <- nearest(test.gen.range, ref.gen.range)
+                    dist <- distanceToNearest(test.gen.range, ref.gen.range, select = "arbitrary")
+                    nearest.grange <- ref.gen.range[nearest.obj[1],]
+
+                    nearest.gr.df <- as.data.frame(nearest.grange)
+
+                    nearest.seg.df <- chr.samp.seg.df[chr.samp.seg.df$chr %in% nearest.gr.df$seqnames & 
+                                                               chr.samp.seg.df$startpos %in% nearest.gr.df$start &
+                                                               chr.samp.seg.df$endpos %in% nearest.gr.df$end, ,drop = FALSE]
+
+
+                    all.seg.df[samp.seg.name, ]$orig_seg_name <- paste(nearest.seg.df[1 ,]$chr, nearest.seg.df[1 ,]$startpos, nearest.seg.df[1 ,]$endpos, sep=":")
+                    all.seg.df[samp.seg.name, ]$orig_cpn_call_vs_ploidy <- nearest.seg.df[1 ,]$orig_cpn_call_vs_ploidy
+                                           
+                    #Let's do the nearest thing...
+
+                  }
 
                 } else {
 
@@ -828,22 +861,22 @@ addWithinSampleClonalityAndCCFToFinalSegmentation <- function(seg.name.vec
 
 
                         }  else if ( median(ss.frac.poss.sc.cpnX.low.vec) > median(ss.frac.poss.sc.cpnX.high.vec) ) {
-                            cpnA.test.subclonal <- wilcox.test(ss.frac.poss.sc.cpnX.low.vec, mu = mu.ccf.val, alternative = "less", exact = FALSE)
+                            cpnA.test.subclonal <- wilcoxTestWithErrorHandling(ss.frac.poss.sc.cpnX.low.vec, mu = mu.ccf.val, alternative = "less", exact = FALSE)
                             all.seg.df[samp.seg.name, paste0("sc_", cpnX, "_high_or_low_dominate")] <- "LOW"
                             all.seg.df[samp.seg.name, paste0("sc_", cpnX, "_vs_min_CCF_pval")] <- cpnA.test.subclonal$p.value
 
                             #Now let's try with min.cpn.to.consider.val
                             mu.cpn.val <- all.seg.df[samp.seg.name, paste0("psc_", cpnX, "_low")] + min.cpn.to.consider.val
-                            cpnA.cpn.mu.test.subclonal <- wilcox.test(ph.cpnX.vec, mu = mu.cpn.val, alternative = "greater", exact = FALSE)
+                            cpnA.cpn.mu.test.subclonal <- wilcoxTestWithErrorHandling(ph.cpnX.vec, mu = mu.cpn.val, alternative = "greater", exact = FALSE)
                             all.seg.df[samp.seg.name, paste0("sc_", cpnX, "_vs_min_cpn_pval")] <- cpnA.cpn.mu.test.subclonal$p.value
                             
                         } else {#end   if ( median(seg.CCF.val.list[[seg.name]][[samp]]$frac_cpnA_low_vec) > median(seg.CCF.val.list[[seg.name]][[samp]]$frac_cpnA_high_vec) ) {
-                            cpnA.test.subclonal <- wilcox.test(ss.frac.poss.sc.cpnX.high.vec, mu = mu.ccf.val, alternative = "less", exact = FALSE)
+                            cpnA.test.subclonal <- wilcoxTestWithErrorHandling(ss.frac.poss.sc.cpnX.high.vec, mu = mu.ccf.val, alternative = "less", exact = FALSE)
                             all.seg.df[samp.seg.name, paste0("sc_", cpnX, "_high_or_low_dominate")] <- "HIGH"
                             all.seg.df[samp.seg.name, paste0("sc_", cpnX, "_vs_min_CCF_pval")] <- cpnA.test.subclonal$p.value
 
                             mu.cpn.val <- all.seg.df[samp.seg.name, paste0("psc_", cpnX, "_high")] - min.cpn.to.consider.val
-                            cpnA.cpn.mu.test.subclonal <- wilcox.test(ph.cpnX.vec, mu = mu.cpn.val, alternative = "less", exact = FALSE)
+                            cpnA.cpn.mu.test.subclonal <- wilcoxTestWithErrorHandling(ph.cpnX.vec, mu = mu.cpn.val, alternative = "less", exact = FALSE)
                             all.seg.df[samp.seg.name, paste0("sc_", cpnX, "_vs_min_cpn_pval")] <- cpnA.cpn.mu.test.subclonal$p.value
 
                         }
@@ -1025,7 +1058,6 @@ addLogrDefinedCPNEventsToOutputSegmentation <- function(sample.vec,
 
                 }#end if (length(non.na.seg.cpn.event) != 0) {
 
-
         }#end for ( seg.name in seg.name.vec ) {
 
     }#end for ( samp in sample.vec ) {
@@ -1091,11 +1123,26 @@ addParallelEventsByMSAIToOutputSegmentation <- function(all.segs.df) {
 
   #So first just subset by anything with MSAI calls:
 
-  matched.MSAI.loss.segs.df <- all.segs.df[(! is.na(all.segs.df$any_across_samp_MSAI)) & all.segs.df$any_across_samp_MSAI == TRUE & all.segs.df$cpn_event_vs_ploidy %in% c("loss", "deep_loss"),]
+  matched.MSAI.loss.segs.df <- all.segs.df[(! is.na(all.segs.df$any_across_samp_MSAI)) 
+                                            & all.segs.df$any_across_samp_MSAI == TRUE
+                                            & all.segs.df$cpn_event_vs_ploidy %in% c("loss", "deep_loss"),]
+  matched.MSAI.gain.segs.df <- all.segs.df[(! is.na(all.segs.df$any_across_samp_MSAI))
+                                            & all.segs.df$any_across_samp_MSAI == TRUE
+                                            & all.segs.df$cpn_event_vs_ploidy %in% c("gain", "amp"),]
+  matched.MSAI.LOH.segs.df <- all.segs.df[(! is.na(all.segs.df$any_across_samp_MSAI)) 
+                                            & all.segs.df$any_across_samp_MSAI == TRUE
+                                            & all.segs.df$min_int_cpnX == 0,]
+  matched.MSAI.LOH.or.loss.segs.df <- all.segs.df[(! is.na(all.segs.df$any_across_samp_MSAI)) 
+                                                  & all.segs.df$any_across_samp_MSAI == TRUE 
+                                                  & (all.segs.df$min_int_cpnX == 0 | all.segs.df$cpn_event_vs_ploidy %in% c("loss", "deep_loss")),]
 
-  matched.MSAI.gain.segs.df <- all.segs.df[(! is.na(all.segs.df$any_across_samp_MSAI)) & all.segs.df$any_across_samp_MSAI == TRUE & all.segs.df$cpn_event_vs_ploidy %in% c("gain", "amp"),]
   MSAI.gain.seg.names.vec <- unique(matched.MSAI.gain.segs.df$seg_name)
   MSAI.loss.seg.names.vec <- unique(matched.MSAI.loss.segs.df$seg_name)
+  MSAI.LOH.seg.names.vec <- unique(matched.MSAI.LOH.segs.df$seg_name)
+  MSAI.LOH.or.loss.seg.names.vec <- unique(matched.MSAI.LOH.or.loss.segs.df$seg_name)
+
+  #Todo add strict AMP definition here....
+
 
   for ( seg.name in MSAI.gain.seg.names.vec ) {
 
@@ -1105,12 +1152,11 @@ addParallelEventsByMSAIToOutputSegmentation <- function(all.segs.df) {
 
       # print("Parallel gain/amp found")
       # print(seg.MSAI.gain.df)
-      all.segs.df[rownames(seg.MSAI.gain.df) ,]$is_parallel_gain_loss <- "gain"
+      all.segs.df[rownames(seg.MSAI.gain.df) ,]$is_parallel_gain_and_or_amp <- TRUE
 
     }#end if("cpnA" %in% seg.MSAI.gain.df$dominant_allele & "cpnB" %in% seg.MSAI.gain.df$dominant_allele) {
 
   }#end for ( seg.name in MSAI.gain.seg.names.vec ) {
-
 
   for ( seg.name in MSAI.loss.seg.names.vec ) {
 
@@ -1120,15 +1166,39 @@ addParallelEventsByMSAIToOutputSegmentation <- function(all.segs.df) {
 
       # print("Parallel loss/amp found")
       # print(seg.MSAI.loss.df)
-
-      all.segs.df[rownames(seg.MSAI.loss.df) ,]$is_parallel_gain_loss <- "loss"
+      all.segs.df[rownames(seg.MSAI.loss.df) ,]$is_parallel_loss <- TRUE
 
     }#end  if("cpnA" %in% seg.MSAI.loss.df$dominant_allele & "cpnB" %in% seg.MSAI.loss.df$dominant_allele) {
 
   }#end  for ( seg.name in MSAI.loss.seg.names.vec ) {
+
+  for ( seg.name in MSAI.LOH.seg.names.vec ) {
+
+    seg.MSAI.LOH.df <- matched.MSAI.LOH.segs.df[matched.MSAI.LOH.segs.df$seg_name == seg.name ,]
+
+    if ("cpnA" %in% matched.MSAI.LOH.segs.df$dominant_allele & "cpnB" %in% seg.MSAI.LOH.df$dominant_allele) {
+
+      all.segs.df[rownames(seg.MSAI.loss.df) ,]$is_parallel_LOH <- TRUE
+
+    }
+
+  }
+
+  for ( seg.name in MSAI.LOH.or.loss.seg.names.vec ) {
+
+    seg.MSAI.LOH.or.loss.df <- matched.MSAI.LOH.or.loss.segs.df[matched.MSAI.LOH.or.loss.segs.df$seg_name == seg.name ,]
+
+    if ("cpnA" %in% seg.MSAI.LOH.or.loss.df$dominant_allele & "cpnB" %in% seg.MSAI.LOH.or.loss.df$dominant_allele) {
+
+      all.segs.df[rownames(seg.MSAI.LOH.or.loss.df) ,]$is_parallel_loss_and_or_LOH <- TRUE
+
+    }
+
+  }
+
   #Todo, Subclonal parallel loss/gains..
   #Todo, parallel amps /deep losses?
-  #Todo, use he conversion to parallel amps?
+  #Todo, use the conversion to parallel amps?
   return(all.segs.df)
 }#end addParallelEventsByMSAIToOutputSegmentation <- function(all.segs.df) {
 
@@ -1175,6 +1245,47 @@ addAcrossSampleAlleleSpecificClonalityCalls <- function(all.seg.df, sample.vec, 
 }#end addAcrossSampleAlleleSpecificClonalityCalls <- function(all.seg.df, sample.vec, seg.name.vec) {
 
 
+##
+##Params:
+##
+##Returns:
+##
+addPanCanColumnDefinitionToSegDF <- function(all.seg.df) {
+
+  for ( seg.name in seg.name.vec ) {
+
+    samp.seg.name.vec <- paste0(sample.vec, ":", seg.name)
+
+    ss.df <- all.seg.df[samp.seg.name.vec, ]
+    #all.samps.seg.df <- all.seg.df[samp.seg.name.vec,]
+    if(is.na(all.seg.df[samp.seg.name.vec ,]$within_samp_sc_cpnA_present[1]) | is.na(all.seg.df[samp.seg.name.vec ,]$within_samp_sc_cpnB_present[1])) {
+
+      next
+
+    } else {
+
+      #Todo refactor the strict definitions so they work correctly...
+      all.seg.df[samp.seg.name.vec ,]$pt_seg_parallel_MSAI_strict_gain <- any(ss.df$is_parallel_gain_and_or_amp, na.rm = TRUE)
+      all.seg.df[samp.seg.name.vec ,]$pt_seg_parallel_MSAI_gain_or_amp <- any(ss.df$is_parallel_gain_and_or_amp, na.rm = TRUE)
+      all.seg.df[samp.seg.name.vec ,]$pt_seg_parallel_MSAI_strict_amp <- any(ss.df$is_parallel_gain_and_or_amp, na.rm = TRUE)
+      ###############################################################################################
+      all.seg.df[samp.seg.name.vec ,]$pt_seg_parallel_MSAI_loss <- any(ss.df$is_parallel_loss, na.rm = TRUE)
+      all.seg.df[samp.seg.name.vec ,]$pt_seg_parallel_MSAI_LOH <- any(ss.df$is_parallel_LOH, na.rm = TRUE)
+      all.seg.df[samp.seg.name.vec ,]$pt_seg_parallel_MSAI_loss_or_LOH <- any(ss.df$is_parallel_loss_and_or_LOH, na.rm = TRUE)
+      all.seg.df[samp.seg.name.vec ,]$pt_seg_cl_loss_LOH_no_MSAI <- (! any(ss.df$any_across_samp_MSAI, na.rm = TRUE)) & all(ss.df$cpn_event_vs_ploidy %in% c("loss", "deep_loss") | ss.df$min_int_cpnX == 0)
+      all.seg.df[samp.seg.name.vec ,]$pt_seg_cl_gain_amp_no_MSAI <- (! any(ss.df$any_across_samp_MSAI, na.rm = TRUE)) & all(ss.df$cpn_event_vs_ploidy %in% c("gain", "amp"))
+      all.seg.df[samp.seg.name.vec ,]$pt_seg_sc_loss_LOH_incl_MSAI <- (any(ss.df$any_across_samp_MSAI, na.rm = TRUE) & all(ss.df$cpn_event_vs_ploidy %in% c("loss", "amp"))) | (! (all(ss.df$cpn_event_vs_ploidy %in% c("loss", "deep_loss") | ss.df$min_int_cpnX == 0)))& (any(ss.df$cpn_event_vs_ploidy %in% c("loss", "deep_loss") | ss.df$min_int_cpnX == 0))  
+      all.seg.df[samp.seg.name.vec ,]$pt_seg_sc_gain_amp_incl_MSAI <- (any(ss.df$any_across_samp_MSAI, na.rm = TRUE) & all(ss.df$cpn_event_vs_ploidy %in% c("gain", "amp"))) | ((! all(ss.df$cpn_event_vs_ploidy %in% c("gain", "amp"))) & any(ss.df$cpn_event_vs_ploidy %in% c("gain", "amp")))
+
+    }#end  if( ! is.na(all.seg.df[samp.seg.name.vec ,]$within_samp_sc_cpnA_present[1]) | ! is.na(all.seg.df[samp.seg.name.vec ,]$within_samp_sc_cpnB_present[1])) {
+
+
+  }#end   for ( seg.name in seg.name.vec ) {
+  
+  return(all.seg.df)
+
+}#end addPanCanColumnDefinitionToSegDF <- function(all.seg.df) {
+
 
 
 testFinalOutputDataframe <- function(final.joint.segs.df) {
@@ -1188,13 +1299,11 @@ testFinalOutputDataframe <- function(final.joint.segs.df) {
     }
 
     #Test original adding
-
     if ( ! all(final.joint.segs.df$orig_nMajor >= final.joint.segs.df$orig_nMinor) ) {
 
-        stop("Original nMajor not always greter than orginal nMinor")
+        stop("Original nMajor not always greater than orginal nMinor")
 
     }#end if ( ! all(final.joint.segs.df$orig_nMajor < final.joint.segs.df$orig_nMinor) ) {
-
 
 }#end testFinalOutputDataframe
 
@@ -1340,7 +1449,10 @@ initialiseFullOutputDataframe <- function(seg.name.vec, ploidy.est.vec, purity.e
                 MSAI = rep(NA, nr),#Means tha
                 raw_cpn_MSAI = rep(NA, nr),#Todo, decide whether this is used or diff from ref samp
                 dominant_allele = rep(NA, nr),
-                is_parallel_gain_loss = rep(NA, nr),
+                is_parallel_gain_and_or_amp = rep(NA, nr),
+                is_parallel_loss = rep(NA, nr),
+                is_parallel_LOH = rep(NA, nr),
+                is_parallel_loss_and_or_LOH = rep(NA, nr),
                 #disease level stats
                 any_across_samp_MSAI = rep(NA, nr),
                 any_within_samp_sc_cpnA = rep(NA, nr),
@@ -1355,6 +1467,17 @@ initialiseFullOutputDataframe <- function(seg.name.vec, ploidy.est.vec, purity.e
                 across_samp_sc_LOH = rep(NA, nr),
                 across_samp_cl_cpn_vs_ploidy_present = rep(NA, nr),
                 across_samp_sc_cpn_vs_ploidy_present = rep(NA, nr),
+                #Patient plotting 
+                pt_seg_parallel_MSAI_strict_gain = rep(NA, nr),
+                pt_seg_parallel_MSAI_gain_or_amp = rep(NA, nr),
+                pt_seg_parallel_MSAI_strict_amp = rep(NA, nr),
+                pt_seg_parallel_MSAI_loss = rep(NA, nr),
+                pt_seg_parallel_MSAI_LOH = rep(NA, nr),
+                pt_seg_parallel_MSAI_loss_or_LOH = rep(NA, nr),
+                pt_seg_cl_loss_LOH_no_MSAI = rep(NA, nr),
+                pt_seg_cl_gain_amp_no_MSAI = rep(NA, nr),
+                pt_seg_sc_loss_LOH_incl_MSAI = rep(NA, nr),
+                pt_seg_sc_gain_amp_incl_MSAI = rep(NA, nr),
                 #sample summary data that could go into a different dataframe
                 orig_wgii = rep(NA, nr),
                 wgii = rep(NA, nr),
@@ -1372,6 +1495,7 @@ initialiseFullOutputDataframe <- function(seg.name.vec, ploidy.est.vec, purity.e
                 purity_adj_logr_thresh_amp = rep(NA, nr),
                 stringsAsFactors = FALSE
                 )
+
         if (make.row.names.seg.name.alone == TRUE ) {
             #Todo, change logic here to something more sensible... this should only be allowed when there's only one sample
             row.names.vec <- seg.name.vec
@@ -1386,4 +1510,4 @@ initialiseFullOutputDataframe <- function(seg.name.vec, ploidy.est.vec, purity.e
         rownames(all.seg.df) <- row.names.vec
         return(all.seg.df)
 
-}
+}                                                                                                                                                                                                                                                                                                                                                                                                     

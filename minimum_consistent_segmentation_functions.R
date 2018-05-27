@@ -17,7 +17,7 @@ generateMinimumConsistentSegmentation <- function(orig.cpn.segs.df, chroms.vec =
     current.end <- 0
 
     while (current.end < max(chr.seg.start.vec) & 
-          length(chr.seg.start.vec[chr.seg.start.vec > current.end]) > 0 ) {
+            length(chr.seg.start.vec[chr.seg.start.vec > current.end]) > 0 ) {
       ##Added this condition to remove warning messages from a numeric(0) passed to min in the loop comparison, replaced this:
                 #& max(chr.seg.end.vec) > min(chr.seg.start.vec[chr.seg.start.vec > current.end])#potential bug with v low end positions? test later.
       current.start <- min(chr.seg.start.vec[chr.seg.start.vec > current.end])

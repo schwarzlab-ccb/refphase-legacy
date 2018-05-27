@@ -49,14 +49,6 @@ getCombinedBAFDipTestPhasing <- function(asas.lr.baf.lists,
 
     }
     #Now assess the samples that can actualy be phased...
-    #So now we need to recalculate the phasing stats over the samples which we think are actually have allelic imbalance and are phaseable...
-    a.s.sum.phas.df <- data.frame(mean_prop_SNPs_sep_across_samples = sapply(all.samp.seg.phasing.ability.list, function(x) x$mean_prop_SNPs_sep_across_samples),
-                                  diptest_for_AI_pval = sapply(all.samp.seg.phasing.ability.list, function(x) x$diptest_for_AI_pval),
-                                  ASCAT_called_as_AI = sapply(all.samp.seg.phasing.ability.list, function(x) x$ASCAT_called_as_AI),
-                                  comb_pval_SNP_sep_across_samps = sapply(all.samp.seg.phasing.ability.list, function(x) x$comb_wilcox_sep_pval_across_samps),
-                                  stringsAsFactors = FALSE)
-
-    #If s more than one sample that passes either ASCAT or diptest
     #initialise sthe seg mixture phasing to NULL so that, as a default, it won't be used:
     seg.mixture.phasing.list <- NULL
     if (nrow(poss.phas.s.df) > 0) {
@@ -76,11 +68,13 @@ getCombinedBAFDipTestPhasing <- function(asas.lr.baf.lists,
                                                                                                     purity.est.vec = purity.est.vec,
                                                                                                     gamma.val = gamma.val,
                                                                                                     min.num.hz.snp.phasing = min.num.hz.snp.phasing)
+
         phas.s.df <- data.frame(diptest_for_AI_pval = sapply(all.poss.phas.samp.seg.phasing.ability.list, function(x) x$diptest_for_AI_pval),
                                       ASCAT_called_as_AI = sapply(all.poss.phas.samp.seg.phasing.ability.list, function(x) x$ASCAT_called_as_AI),
                                       mean_prop_SNPs_sep_across_samples = sapply(all.poss.phas.samp.seg.phasing.ability.list, function(x) x$mean_prop_SNPs_sep_across_samples),
                                       comb_pval_SNP_sep_across_samps = sapply(all.poss.phas.samp.seg.phasing.ability.list, function(x) x$comb_wilcox_sep_pval_across_samps),
                                       stringsAsFactors = FALSE)
+
         seg.mixture.phasing.list <- getMixturePhasingResultsForSegment(sample.to.phase.seg = sample.to.phase.seg,
                                                                       sample.vec = poss.phas.sample.vec,
                                                                       poss.phas.s.df = phas.s.df,
@@ -199,8 +193,8 @@ assessPhasingAcrossSelectedSamples <- function(seg.name,
                                                         gamma.val = gamma.val)
 
     #old code had some checks here to make sure that these have the same number of rows, but if everything holds they should remain the same anyway...
-    other.samp.wilcox.test <-  wilcox.test( c(oth.ss.cpnA.cpnB.df[ref.ss.maj.is.cpnA.idx.vec,  1], oth.ss.cpnA.cpnB.df[ref.ss.maj.is.cpnB.idx.vec, 2]), 
-                                            c(oth.ss.cpnA.cpnB.df[ref.ss.maj.is.cpnA.idx.vec,  2], oth.ss.cpnA.cpnB.df[ref.ss.maj.is.cpnB.idx.vec, 1]), paired = TRUE)
+    other.samp.wilcox.test <-  wilcoxTestWithErrorHandling( c(oth.ss.cpnA.cpnB.df[ref.ss.maj.is.cpnA.idx.vec,  1], oth.ss.cpnA.cpnB.df[ref.ss.maj.is.cpnB.idx.vec, 2]), 
+                                                            c(oth.ss.cpnA.cpnB.df[ref.ss.maj.is.cpnA.idx.vec,  2], oth.ss.cpnA.cpnB.df[ref.ss.maj.is.cpnB.idx.vec, 1]), paired = TRUE)
 
     oth.ss.snps.same.as.ref <- length(which(c(oth.ss.cpnA.cpnB.df[ref.ss.maj.is.cpnA.idx.vec, 1], oth.ss.cpnA.cpnB.df[ref.ss.maj.is.cpnB.idx.vec, 2]) - 
                                             c(oth.ss.cpnA.cpnB.df[ref.ss.maj.is.cpnA.idx.vec, 2], oth.ss.cpnA.cpnB.df[ref.ss.maj.is.cpnB.idx.vec, 1]) > 0)) / nrow(oth.ss.cpnA.cpnB.df)
@@ -425,4 +419,4 @@ getMixturePhasingResultsForSegment <- function(sample.to.phase.seg,
 }
 
 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       

@@ -270,8 +270,8 @@ getPossibleLowAndHighSubclonalCPNStates <- function(seg.name,
       #Catch the edge case that all the seg's mean cpnX are equal
       if (length(unique(samps.mean.cpnX.vec)) == 1) {
 
-        ss.poss.sc.cpnX.low = 1#Should really be ploidy n this case.
-        ss.poss.sc.cpnX.high = unique(samps.mean.cpnX.vec)
+        ss.poss.sc.cpnX.low <- 1#Should really be ploidy n this case.
+        ss.poss.sc.cpnX.high <- unique(samps.mean.cpnX.vec)
         low.high.ss.poss.cpnX.vec <- c(ss.poss.sc.cpnX.low, ss.poss.sc.cpnX.low)
         #So what does this mean exactly?s
         use.preset.mean.frac.cpnX.low.high  <-  TRUE 
@@ -637,3 +637,4 @@ chooseLowHighSubclonalCPNWithMoreThanTwoPossibilities <- function(s.samps.int.ob
 
 }
 
+   

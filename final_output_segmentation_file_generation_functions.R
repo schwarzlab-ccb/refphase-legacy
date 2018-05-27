@@ -829,22 +829,22 @@ addWithinSampleClonalityAndCCFToFinalSegmentation <- function(seg.name.vec
 
 
                         }  else if ( median(ss.frac.poss.sc.cpnX.low.vec) > median(ss.frac.poss.sc.cpnX.high.vec) ) {
-                            cpnA.test.subclonal <- wilcox.test(ss.frac.poss.sc.cpnX.low.vec, mu = mu.ccf.val, alternative = "less", exact = FALSE)
+                            cpnA.test.subclonal <- wilcoxTestWithErrorHandling(ss.frac.poss.sc.cpnX.low.vec, mu = mu.ccf.val, alternative = "less", exact = FALSE)
                             all.seg.df[samp.seg.name, paste0("sc_", cpnX, "_high_or_low_dominate")] <- "LOW"
                             all.seg.df[samp.seg.name, paste0("sc_", cpnX, "_vs_min_CCF_pval")] <- cpnA.test.subclonal$p.value
 
                             #Now let's try with min.cpn.to.consider.val
                             mu.cpn.val <- all.seg.df[samp.seg.name, paste0("psc_", cpnX, "_low")] + min.cpn.to.consider.val
-                            cpnA.cpn.mu.test.subclonal <- wilcox.test(ph.cpnX.vec, mu = mu.cpn.val, alternative = "greater", exact = FALSE)
+                            cpnA.cpn.mu.test.subclonal <- wilcoxTestWithErrorHandling(ph.cpnX.vec, mu = mu.cpn.val, alternative = "greater", exact = FALSE)
                             all.seg.df[samp.seg.name, paste0("sc_", cpnX, "_vs_min_cpn_pval")] <- cpnA.cpn.mu.test.subclonal$p.value
                             
                         } else {#end   if ( median(seg.CCF.val.list[[seg.name]][[samp]]$frac_cpnA_low_vec) > median(seg.CCF.val.list[[seg.name]][[samp]]$frac_cpnA_high_vec) ) {
-                            cpnA.test.subclonal <- wilcox.test(ss.frac.poss.sc.cpnX.high.vec, mu = mu.ccf.val, alternative = "less", exact = FALSE)
+                            cpnA.test.subclonal <- wilcoxTestWithErrorHandling(ss.frac.poss.sc.cpnX.high.vec, mu = mu.ccf.val, alternative = "less", exact = FALSE)
                             all.seg.df[samp.seg.name, paste0("sc_", cpnX, "_high_or_low_dominate")] <- "HIGH"
                             all.seg.df[samp.seg.name, paste0("sc_", cpnX, "_vs_min_CCF_pval")] <- cpnA.test.subclonal$p.value
 
                             mu.cpn.val <- all.seg.df[samp.seg.name, paste0("psc_", cpnX, "_high")] - min.cpn.to.consider.val
-                            cpnA.cpn.mu.test.subclonal <- wilcox.test(ph.cpnX.vec, mu = mu.cpn.val, alternative = "less", exact = FALSE)
+                            cpnA.cpn.mu.test.subclonal <- wilcoxTestWithErrorHandling(ph.cpnX.vec, mu = mu.cpn.val, alternative = "less", exact = FALSE)
                             all.seg.df[samp.seg.name, paste0("sc_", cpnX, "_vs_min_cpn_pval")] <- cpnA.cpn.mu.test.subclonal$p.value
 
                         }

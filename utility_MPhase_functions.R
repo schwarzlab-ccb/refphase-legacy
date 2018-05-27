@@ -16,6 +16,78 @@ calculateSNPsRawCopyNumberAB <- function(logr.vec, baf.vec, tumor.ploidy, tumor.
 
 
 
+wilcoxTestWithErrorHandling <- function(x, y = NULL,
+            alternative = c("two.sided", "less", "greater"),
+            mu = 0, paired = FALSE, exact = FALSE, correct = TRUE,
+            conf.int = FALSE, conf.level = 0.95, errors.not.permitted="")
+             {
+    test.results <- tryCatch({
+
+      test.results <- wilcox.test(x = x,
+                                  y = y,
+                                  alternative = alternative,
+                                  mu = mu,
+                                  paired = paired,
+                                  exact = exact,
+                                  correct = correct,
+                                  conf.int = conf.int,
+                                  conf.level = conf.level)
+
+      if ( is.na(test.results[["p.value"]]) | is.nan(test.results[["p.value"]])) {
+
+        test.results[["stat"]] <- 1
+        test.results[["conf.int"]] <- c(NA, NA)
+        test.results[["p.value"]] <- 1
+        test.results[["p.val"]] <- 1
+
+      }
+      
+      return(test.results)
+
+      },
+       error = function(err) {
+          message(err)
+          write(paste(err$message, "\n"), stderr())
+          write("\n", stderr())
+          if(grepl("NULL", err$message) & "NULL" %in% errors.not.permitted){
+            stop("t.test ERROR with a NULL")
+          } else if (grepl("enough", err$message) & "enough" %in% errors.not.permitted){
+            stop("t.test ERROR with not enough")
+          } else if (grepl("constant", err$message) & "constant" %in% errors.not.permitted){
+            stop("t.test ERROR with constant data")
+          } else if(grepl("enough|constant|NULL", err$message) & "other" %in% errors.not.permitted){
+            stop(err$message)
+          }
+          # cat("\n")
+          # paste("Input for wilcox test")
+          # print("x")
+          # print(x)
+          # print("y")
+          # print(y)
+          # print("mu")
+          # print(mu)
+          # print("paired")
+          # print(paired)
+          # print("conf.level")
+          # print(conf.level)
+          test.results <- list()
+          test.results[["stat"]] <- 1
+          test.results[["conf.int"]] <- c(NA, NA)
+          test.results[["p.val"]] <- 1
+          return(test.results)
+        })
+
+        if (is.na(test.results$p.val)) {
+
+            test.results$p.val <- 1
+        }
+
+        return(test.results)
+}#end wilcoxTestWithErrorHandling
+  
+
+
+
 #
 tTestWithErrorHandling <- function(x, y = NULL, alternative = c("two.sided", "less", "greater"),
                                    mu = 0, paired = FALSE, var.equal = FALSE, conf.level = 0.95, errors.not.permitted=""){

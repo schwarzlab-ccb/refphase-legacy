@@ -20,7 +20,7 @@ getAllSegAllSamplePhasedRawCPNList <- function(sample.vec, ploidy.est.vec, purit
         all.samples.phased.cpn.list[[samp]][[seg.name]]$ph_cpnB_vec <- NA
         all.samples.phased.cpn.list[[samp]][[seg.name]]$mean_ph_cpnA <- NA
         all.samples.phased.cpn.list[[samp]][[seg.name]]$mean_ph_cpnB <- NA
-        all.samples.phased.cpn.list[[samp]][[seg.name]]$un_ph_cpn_total
+        all.samples.phased.cpn.list[[samp]][[seg.name]]$un_ph_cpn_total <- NA
         all.samples.phased.cpn.list[[samp]][[seg.name]]$un_ph_cpn_total_mean <- NA
     }#end for ( seg.name in seg.name.vec ) {
   }#end for ( samp in sample.vec ) {
@@ -87,6 +87,65 @@ getAllSegAllSamplePhasedRawCPNList <- function(sample.vec, ploidy.est.vec, purit
         }#end if(nrow(samp.b.lr.baf.df) > min.num.hz.snp.phasing)
       }#end for ( seg.name in chr.start.end.string.vec ) {
     }#end for   for ( samp in sample.vec) {
+
+
+    #Now let's check all the samples have the segments have the same number of raw cpn points
+
+
+    for ( seg.name in seg.name.vec ) {
+      print("Checking seg:")
+      print(seg.name)
+      chr.len <- length(all.samples.phased.cpn.list[[1]][[seg.name]]$chr_vec)
+      pos.len <- length(all.samples.phased.cpn.list[[1]][[seg.name]]$pos_vec)
+      logr.len <- length(all.samples.phased.cpn.list[[1]][[seg.name]]$logr_vec)
+      ph.cpnA.len <- length(all.samples.phased.cpn.list[[1]][[seg.name]]$ph_cpnA_vec )
+      ph.cpnB.len <- length(all.samples.phased.cpn.list[[1]][[seg.name]]$ph_cpnB_vec )
+
+      if ( ! (length(unique(ph.cpnA.len, ph.cpnB.len)) == 1) ){
+
+        print("chr.len")
+        print(chr.len)
+        print("pos.len")
+        print(pos.len)
+        print("logr.len")
+        print(logr.len)
+        print("ph.cpnA.len")
+        print(ph.cpnA.len)
+        print("ph.cpnB.len")
+        print(ph.cpnB.len)
+        stop("Not all vectors the same length...")
+      }
+      seg.num  <- ph.cpnA.len
+      for ( samp in sample.vec) {
+
+        chr.len <- length(all.samples.phased.cpn.list[[1]][[seg.name]]$chr_vec)
+        pos.len <- length(all.samples.phased.cpn.list[[1]][[seg.name]]$pos_vec)
+        logr.len <- length(all.samples.phased.cpn.list[[1]][[seg.name]]$logr_vec)
+        ph.cpnA.len <- length(all.samples.phased.cpn.list[[1]][[seg.name]]$ph_cpnA_vec )
+        ph.cpnB.len <- length(all.samples.phased.cpn.list[[1]][[seg.name]]$ph_cpnB_vec )
+
+        if( ! all(c(ph.cpnA.len, ph.cpnB.len) == seg.num)) {
+
+          print(samp)
+          print(seg.name)
+          print("chr.len")
+          print(chr.len)
+          print("pos.len")
+          print(pos.len)
+          print("logr.len")
+          print(logr.len)
+          print("ph.cpnA.len")
+          print(ph.cpnA.len)
+          print("ph.cpnB.len")
+          print(ph.cpnB.len)
+          stop("Not equal to what it should be")
+
+        }
+
+      }#end  for ( samp in sample.vec) {
+
+    }#end for ( seg.name in seg.name.vec ) {
+
     return(all.samples.phased.cpn.list)
 }#end getAllSegAllSamplePhasedRawCPNList
 
@@ -95,8 +154,12 @@ getAllSegAllSamplePhasedRawCPNList <- function(sample.vec, ploidy.est.vec, purit
 
 
 
-
-getAllSampLogrAlonePositionsLogrAndTotalCPNDFsList <- function(sample.vec, asas.SNPS.lr.and.or.baf.lists, ploidy.est.vec, purity.est.vec, gamma.val) {
+getAllSampLogrAlonePositionsLogrAndTotalCPNDFsList <- function(sample.vec, 
+                                                              asas.SNPS.lr.and.or.baf.lists, 
+                                                              ploidy.est.vec, 
+                                                              purity.est.vec, 
+                                                              gamma.val,
+                                                              data.format.to.use = "MEDICC") {
 
   all.samp.logr.df.list <- list()
 
@@ -104,18 +167,34 @@ getAllSampLogrAlonePositionsLogrAndTotalCPNDFsList <- function(sample.vec, asas.
 
     samp.logr.baf.df <- do.call(rbind, asas.SNPS.lr.and.or.baf.lists[[samp]])
 
+    #So what do we want to do here? if there are NAs and it's MEDICC their likely incorrect...
     if ( nrow(samp.logr.baf.df[is.na(samp.logr.baf.df$BAF) ,]) > 0 ) {
+      print("if ( nrow(samp.logr.baf.df[is.na(samp.logr.baf.df$BAF) ,]) > 0 ) {")
+      print(nrow(samp.logr.baf.df))
+      if (data.format.to.use != "TRACERx_exome") {
 
-      samp.logr.df <- samp.logr.baf.df[ ! is.na(samp.logr.baf.df$BAF) ,]
+        samp.logr.df <- samp.logr.baf.df[ ! is.na(samp.logr.baf.df$BAF) ,]
+
+      } else {
+
+        samp.logr.df <- samp.logr.baf.df
+
+      }
+      print(nrow(samp.logr.df))
 
     } else if ( nrow(samp.logr.baf.df[samp.logr.baf.df$BAF == 2 ,]) > 0) {
 
+      print("} else if ( nrow(samp.logr.baf.df[samp.logr.baf.df$BAF == 2 ,]) > 0) {")
+      print(nrow(samp.logr.baf.df))
       samp.logr.df <- samp.logr.baf.df[ samp.logr.baf.df$BAF == 2 ,]
+      print(nrow(samp.logr.df))
 
     } else {
 
       print("No logr only SNPs, 0 row dataframe will be passed to functions.")
+      print(nrow(samp.logr.baf.df))
       samp.logr.df <- samp.logr.baf.df[ samp.logr.baf.df$BAF == 2 ,]
+      print(nrow(samp.logr.df))
 
     }
 
@@ -141,7 +220,6 @@ getAllSampLogrAlonePositionsLogrAndTotalCPNDFsList <- function(sample.vec, asas.
   return(all.samp.logr.df.list)
 
 }#end getAllSampLogrAlonePositionsLogrAndTotalCPNDFsList
-
 
 
 
@@ -218,3 +296,4 @@ createAllSegsPhasedBAFDataFrame <- function(asas.lr.baf.lists, sample.to.phase.s
   return(all.samp.ph.BAF.df.list) 
 
 }#end createSegPhasedBAFTable <- function(....)
+                                                                        

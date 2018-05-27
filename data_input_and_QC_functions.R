@@ -41,8 +41,8 @@ makeInputPathFileForTRACERxExomeSNPArray <- function(pt.id, sample.vec, release.
 getSNPDataForTRACERxExomeSNPArray <- function(pt.file.paths.df) {
 
   sample.vec <- pt.file.paths.df$sample
-
   all.samples.ASCAT.list <- list()
+  
   for ( samp in sample.vec ) {
 
     samp.ASCAT.obj <- pt.file.paths.df[pt.file.paths.df$sample == samp, ]$samp_ascat_bc_path
@@ -63,17 +63,18 @@ getSNPDataForTRACERxExomeSNPArray <- function(pt.file.paths.df) {
 
     all.samples.ASCAT.list[[samp]] <- samp.ASCAT.summary
 
-  } 
+  }#end getSNPDataForTRACERxExomeSNPArray
 
   return(all.samples.ASCAT.list)
 
-}
+}#end getSNPDataForTRACERxExomeSNPArray <- function(pt.file.paths.df) {
+
 
 
 makeInputPathFileForTRACERxWGS <- function(pt.id, release.dir, array.type, save.output.path) {
 
   #Do we not care about the ASCAT_QC directories, we can come back to these a bit later
-  pt.dir <- paste(release.dir, pt.id, "/", array.type, "/ASCAT/", sep="")
+  pt.dir <- paste(release.dir, pt.id, "/", array.type, "/ASCAT/", sep = "")
   sample.vec <- grep("FAILED",grep(".txt$|.complete$|*EXCLUDE*|*ManualQC*",list.files(pt.dir), value=TRUE, invert=TRUE), invert=TRUE, value=TRUE)
 
   pt.file.paths.df <- data.frame(patient_id = rep(pt.id, length(sample.vec)),
@@ -84,6 +85,7 @@ makeInputPathFileForTRACERxWGS <- function(pt.id, release.dir, array.type, save.
 
 
   for ( samp in sample.vec ) {
+
     samp.logr.baf.path <- paste(pt.dir, samp, "/", samp, ".tumor.baf_logr.RData", sep="")
 
     pt.file.paths.df[file.paths.df$sample==samp, ]$samp_logr_baf_file_path <- samp.logr.baf.path
@@ -92,11 +94,12 @@ makeInputPathFileForTRACERxWGS <- function(pt.id, release.dir, array.type, save.
 
     pt.file.paths.df[file.paths.df$sample==samp, ]$samp_seg_file_path <- samp.seg.path
 
-  }
+  }#end for ( samp in sample.vec ) {
 
   write.table(pt.file.paths.df, file = save.output.path ,row.names=FALSE, sep="\t", quote=FALSE)
 
-}
+}#end makeInputPathFileForTRACERxWGS <- function(pt.id, release.dir, array.type, save.output.path) {
+
 
 
 
@@ -268,7 +271,7 @@ getSNPsWithBAFandLogRatioDataTRACERxFormatASCATBC <- function(pt.id, array.type=
 getSNPDataFromTRACERxFormatBAFLogRData <- function(pt.id, release.dir, array.type = "WGS"){
 
   pt.dir <- paste(release.dir, pt.id, "/", array.type, "/ASCAT/", sep="")
-  regions <- grep("FAILED",grep(".txt$|.complete$|*EXCLUDE*|*ManualQC*",list.files(pt.dir), value=TRUE, invert=TRUE), invert=TRUE, value=TRUE)
+  regions <- grep("FAILED",grep(".txt$|.complete$|*EXCLUDE*|*ManualQC*", list.files(pt.dir), value = TRUE, invert = TRUE), invert = TRUE, value = TRUE)
 
   for ( i in 1:length(regions) ) {
 
@@ -278,9 +281,9 @@ getSNPDataFromTRACERxFormatBAFLogRData <- function(pt.id, release.dir, array.typ
     reg.seg.path <- paste(DirToConsider, regions[i], "/", regions[i], ".ascat.seg.RData", sep="")
     load(reg.seg.path)#gives reg.seg.path
 
-    ASCAT.summary               <- tumor.baf_logr[,c("chrom", "pos")]
+    ASCAT.summary               <- tumor.baf_logr[, c("chrom", "pos")]
     ASCAT.summary$BAF           <- tumor.baf_logr$BAF
-    ASCAT.summary$logR          <- tumor.baf_logr[,regions[i]]
+    ASCAT.summary$logR          <- tumor.baf_logr[, regions[i]]
     ASCAT.summary$BAFsegmented  <- NA
     ASCAT.summary$logRsegmented <- NA
 
@@ -289,21 +292,35 @@ getSNPDataFromTRACERxFormatBAFLogRData <- function(pt.id, release.dir, array.typ
     #Update the fake ASCAT.summaary BAFsegmetned and logRsegmented
     for ( j in 1:nrow(seg) ) {
 
-      if(nrow(ASCAT.summary[ASCAT.summary$chrom==seg[j,]$chr & ASCAT.summary$pos >= seg[j,]$startpos & ASCAT.summary$pos <= seg[j,]$endpos,]) > 0) {
+      if(nrow(ASCAT.summary[ASCAT.summary$chrom == seg[j ,]$chr
+                            & ASCAT.summary$pos >= seg[j ,]$startpos
+                            & ASCAT.summary$pos <= seg[j ,]$endpos ,]) > 0) {
 
-        if(seg[j,]$nMajor==seg[j,]$nMinor){
+        if(seg[j,]$nMajor == seg[j,]$nMinor) {
           
-          ASCAT.summary[ASCAT.summary$chrom==seg[j,]$chr & ASCAT.summary$pos >= seg[j,]$startpos & ASCAT.summary$pos <= seg[j,]$endpos,]$BAFsegmented <- 0.5
+          ASCAT.summary[ASCAT.summary$chrom == seg[j ,]$chr
+                        & ASCAT.summary$pos >= seg[j ,]$startpos
+                        & ASCAT.summary$pos <= seg[j ,]$endpos ,]$BAFsegmented <- 0.5
           
         } else {
           
-          avg.seg.baf <- 0.5 - mean(abs(tumor.baf_logr[tumor.baf_logr$chrom==seg[j,]$chr & tumor.baf_logr$pos >= seg[j,]$startpos & tumor.baf_logr$pos <= seg[j,]$endpos,]$BAF - 0.5))
-          ASCAT.summary[ASCAT.summary$chrom==seg[j,]$chr & ASCAT.summary$pos >= seg[j,]$startpos & ASCAT.summary$pos <= seg[j,]$endpos,]$BAFsegmented <- avg.seg.baf
+          avg.seg.baf <- 0.5 - mean(abs(tumor.baf_logr[tumor.baf_logr$chrom == seg[j ,]$chr
+                                                       & tumor.baf_logr$pos >= seg[j ,]$startpos
+                                                       & tumor.baf_logr$pos <= seg[j ,]$endpos,]$BAF - 0.5))
+
+          ASCAT.summary[ASCAT.summary$chrom == seg[j ,]$chr 
+                      & ASCAT.summary$pos >= seg[j ,]$startpos
+                      & ASCAT.summary$pos <= seg[j ,]$endpos ,]$BAFsegmented <- avg.seg.baf
           
         }
 
-        avg.seg.logr <- mean(tumor.baf_logr[tumor.baf_logr$chrom==seg[j,]$chr & tumor.baf_logr$pos >= seg[j,]$startpos & tumor.baf_logr$pos <= seg[j,]$endpos, regions[i]])
-        ASCAT.summary[ASCAT.summary$chrom==seg[j,]$chr & ASCAT.summary$pos >= seg[j,]$startpos & ASCAT.summary$pos <= seg[j,]$endpos,]$logRsegmented <- avg.seg.logr
+        avg.seg.logr <- mean(tumor.baf_logr[tumor.baf_logr$chrom == seg[j ,]$chr
+                                          & tumor.baf_logr$pos >= seg[j ,]$startpos
+                                          & tumor.baf_logr$pos <= seg[j ,]$endpos, regions[i]])
+
+        ASCAT.summary[ASCAT.summary$chrom == seg[j ,]$chr
+                    & ASCAT.summary$pos >= seg[j ,]$startpos
+                    & ASCAT.summary$pos <= seg[j ,]$endpos,]$logRsegmented <- avg.seg.logr
 
       }#end if(nrow(ASCAT.summary[ASCAT.summary$chrom==seg[j,]$chr & ASCAT.summary$pos...
 
@@ -344,9 +361,9 @@ cleanAndErrorCheckMinConsSegs <- function(min.cons.seg.df) {
 cleanAndErrorCheckSNPsMPhase <- function(all.samp.SNP.list, min.cons.seg.df, allow.logr.only.flag = FALSE) {
   #TODO add check that every single all.samp.SNP.list has the same SNPs..
   #Note error checking of removing NAs from the min.cons.seg.df should already have been performed
-  min.cpn.vals.df <- min.cons.seg.df[,4:ncol(min.cons.seg.df)]
-  seg.name.vec <- paste(min.cons.seg.df[,1], min.cons.segs.df[,2], min.cons.segs.df[,3], sep=":")
-  min.cpn.vals.df <- min.cpn.vals.df[!is.na(rowSums(min.cpn.vals.df)),,drop=FALSE] 
+  min.cpn.vals.df <- min.cons.seg.df[, 4:ncol(min.cons.seg.df)]
+  seg.name.vec <- paste(min.cons.seg.df[, 1], min.cons.segs.df[, 2], min.cons.segs.df[, 3], sep = ":")
+  min.cpn.vals.df <- min.cpn.vals.df[!is.na(rowSums(min.cpn.vals.df)), drop = FALSE] 
   sample.vec <- colnames(min.cpn.vals.df)
   working.all.samp.SNP.list <- list()
   all.samps.prob.SNPs.vec <- c()
@@ -359,7 +376,9 @@ cleanAndErrorCheckSNPsMPhase <- function(all.samp.SNP.list, min.cons.seg.df, all
 
       samp.SNP.df <- all.samp.SNP.list[[sample]]
 
-      samp.seg.logR.BAF.df <- samp.SNP.df[ samp.SNP.df$chr == min.cons.seg.df[seg.idx, 1] & samp.SNP.df$pos >= min.cons.seg.df[seg.idx, 2] & samp.SNP.df$pos <= min.cons.seg.df[seg.idx, 3], ,drop=FALSE ]
+      samp.seg.logR.BAF.df <- samp.SNP.df[ samp.SNP.df$chr == min.cons.seg.df[seg.idx, 1]
+                                          & samp.SNP.df$pos >= min.cons.seg.df[seg.idx, 2]
+                                          & samp.SNP.df$pos <= min.cons.seg.df[seg.idx, 3], ,drop=FALSE ]
 
       #Catch any snp values that have a BAF but no logr in any region, these are likely incorrect
       samp.prob.SNPs.vec <- c(samp.prob.SNPs.vec, rownames(samp.seg.logR.BAF.df[ ! is.na(samp.seg.logR.BAF.df$BAFsegmented)
@@ -479,3 +498,4 @@ cleanAndErrorCheckSNPs <- function(all.samp.SNP.list, min.cons.seg.df, allow.log
 
 }#end <- function(all.samp.SNP.list, min.cons.seg.df)
 
+        
