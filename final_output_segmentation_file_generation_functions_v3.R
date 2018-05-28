@@ -367,7 +367,7 @@ addNewRawAndIntCPNCallsToFinalSegmentation <- function(seg.name.vec,
 
                 } else if (nrow(datapoints.w.logr.only.df) == 0 & nrow(ss.baf.lr.baf.df) > 0) {
 
-                  all.seg.df[samp.seg.name,]$total_raw_cpn <- median(c(ss.dp.w.logr.only.df$tot_raw_un_ph_cpn, (as.numeric(ph.cpnA.vec) + as.numeric(ph.cpnB.vec))))
+                  all.seg.df[samp.seg.name,]$total_raw_cpn <- median(c(as.numeric(ph.cpnA.vec) + as.numeric(ph.cpnB.vec)))
 
                 } #end  if (seg.has.fewer.than.min.hz.flag == TRUE) {
   
