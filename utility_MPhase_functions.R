@@ -153,11 +153,11 @@ checkSegGainOrLossSignificance <- function(logr.vec, samp.to.check, ploidy.est.v
 
      gen.t.test.results        <- tTestWithErrorHandling(logr.vec, mu = min.thresh.logr.exp.for.samp)
 
-    if (cpn.change.type=="gain") {
+    if (cpn.change.type == "gain") {
 
           specific.t.test.alt <- "greater"
 
-    } else if (cpn.change.type=="loss") {
+    } else if (cpn.change.type == "loss") {
 
           specific.t.test.alt <- "less"
 
