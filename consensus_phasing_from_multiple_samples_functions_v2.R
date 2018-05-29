@@ -407,14 +407,15 @@ getMixturePhasingResultsForSegment <- function(sample.to.phase.seg,
   output.list$maj_is_cpnA_idx_vec <- new.maj.is.cpnA.idx.vec
   output.list$maj_is_cpnB_idx_vec <- new.maj.is.cpnB.idx.vec
   #Now check the ability of the combined mixture snp major cpn A or B analysis accross all samples
+
   output.list$all_samp_mixture_phasing_comparison_list <- assessPhasingAcrossSelectedSamples(seg.name=seg.name,sample.comparison.list=list(),
                                                                                                               samp = sample.to.phase.seg,
-                                                                                                              asas.lr.baf.lists,
-                                                                                                              sample.vec,
+                                                                                                              asas.lr.baf.lists = asas.lr.baf.lists,
+                                                                                                              samples.to.test.vec = sample.vec,
                                                                                                               ref.ss.maj.is.cpnA.idx.vec = new.maj.is.cpnA.idx.vec,
                                                                                                               ref.ss.maj.is.cpnB.idx.vec = new.maj.is.cpnB.idx.vec,
-                                                                                                              ploidy.est.vec,
-                                                                                                              purity.est.vec,
+                                                                                                              ploidy.est.vec = ploidy.est.vec,
+                                                                                                              purity.est.vec = purity.est.vec,
                                                                                                               gamma.val = gamma.val)
 
   return(output.list)

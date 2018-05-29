@@ -339,8 +339,8 @@ determineCCFClonalityOfSegment <- function(s.samps.int.ob.xp.cpn.df,
         #Get BAF values from the dataframe
         samp.ph.baf.df <- all.samp.ph.BAF.df.list[[samp]]
         s.samp.ph.baf.df <- samp.ph.baf.df[samp.ph.baf.df$chrom == chr & samp.ph.baf.df$pos >= start & samp.ph.baf.df$pos <= end, ,drop=FALSE]
-        samp.maj.is.cpnA.cpnB.BAF.vs.exp.BAF.test <- tTestWithErrorHandling(c(s.samp.ph.baf.df[s.samp.ph.baf.df$maj_is_cpnA_logic_vec==1,"BAF"],#tTestWithErrorHandling(c
-                                                                          1 - s.samp.ph.baf.df[s.samp.ph.baf.df$maj_is_cpnB_logic_vec==1,"BAF",]),
+        samp.maj.is.cpnA.cpnB.BAF.vs.exp.BAF.test <- tTestWithErrorHandling(c(s.samp.ph.baf.df[s.samp.ph.baf.df$maj_is_cpnA_logic_vec == 1, "BAF"],#tTestWithErrorHandling(c
+                                                                          1 - s.samp.ph.baf.df[s.samp.ph.baf.df$maj_is_cpnB_logic_vec == 1, "BAF"]),
                                                                           mu = calcExpectedBAF(s.samps.int.ob.xp.cpn.df[samp, "exp_cpnB"],
                                                                                                s.samps.int.ob.xp.cpn.df[samp, "exp_cpnA"],
                                                                                                 purity.est.vec[samp]))
@@ -632,4 +632,4 @@ chooseLowHighSubclonalCPNWithMoreThanTwoPossibilities <- function(s.samps.int.ob
 
     return(c(ss.poss.sc.cpnX.low, ss.poss.sc.cpnX.high))
 
-}
+}       
