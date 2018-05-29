@@ -120,13 +120,13 @@ current.dir <-  LocationOfThisScript()
 # snp.file.path <- "/home/camp/watkint/working/watkint/data/turajlic_wgs/release/T_KTX167/WGS/MSAI/KTX167_joint_snps.txt"
 # seg.file.path <- "/home/camp/watkint/working/watkint/data/turajlic_wgs/release/T_KTX167/WGS/MSAI/KTX167_joint_segs_all_ascat_info.txt"
 
-#"patient"
-# patient <- "MTX006"
+# #"patient"
+# patient <- "MTX005"
 # allow.dip.test.phasing.flag <- FALSE
-# output.directory.base.path <- "/home/camp/watkint/working/watkint/data/martinez/release_v3/R_MTX007/snp_array//CN_het_MEDICC_no_diptest/"
+# output.directory.base.path <- paste0("/home/camp/watkint/working/watkint/data/martinez/release_v3/R_",patient,"/snp_array//CN_het_MEDICC_no_diptest/")
 # data.format.to.use <- "MEDICC"
-# snp.file.path <- "/home/camp/watkint/working/watkint/data/martinez/release_v3/R_MTX006/snp_array/MSAI/MTX006_new_all_snps.txt"
-# seg.file.path <- "/home/camp/watkint/working/watkint/data/martinez/release_v3/R_MTX006/snp_array/MSAI/MTX006_joint_segs_all_ascat_info.txt"
+# snp.file.path <- paste0("/home/camp/watkint/working/watkint/data/martinez/release_v3/R_",patient,"/snp_array/MSAI/",patient,"_new_all_snps.txt")
+# seg.file.path <- paste0("/home/camp/watkint/working/watkint/data/martinez/release_v3/R_",patient,"/snp_array/MSAI/",patient,"_joint_segs_all_ascat_info.txt")
 # overwrite.flag <- TRUE
 # gamma.val <- 0.5
 
@@ -180,7 +180,7 @@ if ( ! file.exists(PLOT_OUTPUT_DIR) ) {
 	print("directory doesn't exist")
 
 }
-GAMMA_VAL <- as.logical(gamma.val)
+GAMMA_VAL <- as.numeric(gamma.val)
 MAX_CPN_FOR_SUBCLONALITY <- 10
 MIN_CCF_TO_CONSIDER <- 0.15
 MIN_CPN_TO_CONSIDER <- 0.15
@@ -455,10 +455,12 @@ if (OVERWRITE_FLAG == TRUE) {
 	ploidy.est.vec <- readRDS(file = ploidy.est.vec.path)
 	purity.est.vec <- readRDS(file = purity.est.vec.path)
 
-}
+}#end else if (OVERWRITE_FLAG == FALSE
 
 
-#Now we need to make sure that the asas.lr.baf.lists and sample.to.phase.seg.list 
+
+
+# Now we need to make sure that the asas.lr.baf.lists and sample.to.phase.seg.list 
 # if (length(names(sample.to.phase.seg.list)) != length(asas.lr.baf.lists[[1]])) {
 
 #   print("Missing or removed segments:")
@@ -487,6 +489,7 @@ if (OVERWRITE_FLAG == TRUE) {
 	                                            comb.wilcox.snp.sep.p.val.threshold = PVAL_COMB_WILCOX_PH_THRESH,
 	                                            allow.dip.test.without.ASCAT.to.phase = ALLOW_DIPTEST_ALONE_PH_FLAG
 	                                            )
+	
 	saveRDS(all.seg.phasing.info.list, file = all.seg.phasing.info.list.path)
 
 

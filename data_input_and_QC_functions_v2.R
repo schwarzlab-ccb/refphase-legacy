@@ -402,7 +402,7 @@ cleanAndErrorCheckSNPsMPhase <- function(all.samp.SNP.list, min.cons.segs.df, al
 
         samp.prob.SNPs.vec <- c(samp.prob.SNPs.vec, rownames(samp.seg.logR.BAF.df[samp.seg.logR.BAF.df$BAF == 2,]))
         samp.seg.logR.BAF.df <- samp.seg.logR.BAF.df[as.numeric(samp.seg.logR.BAF.df$BAF) != 2, ,drop = FALSE]
-        #samp.seg.logR.BAF.df <- samp.seg.logR.BAF.df[! is.na(samp.seg.logR.BAF.df$BAFsegmented), ,drop=FALSE]
+        samp.seg.logR.BAF.df <- samp.seg.logR.BAF.df[! is.na(samp.seg.logR.BAF.df$BAFsegmented), ,drop=FALSE]
 
       }
       #Todo,
@@ -511,3 +511,4 @@ cleanAndErrorCheckSNPs <- function(all.samp.SNP.list, min.cons.seg.df, allow.log
   return(working.all.samp.SNP.list)
 
 }#end <- function(all.samp.SNP.list, min.cons.seg.df)
+ 
