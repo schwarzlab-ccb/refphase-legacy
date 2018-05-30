@@ -552,11 +552,15 @@ addOriginalSegmentInfoToFinalSegmentation <- function(seg.name.vec,
                 #Which segment does it overlap most with...
                 chr.samp.seg.range.df <- chr.samp.seg.df[,c("chr", "startpos", "endpos")]
                 colnames(chr.samp.seg.range.df) <- c("Chromosome", "start", "end")
+                print("chr.samp.seg.range.df")
+                print(chr.samp.seg.range.df)
                 ref.gen.range <- makeGRangesFromDataFrame(chr.samp.seg.range.df)
                 seg.test.df <- data.frame(Chromosome = chr.start.end.vec[1],
                           start = as.numeric(chr.start.end.vec[2]),
                           end = as.numeric(chr.start.end.vec[3]),
                           stringsAsFactors = FALSE)
+                print("test.gen.range")
+                print(test.gen.range)
                 test.gen.range <- makeGRangesFromDataFrame(seg.test.df)
                 #find overlaps:
                 hit.obj <- findOverlaps(ref.gen.range, test.gen.range)
