@@ -559,9 +559,9 @@ addOriginalSegmentInfoToFinalSegmentation <- function(seg.name.vec,
                           start = as.numeric(chr.start.end.vec[2]),
                           end = as.numeric(chr.start.end.vec[3]),
                           stringsAsFactors = FALSE)
+                test.gen.range <- makeGRangesFromDataFrame(seg.test.df)
                 print("test.gen.range")
                 print(test.gen.range)
-                test.gen.range <- makeGRangesFromDataFrame(seg.test.df)
                 #find overlaps:
                 hit.obj <- findOverlaps(ref.gen.range, test.gen.range)
                 overlaps <- pintersect(ref.gen.range[queryHits(hit.obj)], test.gen.range[subjectHits(hit.obj)])
