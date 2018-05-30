@@ -990,8 +990,6 @@ addLogrDefinedCPNEventsToOutputSegmentation <- function(sample.vec,
 
 
                 datapoints.w.logr.only.df <-  all.samp.logr.df.list[[samp]]
-                print("   if (nrow(datapoints.w.logr.only.df) > 0) {")
-                print(nrow(datapoints.w.logr.only.df))
                 if (nrow(datapoints.w.logr.only.df) > 0) {
 
                     ss.dp.w.logr.only.df <- datapoints.w.logr.only.df[datapoints.w.logr.only.df$chrom == as.numeric(chr.start.end.vec[1]) & 
@@ -1008,8 +1006,6 @@ addLogrDefinedCPNEventsToOutputSegmentation <- function(sample.vec,
                     all.seg.df[samp.seg.name,]$deep_loss_non_hz_pval <- deep.loss.non.hz.samp.df[, 7]
 
                     #now we can simply add these data points to the dataframe that contained the datapoints that had both logr and BAF, do we need to re-sort? leave for now.
-                    print(" if (nrow(ss.dp.w.logr.only.df) > 0) {")
-                    print(nrow(ss.dp.w.logr.only.df) > 0)
                     if (nrow(ss.dp.w.logr.only.df) > 0) {
 
                         ss.comb.baf.lr.baf.df <- rbind(ss.baf.lr.baf.df[, c("chrom", "pos", "BAF", "BAFsegmented", "logR", "logRsegmented")],
@@ -1040,8 +1036,6 @@ addLogrDefinedCPNEventsToOutputSegmentation <- function(sample.vec,
 
                 names(cpn.event.vs.ploidy.vec) <- c("gain", "amp", "loss", "deep_loss")
                 non.na.seg.cpn.event <- cpn.event.vs.ploidy.vec[! is.na(cpn.event.vs.ploidy.vec)]
-                print("if (length(non.na.seg.cpn.event) == 0) {")
-                print(length(non.na.seg.cpn.event))
                 if (length(non.na.seg.cpn.event) == 0) {
 
                     all.seg.df[samp.seg.name,]$cpn_event_vs_ploidy <- NA #had less than min.num of datapoints to examine for a logr event.
@@ -1050,8 +1044,6 @@ addLogrDefinedCPNEventsToOutputSegmentation <- function(sample.vec,
 
                     significant.seg.cpn.event <- non.na.seg.cpn.event[non.na.seg.cpn.event <= tot.cpn.vs.ploidy.pval.thresh]
                     #Error check here:
-                    print("if (length(significant.seg.cpn.event) > 1) {")
-                    print(length(significant.seg.cpn.event))
                     if (length(significant.seg.cpn.event) > 1) {
                         #Note need to check that this makes sense
                         # print("More than one total cpn event vs ploidy is signficant by thresholds")
@@ -1522,4 +1514,4 @@ initialiseFullOutputDataframe <- function(seg.name.vec, ploidy.est.vec, purity.e
         rownames(all.seg.df) <- row.names.vec
         return(all.seg.df)
 
-}
+}                                                                                                                                                                                                                                                             
