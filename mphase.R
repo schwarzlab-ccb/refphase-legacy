@@ -130,6 +130,17 @@ current.dir <-  LocationOfThisScript()
 # overwrite.flag <- TRUE
 # gamma.val <- 0.5
 
+
+
+patient <- "PTX002"
+allow.dip.test.phasing.flag <- FALSE
+output.directory.base.path <- "/home/camp/watkint/working/watkint/data/gundem/release/G_PTX002/WGS/CN_het_TRACERx_WGS_no_diptest/"
+data.format.to.use <- "TRACERx_WGS"
+snp.file.path <- "/home/camp/watkint/working/watkint/data/gundem/release/G_PTX002/WGS/CN_het_TRACERx_WGS_no_diptest/G_PTX002_input_snp_files.txt"
+seg.file.path <- "/home/camp/watkint/working/watkint/data/gundem/release/G_PTX002/WGS/MSAI/PTX002_joint_segs_all_ascat_info.txt"
+overwrite.flag <- FALSE
+gamma.val <- 1
+
 print("patient")
 print(patient)
 print("allow.dip.test.phasing.flag")
@@ -350,8 +361,11 @@ if (OVERWRITE_FLAG == TRUE) {
 		# colnames(gr.f.joint.segs.df) <- c("Chromosome", "start", "end")
 
 		# gr.f.joint.segs.gr <- makeGRangesFromDataFrame(gr.f.joint.segs.df)
+		# gr.f.overlap.segs.gr <- countOverlaps(gr.f.joint.segs.gr)
+
 		# dj.gr.joint.segs.gr <- disjoin(gr.f.joint.segs.gr)
-		# as.data.frame(dj.gr.joint.segs.gr)
+		# joint.segs.df <- as.data.frame(dj.gr.joint.segs.gr)
+
 
 		# #So now we want to match up the old values...
 
@@ -377,6 +391,7 @@ if (OVERWRITE_FLAG == TRUE) {
 		purity.est.vec <- processed.orig.cpn.segs.df[ ! duplicated(processed.orig.cpn.segs.df$sample), 'ACF']
 		names(purity.est.vec) <- unique(processed.orig.cpn.segs.df$sample)
 		min.cons.segs.df <- generateMinimumConsistentSegmentation(processed.orig.cpn.segs.df, chroms = 1:22, col.to.use = "ploidy_adj_tot_cpn")
+		test.min.cons.segs.df <- min.cons.fn(processed.orig.cpn.segs.df, chroms = 1:22, col.to.use = "ploidy_adj_tot_cpn")
 		min.cons.segs.df <- cleanAndErrorCheckMinConsSegs(min.cons.segs.df)
 		#So we want to read in a file that looks like this:	#patient_id sample_id ascat_bc_file_path 
 		pt.snp.file.paths.df <- read.table(snp.file.path, stringsAsFactors = FALSE, sep = "\t", header = TRUE)
@@ -435,17 +450,17 @@ if (OVERWRITE_FLAG == TRUE) {
 
 } else if (OVERWRITE_FLAG == FALSE) {#end if (OVERWRITE_FLAG == TRUE) {
 
-	if ( ! file.exists(processed.orig.cpn.segs.df.path) ) {
+	# if ( ! file.exists(processed.orig.cpn.segs.df.path) ) {
 
-		seg.file.df <- read.table(seg.file.path, stringsAsFactors = FALSE, sep = "\t", header = TRUE)
-		seg.file.df$sample <- gsub("\\.", "-", gsub("_LogR", "", seg.file.df$sample))
-		seg.file.df$callState <- NULL
-		seg.file.df$patient <- patient
-		seg.file.df$sample_name <- paste(patient, sapply(seg.file.df$sample, function(x) strsplit(x, split = "-")[[1]][2]), sep = ":")
-		processed.orig.cpn.segs.df <- errorCheckAndAddPloidyAdjRawCPNToSegDF(patient, seg.file.df)
-		saveRDS(processed.orig.cpn.segs.df, file = processed.orig.cpn.segs.df.path)
+	# 	seg.file.df <- read.table(seg.file.path, stringsAsFactors = FALSE, sep = "\t", header = TRUE)
+	# 	seg.file.df$sample <- gsub("\\.", "-", gsub("_LogR", "", seg.file.df$sample))
+	# 	seg.file.df$callState <- NULL
+	# 	seg.file.df$patient <- patient
+	# 	seg.file.df$sample_name <- paste(patient, sapply(seg.file.df$sample, function(x) strsplit(x, split = "-")[[1]][2]), sep = ":")
+	# 	processed.orig.cpn.segs.df <- errorCheckAndAddPloidyAdjRawCPNToSegDF(patient, seg.file.df)
+	# 	saveRDS(processed.orig.cpn.segs.df, file = processed.orig.cpn.segs.df.path)
 
-	}
+	# }
 
 	#load original data:
 	asas.SNPS.lr.and.or.baf.lists <- readRDS(file = asas.SNPS.lr.and.or.baf.lists.path)
@@ -763,19 +778,19 @@ if (OVERWRITE_FLAG == TRUE) {
 
 } else if (OVERWRITE_FLAG == FALSE) {
 
-	print("Getting phasing to apply to all samples...")
-	all.seg.phasing.info.list <- getCombinedBAFDipTestPhasing(asas.lr.baf.lists = asas.SNPs.w.both.lr.baf.snp.lists,
-	                                            seg.name.vec = seg.name.vec,
-	                                            ploidy.est.vec = ploidy.est.vec,
-	                                            purity.est.vec = purity.est.vec,
-	                                            gamma.val = GAMMA_VAL,
-	                                            min.num.hz.snp.phasing = MIN_NUM_HZ_SNP_PHASING,
-	                                            min.prop.snp.sep.threshold = MIN_PROP_SNP_SEP_THRESH,
-	                                            dip.test.p.val.threshold = PVAL_DIPTEST_AI_THRESH,
-	                                            comb.wilcox.snp.sep.p.val.threshold = PVAL_COMB_WILCOX_PH_THRESH,
-	                                            allow.dip.test.without.ASCAT.to.phase = ALLOW_DIPTEST_ALONE_PH_FLAG
-	                                            )
-	saveRDS(all.seg.phasing.info.list, file = all.seg.phasing.info.list.path)
+	# print("Getting phasing to apply to all samples...")
+	# all.seg.phasing.info.list <- getCombinedBAFDipTestPhasing(asas.lr.baf.lists = asas.SNPs.w.both.lr.baf.snp.lists,
+	#                                             seg.name.vec = seg.name.vec,
+	#                                             ploidy.est.vec = ploidy.est.vec,
+	#                                             purity.est.vec = purity.est.vec,
+	#                                             gamma.val = GAMMA_VAL,
+	#                                             min.num.hz.snp.phasing = MIN_NUM_HZ_SNP_PHASING,
+	#                                             min.prop.snp.sep.threshold = MIN_PROP_SNP_SEP_THRESH,
+	#                                             dip.test.p.val.threshold = PVAL_DIPTEST_AI_THRESH,
+	#                                             comb.wilcox.snp.sep.p.val.threshold = PVAL_COMB_WILCOX_PH_THRESH,
+	#                                             allow.dip.test.without.ASCAT.to.phase = ALLOW_DIPTEST_ALONE_PH_FLAG
+	#                                             )
+	# saveRDS(all.seg.phasing.info.list, file = all.seg.phasing.info.list.path)
 
 	all.seg.phasing.info.list <- readRDS(file = all.seg.phasing.info.list.path)
 	patient.phased.BAF.df.list <- readRDS(file = patient.phased.BAF.df.list.path)
