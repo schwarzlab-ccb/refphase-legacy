@@ -132,14 +132,14 @@ current.dir <-  LocationOfThisScript()
 
 
 
-patient <- "PTX002"
-allow.dip.test.phasing.flag <- FALSE
-output.directory.base.path <- "/home/camp/watkint/working/watkint/data/gundem/release/G_PTX002/WGS/CN_het_TRACERx_WGS_no_diptest/"
-data.format.to.use <- "TRACERx_WGS"
-snp.file.path <- "/home/camp/watkint/working/watkint/data/gundem/release/G_PTX002/WGS/CN_het_TRACERx_WGS_no_diptest/G_PTX002_input_snp_files.txt"
-seg.file.path <- "/home/camp/watkint/working/watkint/data/gundem/release/G_PTX002/WGS/MSAI/PTX002_joint_segs_all_ascat_info.txt"
-overwrite.flag <- FALSE
-gamma.val <- 1
+# patient <- "PTX002"
+# allow.dip.test.phasing.flag <- FALSE
+# output.directory.base.path <- "/home/camp/watkint/working/watkint/data/gundem/release/G_PTX002/WGS/CN_het_TRACERx_WGS_no_diptest/"
+# data.format.to.use <- "TRACERx_WGS"
+# snp.file.path <- "/home/camp/watkint/working/watkint/data/gundem/release/G_PTX002/WGS/CN_het_TRACERx_WGS_no_diptest/G_PTX002_input_snp_files.txt"
+# seg.file.path <- "/home/camp/watkint/working/watkint/data/gundem/release/G_PTX002/WGS/MSAI/PTX002_joint_segs_all_ascat_info.txt"
+# overwrite.flag <- FALSE
+# gamma.val <- 1
 
 print("patient")
 print(patient)

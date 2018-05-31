@@ -1186,7 +1186,7 @@ addParallelEventsByMSAIToOutputSegmentation <- function(all.segs.df) {
 
     if ("cpnA" %in% matched.MSAI.LOH.segs.df$dominant_allele & "cpnB" %in% seg.MSAI.LOH.df$dominant_allele) {
 
-      all.segs.df[rownames(seg.MSAI.loss.df) ,]$is_parallel_LOH <- TRUE
+      all.segs.df[rownames(seg.MSAI.LOH.df) ,]$is_parallel_LOH <- TRUE
 
     }
 
