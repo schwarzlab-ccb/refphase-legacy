@@ -8,7 +8,8 @@ addOriginalCPNValuesAndCallsVsPloidyToOutputSegmentation <- function(sample.vec,
     min.cons.segs.raw.cpnB.df <- generateMinimumConsistentSegmentation(processed.orig.cpn.segs.df, chroms = 1:22, col.to.use = "nBraw")
     min.cons.segs.nMinor.df <- generateMinimumConsistentSegmentation(processed.orig.cpn.segs.df, chroms = 1:22, col.to.use = "nMinor")
     min.cons.segs.nMajor.df <- generateMinimumConsistentSegmentation(processed.orig.cpn.segs.df, chroms = 1:22, col.to.use = "nMajor")
-
+    print("nrow(min.cons.segs.raw.cpnA.df)")
+    print(nrow(min.cons.segs.raw.cpnA.df))
     rownames(min.cons.segs.raw.cpnA.df) <- paste(min.cons.segs.raw.cpnA.df[,1], min.cons.segs.raw.cpnA.df[,2], min.cons.segs.raw.cpnA.df[,3], sep = ":") 
     rownames(min.cons.segs.raw.cpnB.df) <- paste(min.cons.segs.raw.cpnA.df[,1], min.cons.segs.raw.cpnA.df[,2], min.cons.segs.raw.cpnA.df[,3], sep = ":")
     rownames(min.cons.segs.nMinor.df) <- paste(min.cons.segs.raw.cpnA.df[,1], min.cons.segs.raw.cpnA.df[,2], min.cons.segs.raw.cpnA.df[,3], sep = ":") 
@@ -17,7 +18,7 @@ addOriginalCPNValuesAndCallsVsPloidyToOutputSegmentation <- function(sample.vec,
     for ( samp in sample.vec ) {
 
         for ( seg.name in seg.name.vec ) {
-
+            print(seg.name)
             if (length(sample.vec) > 1) {
 
                 samp.seg.name <- paste0(samp, ":", seg.name)
@@ -26,7 +27,7 @@ addOriginalCPNValuesAndCallsVsPloidyToOutputSegmentation <- function(sample.vec,
 
                 samp.seg.name <- seg.name
             }
-
+            print(samp.seg.name)
             all.segs.df[samp.seg.name,]$orig_cpnA_raw <- min.cons.segs.raw.cpnB.df[seg.name, samp]
             all.segs.df[samp.seg.name,]$orig_cpnB_raw <- min.cons.segs.raw.cpnA.df[seg.name, samp]
             all.segs.df[samp.seg.name,]$orig_nMinor <- min.cons.segs.nMinor.df[seg.name, samp]
@@ -235,12 +236,20 @@ addNewRawAndIntCPNCallsToFinalSegmentation <- function(seg.name.vec,
 
         for ( seg.name in seg.name.vec ) {
 
+            print(samp)
+            print(seg.name)
             for ( cpnX in cpnX.vec ) {
 
                 if (length(sample.vec) > 1) {
                     samp.seg.name <- paste0(samp, ":", seg.name)
                 } else {
                     samp.seg.name <- seg.name
+                }
+
+                if(! samp.seg.name %in% rownames(all.seg.df)) {
+                  print("Seg name not in all.seg.df:")
+                  print(samp.seg.name)
+                  next
                 }
                 #Fill in flag that shows whether segment has been phasing and CCF valculuation process, ie has greater than min num of hz snp positions
                 if ( length(all.seg.CCF.list[[cpnX]][[seg.name]]) == 1) {
@@ -288,7 +297,7 @@ addNewRawAndIntCPNCallsToFinalSegmentation <- function(seg.name.vec,
                     all.seg.df[samp.seg.name,]$ph_hz_total_cpn <- round(all.seg.df[samp.seg.name,]$ph_hz_total_raw_cpn)
                     all.seg.df[samp.seg.name,]$non_hz_total_cpn <- round(all.seg.df[samp.seg.name,]$non_hz_total_raw_cpn)
 
-                }
+                }#end if ( seg.has.fewer.than.min.hz.flag == FALSE) {
                 #Load in all available BAF and LogR data to fill in the rest of the fields
                 #Todo, not entirely sure how seg.asas.lr.baf.df is contributing here...
                 seg.asas.lr.baf.df <- asas.lr.baf.lists[[samp]][[seg.name]]
@@ -344,18 +353,22 @@ addNewRawAndIntCPNCallsToFinalSegmentation <- function(seg.name.vec,
                     } else {
                       #Todo, get the unphased SNP's total cpn here... we don't calculate this currently as it's a heterozygous SNP that falls below the threshold
                       #for ccf calculation.
-
                       all.seg.df[samp.seg.name,]$total_raw_cpn <- median(ss.dp.w.logr.only.df$tot_raw_un_ph_cpn)
                       all.seg.df[samp.seg.name,]$total_int_cpn <- round(median(ss.dp.w.logr.only.df$tot_raw_un_ph_cpn))
 
-                    }
+                    } 
 
-                } else {#end  if(nrow(datapoints.w.logr.only.df) > 0) {
+                } else if (nrow(datapoints.w.logr.only.df) == 0 & seg.has.fewer.than.min.hz.flag == TRUE) {#end  if(nrow(datapoints.w.logr.only.df) > 0) {
 
                   all.seg.df[samp.seg.name,]$total_raw_cpn <- median(as.numeric(ph.cpnA.vec) + median(as.numeric(ph.cpnB.vec)))
                   all.seg.df[samp.seg.name,]$total_int_cpn <- round(median(as.numeric(ph.cpnA.vec) + as.numeric(ph.cpnB.vec)))
   
-                } 
+                } else if (nrow(datapoints.w.logr.only.df) == 0 & seg.has.fewer.than.min.hz.flag == FALSE) {
+
+
+
+
+                }
 
                 #Now let's calculate the int toal copy number that we're going to use:
                 #Let's set the total copy number
@@ -1518,4 +1531,4 @@ initialiseFullOutputDataframe <- function(seg.name.vec, ploidy.est.vec, purity.e
         rownames(all.seg.df) <- row.names.vec
         return(all.seg.df)
 
-}
+} 

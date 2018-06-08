@@ -1,4 +1,8 @@
 
+
+
+
+
 generateMinimumConsistentSegmentation <- function(orig.cpn.segs.df, chroms.vec = 1:22, mc.cores = 2, col.to.use = "cpn_to_use") {
   require(parallel)
   orig.cpn.segs.mat <- as.matrix(orig.cpn.segs.df)
@@ -110,3 +114,66 @@ mapOriginalCopyNumberToJointSegmentation <- function(chr.start.end.vec, orig.cpn
   return(joint.seg.cpn.by.samp.vec)               
 
 } #end mapOriginalCopyNumberToJointSegmentation <- function(...
+
+
+
+#We will now make minimum consistent segments that will cover both arms of the chromosomes:
+##
+##Params:
+##
+##Returns:
+##Todo make version of the genome that's used a input option, for now stick with the hg19
+getChromosomeArmsGRangeList <- function(current.chr, chrom.info.df) {
+
+  arm.df.list <- list() 
+  p.arm.df <- data.frame(
+  chrom  = current.chr,
+  start = chrom.info.df[chrom.info.df$chrom == current.chr,]$p_start,
+  end = chrom.info.df[chrom.info.df$chrom == current.chr,]$p_end,
+  stringsAsFactors = FALSE)
+
+  count <- 1
+
+  if(chrom.info.df[chrom.info.df$chrom == current.chr,]$acrocentric == FALSE) {
+
+    arm.df.list[[count]] <- makeGRangesFromDataFrame(p.arm.df,
+                             keep.extra.columns=FALSE,
+                             ignore.strand=FALSE,
+                             seqinfo=NULL,
+                             seqnames.field=c("seqnames", "seqname",
+                                              "chromosome", "chrom",
+                                              "chr", "chromosome_name",
+                                              "seqid"),
+                             start.field=c("Start_Position","start"),
+                             end.field=c("End_Position", "end", "stop"),
+                             strand.field="strand",
+                             starts.in.df.are.0based=FALSE)
+
+    count <- count + 1
+  }
+
+
+
+  q.arm.df <- data.frame(
+  chrom  = current.chr,
+  start = chrom.info.df[chrom.info.df$chrom == current.chr,]$q_start,
+  end = chrom.info.df[chrom.info.df$chrom == current.chr,]$q_end,
+  stringsAsFactors = FALSE)
+
+  arm.df.list[[count]] <- makeGRangesFromDataFrame(q.arm.df,
+                           keep.extra.columns=FALSE,
+                           ignore.strand=FALSE,
+                           seqinfo=NULL,
+                           seqnames.field=c("seqnames", "seqname",
+                                            "chromosome", "chrom",
+                                            "chr", "chromosome_name",
+                                            "seqid"),
+                           start.field=c("Start_Position","start"),
+                           end.field=c("End_Position", "end", "stop"),
+                           strand.field="strand",
+                           starts.in.df.are.0based=FALSE)
+
+
+
+  return(arm.df.list)
+}
