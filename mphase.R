@@ -8,6 +8,7 @@ snp.file.path <- args[5]#Points towards the snp files, of whatever format they a
 seg.file.path <- args[6]#Pintts towards the seg files, of whatever format they should be determined byh the data.format.to.use flag.
 overwrite.flag  <- as.logical(args[7])
 gamma.val <- args[8]
+intersection.or.whole.arm <- args[9]#Can either be intersection or whole_arm
 
 
 #function taken from https://github.com/molgenis/molgenis-pipelines/wiki/How-to-source-another_file.R-from-within-your-R-script
@@ -165,12 +166,13 @@ current.dir <-  LocationOfThisScript()
 
 patient  <-  "LTX021"
 allow.dip.test.phasing.flag <- FALSE
-output.directory.base.path <- "/camp/project/proj-tracerx-lung/tctProjects/watkint/TRACERx100_lung_pan_can_analysis/release/A_LTX021/exome/CN_het_TRACERx_no_diptest/"
+output.directory.base.path <- "/Users/watkint/Desktop/MET048_mPhase_data/CN_het_TRACERx_no_diptest/"
 data.format.to.use <- "TRACERx_exome"
-snp.file.path <- "/camp/project/proj-tracerx-lung/tctProjects/watkint/TRACERx100_lung_pan_can_analysis/release/A_LTX021/exome/CN_het_TRACERx_no_diptest/LTX021_TRACERx_input_paths_df.txt"
-seg.file.path <- "/camp/project/proj-tracerx-lung/tctProjects/watkint/TRACERx100_lung_pan_can_analysis/release/A_LTX021/exome/MSAI/LTX021_joint_segs_all_ascat_info.txt"
+snp.file.path <- "/Users/watkint/Desktop/MET048_mPhase_data/A_LTX021/exome/CN_het_TRACERx_no_diptest/LTX021_TRACERx_input_paths_df.txt"
+seg.file.path <- "/Users/watkint/Desktop/MET048_mPhase_data/A_LTX021/exome/MSAI/LTX021_joint_segs_all_ascat_info.txt"
 overwrite.flag <- TRUE
 gamma.val <- 1
+intersection.or.whole.arm <- "intersection"
 
 print("patient")
 print(patient)
@@ -214,6 +216,8 @@ library(diptest)
 library(gplots)
 library(gdata)
 library(GenomicRanges)
+library(doParallel)
+
 
 ###############This is past the input stage and into the analysis:
 #Set constants for all analyses here... eventually these can be command line set
@@ -227,6 +231,7 @@ if ( ! file.exists(PLOT_OUTPUT_DIR) ) {
 	print("directory doesn't exist")
 
 }
+NUM_CORES <- 8
 GAMMA_VAL <- as.numeric(gamma.val)
 MAX_CPN_FOR_SUBCLONALITY <- 10
 MIN_CCF_TO_CONSIDER <- 0.15
@@ -275,8 +280,7 @@ if ( ! file.exists(seg.file.path)) {
 ###Load in the relevant genome file, #todo make this an option that can be set.
 hg19.info.path <- paste0(current.dir, "/", "ucsc_hg19_chrominfo.txt")
 hg19.info.df <- read.table(hg19.info.path, stringsAsFactors = FALSE, sep = "\t", header = TRUE)
-
-
+chrom.info.df <- hg19.info.df 
 
 
 
@@ -472,94 +476,105 @@ if (OVERWRITE_FLAG == TRUE) {
 
 	}
 
+	sample.vec <- unique(f.joint.segs.df$sample)
+	all.samp.grs <- makeGRangesFromDataFrame(f.joint.segs.df,
+			                         keep.extra.columns=FALSE,
+			                         ignore.strand=FALSE,
+			                         seqinfo=NULL,
+			                         seqnames.field=c("seqnames", "seqname",
+			                                          "chromosome", "chrom",
+			                                          "chr", "chromosome_name",
+			                                          "seqid"),
+			                         start.field=c("Start_Position","start", "startpos"),
+			                         end.field=c("End_Position", "end", "stop", "endpos"),
+			                         strand.field="strand",
+			                         starts.in.df.are.0based=FALSE)
 
-	chr22.j.segs.df <- f.joint.segs.df[f.joint.segs.df$chr==22 & f.joint.segs.df$sample%in%c("A_LTX021_SU_T1-R1", "A_LTX021_SU_T1-R2"),]
-	f.joint.seg.grs <- makeGRangesFromDataFrame(chr22.j.segs.df,
-				                         keep.extra.columns=FALSE,
-				                         ignore.strand=FALSE,
-				                         seqinfo=NULL,
-				                         seqnames.field=c("seqnames", "seqname",
-				                                          "chromosome", "chrom",
-				                                          "chr", "chromosome_name",
-				                                          "seqid"),
-				                         start.field=c("Start_Position","start", "startpos"),
-				                         end.field=c("End_Position", "endpos", "end", "stop"),
-				                         strand.field="strand",
-				                         starts.in.df.are.0based=FALSE)
+	all.samp.w.metadata.grs <- makeGRangesFromDataFrame(f.joint.segs.df,
+	                        keep.extra.columns=TRUE,
+	                        ignore.strand=FALSE,
+	                        seqinfo=NULL,
+	                        seqnames.field=c("seqnames", "seqname",
+	                                         "chromosome", "chrom",
+	                                         "chr", "chromosome_name",
+	                                         "seqid"),
+	                        start.field=c("Start_Position","start","startpos"),
+	                        end.field=c("End_Position", "end", "stop", "endpos"),
+	                        strand.field="strand",
+	                        starts.in.df.are.0based=FALSE)
 
 
-getChromosomeArmGrange <- function(chr, chr.arm, chrom.info.df) {
+	print("Getting proportion of chromosome arms in selected genome covered by segments from each (and all) samples:")
+	overlaps.between.samples.df <- compareOverlapsBetweenSamples(sample.vec, f.joint.segs.df, chrom.info.df, chrs.to.use.vec=CHRS_TO_USE_VEC)
+	print(overlaps.between.samples.df)
+	#So the question is here are we going to allow single base bair segments?
+	print("Calculating intersections by GRanges...")
+	intersection.grs.list <- getAllPatientSamplesAndIntersectionGRangesList(sample.vec, f.joint.segs.df)
+	intersection.grs <- intersection.grs.list[["overall_intersection"]]
+	non.ones.all.samp.intersection.grs <- removeSingleBasePairSegmentsFromIntersectionGranges(intersection.grs)
 
-	if (chr.arm == "p") {
+	#disjoin gets rid of all metadata
+	print("Calculating disjoint set by GRanges...")
+	dj.all.samp.grs <- disjoin(all.samp.grs)
+	print("Removing segments that are smaller by minimum width by merging with the closest segment...")#Todo revisit this potentially
+	non.ones.dj.all.samp.grs <- removeSingleBasePairSegmentsFromIntersectionGranges(dj.all.samp.grs)
 
-		arm.df <- data.frame(
-		chrom  = chr,
-		start = chrom.info.df[chrom.info.df$chrom == chr,]$p_start,
-		end = chrom.info.df[chrom.info.df$chrom == chr,]$p_end,
-		stringsAsFactors = FALSE)
 
-	} else if (chr.arm == "q") {
+	#Now we need to make sure that every bp of the relevant genome's non-acrocentric chromosome arms has a 
+	#corresponding segment, dummy or otherise 
+	print("Creating set of segments that cover all bp in the non-acrocentric selected chromosomes' arms of the selected genome...")
+	all.bp.chr.grs <- NULL
+	for ( chr in CHRS_TO_USE_VEC ) {
+		print(chr)
+		curr.chr.grs <- non.ones.dj.all.samp.grs[seqnames(non.ones.dj.all.samp.grs) == chr]
+		#This is done to stop intersect merging segments that start and end right after each other:
+		alternating.idx.vec <- (seq(1, length(curr.chr.grs)) %% 2) + 1#plus one to match 1-based indexing
+		plus.minus.vec <- c("+", "-")
+		strand(curr.chr.grs) <- plus.minus.vec[alternating.idx.vec]
+		chr.gr.list <- getChromosomeArmsGRangeList(chr, chrom.info.df)
+		#So do this for the chromosome p and q arms (if p arm is present)
+		for ( i in 1:length(chr.gr.list) ) {
 
-		arm.df <- data.frame(
-		chrom  = chr,
-		start = chrom.info.df[chrom.info.df$chrom ==chr,]$q_start,
-		end = chrom.info.df[chrom.info.df$chrom == chr,]$q_end,
-		stringsAsFactors = FALSE)
+			curr.chr.arm.gr <- chr.gr.list[[i]]
+			print("curr.chr.arm.gr")
+			print(curr.chr.arm.gr)
+			curr.chr.arm.gr.plus <- curr.chr.arm.gr
+			curr.chr.arm.gr.minus <- curr.chr.arm.gr
+			strand(curr.chr.arm.gr.plus) <- "+"
+			strand(curr.chr.arm.gr.minus) <- "-"
+			curr.chr.arm.gr.strands <- c(curr.chr.arm.gr.plus, curr.chr.arm.gr.minus)
+			#intersect taking into account strand to prevent merging of adjacent segments:
+			overlapping.grs <- intersect(curr.chr.grs, curr.chr.arm.gr.strands, ignore.strand = FALSE)
+			#Reset starand as it isn't used for antyhing else
+			strand(overlapping.grs) <- "*"
+			#No need to take into account strand as there is no way two segments would be merged by the setdiff operation.
+			non.overlapping.grs <- setdiff(curr.chr.arm.gr, curr.chr.grs, ignore.strand = TRUE)
+			sorted.all.bp.arm.grs <- sort(c(overlapping.grs, non.overlapping.grs))
 
+			if ( is.null(all.bp.chr.grs) ) {
+
+				all.bp.chr.grs <- sorted.all.bp.arm.grs
+
+			} else {
+
+				all.bp.chr.grs <- c(all.bp.chr.grs, sorted.all.bp.arm.grs)
+			}
+		}	
 	}
 
-	arm.gr <- makeGRangesFromDataFrame(arm.df,
-		                        keep.extra.columns=FALSE,
-		                        ignore.strand=FALSE,
-		                        seqinfo=NULL,
-		                        seqnames.field=c("seqnames", "seqname",
-		                                         "chromosome", "chrom",
-		                                         "chr", "chromosome_name",
-		                                         "seqid"),
-		                        start.field=c("Start_Position","start"),
-		                        end.field=c("End_Position", "end", "stop"),
-		                        strand.field="strand",
-		                        starts.in.df.are.0based=FALSE)
 
-	return(arm.gr)
+	#So now in parallel, let's take the set of disjoined original segments + their setdiff compared to the relevant genome's 
+	#non-acrocentric chromosome arms and get any matching original segmentation information as well as classify whether they were part of an intersection 
+	#between all regions, a disjoint set of some or were only in the setdiff and are therefore "dummy" segments.
+	print("Mapping the segments covering all bp of all arm back to input segments where appropriate....")
+	cl <- makeCluster(NUM_CORES)
+	registerDoParallel(cl)
+	itx <- iter(as.data.frame(all.bp.chr.grs), by="row")
+	results <- foreach(curr.all.bp.chr.df = itx, .combine = c) %dopar% {
 
-}
-
-
-
-##
-##Params:
-##
-##Returns:
-##
-compareOverlapsBetweenSamples <- function(sample.vec, f.joint.segs.df, hg19.info.df, chrs.to.use.vec) {
-
-	#For each sample how much of the chromosome arm
-	chrs.to.use.vec <- 1:22
-	#Subset the chromos
-	chr.info.df <- hg19.info.df[hg19.info.df$chrom %in% chrs.to.use.vec,]
-	p.name.vec <- chr.info.df$p_name
-	q.name.vec <- chr.info.df$q_name
-	arm.vec <- c(rbind(p.name.vec, q.name.vec)) 
-	p.q.vec <- c("p", "q")
-
-	#So now let's make an arm coverage data.frame
-	arm.coverage.df <- data.frame(matrix(vector(), length(arm.vec), (length(sample.vec) + 2),
-	                        dimnames = list(c(), c("arm", sample.vec, "overall_intersection"))),
-	                        stringsAsFactors = FALSE,
-	                        check.names = FALSE)
-	arm.coverage.df$arm <- arm.vec
-	#how 
-
-
-	#Now what about intersection of all samples what proportion of the genome to they cover:
-	samp.gr.list <- list()
-	overall.intersection.gr <- NULL
-	for ( samp in sample.vec ) {
-
-		samp.gr <- makeGRangesFromDataFrame(f.joint.segs.df[f.joint.segs.df$sample==samp 
-										  ,],
-		                        keep.extra.columns=FALSE,
+		require(GenomicRanges)
+		curr.all.bp.chr.gr <- makeGRangesFromDataFrame(curr.all.bp.chr.df,
+		                        keep.extra.columns=TRUE,
 		                        ignore.strand=FALSE,
 		                        seqinfo=NULL,
 		                        seqnames.field=c("seqnames", "seqname",
@@ -570,351 +585,222 @@ compareOverlapsBetweenSamples <- function(sample.vec, f.joint.segs.df, hg19.info
 		                        end.field=c("End_Position", "end", "stop", "endpos"),
 		                        strand.field="strand",
 		                        starts.in.df.are.0based=FALSE)
-		samp.gr.list[[samp]] <- samp.gr
 
-		if ( is.null(overall.intersection.gr) ) {
+		this.seg.name <- paste0(as.character(seqnames(curr.all.bp.chr.gr)), ":", start(curr.all.bp.chr.gr), ":", end(curr.all.bp.chr.gr))
+		this.seg.samp.seg.names.vec <- paste(sample.vec, ":", this.seg.name, sep="")
+		info.cols.vec <- c("overlap_w_n_samps","num_segs_maps_to_in_samp" ,"in_intersection", "in_disjoin_only", "in_arm_setdiff")
 
-			overall.intersection.gr <- samp.gr
+		all.samp.this.seg.bp.df <- data.frame(matrix(FALSE, length(sample.vec), length(info.cols.vec),
+		                        dimnames = list(this.seg.samp.seg.names.vec, info.cols.vec)),
+		                        stringsAsFactors = FALSE,
+		                        check.names = FALSE)
+
+		names(this.seg.samp.seg.names.vec) <- sample.vec
+		all.samp.overlap.grs <- getOverlapGRanges(curr.all.bp.chr.gr, all.samp.w.metadata.grs)
+		all.samp.overlap.df <- as.data.frame(all.samp.overlap.grs, row.names = NULL)[0,][1:4,]
+		rownames(all.samp.overlap.df) <- this.seg.samp.seg.names.vec
+
+		matching.grs.sample.vec <- unique(all.samp.overlap.grs$sample)
+		non.matching.sample.vec <- sample.vec[ ! sample.vec %in% matching.grs.sample.vec]
+		all.samp.this.seg.bp.df[, "overlap_w_n_samps"] <- length(matching.grs.sample.vec)
+
+		if (all(sample.vec %in% matching.grs.sample.vec)) {
+
+			all.samp.this.seg.bp.df[, "in_intersection"] <- TRUE
+
+		} else if ( any(sample.vec %in% matching.grs.sample.vec) ) {#So now this means there's at least one segment missing
+
+			all.samp.this.seg.bp.df[, "in_disjoin_only"] <- TRUE
 
 		} else {
 
-			overall.intersection.gr <- intersect(overall.intersection.gr, samp.gr)
+			all.samp.this.seg.bp.df[, "in_arm_setdiff"] <- TRUE
 
-		}#end ! is.null (overall.intersection.gr)
+		}
 
-	}#en for ( samp in sample.vec ) {
-	samp.gr.list[["overall_intersection"]] <- overall.intersection.gr
-	#So now we want to take the intersection and compare the sizes of the
+		for ( match.samp in matching.grs.sample.vec ) {
 
-	for ( samp in names(samp.gr.list) ) {
+			match.samp.overlap.grs <- all.samp.overlap.grs[all.samp.overlap.grs$sample == match.samp]
+			all.samp.this.seg.bp.df[this.seg.samp.seg.names.vec[match.samp], "num_segs_maps_to_in_samp"] <- length(match.samp.overlap.grs)
+			max.samp.overlap.gr <- match.samp.overlap.grs[ match.samp.overlap.grs$overlap_prop_query == max(match.samp.overlap.grs$overlap_prop_query) ]
+			all.samp.overlap.df[this.seg.samp.seg.names.vec[match.samp],] <- as.data.frame(max.samp.overlap.gr)
 
-		#Get sample granges:
-		samp.gr <- samp.gr.list[[samp]]
-		print(samp)
-		print(samp.gr)
-		for ( chr in chrs.to.use.vec ) {
-			for ( arm in p.q.vec) {
+		}
 
-				chr.arm.gr <- getChromosomeArmGrange(chr, arm, chr.info.df)
-				chr.arm.overlap.gr <- intersect(samp.gr, chr.arm.gr)
-				arm.coverage.df[arm.coverage.df$arm==paste0(chr, arm), samp] <- sum(as.numeric(width(chr.arm.overlap.gr))) / as.numeric(width(chr.arm.gr))
+		if(length(non.matching.sample.vec) > 0) {
 
-			}#end for ( arm in p.q.vec) {
-		}# for ( chr in chrs.to.use.vec ) {
+			all.samp.this.seg.bp.df[this.seg.samp.seg.names.vec[non.matching.sample.vec], "num_segs_maps_to_in_samp"] <- 0
 
-	}#end for ( samp in sample.vec ) {
+		}
 
-	arm.coverage.df$diff_from_max <-  apply(arm.coverage.df[,2:ncol(arm.coverage.df)], 1, max) - arm.coverage.df$overall_intersection
+		#Creare a test dataframe
+		return(list(cbind(all.samp.this.seg.bp.df, all.samp.overlap.df)))
 
-	#Report max and union
-
-	return(arm.coverage.df)
-}
-
-test.df <- data.frame(chr=c(1,1,1),
-			start=c(1,2,5),
-			end=c(3,6,8),
-			stringsAsFactors=FALSE)
-
-test.gr <- makeGRangesFromDataFrame(test.df,
-                         keep.extra.columns=FALSE,
-                         ignore.strand=FALSE,
-                         seqinfo=NULL,
-                         seqnames.field=c("seqnames", "seqname",
-                                          "chromosome", "chrom",
-                                          "chr", "chromosome_name",
-                                          "seqid"),
-                         start.field=c("Start_Position","start"),
-                         end.field=c("End_Position", "end", "stop"),
-                         strand.field="strand",
-                         starts.in.df.are.0based=FALSE)
-
-
-f.joint.segs.gr <- makeGRangesFromDataFrame(f.joint.segs.df,
-		                         keep.extra.columns=FALSE,
-		                         ignore.strand=FALSE,
-		                         seqinfo=NULL,
-		                         seqnames.field=c("seqnames", "seqname",
-		                                          "chromosome", "chrom",
-		                                          "chr", "chromosome_name",
-		                                          "seqid"),
-		                         start.field=c("Start_Position","start", "startpos"),
-		                         end.field=c("End_Position", "end", "stop", "endpos"),
-		                         strand.field="strand",
-		                         starts.in.df.are.0based=FALSE)
-disjoin(f.joint.segs.gr)
-
-##
-##Params:
-##
-##Returns:
-##
-getChromosomeArmsGRangeList <- function(current.chr, chrom.info.df) {
-
-	arm.df.list <- list() 
-	p.arm.df <- data.frame(
-	chrom  = current.chr,
-	start = chrom.info.df[chrom.info.df$chrom == current.chr,]$p_start,
-	end = chrom.info.df[chrom.info.df$chrom == current.chr,]$p_end,
-	stringsAsFactors = FALSE)
-
-	count <- 1
-
-	if(chrom.info.df[chrom.info.df$chrom == current.chr,]$acrocentric == FALSE) {
-
-		arm.df.list[[count]] <- makeGRangesFromDataFrame(p.arm.df,
-		                         keep.extra.columns=FALSE,
-		                         ignore.strand=FALSE,
-		                         seqinfo=NULL,
-		                         seqnames.field=c("seqnames", "seqname",
-		                                          "chromosome", "chrom",
-		                                          "chr", "chromosome_name",
-		                                          "seqid"),
-		                         start.field=c("Start_Position","start"),
-		                         end.field=c("End_Position", "end", "stop"),
-		                         strand.field="strand",
-		                         starts.in.df.are.0based=FALSE)
-
-		count <- count + 1
 	}
+	stopCluster(cl)
 
 
+	all.bp.all.samps.segs.df <- do.call(rbind, results)
 
-	q.arm.df <- data.frame(
-	chrom  = current.chr,
-	start = chrom.info.df[chrom.info.df$chrom == current.chr,]$q_start,
-	end = chrom.info.df[chrom.info.df$chrom == current.chr,]$q_end,
-	stringsAsFactors = FALSE)
+	full_sample <- sapply(rownames(all.bp.all.samps.segs.df), function(x) strsplit(x, split = ":")[[1]][1])
+	Chromosome <- as.numeric(sapply(rownames(all.bp.all.samps.segs.df), function(x) strsplit(x, split = ":")[[1]][2]))
+	Start_Position <- as.numeric(sapply(rownames(all.bp.all.samps.segs.df), function(x) strsplit(x, split = ":")[[1]][3]))
+	End_Position <- as.numeric(sapply(rownames(all.bp.all.samps.segs.df), function(x) strsplit(x, split = ":")[[1]][4]))
 
-	arm.df.list[[count]] <- makeGRangesFromDataFrame(q.arm.df,
-	                         keep.extra.columns=FALSE,
-	                         ignore.strand=FALSE,
-	                         seqinfo=NULL,
-	                         seqnames.field=c("seqnames", "seqname",
-	                                          "chromosome", "chrom",
-	                                          "chr", "chromosome_name",
-	                                          "seqid"),
-	                         start.field=c("Start_Position","start"),
-	                         end.field=c("End_Position", "end", "stop"),
-	                         strand.field="strand",
-	                         starts.in.df.are.0based=FALSE)
+	#Let's make a pretend set of copy number columns that we can apply to the
 
-	return(arm.df.list)
-}
+	all.bp.all.samps.segs.anno.df <- cbind(Chromosome, Start_Position, End_Position, full_sample, all.bp.all.samps.segs.df)
+	sorted.all.bp.all.samps.segs.anno.df <- all.bp.all.samps.segs.anno.df[with(all.bp.all.samps.segs.anno.df, order(full_sample, Chromosome, Start_Position)), ]
+	sorted.all.bp.all.samps.segs.anno.df[1:50, 1:9]
 
-all.chrs.matched.grange.df <- data.frame(Sample=character(0),
-										Chromosome=character(0),
-										Start_Position=numeric(0), 
-										End_Position=numeric(0),
-										Num_Markers=numeric(0),
-										Seg.CN=numeric(0),
-										stringsAsFactors=FALSE)
+	cpn.chr.start.end.df <- sorted.all.bp.all.samps.segs.anno.df[sorted.all.bp.all.samps.segs.anno.df$full_sample==sorted.all.bp.all.samps.segs.anno.df[1,]$full_sample,1:3]
+	mock.cpn.matrix <- matrix(data=0, nrow=nrow(cpn.chr.start.end.df), ncol = length(sample.vec)) 
+	colnames(mock.cpn.matrix) <- sample.vec
+	mock.min.cons.seg.df <- cbind(cpn.chr.start.end.df, mock.cpn.matrix)
 
-#We also want to calculate what proportion of all arms is covered by the original segmentation for each sample:
-for ( chr in CHRS_TO_USE_VEC ) {
-
-	#Get the chromosome arms in non-acrocentric
-	# for ( current.chr in chr.vec ) {
-
-	curr.pt.chr.grange <- makeGRangesFromDataFrame(all.avg.samp.gistic.df[all.avg.samp.gistic.df$Sample == pt
-											&  all.avg.samp.gistic.df$Chromosome == current.chr,],
-	                         keep.extra.columns=TRUE,
-	                         ignore.strand=FALSE,
-	                         seqinfo=NULL,
-	                         seqnames.field=c("seqnames", "seqname",
-	                                          "chromosome", "chrom",
-	                                          "chr", "chromosome_name",
-	                                          "seqid"),
-	                         start.field=c("Start_Position","start"),
-	                         end.field=c("End_Position", "end", "stop"),
-	                         strand.field="strand",
-	                         starts.in.df.are.0based=FALSE)
-	#This is done to stop intersect merging segments that start and end right after each other:
-	#E.g.
-	#1 200 300
-	#1 300 350
-	#Will no longer be merged 
-	alternating.idx.vec <- (seq(1, length(curr.pt.chr.grange)) %% 2) + 1#plus one to match 1-based indexing
-	plus.minus.vec <- c("+", "-")
-	strand(curr.pt.chr.grange) <- plus.minus.vec[alternating.idx.vec]
-	#Get the chromosome arm corresponding 
-	chr.gr.list <- getChromosomeArmsGRangeList(current.chr, chrom.info.df)
-
-	#So do this for the chromosome p and q arms (if q arm is preesent)
-	for ( i in 1:length(chr.gr.list) ) {
-
-		curr.chr.arm.gr <- chr.gr.list[[i]]
-		curr.chr.arm.gr.plus <- curr.chr.arm.gr
-		curr.chr.arm.gr.minus <- curr.chr.arm.gr
-		strand(curr.chr.arm.gr.plus) <- "+"
-		strand(curr.chr.arm.gr.minus) <- "-"
-		curr.chr.arm.gr.strands <- c(curr.chr.arm.gr.plus, curr.chr.arm.gr.minus)
-		print("curr.chr.arm.gr.strands")
-		print(curr.chr.arm.gr.strands)
-		#intersect taking into account strand to prevent merging of adjacent segments:
-		overlapping.gr <- intersect(curr.pt.chr.grange, curr.chr.arm.gr.strands, ignore.strand = FALSE)
-		print("overlapping.gr")
-		print(overlapping.gr)
-		#Reset starand as it isn't used for antyhing else
-		strand(overlapping.gr) <- "*"
-		#No need to take into account strand as there is no way two segments would be merged by the setdiff operation.
-		non.overlapping.gr <- setdiff(curr.chr.arm.gr, curr.pt.chr.grange, ignore.strand = TRUE)
-		print("non.overlapping.gr")
-		print(non.overlapping.gr)
-		# print("non.overlapping.gr")
-		# print(non.overlapping.gr)
-		#Ok let's do this as dataframes:
-		#hits.obj <- findOverlaps(overlapping.gr, curr.pt.chr.grange, type = "any")
-		#print("hits.obj")
-		#print(hits.obj)
-		#idx.vec <- subjectHits(hits.obj)
-		#So now we don't have to add the copy number as 
-		#chr.seg.arm.info.df <- as.data.frame(DataFrame(Num_Markers = curr.pt.chr.grange$Num_Markers[idx.vec], Seg.CN = curr.pt.chr.grange$Seg.CN[idx.vec]))
-		overlapping.segs.df <- as.data.frame(overlapping.gr)[, c("seqnames", "start", "end")]
-		overlapping.segs.info.df <- cbind(as.data.frame(rep(pt, nrow(overlapping.segs.df))), overlapping.segs.df, chr.seg.arm.info.df)
-		colnames(overlapping.segs.info.df) <- c("Sample", "Chromosome", "Start_Position", "End_Position", "Num_Markers", "Seg.CN")
-		print("overlapping.segs.info.df")
-		print(overlapping.segs.info.df)
-		#Now we need to sort out the nonoverlapping:
-		non.overlapping.segs.df <- as.data.frame(non.overlapping.gr)[, c("seqnames", "start", "end")]
-		non.overlapping.segs.info.df <- cbind(as.data.frame(rep(pt, nrow(non.overlapping.segs.df))),
-											  non.overlapping.segs.df,
-											  as.data.frame(rep(5, nrow(non.overlapping.segs.df))),
-											  as.data.frame(rep(0.15, nrow(non.overlapping.segs.df))))
-		colnames(non.overlapping.segs.info.df) <- c("Sample", "Chromosome", "Start_Position", "End_Position", "Num_Markers", "Seg.CN")
-
-		print("non.overlapping.segs.info.df")
-		print(non.overlapping.segs.info.df)
-
-		full.chrom.arm.info.df <- rbind(overlapping.segs.info.df, non.overlapping.segs.info.df)
-		full.chrom.arm.info.df <- full.chrom.arm.info.df[with(full.chrom.arm.info.df, order(Chromosome, Start_Position, End_Position)),]
-
-		#Ok so we've got a whole arm filled in..., add it to the full dataset:
-		all.chrs.matched.grange.df <- rbind(all.chrs.matched.grange.df, full.chrom.arm.info.df)
-		print(all.chrs.matched.grange.df)
-	}	
-
-
-}
-
-
-	#Now let's make the inetersection:
-	#So we want an empty dataframe to hold all the rows that we're going to create for each chromosome arm:
-	all.chrs.matched.grange.df <- data.frame(Sample=character(0),
-											Chromosome=character(0),
-											Start_Position=numeric(0), 
-											End_Position=numeric(0),
-											Num_Markers=numeric(0),
-											Seg.CN=numeric(0),
-											stringsAsFactors=FALSE)
-
-
-	# chr.vec <- 1:22
-	# for ( current.chr in chr.vec ) {
-
-	# 	curr.pt.chr.grange <- makeGRangesFromDataFrame(all.avg.samp.gistic.df[all.avg.samp.gistic.df$Sample == pt
-	# 											&  all.avg.samp.gistic.df$Chromosome == current.chr,],
-	# 	                         keep.extra.columns=TRUE,
-	# 	                         ignore.strand=FALSE,
-	# 	                         seqinfo=NULL,
-	# 	                         seqnames.field=c("seqnames", "seqname",
-	# 	                                          "chromosome", "chrom",
-	# 	                                          "chr", "chromosome_name",
-	# 	                                          "seqid"),
-	# 	                         start.field=c("Start_Position","start"),
-	# 	                         end.field=c("End_Position", "end", "stop"),
-	# 	                         strand.field="strand",
-	# 	                         starts.in.df.are.0based=FALSE)
-	# 	#This is done to stop intersect merging segments that start and end right after each other:
-	# 	#E.g.
-	# 	#1 200 300
-	# 	#1 300 350
-	# 	#Will no longer be merged 
-	# 	alternating.idx.vec <- (seq(1, length(curr.pt.chr.grange)) %% 2) + 1#plus one to match 1-based indexing
-	# 	plus.minus.vec <- c("+", "-")
-	# 	strand(curr.pt.chr.grange) <- plus.minus.vec[alternating.idx.vec]
-	# 	#Get the chromosome arm corresponding 
-	# 	chr.gr.list <- getChromosomeArmsGRangeList(current.chr, chrom.info.df)
-
-	# 	#So do this for the chromosome p and q arms (if q arm is preesent)
-	# 	for ( i in 1:length(chr.gr.list) ) {
-
-	# 		curr.chr.arm.gr <- chr.gr.list[[i]]
-	# 		curr.chr.arm.gr.plus <- curr.chr.arm.gr
-	# 		curr.chr.arm.gr.minus <- curr.chr.arm.gr
-	# 		strand(curr.chr.arm.gr.plus) <- "+"
-	# 		strand(curr.chr.arm.gr.minus) <- "-"
-	# 		curr.chr.arm.gr.strands <- c(curr.chr.arm.gr.plus, curr.chr.arm.gr.minus)
-	# 		print("curr.chr.arm.gr.strands")
-	# 		print(curr.chr.arm.gr.strands)
-	# 		#intersect taking into account strand to prevent merging of adjacent segments:
-	# 		overlapping.gr <- intersect(curr.pt.chr.grange, curr.chr.arm.gr.strands, ignore.strand = FALSE)
-	# 		print("overlapping.gr")
-	# 		print(overlapping.gr)
-	# 		#Reset starand as it isn't used for antyhing else
-	# 		strand(overlapping.gr) <- "*"
-	# 		#No need to take into account strand as there is no way two segments would be merged by the setdiff operation.
-	# 		non.overlapping.gr <- setdiff(curr.chr.arm.gr, curr.pt.chr.grange, ignore.strand = TRUE)
-	# 		print("non.overlapping.gr")
-	# 		print(non.overlapping.gr)
-	# 		# print("non.overlapping.gr")
-	# 		# print(non.overlapping.gr)
-	# 		#Ok let's do this as dataframes:
-	# 		#hits.obj <- findOverlaps(overlapping.gr, curr.pt.chr.grange, type = "any")
-	# 		#print("hits.obj")
-	# 		#print(hits.obj)
-	# 		#idx.vec <- subjectHits(hits.obj)
-	# 		#So now we don't have to add the copy number as 
-	# 		#chr.seg.arm.info.df <- as.data.frame(DataFrame(Num_Markers = curr.pt.chr.grange$Num_Markers[idx.vec], Seg.CN = curr.pt.chr.grange$Seg.CN[idx.vec]))
-	# 		overlapping.segs.df <- as.data.frame(overlapping.gr)[, c("seqnames", "start", "end")]
-	# 		overlapping.segs.info.df <- cbind(as.data.frame(rep(pt, nrow(overlapping.segs.df))), overlapping.segs.df, chr.seg.arm.info.df)
-	# 		colnames(overlapping.segs.info.df) <- c("Sample", "Chromosome", "Start_Position", "End_Position", "Num_Markers", "Seg.CN")
-	# 		print("overlapping.segs.info.df")
-	# 		print(overlapping.segs.info.df)
-	# 		#Now we need to sort out the nonoverlapping:
-	# 		non.overlapping.segs.df <- as.data.frame(non.overlapping.gr)[, c("seqnames", "start", "end")]
-	# 		non.overlapping.segs.info.df <- cbind(as.data.frame(rep(pt, nrow(non.overlapping.segs.df))),
-	# 											  non.overlapping.segs.df,
-	# 											  as.data.frame(rep(5, nrow(non.overlapping.segs.df))),
-	# 											  as.data.frame(rep(0.15, nrow(non.overlapping.segs.df))))
-	# 		colnames(non.overlapping.segs.info.df) <- c("Sample", "Chromosome", "Start_Position", "End_Position", "Num_Markers", "Seg.CN")
-
-	# 		print("non.overlapping.segs.info.df")
-	# 		print(non.overlapping.segs.info.df)
-
-	# 		full.chrom.arm.info.df <- rbind(overlapping.segs.info.df, non.overlapping.segs.info.df)
-	# 		full.chrom.arm.info.df <- full.chrom.arm.info.df[with(full.chrom.arm.info.df, order(Chromosome, Start_Position, End_Position)),]
-
-	# 		#Ok so we've got a whole arm filled in..., add it to the full dataset:
-	# 		all.chrs.matched.grange.df <- rbind(all.chrs.matched.grange.df, full.chrom.arm.info.df)
-	# 		print(all.chrs.matched.grange.df)
-	# 	}	
-
-	# }
-
-
-
-
-
-
-
-
-
-
+	#MOCK INPUT:
+	min.cons.seg.df <- mock.min.cons.seg.df
+	allow.logr.only.flag = FALSE
+	num.cores = 8
 	#Todo work out the differences here:
 	#All SNPs in these lists must have both a logr and baf value: all sample all seg logr baf lists is asas.lr.baf
-	asas.SNPs.w.both.lr.baf.snp.lists <- cleanAndErrorCheckSNPs(all.samp.SNP.list, min.cons.segs.df, allow.logr.only.flag = FALSE)
+
+	##
+	##Params:
+	##
+	##Returns:
+	##
+	#cleanAndErrorCheckSNPsParallel <- function(all.samp.SNP.list, min.cons.seg.df, allow.logr.only.flag = FALSE, num.cores = 8) {
+	  #TODO add check that every single all.samp.SNP.list has the same SNPs..
+	  #Note error checking of removing NAs from the min.cons.seg.df should already have been performed
+
+	  min.cpn.vals.df <- min.cons.seg.df[,4:ncol(min.cons.seg.df)]
+	  seg.name.vec <- paste(min.cons.seg.df[, 1], min.cons.segs.df[, 2], min.cons.segs.df[, 3], sep=":")
+	  #min.cpn.vals.df <- min.cpn.vals.df[ ! is.na(rowSums(min.cpn.vals.df)), ,drop = FALSE] 
+	  working.all.samp.SNP.list <- list()
+	  all.samps.prob.SNPs.vec <- c()
+
+	  #Make vectors for sample vec:
+	  samp.seg.vec <- rep(seg.name.vec, length(sample.vec))
+	  sample.rep.vec <- c()
+	  for ( samp in sample.vec ) {
+	  	working.all.samp.SNP.list[[samp]] <- list()
+	    sample.rep.vec <- c(sample.rep.vec, rep(samp, length(seg.name.vec)))
+
+	  }
+	  iterable.min.cons.seg.df <- cbind(do.call("rbind", replicate(length(sample.vec), min.cons.seg.df[,1:3], simplify = FALSE)), sample = sample.rep.vec)
+
+	  cl <- makeCluster(num.cores)
+	  registerDoParallel(cl)
+	  itx <- iter(iterable.min.cons.seg.df, by="row")
+	  print("Starting parallel assignation of snps to segs:")
+
+	  # Create class which holds multiple results for each loop iteration.
+	  # Each loop iteration populates two properties: $result1 and $result2.
+	  # For a great tutorial on S3 classes, see: 
+	  # http://www.cyclismo.org/tutorial/R/s3Classes.html#creating-an-s3-class
+	  MultiResultClass <- function(samp_seg_name=NULL, samp_seg_logR_BAF_df=NULL, samp_prob_SNPs_vec=NULL)
+	  {
+	    me <- list(
+	   	  samp_seg_name = samp_seg_name,
+	      samp_seg_logR_BAF_df = samp_seg_logR_BAF_df,
+	      samp_prob_SNPs_vec  = samp_prob_SNPs_vec
+	    )
+	    # Set the name for the class
+	    class(me) <- append(class(me),"MultiResultClass")
+	    return(me)
+	  }
+	  results.list <- foreach(min.cons.seg.df = itx, .combine = c) %dopar% {
+
+	    samp.SNP.df <- all.samp.SNP.list[[ min.cons.seg.df[, 4]]]
+
+	    samp.seg.logR.BAF.df <- samp.SNP.df[ samp.SNP.df$chrom == min.cons.seg.df[, 1] 
+	                                       & samp.SNP.df$pos >= min.cons.seg.df[, 2] 
+	                                       & samp.SNP.df$pos <= min.cons.seg.df[, 3], ,drop = FALSE]
+
+	    if (allow.logr.only.flag == FALSE) {
+
+	      samp.prob.SNPs.vec <- rownames(samp.seg.logR.BAF.df[is.na(samp.seg.logR.BAF.df$BAFsegmented),])
+	      samp.seg.logR.BAF.df <- samp.seg.logR.BAF.df[samp.seg.logR.BAF.df$BAF != 2, ,drop = FALSE]
+	      samp.seg.logR.BAF.df <- samp.seg.logR.BAF.df[! is.na(samp.seg.logR.BAF.df$BAFsegmented), ,drop = FALSE]
+
+	    }
+
+	    result <- MultiResultClass(samp_seg_name = paste0(min.cons.seg.df[, 4], "@", min.cons.seg.df[, 1], ":", min.cons.seg.df[, 2], ":", min.cons.seg.df[, 3]),
+	    							samp_seg_logR_BAF_df = samp.seg.logR.BAF.df,
+	    							samp_prob_SNPs_vec = samp.prob.SNPs.vec)
+	    result.list <- list(result)
+	    names(result.list) <- paste0(min.cons.seg.df[, 4], "@", min.cons.seg.df[, 1], ":", min.cons.seg.df[, 2], ":", min.cons.seg.df[, 3])
+	    # result$result1 <- samp.seg.logR.BAF.df
+	    # result$result2 <- samp.prob.SNPs.vec
+	    # samp.seg.logR.BAF.df.list <- list(samp.seg.logR.BAF.df)
+	    # names(samp.seg.logR.BAF.df.list) <- paste0(min.cons.seg.df[, 4], "@", min.cons.seg.df[, 1], ":", min.cons.seg.df[, 2], ":", min.cons.seg.df[, 3])
+	    # samp.prob.SNPs.vec.list <- list(samp.prob.SNPs.vec)
+	    # names(samp.prob.SNPs.vec.list) <- paste0(min.cons.seg.df[, 4], "@", min.cons.seg.df[, 1], ":", min.cons.seg.df[, 2], ":", min.cons.seg.df[, 3], ":prob_snps")
+
+	    # returnable <- list(list(samp.seg.logR.BAF.df.list), list(samp.prob.SNPs.vec.list))
+	    #names(returnable) <-  paste0(min.cons.seg.df[, 4], "@", min.cons.seg.df[, 1], ":", min.cons.seg.df[, 2], ":", min.cons.seg.df[, 3])
+	    return(result.list)
+
+	  }
+
+	  #Create the list dataobject we're expecting:
+
+	  for ( result.name in names(results.list) ) {
+
+	    samp <- strsplit(result.name, "@")[[1]][1]
+	    print(samp)
+	    seg.name <- strsplit(result.name, "@")[[1]][2]
+	    print(seg.name)
+	    print("########")
+
+	    if (! grepl("prob_snps", seg.name)){
+	    	print("adding to list")
+	    	working.all.samp.SNP.list[[samp]][[seg.name]] <- results.list[[result.name]][[2]]
+
+		}
+		readline(prompt="Press [enter] to continue")
+
+	  }
+	  #Now get all the problem snps
+	  all.samps.prob.SNPs.vec <- sapply(results.list, function(x) x[[1]][2])
+	  all.samps.prob.SNPs.vec <- unique(all.samps.prob.SNPs.vec)
+	  print("Number of problem SNPs being removed:")
+	  print(length(all.samps.prob.SNPs.vec))
+
+
+	  for ( sample in sample.vec ) {
+
+	    for (seg.idx in 1:nrow(min.cpn.vals.df)) {
+
+	      working.all.samp.SNP.list[[sample]][[seg.name.vec[seg.idx]]] <- working.all.samp.SNP.list[[sample]][[seg.name.vec[seg.idx]]][ ! rownames(working.all.samp.SNP.list[[sample]][[seg.name.vec[seg.idx]]])%in%all.samps.prob.SNPs.vec, ,drop=FALSE] 
+
+	    }#end for (seg.idx in 1:nrow(min.cpn.vals.df))
+
+	  }#end for ( sample in sample.vec ) {
+
+	 # return(working.all.samp.SNP.list)
+
+	 str(working.all.samp.SNP.list, max=1)
+	#}#end <- function(all.samp.SNP.list, min.cons.seg.df)
+	 STOP
+
+
+
+
+
+
+	ptm <- proc.time()
+	asas.SNPs.w.both.lr.baf.snp.lists <- cleanAndErrorCheckSNPsParallel(all.samp.SNP.list, mock.min.cons.seg.df, allow.logr.only.flag = FALSE)
+	time.taken <- proc.time() - ptm
+	##
 	#SNPs that only have LogR are permitted in these lists, but it also contains all the SNPs with both BAF and LogR
-	asas.SNPS.lr.and.or.baf.lists <- cleanAndErrorCheckSNPs(all.samp.SNP.list, min.cons.segs.df, allow.logr.only.flag = TRUE)
-
-	asas.SNPs.w.both.lr.baf.snp.lists <- cleanAndErrorCheckSNPsMPhase(all.samp.SNP.list, min.cons.segs.df, allow.logr.only.flag = FALSE)
-	asas.SNPS.lr.and.or.baf.lists <- cleanAndErrorCheckSNPsMPhase(all.samp.SNP.list, min.cons.segs.df, allow.logr.only.flag = TRUE)
+	asas.SNPS.lr.and.or.baf.lists <- cleanAndErrorCheckSNPsParallel(all.samp.SNP.list, mock.min.cons.seg.df, allow.logr.only.flag = TRUE)
 
 
-
-
-
-
+	STOP
+	# asas.SNPs.w.both.lr.baf.snp.lists <- cleanAndErrorCheckSNPsMPhase(all.samp.SNP.list, min.cons.segs.df, allow.logr.only.flag = FALSE)
+	# asas.SNPS.lr.and.or.baf.lists <- cleanAndErrorCheckSNPsMPhase(all.samp.SNP.list, min.cons.segs.df, allow.logr.only.flag = TRUE)
 
 
 	if ( length(asas.SNPs.w.both.lr.baf.snp.lists) <= 1 ) {
@@ -957,47 +843,6 @@ for ( chr in CHRS_TO_USE_VEC ) {
 }#end else if (OVERWRITE_FLAG == FALSE
 
 
-#Now what about intersection of all samples what proportion of the genome to they cover:
-samp.gr.list <- list()
-overall.intersection.gr <- NULL
-for ( samp in sample.vec ) {
-
-	samp.gr <- makeGRangesFromDataFrame(f.joint.segs.df[f.joint.segs.df$sample==samp 
-									  ,],
-	                        keep.extra.columns=FALSE,
-	                        ignore.strand=FALSE,
-	                        seqinfo=NULL,
-	                        seqnames.field=c("seqnames", "seqname",
-	                                         "chromosome", "chrom",
-	                                         "chr", "chromosome_name",
-	                                         "seqid"),
-	                        start.field=c("Start_Position","start","startpos"),
-	                        end.field=c("End_Position", "end", "stop", "endpos"),
-	                        strand.field="strand",
-	                        starts.in.df.are.0based=FALSE)
-
-	if ( is.null(overall.intersection.gr) ) {
-
-		overall.intersection.gr <- samp.gr
-
-	} else {
-
-		overall.intersection.gr <- intersect(overall.intersection.gr, samp.gr)
-
-	}#end ! is.null (overall.intersection.gr)
-
-}#en for ( samp in sample.vec ) {
-
-colnames(min.cons.segs.df)[1:3] <- c("chr", "start", "end")
-
-min.cons.segs.gr <- makeGRangesFromDataFrame(min.cons.segs.df)
-
-setdiff(min.cons.segs.gr,overall.intersection.gr)
-
-overall.intersection.df <- as.data.frame(overall.intersection.gr)
-
-overall.intersection.df$chr_pos <- paste(overall.intersection.df$seqnames, ":", overall.intersection.df$start, ":", overall.intersection.df$end, sep="")
-chr.pos.vec <- paste0(min.cons.segs.df[,"chr"], ":", min.cons.segs.df[,"start"], ":", min.cons.segs.df[,"end"])
 #if we're making a 
 # Now we need to make sure that the asas.lr.baf.lists and sample.to.phase.seg.list 
 # if (length(names(sample.to.phase.seg.list)) != length(asas.lr.baf.lists[[1]])) {
@@ -1011,6 +856,7 @@ chr.pos.vec <- paste0(min.cons.segs.df[,"chr"], ":", min.cons.segs.df[,"start"],
 #Todo, Add function definitions documentaiton
 #Todo, clarify the loops and next statements that are controlling what happens when there are less than 5 hz snps in a sample.
 #Todo, check if the mixture phasing is ever being selected... in the example with B_MET002 no mixture phasing called.
+min.cons.segs.df <- mock.min.cons.seg.df
 seg.name.vec <- paste(min.cons.segs.df[, 1], min.cons.segs.df[, 2], min.cons.segs.df[, 3], sep = ":")
 sample.vec <- names(asas.SNPs.w.both.lr.baf.snp.lists)
 
