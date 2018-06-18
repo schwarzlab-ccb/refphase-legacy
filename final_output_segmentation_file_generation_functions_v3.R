@@ -42,117 +42,6 @@ addOriginalCPNValuesAndCallsVsPloidyToOutputSegmentation <- function(sample.vec,
 
 }#end addOriginalRawValuesToOutputSegmentation
 
-#Todo refactor:
-#### Function to calculate arm events
-get.arm.event <- function(seg, chrominfo, gain.threshold=log2(2.5/2),loss.threshold= log2(1.5/2),logscale=TRUE,loh_frac=0.75, min.arm.size=0.75,purity=0, use.raw=TRUE){
-  
-  chrominfo <- chrominfo[chrominfo[,1] %in% seg[,2],]
-  
-  seg<- seg[seg[,10] >= purity,]
-  if(use.raw){
-    seg[,6] <- seg[,'nAraw']+seg[,'nBraw']
-  }
-  output <- matrix(0, nrow=2*nrow(chrominfo), ncol=7)
-  rownames(output) <- 1:nrow(output)
-  rownames(output)[seq(1,nrow(output),by=2)] <- paste(chrominfo[,1], 'p', sep='')
-  rownames(output)[seq(2,nrow(output),by=2)] <- paste(chrominfo[,1], 'q', sep='')
-  colnames(output) <- c('Chr','Start','End','Size','Gained','Lost','Call')
-  for(i in 1:nrow(chrominfo)){
-    chr.seg <- seg[seg[,2] %in% chrominfo[i,1],,drop=F]
-    p.seg <- chr.seg[chr.seg[,3] <= chrominfo[i,'centstart'],,drop=F]
-    q.seg <- chr.seg[chr.seg[,4] >= chrominfo[i,'centend'],,drop=F]
-    tmp <- p.seg
-    if(nrow(tmp) > 0){
-      tmp[nrow(tmp),4] <- chrominfo[i,'centstart']
-      armlength <- sum(tmp[,4]- tmp[,3])
-      if(logscale){
-        tmp[,6] <- log2(tmp[,6] / tmp[,9])
-        tmp[tmp[,6] == '-Inf',6] <- -3
-        tmp[tmp[,6] == 'Inf',6] <- 3
-      }
-      if(!logscale){
-        tmp[,6] <- tmp[,6] - tmp[,9]
-      }
-      tmp[nrow(tmp),4] <- chrominfo[i,'centstart']
-      gainlength <- losslength <- 0
-      gainlength_seg <- tmp[tmp[,6] >= gain.threshold,,drop=F]
-      if(nrow(gainlength_seg) > 0){gainlength <- sum(gainlength_seg[,4] - gainlength_seg[,3])}
-      losslength_seg <- tmp[tmp[,6] <= loss.threshold,,drop=F]
-      if(nrow(losslength_seg) > 0){losslength <- sum(losslength_seg[,4] - losslength_seg[,3])}
-      gainlength_frac <- gainlength/armlength
-      losslength_frac <- losslength/armlength
-      
-      output[paste(chrominfo[i,1],'p',sep=''),'Chr'] <- i
-      output[paste(chrominfo[i,1],'p',sep=''),'Start'] <- tmp[1,3]
-      output[paste(chrominfo[i,1],'p',sep=''),'End'] <- tmp[nrow(tmp),4]
-      output[paste(chrominfo[i,1],'p',sep=''),'Size'] <- armlength
-      output[paste(chrominfo[i,1],'p',sep=''),'Gained'] <- gainlength
-      output[paste(chrominfo[i,1],'p',sep=''),'Lost'] <- losslength
-      
-      if(gainlength_frac >= min.arm.size){
-        output[paste(chrominfo[i,1],'p',sep=''),'Call'] <- 1
-      }
-      if(losslength_frac >= min.arm.size){
-        losslength_loh_seg <- losslength_seg[losslength_seg[,7] ==0 | losslength_seg[,8] ==0,,drop=F]
-        #check length of LOH, if it's at least... 75%, we'll call it as an LOH loss, ie pre-GD in GD samples
-        loss_type <- -1
-        if(sum(losslength_loh_seg[,4]-losslength_loh_seg[,3])/losslength > loh_frac){
-          loss_type <- -2
-        }
-        output[paste(chrominfo[i,1],'p',sep=''),'Call'] <- loss_type
-      }
-    }
-    #q arm
-    tmp <- q.seg
-    tmp[1,3] <- chrominfo[i,'centend']
-    armlength <- sum(tmp[,4]- tmp[,3])
-    if(logscale){
-      tmp[,6] <- log2(tmp[,6] / tmp[,9])
-    }
-    if(!logscale){
-      tmp[,6] <- tmp[,6] - tmp[,9]
-    }
-    tmp[tmp[,6] == '-Inf',6] <- -3
-    tmp[tmp[,6] == 'Inf',6] <- 3
-    tmp[1,3] <- chrominfo[i,'centend']
-    gainlength <- losslength <- 0
-    gainlength_seg <- tmp[tmp[,6] >= gain.threshold,,drop=F]
-    if(nrow(gainlength_seg) > 0){gainlength <- sum(gainlength_seg[,4] - gainlength_seg[,3])}
-    losslength_seg <- tmp[tmp[,6] <= loss.threshold,,drop=F]
-    if(nrow(losslength_seg) > 0){losslength <- sum(losslength_seg[,4] - losslength_seg[,3])}
-    gainlength_frac <- gainlength/armlength
-    losslength_frac <- losslength/armlength
-    
-    output[paste(chrominfo[i,1],'q',sep=''),'Chr'] <- i
-    output[paste(chrominfo[i,1],'q',sep=''),'Start'] <- tmp[1,3]
-    output[paste(chrominfo[i,1],'q',sep=''),'End'] <- tmp[nrow(tmp),4]
-    output[paste(chrominfo[i,1],'q',sep=''),'Size'] <- armlength
-    output[paste(chrominfo[i,1],'q',sep=''),'Gained'] <- gainlength
-    output[paste(chrominfo[i,1],'q',sep=''),'Lost'] <- losslength
-    
-    if(gainlength_frac >= min.arm.size){
-      output[paste(chrominfo[i,1],'q',sep=''),'Call'] <- 1
-    }
-    if(losslength_frac >= min.arm.size){
-      losslength_loh_seg <- losslength_seg[losslength_seg[,7] ==0 | losslength_seg[,8] ==0,,drop=F]
-      #check length of LOH, if it's at least... 75%, we'll call it as an LOH loss, ie pre-GD in GD samples
-      loss_type <- -1
-      if(sum(losslength_loh_seg[,4]-losslength_loh_seg[,3])/losslength > loh_frac){
-        loss_type <- -2
-      }
-      output[paste(chrominfo[i,1],'q',sep=''),'Call'] <- loss_type
-    }
-  }
-  #remove X
-  output<-output[!grepl(23,rownames(output)),]
-  #1=clonal gain, if LOH for loss, -2, loss, no LOH =-1
-  output2 <- cbind(rep(unique(seg[,1]),nrow(output)), rownames(output),as.data.frame(output))
-  colnames(output2)[1:2] <- c('SampleID','ChrArm')
-  return(output2)
-}
-
-
-
 
 
 
@@ -219,6 +108,273 @@ addPhasingInformationToOutputSegmentation <- function(sample.vec,
 
         return(all.segs.df)
 }#end addPhasingInformatonToOutputSegmentation <- function(...
+
+
+
+addNewRawAndIntCPNCallsToFinalSegmentationParallel <- function(seg.name.vec,
+                                                        sample.vec,
+                                                        all.samp.logr.df.list,
+                                                        all.samp.ph.BAF.df.list,
+                                                        asas.lr.baf.lists,
+                                                        all.seg.CCF.vals.list,
+                                                       all.seg.df,
+                                                       cpnX.vec = c("cpnA", "cpnB")) {
+
+
+    #Make vectors for sample vec:
+    all.samp.seg.name.vec <- c()
+    sample.rep.vec <- c()
+    #cpnX.rep.vec <- c()
+    for ( samp in sample.vec ) {
+
+       all.samp.seg.name.vec <- c(all.samp.seg.name.vec, seg.name.vec)
+       #cpnX.rep.vec <- c(cpnX.rep.vec, rep(cpnX, (length(seg.name.vec) * 2)))
+       sample.rep.vec <- c(sample.rep.vec, rep(samp, (length(seg.name.vec))))
+
+    }
+    iterable.samp.seg.df <- cbind(sample = sample.rep.vec, seg_name = all.samp.seg.name.vec)
+    cl <- makeCluster(NUM_CORES)
+    registerDoParallel(cl)
+    itx <- iter(iterable.samp.seg.df, by="row")
+    print("Starting addNewRawAndIntCPNCallsToFinalSegmentationParallel:")
+    # Create class which holds multiple results for each loop iteration.
+    # Each loop iteration populates two properties: $result1 and $result2.
+    # For a great tutorial on S3 classes, see: 
+    # http://www.cyclismo.org/tutorial/R/s3Classes.html#creating-an-s3-class
+    MultiResultClass <- function()
+    {
+      me <- list(
+        nBraw=NA,
+        nAraw=NA,
+        nMinor=NA,
+        nMajor=NA,
+        cnTotal=NA,
+        n.het=NA,
+        num_ph_hz_sites=NA,
+        ph_raw_cpnA=NA,
+        ph_raw_cpnB=NA,
+        ph_int_cpnA=NA,
+        ph_int_cpnB=NA,
+        ph_hz_total_raw_cpn=NA,
+        min_int_cpnX=NA,
+        max_int_cpnX=NA,
+        ph_hz_total_cpn=NA,
+        non_hz_total_cpn=NA,
+        median_BAF=NA,
+        mean_BAF=NA,
+        stdev_BAF=NA,
+        median_hz_logr=NA,
+        mean_hz_logr=NA,
+        stdev_hz_logr=NA,
+        num_un_ph_hz_sites=NA,
+        num_non_hz_sites = NA,
+        median_non_hz_logr=NA,
+        mean_non_hz_logr=NA,
+        stdev_non_hz_logr=NA,
+        median_comb_logr=NA,
+        mean_comb_logr=NA,
+        stdev_comb_logr=NA,
+        non_hz_total_raw_cpn=NA,
+        total_raw_cpn=NA,
+        total_int_cpn=NA,
+        non_hz_total_raw_cpn=NA,
+        cnTotal=NA,
+        total_raw_cpn=NA
+      )
+      # Set the name for the class
+      class(me) <- append(class(me),"MultiResultClass")
+      return(me)
+    }
+
+    new.raw.int.cpn.calls.list <- foreach(samp.seg.df = itx, .combine = c) %dopar% {
+
+
+                ret.mrc <- MultiResultClass()
+                samp <- samp.seg.df[, 1]
+                seg.name <- samp.seg.df[, 2]
+                cpnX <- "cpnA"
+                #Fill in flag that shows whether segment has been phasing and CCF valculuation process, ie has greater than min num of hz snp positions
+                if ( length(all.seg.CCF.vals.list[[cpnX]][[seg.name]]) == 1) {
+                    #Todo remove this NA signalling that a seg has fewer than the minimum number of hz snps, replace with a field that we can check...
+                    if(is.na(all.seg.CCF.vals.list[[cpnX]][[seg.name]]) ){ 
+
+                        seg.has.fewer.than.min.hz.flag <- TRUE
+
+                    } else {
+
+                        seg.has.fewer.than.min.hz.flag <- FALSE
+
+                    }
+
+                } else {
+
+                    seg.has.fewer.than.min.hz.flag <- FALSE
+
+                }
+
+                chr.start.end.vec <- unlist(strsplit(seg.name, split=":"))
+                #if the segment passes the minimum number of hz snps it will have more than one sample at  level  
+                if ( seg.has.fewer.than.min.hz.flag == FALSE) {
+                  
+                    seg.CCF.val.list <- all.seg.CCF.vals.list[[cpnX]][[seg.name]][[samp]]
+                    #These are currently assigned twice... wiping the original.. definitely needs refactoring:
+                    ph.cpnA.vec <- seg.CCF.val.list[[paste0(cpnX, "_orig_ph_obs_cpnA_vec")]]
+                    ph.cpnB.vec <- seg.CCF.val.list[[paste0(cpnX, "_orig_ph_obs_cpnB_vec")]]
+
+                    ret.mrc$nBraw <- min(ifelse(median(as.numeric(ph.cpnB.vec)) < 0 , 0, median(as.numeric(ph.cpnB.vec))), ifelse(median(as.numeric(ph.cpnA.vec)) < 0 , 0, median(as.numeric(ph.cpnA.vec))))
+                    ret.mrc$nAraw <- max(ifelse(median(as.numeric(ph.cpnB.vec)) < 0 , 0, median(as.numeric(ph.cpnB.vec))), ifelse(median(as.numeric(ph.cpnA.vec)) < 0 , 0, median(as.numeric(ph.cpnA.vec))))
+                    ret.mrc$nMinor <-  min(round(as.numeric(ret.mrc$nBraw)), round(as.numeric(ret.mrc$nAraw)))
+                    ret.mrc$nMajor <-  max(round(as.numeric(ret.mrc$nBraw)), round(as.numeric(ret.mrc$nAraw)))
+                    ret.mrc$cnTotal <- as.numeric(ret.mrc$nMinor) + as.numeric(ret.mrc$nMajor)
+                    ret.mrc$n.het <- length(ph.cpnA.vec)
+                    ret.mrc$num_ph_hz_sites <- length(ph.cpnA.vec)
+                    ret.mrc$ph_raw_cpnA <- ifelse(median(as.numeric(ph.cpnA.vec)) < 0 , 0, median(as.numeric(ph.cpnA.vec)))
+                    ret.mrc$ph_raw_cpnB <- ifelse(median(as.numeric(ph.cpnB.vec)) < 0 , 0, median(as.numeric(ph.cpnB.vec)))
+                    ret.mrc$ph_int_cpnA <- round(as.numeric(ret.mrc$ph_raw_cpnA))
+                    ret.mrc$ph_int_cpnB <- round(as.numeric(ret.mrc$ph_raw_cpnB))
+                    ret.mrc$ph_hz_total_raw_cpn <- as.numeric(ret.mrc$ph_raw_cpnA) + as.numeric(ret.mrc$ph_raw_cpnB)
+                    ret.mrc$min_int_cpnX <- min(ret.mrc$ph_int_cpnA, ret.mrc$ph_int_cpnB)
+                    ret.mrc$max_int_cpnX <- max(ret.mrc$ph_int_cpnA, ret.mrc$ph_int_cpnB)
+                    ret.mrc$ph_hz_total_cpn <- round(ret.mrc$ph_hz_total_raw_cpn)
+                    ret.mrc$non_hz_total_cpn <- round(ret.mrc$non_hz_total_raw_cpn)
+
+                }#end if ( seg.has.fewer.than.min.hz.flag == FALSE) {
+                #Load in all available BAF and LogR data to fill in the rest of the fields
+                #Todo, not entirely sure how seg.asas.lr.baf.df is contributing here...
+                seg.asas.lr.baf.df <- asas.lr.baf.lists[[samp]][[seg.name]]
+                datapoints.w.BAF.df <- all.samp.ph.BAF.df.list[[samp]]
+                ss.ph.baf.df <- all.samp.ph.BAF.df.list[[samp]]
+                ss.baf.lr.baf.df <- datapoints.w.BAF.df[datapoints.w.BAF.df$chrom == as.numeric(chr.start.end.vec[1]) &
+                                                datapoints.w.BAF.df$pos >= as.numeric(chr.start.end.vec[2]) &
+                                                datapoints.w.BAF.df$pos <= as.numeric(chr.start.end.vec[3]), ,drop=FALSE]
+                datapoints.w.logr.only.df <- all.samp.logr.df.list[[samp]]
+
+                #Fill in the fields based on those sites that re hz:
+
+                ret.mrc$median_BAF  <- ss.baf.lr.baf.df$ph_median_segmented_BAF[1]
+                ret.mrc$mean_BAF <- mean(abs(0.5 - ss.baf.lr.baf.df$BAF))#Todo, check this was the correct change to mirrored
+                ret.mrc$stdev_BAF <- sd(abs(0.5 - ss.baf.lr.baf.df$BAF))#Todo, check this was the correct change to mirrored
+                ret.mrc$median_hz_logr <- median(ss.baf.lr.baf.df$logR)
+                ret.mrc$mean_hz_logr <- mean(ss.baf.lr.baf.df$logR)
+                ret.mrc$stdev_hz_logr <- sd(ss.baf.lr.baf.df$logR)
+
+                if (seg.has.fewer.than.min.hz.flag == TRUE) {
+
+                   ret.mrc$num_un_ph_hz_sites <- nrow(ss.baf.lr.baf.df)
+
+                }
+
+                #Fields that only depend on the non_hz_logr data
+                if (nrow(datapoints.w.logr.only.df) > 0) {
+                    
+                    ss.dp.w.logr.only.df <- datapoints.w.logr.only.df[datapoints.w.logr.only.df$chrom == as.numeric(chr.start.end.vec[1]) & 
+                                                                        datapoints.w.logr.only.df$pos >= as.numeric(chr.start.end.vec[2]) &
+                                                                        datapoints.w.logr.only.df$pos <= as.numeric(chr.start.end.vec[3]), ,drop = FALSE]
+
+                    ret.mrc$num_non_hz_sites <- nrow(ss.dp.w.logr.only.df)
+
+                    if (nrow(ss.dp.w.logr.only.df) > 0) {
+
+                        ret.mrc$median_non_hz_logr <- median(ss.dp.w.logr.only.df$logR)
+                        ret.mrc$mean_non_hz_logr <- mean(ss.dp.w.logr.only.df$logR)
+                        ret.mrc$stdev_non_hz_logr <- sd(ss.dp.w.logr.only.df$logR)
+                        #Cmombined logr measures 
+                        ret.mrc$median_comb_logr <- median(c(ss.baf.lr.baf.df$logR, ss.dp.w.logr.only.df$logR))
+                        ret.mrc$mean_comb_logr <- mean(c(ss.baf.lr.baf.df$logR, ss.dp.w.logr.only.df$logR))
+                        ret.mrc$stdev_comb_logr <- sd(c(ss.baf.lr.baf.df$logR,  ss.dp.w.logr.only.df$logR))
+                        ret.mrc$non_hz_total_raw_cpn <- median(ss.dp.w.logr.only.df$tot_raw_un_ph_cpn)
+
+                    }
+
+                    if (seg.has.fewer.than.min.hz.flag == FALSE) {
+
+                      ret.mrc$total_raw_cpn <- median(c(ss.dp.w.logr.only.df$tot_raw_un_ph_cpn, (as.numeric(ph.cpnA.vec) + as.numeric(ph.cpnB.vec))))
+                      ret.mrc$total_int_cpn <- round(median(c(ss.dp.w.logr.only.df$tot_raw_un_ph_cpn, (as.numeric(ph.cpnA.vec) + as.numeric(ph.cpnB.vec)))))
+
+                    } else {
+                      #Todo, get the unphased SNP's total cpn here... we don't calculate this currently as it's a heterozygous SNP that falls below the threshold
+                      #for ccf calculation.
+                      ret.mrc$total_raw_cpn <- median(ss.dp.w.logr.only.df$tot_raw_un_ph_cpn)
+                      ret.mrc$total_int_cpn <- round(median(ss.dp.w.logr.only.df$tot_raw_un_ph_cpn))
+
+                    } 
+
+                } else if (nrow(datapoints.w.logr.only.df) == 0 & seg.has.fewer.than.min.hz.flag == TRUE) {#end  if(nrow(datapoints.w.logr.only.df) > 0) {
+
+                  ret.mrc$total_raw_cpn <- median(as.numeric(ph.cpnA.vec) + median(as.numeric(ph.cpnB.vec)))
+                  ret.mrc$total_int_cpn <- round(median(as.numeric(ph.cpnA.vec) + as.numeric(ph.cpnB.vec)))
+  
+                } else if (nrow(datapoints.w.logr.only.df) == 0 & seg.has.fewer.than.min.hz.flag == FALSE) {
+
+
+
+
+                }
+
+                #Now let's calculate the int toal copy number that we're going to use:
+                #Let's set the total copy number
+
+                if (nrow(datapoints.w.logr.only.df) > 0 & seg.has.fewer.than.min.hz.flag == TRUE) {
+
+                  ret.mrc$non_hz_total_raw_cpn <- median(ss.dp.w.logr.only.df$tot_raw_un_ph_cpn)
+                  ret.mrc$cnTotal <-  round(median(ss.dp.w.logr.only.df$tot_raw_un_ph_cpn))
+
+
+                } else if (nrow(datapoints.w.logr.only.df) == 0 & nrow(ss.baf.lr.baf.df) > 0) {
+
+                  ret.mrc$total_raw_cpn <- median(c(as.numeric(ph.cpnA.vec) + as.numeric(ph.cpnB.vec)))
+
+                } #end  if (seg.has.fewer.than.min.hz.flag == TRUE) {
+
+
+           returnable.list <- list(ret.mrc)
+          names(returnable.list) <- paste0(samp.seg.df[,1], ":", samp.seg.df[,2])
+          returnable.list
+    }            
+
+    stopCluster(cl)
+
+
+    for ( samp in sample.vec ) {
+
+      for ( seg.name in seg.name.vec ) {
+
+        if (length(sample.vec) > 1) {
+            samp.seg.name <- paste0(samp, ":", seg.name)
+        } else {
+            samp.seg.name <- seg.name
+        }
+
+        if(! samp.seg.name %in% rownames(all.seg.df)) {
+          print("Seg name not in all.seg.df:")
+          print(samp.seg.name)
+          next
+        }
+
+        ret.mrc <- new.raw.int.cpn.calls.list[[samp.seg.name]]
+
+        for (j in 1:length(ret.mrc)) {
+
+          all.seg.df[samp.seg.name, names(ret.mrc)[j]] <- ret.mrc[names(ret.mrc)[j]]
+
+        }
+      }
+    }
+
+    return(all.seg.df)
+
+}
+
+
+
+
+
+
+
+
+
+
+
 
 
 addNewRawAndIntCPNCallsToFinalSegmentation <- function(seg.name.vec,
@@ -780,7 +936,30 @@ determineAcrossSampleClonalityOfLogrEventsVsPloidy <- function(sample.vec,
 
             if (length(uniq.cpn.events.vec[is.na(uniq.cpn.events.vec)]) > 0) {
 
-                stop("ERROR Shouldn't be a mixture of NA and cpn event vs ploidy results for the same segment")
+
+              print("WARNING: Shouldn't be a mixture of NA and cpn event vs ploidy results for the same segment")
+              print("This may occur if one of the segments had logr values that were all the same while others segments logr values varied,this would lead to tTestWithErrorHandling returning NA for the case with constant data and a p.value for the others. If the segment is large, there may be a more serious bug.")
+              print(seg.name)
+              print(uniq.cpn.events.vec)
+              print(all.seg.df[sample.seg.vec,c(
+                                                "num_ph_hz_sites",
+                                                "num_un_ph_hz_sites",
+                                                "num_non_hz_sites",
+                                                "cpn_event_vs_ploidy")])
+              print("Setting all instances of this segment's cpn_event_vs_ploidy and associated columns to NA")
+              all.seg.df[sample.seg.vec,c("gain_hz_logr_pval",
+                                          "amp_hz_logr_pval",
+                                          "loss_hz_logr_pval",
+                                          "deep_loss_hz_logr_pval",
+                                          "gain_non_hz_logr_pval",
+                                          "amp_non_hz_logr_pval",
+                                          "loss_non_hz_pval",
+                                          "deep_loss_non_hz_pval",
+                                          "gain_comb_logr_pval",
+                                          "amp_comb_logr_pval",
+                                          "loss_comb_logr_pval",
+                                          "deep_loss_comb_logr_pval",
+                                          "cpn_event_vs_ploidy")] <- NA
 
             } else if (all(is.na(all.seg.df[sample.seg.vec,]$MSAI)) | all(as.logical(all.seg.df[sample.seg.vec,]$MSAI)) == FALSE) {
 
@@ -967,11 +1146,326 @@ addWithinSampleClonalityAndCCFToFinalSegmentation <- function(seg.name.vec
 ##
 
 
+addLogrDefinedCPNEventsToOutputSegmentationParallel <- function(sample.vec,
+                                                        seg.name.vec,
+                                                        all.seg.df,
+                                                        ploidy.est.vec,
+                                                        purity.est.vec,
+                                                        all.samp.logr.df.list,
+                                                        all.samp.ph.BAF.df.list,
+                                                        gain.threshold,
+                                                        loss.threshold,
+                                                        amp.threshold, 
+                                                        deep.loss.threshold,
+                                                        tot.cpn.vs.ploidy.pval.thresh) {
+
+
+    checkSegGainOrLossSignificance <- function(logr.vec, samp.to.check, ploidy.est.vec, purity.est.vec, threshold, cpn.change.type = "gain", min.num.for.logr.test = 3) {
+
+      min.thresh.raw.exp.samp       <-  ploidy.est.vec[samp.to.check] * (2 ^ (threshold))
+      min.thresh.logr.exp.for.samp   <-  calcExpectedLogR(min.thresh.raw.exp.samp, 0, ploidy.est.vec[samp.to.check], purity.est.vec[samp.to.check])
+      median.seg.logr                  <- median(logr.vec)
+      
+      if (length(logr.vec) >= min.num.for.logr.test) {
+
+         gen.t.test.results        <- tTestWithErrorHandling(logr.vec, mu = min.thresh.logr.exp.for.samp)
+
+        if (cpn.change.type == "gain") {
+
+              specific.t.test.alt <- "greater"
+
+        } else if (cpn.change.type == "loss") {
+
+              specific.t.test.alt <- "less"
+
+        }
+
+        specific.t.test.result <- tTestWithErrorHandling(logr.vec, mu = min.thresh.logr.exp.for.samp, alternative = specific.t.test.alt)
+
+        low.obs.logr.conf.int  <- specific.t.test.result$conf.int[1]
+        high.obs.logr.conf.int <- specific.t.test.result$conf.int[2]
+        gen.t.test.pval     <- gen.t.test.results$p.value
+        alt.t.test.pval     <- specific.t.test.result$p.value
+        
+      }#end if (nrow(ss.baf.lr.baf.df) >= 3) {
+
+      #Todo, refactor this magic number...
+      if (length(logr.vec) < 3) {
+
+        low.obs.logr.conf.int  <- NA
+        high.obs.logr.conf.int <- NA
+        gen.t.test.pval         <- NA
+        alt.t.test.pval     <- NA
+
+      }#end f (nrow(ss.baf.lr.baf.df) < 3) {
+      
+      out <- cbind(min.thresh.raw.exp.samp,
+                   min.thresh.logr.exp.for.samp,
+                   median.seg.logr,
+                   low.obs.logr.conf.int,
+                   high.obs.logr.conf.int,
+                   gen.t.test.pval,
+                   alt.t.test.pval)  
+      return(out)
+      
+    }#end checkSegGainOrLossSignificance <- function(ss.baf.lr.baf.df, samp.to.check, ploidy.est.vec, purity.est.vec, threshold) {
+
+
+    calcExpectedLogR <- function(exp.intA, exp.intB, tumor.ploidy, tumor.purity) {
+
+      exp.logr <- log2((2 * (1 - tumor.purity) + tumor.purity * (exp.intA + exp.intB)) / (2 * (1 - tumor.purity) + (tumor.purity * tumor.ploidy)))
+
+      return(exp.logr)
+
+    }#end calcExpectedLogR <- function(exp.intA, exp.intB, tumor.ploidy, tumor.purity) {
+    #
+    tTestWithErrorHandling <- function(x, y = NULL, alternative = c("two.sided", "less", "greater"),
+                                       mu = 0, paired = FALSE, var.equal = FALSE, conf.level = 0.95, errors.not.permitted=""){
+      
+      test.results <- tryCatch({
+        test.results <- t.test(x = x, y = y, alternative = alternative, mu = mu, paired = paired, var.equal = var.equal, conf.level = conf.level)
+
+        if ( is.na(test.results[["p.value"]]) | is.nan(test.results[["p.value"]])) {
+
+          test.results[["stat"]] <- 1
+          test.results[["conf.int"]] <- c(NA, NA)
+          test.results[["p.value"]] <- 1
+          test.results[["p.val"]] <- 1
+
+        }
+        return(test.results)
+
+        },
+        error = function(err) {
+          message(err)
+          write(paste(err$message, "\n"), stderr())
+          write("\n", stderr())
+          if(grepl("NULL", err$message) & "NULL"%in% errors.not.permitted){
+            stop("t.test ERROR with a NULL")
+          } else if (grepl("enough", err$message) & "enough"%in% errors.not.permitted){
+            stop("t.test ERROR with not enough")
+          } else if (grepl("constant", err$message) & "constant" %in% errors.not.permitted){
+            stop("t.test ERROR with constant data")
+          } else if(grepl("enough|constant|NULL", err$message) & "other" %in% errors.not.permitted){
+            stop(err$message)
+          }
+          # cat("\n")
+          # paste("Input for t test")
+          # print("x")
+          # print(x)
+          # print("y")
+          # print(y)
+          # print("mu")
+          # print(mu)
+          # print("paired")
+          # print(paired)
+          # print("conf.level")
+          # print(conf.level)
+          test.results <- list()
+          test.results[["stat"]] <- 1
+          test.results[["conf.int"]] <- c(NA, NA)
+          test.results[["p.value"]] <- 1
+          test.results[["p.val"]] <- 1
+          return(test.results)
+        })
+      return(test.results)
+    }
+
+    #Make vectors for sample vec:
+    all.samp.seg.name.vec <- c()
+    sample.rep.vec <- c()
+    #cpnX.rep.vec <- c()
+    for ( samp in sample.vec ) {
+
+       all.samp.seg.name.vec <- c(all.samp.seg.name.vec, seg.name.vec)
+       #cpnX.rep.vec <- c(cpnX.rep.vec, rep(cpnX, (length(seg.name.vec) * 2)))
+       sample.rep.vec <- c(sample.rep.vec, rep(samp, (length(seg.name.vec))))
+
+    }
+    iterable.samp.seg.df <- cbind(sample = sample.rep.vec, seg_name = all.samp.seg.name.vec)
+    cl <- makeCluster(NUM_CORES)
+    registerDoParallel(cl)
+    itx <- iter(iterable.samp.seg.df, by="row")
+    print("Starting parallel addLogrDefinedCPNEventsToOutputSegmentation:")
+    MultiResultClass <- function()
+    {
+      me <- list(
+
+        gain_hz_logr_pval=NA,
+        amp_hz_logr_pval=NA,
+        loss_hz_logr_pval=NA,
+        deep_loss_hz_logr_pval=NA,
+        gain_non_hz_logr_pval=NA,
+        amp_non_hz_logr_pval=NA,
+        loss_non_hz_pval=NA,
+        deep_loss_non_hz_pval=NA,
+        gain_comb_logr_pval=NA,
+        amp_comb_logr_pval=NA,
+        loss_comb_logr_pval=NA,
+        deep_loss_comb_logr_pval=NA,
+        cpn_event_vs_ploidy=NA
+      )
+      # Set the name for the class
+      class(me) <- append(class(me),"MultiResultClass")
+      return(me)
+    }
+
+    cpn.events.vs.ploidy.by.samp.seg.list <- foreach(samp.seg.df = itx, .combine = c, .errorhandling='pass') %dopar% {
+
+        ret.mrc <- MultiResultClass()
+        samp <- samp.seg.df[, 1]
+        seg.name <- samp.seg.df[, 2]
+        chr.start.end.vec <- unlist(strsplit(seg.name, split=":"))
+
+
+        datapoints.w.BAF.df <- all.samp.ph.BAF.df.list[[samp]]
+        ss.baf.lr.baf.df <- datapoints.w.BAF.df[datapoints.w.BAF.df$chrom == as.numeric(chr.start.end.vec[1]) &
+                                        datapoints.w.BAF.df$pos >= as.numeric(chr.start.end.vec[2]) &
+                                        datapoints.w.BAF.df$pos <= as.numeric(chr.start.end.vec[3]), ,drop=FALSE]
+        
+        gain.hz.only.samp.df <- checkSegGainOrLossSignificance(ss.baf.lr.baf.df$logR, samp, ploidy.est.vec, purity.est.vec, gain.threshold, "gain",  min.num.for.logr.test = 3)
+        amp.hz.only.samp.df <- checkSegGainOrLossSignificance(ss.baf.lr.baf.df$logR, samp, ploidy.est.vec, purity.est.vec, amp.threshold, "gain",  min.num.for.logr.test = 3)
+        loss.hz.only.samp.df <- checkSegGainOrLossSignificance(ss.baf.lr.baf.df$logR, samp, ploidy.est.vec, purity.est.vec, loss.threshold, "loss",  min.num.for.logr.test = 3)
+        deep.loss.hz.only.samp.df <- checkSegGainOrLossSignificance(ss.baf.lr.baf.df$logR, samp, ploidy.est.vec, purity.est.vec, deep.loss.threshold, "loss",  min.num.for.logr.test = 3)
+        ret.mrc$gain_hz_logr_pval <- amp.hz.only.samp.df[, 7]
+        ret.mrc$amp_hz_logr_pval <-  amp.hz.only.samp.df[, 7]
+        ret.mrc$loss_hz_logr_pval <- loss.hz.only.samp.df[, 7]
+        ret.mrc$deep_loss_hz_logr_pval <- deep.loss.hz.only.samp.df[, 7]
+
+
+        datapoints.w.logr.only.df <-  all.samp.logr.df.list[[samp]]
+        if (nrow(datapoints.w.logr.only.df) > 0) {
+
+            ss.dp.w.logr.only.df <- datapoints.w.logr.only.df[datapoints.w.logr.only.df$chrom == as.numeric(chr.start.end.vec[1]) & 
+                                                                datapoints.w.logr.only.df$pos >= as.numeric(chr.start.end.vec[2]) &
+                                                                datapoints.w.logr.only.df$pos <= as.numeric(chr.start.end.vec[3]), ,drop=FALSE]
+
+            gain.non.hz.samp.df <- checkSegGainOrLossSignificance(ss.dp.w.logr.only.df$logR, samp, ploidy.est.vec, purity.est.vec, gain.threshold, "gain",  min.num.for.logr.test = 3)
+            amp.non.hz.samp.df <- checkSegGainOrLossSignificance(ss.dp.w.logr.only.df$logR, samp, ploidy.est.vec, purity.est.vec, amp.threshold, "gain",  min.num.for.logr.test = 3)
+            loss.non.hz.samp.df <- checkSegGainOrLossSignificance(ss.dp.w.logr.only.df$logR, samp, ploidy.est.vec, purity.est.vec, loss.threshold, "loss",  min.num.for.logr.test = 3)
+            deep.loss.non.hz.samp.df <- checkSegGainOrLossSignificance(ss.dp.w.logr.only.df$logR, samp, ploidy.est.vec, purity.est.vec, deep.loss.threshold, "loss",  min.num.for.logr.test = 3)
+            ret.mrc$gain_non_hz_logr_pval <- gain.non.hz.samp.df[, 7]
+            ret.mrc$amp_non_hz_logr_pval <-  amp.non.hz.samp.df[, 7]
+            ret.mrc$loss_non_hz_pval <- loss.non.hz.samp.df[, 7]
+            ret.mrc$deep_loss_non_hz_pval <- deep.loss.non.hz.samp.df[, 7]
+
+            #now we can simply add these data points to the dataframe that contained the datapoints that had both logr and BAF, do we need to re-sort? leave for now.
+            if (nrow(ss.dp.w.logr.only.df) > 0) {
+
+                ss.comb.baf.lr.baf.df <- rbind(ss.baf.lr.baf.df[, c("chrom", "pos", "BAF", "BAFsegmented", "logR", "logRsegmented")],
+                                    ss.dp.w.logr.only.df[, c("chrom", "pos", "BAF", "BAFsegmented", "logR", "logRsegmented")])
+
+            } else {#end if (nrow(ss.dp.w.logr.only.df) > 0) {
+
+                ss.comb.baf.lr.baf.df <- ss.baf.lr.baf.df
+
+            }#nrow(ss.dp.w.logr.only.df) == 0
+
+        } else {#end  if (nrow(ss.dp.w.logr.only.df) > 0) {
+
+          ss.comb.baf.lr.baf.df <- ss.baf.lr.baf.df
+
+        }
+
+        gain.comb.logr.samp.df <- checkSegGainOrLossSignificance(ss.comb.baf.lr.baf.df$logR, samp, ploidy.est.vec, purity.est.vec, gain.threshold, "gain",  min.num.for.logr.test = 3)
+        amp.comb.logr.samp.df <- checkSegGainOrLossSignificance(ss.comb.baf.lr.baf.df$logR, samp, ploidy.est.vec, purity.est.vec, amp.threshold, "gain",  min.num.for.logr.test = 3)
+        loss.comb.logr.samp.df <- checkSegGainOrLossSignificance(ss.comb.baf.lr.baf.df$logR, samp, ploidy.est.vec, purity.est.vec, loss.threshold, "loss",  min.num.for.logr.test = 3)
+        deep.loss.comb.logr.samp.df <- checkSegGainOrLossSignificance(ss.comb.baf.lr.baf.df$logR, samp, ploidy.est.vec, purity.est.vec, deep.loss.threshold, "loss",  min.num.for.logr.test = 3)
+        ret.mrc$gain_comb_logr_pval <- gain.comb.logr.samp.df[, 7]
+        ret.mrc$amp_comb_logr_pval <-  amp.comb.logr.samp.df[, 7]
+        ret.mrc$loss_comb_logr_pval <- loss.comb.logr.samp.df[, 7]
+        ret.mrc$deep_loss_comb_logr_pval <- deep.loss.comb.logr.samp.df[, 7]
+        
+        cpn.event.vs.ploidy.vec <- as.numeric(c(gain.comb.logr.samp.df[, 7],  amp.comb.logr.samp.df[, 7],  loss.comb.logr.samp.df[, 7], deep.loss.comb.logr.samp.df[, 7]))
+
+        names(cpn.event.vs.ploidy.vec) <- c("gain", "amp", "loss", "deep_loss")
+        non.na.seg.cpn.event <- cpn.event.vs.ploidy.vec[! is.na(cpn.event.vs.ploidy.vec)]
+        if (length(non.na.seg.cpn.event) == 0) {
+
+            ret.mrc$cpn_event_vs_ploidy <- NA #had less than min.num of datapoints to examine for a logr event.
+
+        } else {
+
+            significant.seg.cpn.event <- non.na.seg.cpn.event[non.na.seg.cpn.event <= tot.cpn.vs.ploidy.pval.thresh]
+            #Error check here:
+            if (length(significant.seg.cpn.event) > 1) {
+                #Note need to check that this makes sense
+                # print("More than one total cpn event vs ploidy is signficant by thresholds")
+                # print(cpn.event.vs.ploidy.vec)
+                if ("amp" %in% names(significant.seg.cpn.event)) {
+
+                  ret.mrc$cpn_event_vs_ploidy <- "amp"
+
+                } else if ("deep_loss" %in% names(significant.seg.cpn.event)){
+
+                  ret.mrc$cpn_event_vs_ploidy <- "deep_loss"
+
+                } else {
+
+                  print(significant.seg.cpn.event)
+                  stop("Error, more than one cpn event vs ploidy is signficant and neither are amp or deep_loss, likely bug present")
+
+                }
+                
+            } else if (length(significant.seg.cpn.event) == 1) {
+
+                ret.mrc$cpn_event_vs_ploidy <- names(significant.seg.cpn.event)
+
+            } else {
+
+                ret.mrc$cpn_event_vs_ploidy <- "neutral"
+
+            }
+
+        }#end if (length(non.na.seg.cpn.event) != 0) {
+
+        returnable.list <- list(ret.mrc)
+        names(returnable.list) <- paste0(samp.seg.df[,1], ":", samp.seg.df[,2])
+        returnable.list
+
+    }#end cpn.events.vs.ploidy.by.samp.seg.list <- foreach(samp.seg.df = itx, .combine = c) %dopar% {
+
+    stopCluster(cl)
+
+
+    for ( samp in sample.vec ) {
+
+            for ( seg.name in seg.name.vec ) {
+
+                if (length(sample.vec) > 1) {
+
+                    samp.seg.name <- paste0(samp, ":", seg.name)
+                } else {
+
+                    samp.seg.name <- seg.name
+                }
+
+
+                ret.mrc <- cpn.events.vs.ploidy.by.samp.seg.list[[samp.seg.name]]
+
+                for (j in 1:length(ret.mrc)) {
+
+                  all.seg.df[samp.seg.name, names(ret.mrc)[j]] <- ret.mrc[names(ret.mrc)[j]]
+
+                }
+
+
+        }#end for ( seg.name in seg.name.vec ) {
+
+    }#end for ( samp in sample.vec ) {
+       
+    return(all.seg.df)
+}
+
+
+
 
 
 addLogrDefinedCPNEventsToOutputSegmentation <- function(sample.vec,
                                                         seg.name.vec,
                                                         all.seg.df,
+                                                        ploidy.est.vec,
+                                                        purity.est.vec,
                                                         all.samp.logr.df.list,
                                                         all.samp.ph.BAF.df.list,
                                                         gain.threshold,
@@ -1065,7 +1559,21 @@ addLogrDefinedCPNEventsToOutputSegmentation <- function(sample.vec,
                         #Note need to check that this makes sense
                         # print("More than one total cpn event vs ploidy is signficant by thresholds")
                         # print(cpn.event.vs.ploidy.vec)
-                        all.seg.df[samp.seg.name,]$cpn_event_vs_ploidy <- names(significant.seg.cpn.event)[1]
+                        if ("amp" %in% names(significant.seg.cpn.event)) {
+
+                          all.seg.df[samp.seg.name,]$cpn_event_vs_ploidy <- "amp"
+
+                        } else if ("deep_loss" %in% names(significant.seg.cpn.event)){
+
+                          all.seg.df[samp.seg.name,]$cpn_event_vs_ploidy <- "deep_loss"
+
+                        } else {
+
+                          print(significant.seg.cpn.event)
+                          stop("Error, more than one cpn event vs ploidy is signficant and neither are amp or deep_loss, likely bug present")
+
+                        }
+                        
                         
                     } else if (length(significant.seg.cpn.event) == 1) {
 

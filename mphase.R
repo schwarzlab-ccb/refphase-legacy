@@ -164,15 +164,34 @@ current.dir <-  LocationOfThisScript()
 # overwrite.flag <- FALSE
 # gamma.val <- 0.5
 
+# patient  <-  "LTX021"
+# allow.dip.test.phasing.flag <- FALSE
+# output.directory.base.path <- "/Users/watkint/Desktop/MET048_mPhase_data/CN_het_TRACERx_no_diptest/"
+# data.format.to.use <- "TRACERx_exome"
+# snp.file.path <- "/Users/watkint/Desktop/MET048_mPhase_data/A_LTX021/exome/CN_het_TRACERx_no_diptest/LTX021_TRACERx_input_paths_df.txt"
+# seg.file.path <- "/Users/watkint/Desktop/MET048_mPhase_data/A_LTX021/exome/MSAI/LTX021_joint_segs_all_ascat_info.txt"
+# overwrite.flag <- TRUE
+# gamma.val <- 1
+# intersection.or.whole.arm <- "intersection"
+
 patient  <-  "LTX021"
 allow.dip.test.phasing.flag <- FALSE
-output.directory.base.path <- "/Users/watkint/Desktop/MET048_mPhase_data/CN_het_TRACERx_no_diptest/"
+output.directory.base.path <- "/camp/project/proj-tracerx-lung/tctProjects/watkint/TRACERx100_lung_pan_can_analysis/release/A_LTX021/exome/CN_het_TRACERx_no_diptest/"
 data.format.to.use <- "TRACERx_exome"
-snp.file.path <- "/Users/watkint/Desktop/MET048_mPhase_data/A_LTX021/exome/CN_het_TRACERx_no_diptest/LTX021_TRACERx_input_paths_df.txt"
-seg.file.path <- "/Users/watkint/Desktop/MET048_mPhase_data/A_LTX021/exome/MSAI/LTX021_joint_segs_all_ascat_info.txt"
+snp.file.path <- "/camp/project/proj-tracerx-lung/tctProjects/watkint/TRACERx100_lung_pan_can_analysis/release/A_LTX021/exome/CN_het_TRACERx_no_diptest/LTX021_TRACERx_input_paths_df.txt"
+seg.file.path <- "/camp/project/proj-tracerx-lung/tctProjects/watkint/TRACERx100_lung_pan_can_analysis/release/A_LTX021/exome/MSAI/LTX021_joint_segs_all_ascat_info.txt"
 overwrite.flag <- TRUE
 gamma.val <- 1
-intersection.or.whole.arm <- "intersection"
+
+patient  <-  "LTX046"
+allow.dip.test.phasing.flag <- FALSE
+output.directory.base.path <- "/camp/project/proj-tracerx-lung/tctProjects/watkint/TRACERx100_lung_pan_can_analysis/release/B_LTX046/exome/CN_het_TRACERx_no_diptest/"
+data.format.to.use <- "TRACERx_exome"
+snp.file.path <- "/camp/project/proj-tracerx-lung/tctProjects/watkint/TRACERx100_lung_pan_can_analysis/release/B_LTX046/exome/CN_het_TRACERx_no_diptest/LTX046_TRACERx_input_paths_df.txt"
+seg.file.path <- "/camp/project/proj-tracerx-lung/tctProjects/watkint/TRACERx100_lung_pan_can_analysis/release/B_LTX046/exome/MSAI/LTX046_joint_segs_all_ascat_info.txt"
+overwrite.flag <- TRUE
+gamma.val <- 1
+
 
 print("patient")
 print(patient)
@@ -231,7 +250,7 @@ if ( ! file.exists(PLOT_OUTPUT_DIR) ) {
 	print("directory doesn't exist")
 
 }
-NUM_CORES <- 8
+NUM_CORES <- 24
 GAMMA_VAL <- as.numeric(gamma.val)
 MAX_CPN_FOR_SUBCLONALITY <- 10
 MIN_CCF_TO_CONSIDER <- 0.15
@@ -441,11 +460,14 @@ if (OVERWRITE_FLAG == TRUE) {
 		min.cons.segs.df <- cleanAndErrorCheckMinConsSegs(min.cons.segs.df)
 		#So we want to read in a file that looks like this:	#patient_id sample_id ascat_bc_file_path 
 		pt.snp.file.paths.df <- read.table(snp.file.path, stringsAsFactors = FALSE, sep = "\t", header = TRUE)
+
+		#
+		print("Reading in SNP data...")
 		all.samp.SNP.list <- getSNPDataForTRACERxExomeSNPArray(pt.snp.file.paths.df)
 		#all sample all seg logr baf lists is asas.lr.baf, All SNPs in these lists must have both a logr and baf value
-		asas.SNPs.w.both.lr.baf.snp.lists <- cleanAndErrorCheckSNPs(all.samp.SNP.list, min.cons.segs.df, allow.logr.only.flag = FALSE)
-		#SNPs that only have LogR are permitted in these lists, but it also contains all the SNPs with both BAF and LogR
-		asas.SNPS.lr.and.or.baf.lists <- cleanAndErrorCheckSNPs(all.samp.SNP.list, min.cons.segs.df, allow.logr.only.flag = TRUE)
+		# asas.SNPs.w.both.lr.baf.snp.lists <- cleanAndErrorCheckSNPs(all.samp.SNP.list, min.cons.segs.df, allow.logr.only.flag = FALSE)
+		# #SNPs that only have LogR are permitted in these lists, but it also contains all the SNPs with both BAF and LogR
+		# asas.SNPS.lr.and.or.baf.lists <- cleanAndErrorCheckSNPs(all.samp.SNP.list, min.cons.segs.df, allow.logr.only.flag = TRUE)
 
 
 	} else if (data.format.to.use == "TRACERx_WGS") {
@@ -476,6 +498,20 @@ if (OVERWRITE_FLAG == TRUE) {
 
 	}
 
+	#So actually defining the segments that are lost or gained makes sense here..
+	cpn.call.state.vec <- rep("neutral", nrow(f.joint.segs.df))
+    tot.raw.cpn.vec <- f.joint.segs.df$nAraw + f.joint.segs.df$nBraw
+    log.tot.raw.over.ploidy.cpn.vec <- log2(tot.raw.cpn.vec / f.joint.segs.df$Ploidy)
+	cpn.call.state.vec[log.tot.raw.over.ploidy.cpn.vec >= log2(2.5 / 2)] <- "gain"
+	cpn.call.state.vec[log.tot.raw.over.ploidy.cpn.vec <= log2(1.5 / 2)] <- "loss"
+	cpn.call.state.vec[tot.raw.cpn.vec >= ((2 * f.joint.segs.df$Ploidy[1]) + 1)] <- "amp"
+	cpn.call.state.vec[tot.raw.cpn.vec <= 0.5] <- "deep_loss"
+	f.joint.segs.df$cpn_call_for_arm <- cpn.call.state.vec
+	f.joint.segs.df$arm_or_focal_event <- "none"
+	f.joint.segs.df$arm_event_present <- "none"
+	f.joint.segs.df$uniq_id <- paste0(f.joint.segs.df$sample, "@", f.joint.segs.df$chr, ":", f.joint.segs.df$startpos, ":", f.joint.segs.df$endpos)
+
+
 	sample.vec <- unique(f.joint.segs.df$sample)
 	all.samp.grs <- makeGRangesFromDataFrame(f.joint.segs.df,
 			                         keep.extra.columns=FALSE,
@@ -502,6 +538,117 @@ if (OVERWRITE_FLAG == TRUE) {
 	                        end.field=c("End_Position", "end", "stop", "endpos"),
 	                        strand.field="strand",
 	                        starts.in.df.are.0based=FALSE)
+
+	gain.loss.name.list <- list(c("neutral"), c("gain", "amp"), c("loss", "deep_loss"),  c("LOH"))
+	gain.loss.name.list
+	names(gain.loss.name.list) <- c("gain", "loss")
+	p.or.q.vec <- c("p", "q")
+	for ( chr in CHRS_TO_USE_VEC ) {
+		#chr <- 21
+		chr.gr.list <- getChromosomeArmsGRangeList(chr, chrom.info.df)
+		#print(chr)
+		for ( i in 1:length(chr.gr.list) ) {
+			#print("p or q")
+			#print(i)
+			i <- 1
+			curr.chr.arm.gr <- chr.gr.list[[i]]
+
+			all.samp.overlap.grs <- getOverlapGRanges(curr.chr.arm.gr, all.samp.w.metadata.grs)
+			print("#####")
+			print(all.samp.grs)
+			for (samp in sample.vec) {
+				#print(samp)
+				#samp <- "B_LTX046_SU_T1-R1"
+				#So now let's do this for gain and loss:
+				for (cpn.event.vec in gain.loss.name.list) {
+					#cpn.event.vec <- c("loss", "deep_loss")
+					#First does the total area of the event add up to 80% of an arm:
+					if ( ! names(cpn.event.vec) %in% "LOH") {
+						samp.gain.amp.grs <- all.samp.overlap.grs[ all.samp.overlap.grs$cpn_call %in% cpn.event.vec &
+															   all.samp.overlap.grs$sample == samp
+																]
+
+						samp.all.cpn.grs <- all.samp.overlap.grs[ all.samp.overlap.grs$sample == samp ]
+
+					} else {
+
+						samp.gain.amp.grs <- all.samp.overlap.grs[ all.samp.overlap.grs$nMinor == 0 &
+																   all.samp.overlap.grs$sample == samp
+																	]
+
+					}
+					print(chr)
+					print(samp)
+					print(p.or.q.vec[i])
+					print(cpn.event.vec)
+					print(samp.gain.amp.grs)
+					print(sum(samp.gain.amp.grs$overlap_prop_query))											
+					print(sum(samp.gain.amp.grs[ samp.gain.amp.grs$overlap_prop_query >= 0.25 ]$overlap_prop_query))
+					arm.level.events.present <- c()
+					if (sum(as.numeric(samp.gain.amp.grs$overlap_prop_query))/100 >= 0.74) & sum(samp.gain.amp.grs[ samp.gain.amp.grs$overlap_prop_query >= 0.2 ]$overlap_prop_query)/100 >= 0.5){
+
+							#So all segments in the arm should be annotated as being in an arm level event:
+							#All the larger segments 
+							arm.level.events.present <- c(arm.level.events.present, names(cpn.event.vec))
+							#So now 
+							arm.event.id.vec <- samp.gain.amp.grs[ samp.gain.amp.grs$overlap_prop_query >= 0.2 & samp.gain.amp.grs$cpn_call %in% cpn.event.vec ]$uniq_id
+							focal.event.id.vec <- samp.all.cpn.grs[ (samp.all.cpn.grs$overlap_prop_query < 0.2 & samp.all.cpn.grs$cpn_call %in% cpn.event.vec)
+																	  & (! (samp.all.cpn.grs$cpn_call %in% cpn.event.vec)) ]$uniq_id
+							#so anything that isn't an arm and was gained will be focal
+							print(arm.level.events.present)
+
+						}
+
+					} else {
+
+
+						all.samp.arm.uniq.ids.vec <- samp.all.cpn.grs$uniq_id
+
+
+					}
+					print("%%%%%%%%%%%%%%%%%")
+					if (length(arm.level.events.present) > 0) {
+
+						arm.cpn.event.present <- paste(arm.level.events.present, collapse = "_")
+
+						all.samp.w.metadata.grs[all.samp.w.metadata.grs$uniq_id %in% all.samp.overlap.grs$uniq_id ]$arm_event_present <- arm.cpn.event.present
+
+						if (grepl("gain|loss", arm.cpn.event.present) ) {
+
+							arm.cpn.event.present.wo.loh <- gsub("_LOH", "", arm.cpn.event.present)
+
+
+							all.samp.w.metadata.grs[all.samp.w.metadata.grs$uniq_id %in% focal.event.id.vec ]$arm_or_focal_event  <- "focal"
+							all.samp.w.metadata.grs[all.samp.w.metadata.grs$uniq_id %in% arm.event.id.vec ]$arm_or_focal_event  <- "arm"
+
+
+						}
+
+					} else {
+
+
+
+					}
+					#Next is there one segment with at least 50% of the arm in it:
+					
+
+					#if both of these are satisfied mark there being an arm event present:
+
+					#Now let's try smaller events
+				}#end for (cpn.event.vec in gain.loss.name.list) {
+
+				all.samp.w.metadata.grs[all.samp.w.metadata.grs$uniq_id %in% all.samp.overlap.grs$uniq_id ]$arm_event_present <- cpn.event.vec[1]
+
+			}#end for (samp in sample.vec) {
+
+
+		}#end for ( i in 1:length(chr.gr.list) ) {
+
+	}#end 	for ( chr in CHRS_TO_USE_VEC ) {
+
+	#Let's generate the minimum consistent segmentation now:
+
+
 
 
 	print("Getting proportion of chromosome arms in selected genome covered by segments from each (and all) samples:")
@@ -566,9 +713,11 @@ if (OVERWRITE_FLAG == TRUE) {
 	#So now in parallel, let's take the set of disjoined original segments + their setdiff compared to the relevant genome's 
 	#non-acrocentric chromosome arms and get any matching original segmentation information as well as classify whether they were part of an intersection 
 	#between all regions, a disjoint set of some or were only in the setdiff and are therefore "dummy" segments.
-	print("Mapping the segments covering all bp of all arm back to input segments where appropriate....")
+	print("Mapping the segments covering all bp of all arms back to input segments where appropriate....")
 	cl <- makeCluster(NUM_CORES)
 	registerDoParallel(cl)
+	foreach::getDoParWorkers()
+	ptm <- proc.time()
 	itx <- iter(as.data.frame(all.bp.chr.grs), by="row")
 	results <- foreach(curr.all.bp.chr.df = itx, .combine = c) %dopar% {
 
@@ -638,7 +787,9 @@ if (OVERWRITE_FLAG == TRUE) {
 
 	}
 	stopCluster(cl)
-
+	time.passed <- proc.time() - ptm
+	print("time.passed")
+	print(time.passed)
 
 	all.bp.all.samps.segs.df <- do.call(rbind, results)
 
@@ -658,147 +809,23 @@ if (OVERWRITE_FLAG == TRUE) {
 	colnames(mock.cpn.matrix) <- sample.vec
 	mock.min.cons.seg.df <- cbind(cpn.chr.start.end.df, mock.cpn.matrix)
 
-	#MOCK INPUT:
-	min.cons.seg.df <- mock.min.cons.seg.df
-	allow.logr.only.flag = FALSE
-	num.cores = 8
-	#Todo work out the differences here:
+
 	#All SNPs in these lists must have both a logr and baf value: all sample all seg logr baf lists is asas.lr.baf
-
-	##
-	##Params:
-	##
-	##Returns:
-	##
-	#cleanAndErrorCheckSNPsParallel <- function(all.samp.SNP.list, min.cons.seg.df, allow.logr.only.flag = FALSE, num.cores = 8) {
-	  #TODO add check that every single all.samp.SNP.list has the same SNPs..
-	  #Note error checking of removing NAs from the min.cons.seg.df should already have been performed
-
-	  min.cpn.vals.df <- min.cons.seg.df[,4:ncol(min.cons.seg.df)]
-	  seg.name.vec <- paste(min.cons.seg.df[, 1], min.cons.segs.df[, 2], min.cons.segs.df[, 3], sep=":")
-	  #min.cpn.vals.df <- min.cpn.vals.df[ ! is.na(rowSums(min.cpn.vals.df)), ,drop = FALSE] 
-	  working.all.samp.SNP.list <- list()
-	  all.samps.prob.SNPs.vec <- c()
-
-	  #Make vectors for sample vec:
-	  samp.seg.vec <- rep(seg.name.vec, length(sample.vec))
-	  sample.rep.vec <- c()
-	  for ( samp in sample.vec ) {
-	  	working.all.samp.SNP.list[[samp]] <- list()
-	    sample.rep.vec <- c(sample.rep.vec, rep(samp, length(seg.name.vec)))
-
-	  }
-	  iterable.min.cons.seg.df <- cbind(do.call("rbind", replicate(length(sample.vec), min.cons.seg.df[,1:3], simplify = FALSE)), sample = sample.rep.vec)
-
-	  cl <- makeCluster(num.cores)
-	  registerDoParallel(cl)
-	  itx <- iter(iterable.min.cons.seg.df, by="row")
-	  print("Starting parallel assignation of snps to segs:")
-
-	  # Create class which holds multiple results for each loop iteration.
-	  # Each loop iteration populates two properties: $result1 and $result2.
-	  # For a great tutorial on S3 classes, see: 
-	  # http://www.cyclismo.org/tutorial/R/s3Classes.html#creating-an-s3-class
-	  MultiResultClass <- function(samp_seg_name=NULL, samp_seg_logR_BAF_df=NULL, samp_prob_SNPs_vec=NULL)
-	  {
-	    me <- list(
-	   	  samp_seg_name = samp_seg_name,
-	      samp_seg_logR_BAF_df = samp_seg_logR_BAF_df,
-	      samp_prob_SNPs_vec  = samp_prob_SNPs_vec
-	    )
-	    # Set the name for the class
-	    class(me) <- append(class(me),"MultiResultClass")
-	    return(me)
-	  }
-	  results.list <- foreach(min.cons.seg.df = itx, .combine = c) %dopar% {
-
-	    samp.SNP.df <- all.samp.SNP.list[[ min.cons.seg.df[, 4]]]
-
-	    samp.seg.logR.BAF.df <- samp.SNP.df[ samp.SNP.df$chrom == min.cons.seg.df[, 1] 
-	                                       & samp.SNP.df$pos >= min.cons.seg.df[, 2] 
-	                                       & samp.SNP.df$pos <= min.cons.seg.df[, 3], ,drop = FALSE]
-
-	    if (allow.logr.only.flag == FALSE) {
-
-	      samp.prob.SNPs.vec <- rownames(samp.seg.logR.BAF.df[is.na(samp.seg.logR.BAF.df$BAFsegmented),])
-	      samp.seg.logR.BAF.df <- samp.seg.logR.BAF.df[samp.seg.logR.BAF.df$BAF != 2, ,drop = FALSE]
-	      samp.seg.logR.BAF.df <- samp.seg.logR.BAF.df[! is.na(samp.seg.logR.BAF.df$BAFsegmented), ,drop = FALSE]
-
-	    }
-
-	    result <- MultiResultClass(samp_seg_name = paste0(min.cons.seg.df[, 4], "@", min.cons.seg.df[, 1], ":", min.cons.seg.df[, 2], ":", min.cons.seg.df[, 3]),
-	    							samp_seg_logR_BAF_df = samp.seg.logR.BAF.df,
-	    							samp_prob_SNPs_vec = samp.prob.SNPs.vec)
-	    result.list <- list(result)
-	    names(result.list) <- paste0(min.cons.seg.df[, 4], "@", min.cons.seg.df[, 1], ":", min.cons.seg.df[, 2], ":", min.cons.seg.df[, 3])
-	    # result$result1 <- samp.seg.logR.BAF.df
-	    # result$result2 <- samp.prob.SNPs.vec
-	    # samp.seg.logR.BAF.df.list <- list(samp.seg.logR.BAF.df)
-	    # names(samp.seg.logR.BAF.df.list) <- paste0(min.cons.seg.df[, 4], "@", min.cons.seg.df[, 1], ":", min.cons.seg.df[, 2], ":", min.cons.seg.df[, 3])
-	    # samp.prob.SNPs.vec.list <- list(samp.prob.SNPs.vec)
-	    # names(samp.prob.SNPs.vec.list) <- paste0(min.cons.seg.df[, 4], "@", min.cons.seg.df[, 1], ":", min.cons.seg.df[, 2], ":", min.cons.seg.df[, 3], ":prob_snps")
-
-	    # returnable <- list(list(samp.seg.logR.BAF.df.list), list(samp.prob.SNPs.vec.list))
-	    #names(returnable) <-  paste0(min.cons.seg.df[, 4], "@", min.cons.seg.df[, 1], ":", min.cons.seg.df[, 2], ":", min.cons.seg.df[, 3])
-	    return(result.list)
-
-	  }
-
-	  #Create the list dataobject we're expecting:
-
-	  for ( result.name in names(results.list) ) {
-
-	    samp <- strsplit(result.name, "@")[[1]][1]
-	    print(samp)
-	    seg.name <- strsplit(result.name, "@")[[1]][2]
-	    print(seg.name)
-	    print("########")
-
-	    if (! grepl("prob_snps", seg.name)){
-	    	print("adding to list")
-	    	working.all.samp.SNP.list[[samp]][[seg.name]] <- results.list[[result.name]][[2]]
-
-		}
-		readline(prompt="Press [enter] to continue")
-
-	  }
-	  #Now get all the problem snps
-	  all.samps.prob.SNPs.vec <- sapply(results.list, function(x) x[[1]][2])
-	  all.samps.prob.SNPs.vec <- unique(all.samps.prob.SNPs.vec)
-	  print("Number of problem SNPs being removed:")
-	  print(length(all.samps.prob.SNPs.vec))
-
-
-	  for ( sample in sample.vec ) {
-
-	    for (seg.idx in 1:nrow(min.cpn.vals.df)) {
-
-	      working.all.samp.SNP.list[[sample]][[seg.name.vec[seg.idx]]] <- working.all.samp.SNP.list[[sample]][[seg.name.vec[seg.idx]]][ ! rownames(working.all.samp.SNP.list[[sample]][[seg.name.vec[seg.idx]]])%in%all.samps.prob.SNPs.vec, ,drop=FALSE] 
-
-	    }#end for (seg.idx in 1:nrow(min.cpn.vals.df))
-
-	  }#end for ( sample in sample.vec ) {
-
-	 # return(working.all.samp.SNP.list)
-
-	 str(working.all.samp.SNP.list, max=1)
-	#}#end <- function(all.samp.SNP.list, min.cons.seg.df)
-	 STOP
-
-
-
-
-
 
 	ptm <- proc.time()
 	asas.SNPs.w.both.lr.baf.snp.lists <- cleanAndErrorCheckSNPsParallel(all.samp.SNP.list, mock.min.cons.seg.df, allow.logr.only.flag = FALSE)
 	time.taken <- proc.time() - ptm
+	print("time.taken")
+	print(time.taken)
 	##
 	#SNPs that only have LogR are permitted in these lists, but it also contains all the SNPs with both BAF and LogR
+	ptm <- proc.time()
 	asas.SNPS.lr.and.or.baf.lists <- cleanAndErrorCheckSNPsParallel(all.samp.SNP.list, mock.min.cons.seg.df, allow.logr.only.flag = TRUE)
+	time.taken <- proc.time() - ptm
+	print("time.taken")
+	print(time.taken)
 
 
-	STOP
 	# asas.SNPs.w.both.lr.baf.snp.lists <- cleanAndErrorCheckSNPsMPhase(all.samp.SNP.list, min.cons.segs.df, allow.logr.only.flag = FALSE)
 	# asas.SNPS.lr.and.or.baf.lists <- cleanAndErrorCheckSNPsMPhase(all.samp.SNP.list, min.cons.segs.df, allow.logr.only.flag = TRUE)
 
@@ -938,7 +965,7 @@ if (OVERWRITE_FLAG == TRUE) {
 	# all.pw.cn.het.comp.lists <- list()
 	# for (i in 1:(length(sample.vec) - 1)) {
 
-	#   for(j in (i + 1):length(sample.vec)) {
+	#   for(j in (i 	+ 1):length(sample.vec)) {
 
 	#     samp.one <- sample.vec[i]
 	#     samp.two <- sample.vec[j]
@@ -1186,9 +1213,21 @@ empty.full.joint.segs.df <- initialiseFullOutputDataframe(seg.name.vec = names(a
 														make.row.names.seg.name.alone = FALSE) 
 
 
-#This adds the raw cpn for both segments that could be phased and those that couldn't
-print("Adding new copy number calls to MCS output based on the phased raw copy number...")
-new.cpn.full.joint.segs.df <- addNewRawAndIntCPNCallsToFinalSegmentation(seg.name.vec = names(asas.ph.raw.cpn.lists[[1]]),
+# #This adds the raw cn for both segments that could be phased and those that couldn't
+# print("Adding new copy number calls to MCS output based on the phased raw copy number...")
+# new.cpn.full.joint.segs.df <- addNewRawAndIntCPNCallsToFinalSegmentation(seg.name.vec = names(asas.ph.raw.cpn.lists[[1]]),
+# 																		sample.vec = names(purity.est.vec),
+# 																		all.samp.logr.df.list = all.samp.non.hz.logr.and.tot.cpn.df.list,
+# 																		all.samp.ph.BAF.df.list = patient.phased.BAF.df.list,
+# 																		all.seg.CCF.vals.list = all.seg.CCF.list,
+# 																		asas.lr.baf.lists = asas.SNPs.w.both.lr.baf.snp.lists,
+# 																		all.seg.df = empty.full.joint.segs.df,
+# 																		cpnX.vec = c("cpnA", "cpnB")
+# 																		)
+
+source(paste0(current.dir, "/final_output_segmentation_file_generation_functions_v3.R")) 
+source(paste0(current.dir, "/utility_MPhase_functions.R"))
+new.cpn.full.joint.segs.df <- addNewRawAndIntCPNCallsToFinalSegmentationParallel(seg.name.vec = names(asas.ph.raw.cpn.lists[[1]]),
 																		sample.vec = names(purity.est.vec),
 																		all.samp.logr.df.list = all.samp.non.hz.logr.and.tot.cpn.df.list,
 																		all.samp.ph.BAF.df.list = patient.phased.BAF.df.list,
@@ -1199,23 +1238,23 @@ new.cpn.full.joint.segs.df <- addNewRawAndIntCPNCallsToFinalSegmentation(seg.nam
 																		)
 
 
-print("Mapping MCS segments back to original input and copy number states...")
-full.joint.segs.w.old.cpn.vs.ploidy.df <- addOriginalSegmentInfoToFinalSegmentation(seg.name.vec = names(asas.ph.raw.cpn.lists[[1]]),
-																					sample.vec = names(purity.est.vec),
-																					processed.orig.cpn.segs.df = processed.orig.cpn.segs.df,
-																					gain.threshold = GAIN_LOGR_THRESH,
-																					loss.threshold = LOSS_LOGR_THRESH,
-																					amp.threshold = AMP_LOGR_THRESH,  
-																					deep.loss.threshold = DEEP_LOSS_LOGR_THRESH,
-																					all.seg.df = new.cpn.full.joint.segs.df
-																					)
+# print("Mapping MCS segments back to original input and copy number states...")
+# full.joint.segs.w.old.cpn.vs.ploidy.df <- addOriginalSegmentInfoToFinalSegmentation(seg.name.vec = names(asas.ph.raw.cpn.lists[[1]]),
+# 																					sample.vec = names(purity.est.vec),
+# 																					processed.orig.cpn.segs.df = processed.orig.cpn.segs.df,
+# 																					gain.threshold = GAIN_LOGR_THRESH,
+# 																					loss.threshold = LOSS_LOGR_THRESH,
+# 																					amp.threshold = AMP_LOGR_THRESH,  
+# 																					deep.loss.threshold = DEEP_LOSS_LOGR_THRESH,
+# 																					all.seg.df = new.cpn.full.joint.segs.df
+# 																					)
 
 
 print("Adding CCF information and subclonal cpn calls to MCS output...")
 clonality.and.ccf.joint.segs.df <- addWithinSampleClonalityAndCCFToFinalSegmentation(seg.name.vec = names(asas.ph.raw.cpn.lists[[1]])
                                 ,all.seg.CCF.vals.list = all.seg.CCF.list
                                 ,all.seg.CCF.diff.from.exp.list = all.seg.CCF.diff.from.exp.list
-                                ,all.seg.df = full.joint.segs.w.old.cpn.vs.ploidy.df
+                                ,all.seg.df = new.cpn.full.joint.segs.df#full.joint.segs.w.old.cpn.vs.ploidy.df
                                 ,sample.vec = names(purity.est.vec)
                                 ,clonal.pval = PVAL_THRESH_VS_MIN_CCF
                                 ,diff.from.oth.p.val = PVAL_THRESH_VS_OTH_CHRS_SAME_CPN
@@ -1228,9 +1267,13 @@ clonality.and.ccf.joint.segs.df <- addWithinSampleClonalityAndCCFToFinalSegmenta
                                 )
 
 print("Adding total copy number estimates to MCS output for segments with only logr information...")
-full.joint.segs.df.w.cpn.vs.ploidy.df <- addLogrDefinedCPNEventsToOutputSegmentation(sample.vec = names(purity.est.vec),
+source(paste0(current.dir, "/final_output_segmentation_file_generation_functions_v3.R"))
+source(paste0(current.dir, "/utility_MPhase_functions.R"))
+full.joint.segs.df.w.cpn.vs.ploidy.df <- addLogrDefinedCPNEventsToOutputSegmentationParallel(sample.vec = names(purity.est.vec),
                                                         							seg.name.vec = names(asas.ph.raw.cpn.lists[[1]]),
                                                         							all.seg.df = clonality.and.ccf.joint.segs.df,
+                                                        							ploidy.est.vec = ploidy.est.vec,
+                                                        							purity.est.vec = purity.est.vec,
                                                         							all.samp.logr.df.list = all.samp.non.hz.logr.and.tot.cpn.df.list,
                                                         							all.samp.ph.BAF.df.list = patient.phased.BAF.df.list,     
                                                        								gain.threshold = GAIN_LOGR_THRESH,
@@ -1241,6 +1284,7 @@ full.joint.segs.df.w.cpn.vs.ploidy.df <- addLogrDefinedCPNEventsToOutputSegmenta
 
 print(head(full.joint.segs.df.w.cpn.vs.ploidy.df[,"cpn_event_vs_ploidy"]))
 print("Adding cpn event vs ploidy by logr measures to MCS output...")
+source(paste0(current.dir, "/final_output_segmentation_file_generation_functions_v3.R"))
 full.joint.segs.logr.vs.ploidy.clonality.df <- determineAcrossSampleClonalityOfLogrEventsVsPloidy(sample.vec = names(purity.est.vec),
                                                         							seg.name.vec = names(asas.ph.raw.cpn.lists[[1]]),
                                                         							all.seg.df = full.joint.segs.df.w.cpn.vs.ploidy.df,
@@ -1273,18 +1317,18 @@ full.joint.segs.w.phasing.df <- addPhasingInformationToOutputSegmentation(sample
                                         all.segs.df = full.joint.segs.logr.vs.ploidy.clonality.df)
 
 
-#Now we want to add in the allelic imbalance clonal and subclonal inrormation to the final data frame.
-print("Adding across sample clonal/subclonal summary to MCS output...")
-full.joint.segs.w.phasing.and.raw.df <- addOriginalCPNValuesAndCallsVsPloidyToOutputSegmentation(sample.vec = sample.vec,
-                                        seg.name.vec = names(asas.ph.raw.cpn.lists[[1]]), 
-                                        processed.orig.cpn.segs.df = processed.orig.cpn.segs.df,
-                                        all.segs.df = full.joint.segs.w.phasing.df)
+# #Now we want to add in the allelic imbalance clonal and subclonal inrormation to the final data frame.
+# print("Adding across sample clonal/subclonal summary to MCS output...")
+# full.joint.segs.w.phasing.and.raw.df <- addOriginalCPNValuesAndCallsVsPloidyToOutputSegmentation(sample.vec = sample.vec,
+#                                         seg.name.vec = names(asas.ph.raw.cpn.lists[[1]]), 
+#                                         processed.orig.cpn.segs.df = processed.orig.cpn.segs.df,
+#                                         all.segs.df = full.joint.segs.w.phasing.df)
 
 print("Adding MSAI detected by LTNPD method to the MCS output...")
 full.joint.segs.w.ltnpd.MSAI.df <- addMSAIDetectionByLTNPDToOutputSegmentation(sample.vec = sample.vec,
 											seg.name.vec = names(asas.ph.raw.cpn.lists[[1]]),
 											all.seg.MSAI.by.BAF.ltnpd.present.list = all.seg.MSAI.by.BAF.ltnpd.present.list,
-											all.segs.df = full.joint.segs.w.phasing.and.raw.df)
+											all.segs.df = full.joint.segs.w.phasing.df)#full.joint.segs.w.phasing.and.raw.df)
 
 
 print(head(full.joint.segs.w.ltnpd.MSAI.df[( ! is.na(full.joint.segs.w.ltnpd.MSAI.df$any_across_samp_MSAI)) &

@@ -231,7 +231,7 @@ createAllSegsPhasedBAFDataFrame <- function(asas.lr.baf.lists, sample.to.phase.s
   #Now we need to make sure that the asas.lr.baf.lists and sample.to.phase.seg.list 
   if (length(names(sample.to.phase.seg.list)) != length(asas.lr.baf.lists[[1]])) {
 
-    print("Missing or removed segments:")
+    print("Segments that will not have phasing attempted as were do not have the minimum number of hz positions:")
     print(names(sample.to.phase.seg.list)[ ! names(asas.lr.baf.lists[[1]]) %in% names(sample.to.phase.seg.list)])
     print("Continuing creation of phased BAF dataframe")
 

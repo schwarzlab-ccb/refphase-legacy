@@ -982,7 +982,120 @@ cleanAndErrorCheckSNPsParallel <- function(all.samp.SNP.list, min.cons.seg.df, a
 }#end <- function(all.samp.SNP.list, min.cons.seg.df)
  
 
+##
+##Params:
+##
+##Returns:
+##
+cleanAndErrorCheckSNPsParallel <- function(all.samp.SNP.list, min.cons.seg.df, allow.logr.only.flag = FALSE, num.cores = 8) {
+  # TODO add check that every single all.samp.SNP.list has the same SNPs..
+  # Note error checking of removing NAs from the min.cons.seg.df should already have been performed
 
+  min.cpn.vals.df <- min.cons.seg.df[,4:ncol(min.cons.seg.df)]
+  seg.name.vec <- paste(min.cons.seg.df[, 1], min.cons.segs.df[, 2], min.cons.segs.df[, 3], sep=":")
+  #min.cpn.vals.df <- min.cpn.vals.df[ ! is.na(rowSums(min.cpn.vals.df)), ,drop = FALSE] 
+  working.all.samp.SNP.list <- list()
+  all.samps.prob.SNPs.vec <- c()
+
+  #Make vectors for sample vec:
+  samp.seg.vec <- rep(seg.name.vec, length(sample.vec))
+  sample.rep.vec <- c()
+  for ( samp in sample.vec ) {
+
+    working.all.samp.SNP.list[[samp]] <- list()
+    sample.rep.vec <- c(sample.rep.vec, rep(samp, length(seg.name.vec)))
+
+  }
+
+  iterable.min.cons.seg.df <- cbind(do.call("rbind", replicate(length(sample.vec), min.cons.seg.df[,1:3], simplify = FALSE)), sample = sample.rep.vec)
+  cl <- makeCluster(NUM_CORES)
+  registerDoParallel(cl)
+  itx <- iter(iterable.min.cons.seg.df, by="row")
+  print("Starting parallel assignation of snps to segs:")
+  # Create class which holds multiple results for each loop iteration.
+  # Each loop iteration populates two properties: $result1 and $result2.
+  # For a great tutorial on S3 classes, see: 
+  # http://www.cyclismo.org/tutorial/R/s3Classes.html#creating-an-s3-class
+  MultiResultClass <- function(samp_seg_name=NULL, samp_seg_logR_BAF_df=NULL, samp_prob_SNPs_vec=NULL)
+  {
+    me <- list(
+      samp_seg_name = samp_seg_name,
+      samp_seg_logR_BAF_df = samp_seg_logR_BAF_df,
+      samp_prob_SNPs_vec  = samp_prob_SNPs_vec
+    )
+    # Set the name for the class
+    class(me) <- append(class(me),"MultiResultClass")
+    return(me)
+  }
+  sites.in.each.samp.seg.list <- foreach(min.cons.seg.df = itx, .combine = c) %dopar% {
+
+    samp.SNP.df <- all.samp.SNP.list[[ min.cons.seg.df[, 4]]]
+
+    samp.seg.logR.BAF.df <- samp.SNP.df[ samp.SNP.df$chrom == min.cons.seg.df[, 1] 
+                                       & samp.SNP.df$pos >= min.cons.seg.df[, 2] 
+                                       & samp.SNP.df$pos <= min.cons.seg.df[, 3], ,drop = FALSE]
+
+    if (allow.logr.only.flag == FALSE) {
+
+      samp.prob.SNPs.vec <- rownames(samp.seg.logR.BAF.df[is.na(samp.seg.logR.BAF.df$BAFsegmented),])
+      samp.seg.logR.BAF.df <- samp.seg.logR.BAF.df[samp.seg.logR.BAF.df$BAF != 2, ,drop = FALSE]
+      samp.seg.logR.BAF.df <- samp.seg.logR.BAF.df[! is.na(samp.seg.logR.BAF.df$BAFsegmented), ,drop = FALSE]
+
+    } else {
+
+      samp.prob.SNPs.vec <- c()
+
+    }
+
+    result <- MultiResultClass(samp_seg_name = paste0(min.cons.seg.df[, 4], "@", min.cons.seg.df[, 1], ":", min.cons.seg.df[, 2], ":", min.cons.seg.df[, 3]),
+                  samp_seg_logR_BAF_df = samp.seg.logR.BAF.df,
+                  samp_prob_SNPs_vec = samp.prob.SNPs.vec)
+    result.list <- list(result)
+    names(result.list) <- paste0(min.cons.seg.df[, 4], "@", min.cons.seg.df[, 1], ":", min.cons.seg.df[, 2], ":", min.cons.seg.df[, 3])
+    result.list
+
+  }
+
+  all.samps.prob.SNPs.vec <- unique(unlist(sapply(sites.in.each.samp.seg.list, function(x) x[["samp_prob_SNPs_vec"]])))
+  print("Number of problem SNPs being removed:")
+  print(length(all.samps.prob.SNPs.vec))
+
+  if (length(all.samps.prob.SNPs.vec) > 0) {
+
+    samp.seg.itx <- iter(sites.in.each.samp.seg.list)
+    clean.sites.in.each.samp.seg.list <- foreach(samp.seg.mrc = samp.seg.itx, .combine = c) %dopar% {
+
+      seg.name <- strsplit(samp.seg.mrc$samp_seg_name, "@")[[1]][2]
+      samp.seg.mrc.list <- sites.in.each.samp.seg.list[grep(seg.name, names(sites.in.each.samp.seg.list), value = TRUE)]
+      samp.seg.prob.snp.vec <- unique(unlist(sapply(samp.seg.mrc.list, function(x) x[["samp_prob_SNPs_vec"]])))
+      samp.seg.logR.BAF.df <-  samp.seg.mrc$samp_seg_logR_BAF_df[ ! rownames(samp.seg.mrc$samp_seg_logR_BAF_df) %in% samp.seg.prob.snp.vec, ,drop = FALSE ]
+      result <- MultiResultClass(samp_seg_name = samp.seg.mrc$samp_seg_name,
+                    samp_seg_logR_BAF_df = samp.seg.logR.BAF.df,
+                    samp_prob_SNPs_vec = c())
+      result.list <- list(result)
+      names(result.list) <- samp.seg.mrc$samp_seg_name
+      result.list
+    }
+
+  } else {
+
+    clean.sites.in.each.samp.seg.list <- sites.in.each.samp.seg.list
+
+  }
+
+  stopCluster(cl)
+
+  for ( samp.seg.name in names(clean.sites.in.each.samp.seg.list) ) {
+
+    samp <- strsplit(samp.seg.name, "@")[[1]][1]
+    seg.name <- strsplit(samp.seg.name, "@")[[1]][2]
+    working.all.samp.SNP.list[[samp]][[seg.name]] <- clean.sites.in.each.samp.seg.list[[samp.seg.name]]$samp_seg_logR_BAF_df
+
+  }
+
+  return(working.all.samp.SNP.list)
+
+}#end cleanAndErrorCheckSNPsParallel <- function(all.samp.SNP.list, min.cons.seg.df,
  # print("HERE")
  # for ( sample in sample.vec ) {
 
