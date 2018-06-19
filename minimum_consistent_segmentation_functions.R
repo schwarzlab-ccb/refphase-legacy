@@ -43,8 +43,7 @@ generateMinimumConsistentSegmentation <- function(orig.cpn.segs.df, chroms.vec =
   chr.pos.mat <- matrix(NA, length(all.new.seg.start.vec), ncol = 3)
   colnames(chr.pos.mat) <- c("chr", "start", "end")
   chr.pos.mat <- cbind(as.numeric(all.new.seg.chr.vec), as.numeric(all.new.seg.start.vec), as.numeric(all.new.seg.end.vec))
-  print("chr.pos.mat")
-  print(chr.pos.mat)
+
 
   joint.seg.cpn.chr.mat.list <- mclapply(unique(chr.pos.mat[,1]), function(x){
 

@@ -165,16 +165,16 @@ current.dir <-  LocationOfThisScript()
 # overwrite.flag <- FALSE
 # gamma.val <- 0.5
 
-patient  <-  "LTX021"
-allow.dip.test.phasing.flag <- FALSE
-output.directory.base.path <- "/Users/watkint/Desktop/MET048_mPhase_data/CN_het_TRACERx_no_diptest/"
-data.format.to.use <- "TRACERx_exome"
-snp.file.path <- "/Users/watkint/Desktop/MET048_mPhase_data/A_LTX021/exome/CN_het_TRACERx_no_diptest/LTX021_TRACERx_input_paths_df.txt"
-seg.file.path <- "/Users/watkint/Desktop/MET048_mPhase_data/A_LTX021/exome/MSAI/LTX021_joint_segs_all_ascat_info.txt"
-overwrite.flag <- TRUE
-gamma.val <- 1
-num.cores <- 8
-intersection.or.whole.arm <- "intersection"
+# patient  <-  "LTX021"
+# allow.dip.test.phasing.flag <- FALSE
+# output.directory.base.path <- "/Users/watkint/Desktop/MET048_mPhase_data/CN_het_TRACERx_no_diptest/"
+# data.format.to.use <- "TRACERx_exome"
+# snp.file.path <- "/Users/watkint/Desktop/MET048_mPhase_data/A_LTX021/exome/CN_het_TRACERx_no_diptest/LTX021_TRACERx_input_paths_df.txt"
+# seg.file.path <- "/Users/watkint/Desktop/MET048_mPhase_data/A_LTX021/exome/MSAI/LTX021_joint_segs_all_ascat_info.txt"
+# overwrite.flag <- TRUE
+# gamma.val <- 1
+# num.cores <- 8
+# intersection.or.whole.arm <- "intersection"
 
 # patient  <-  "LTX021"
 # allow.dip.test.phasing.flag <- FALSE
@@ -184,6 +184,8 @@ intersection.or.whole.arm <- "intersection"
 # seg.file.path <- "/camp/project/proj-tracerx-lung/tctProjects/watkint/TRACERx100_lung_pan_can_analysis/release/A_LTX021/exome/MSAI/LTX021_joint_segs_all_ascat_info.txt"
 # overwrite.flag <- TRUE
 # gamma.val <- 1
+# num.cores <- 8
+# intersection.or.whole.arm <- "intersection"
 
 # patient  <-  "LTX046"
 # allow.dip.test.phasing.flag <- FALSE
@@ -193,7 +195,9 @@ intersection.or.whole.arm <- "intersection"
 # seg.file.path <- "/camp/project/proj-tracerx-lung/tctProjects/watkint/TRACERx100_lung_pan_can_analysis/release/B_LTX046/exome/MSAI/LTX046_joint_segs_all_ascat_info.txt"
 # overwrite.flag <- TRUE
 # gamma.val <- 1
+# num.cores <- 24
 
+intersection.or.whole.arm <- "intersection"
 
 print("patient")
 print(patient)
@@ -219,25 +223,34 @@ print(gamma.val)
 
 
 ###Source relevant scripts, best to do this at the top to check for errors...
-source(paste0(current.dir, "/utility_MPhase_functions.R"))
-source(paste0(current.dir, "/data_input_and_QC_functions_v2.R"))
-source(paste0(current.dir, "/minimum_consistent_segmentation_functions.R"))
-source(paste0(current.dir, "/consensus_phasing_from_multiple_samples_functions_v2.R"))
-source(paste0(current.dir, "/generation_of_phased_and_total_cpn_functions_v2.R"))
-source(paste0(current.dir, "/MSAI_detection_functions.R"))
-source(paste0(current.dir, "/pairwise_cpn_comparison_and_heterogeneity_functions.R"))
-source(paste0(current.dir, "/cancer_cell_fraction_calculation_functions_v2.R"))
-source(paste0(current.dir, "/final_output_segmentation_file_generation_functions_v3.R"))
-source(paste0(current.dir, "/segment_joining_functions.R"))
-source(paste0(current.dir, "/cpn_heterogeneity_plotting_functions_v2.R"))
+if( is.null(current.dir) ) {
+
+	current.dir <- ""
+
+} else {
+
+	current.dir <- paste0(current.dir, "/")
+
+}
+source(paste0(current.dir, "utility_MPhase_functions.R"))
+source(paste0(current.dir, "data_input_and_QC_functions_v2.R"))
+source(paste0(current.dir, "minimum_consistent_segmentation_functions.R"))
+source(paste0(current.dir, "consensus_phasing_from_multiple_samples_functions_v2.R"))
+source(paste0(current.dir, "generation_of_phased_and_total_cpn_functions_v2.R"))
+source(paste0(current.dir, "MSAI_detection_functions.R"))
+source(paste0(current.dir, "pairwise_cpn_comparison_and_heterogeneity_functions.R"))
+source(paste0(current.dir, "cancer_cell_fraction_calculation_functions_v2.R"))
+source(paste0(current.dir, "final_output_segmentation_file_generation_functions_v3.R"))
+source(paste0(current.dir, "segment_joining_functions.R"))
+source(paste0(current.dir, "cpn_heterogeneity_plotting_functions_v2.R"))
 
 #####Get relevant libraries:
 #Todo check this is the only required library.
-library(diptest)
-library(gplots)
-library(gdata)
-library(GenomicRanges)
-library(doParallel)
+suppressWarnings(suppressMessages(library(diptest)))
+suppressWarnings(suppressMessages(library(gplots)))
+suppressWarnings(suppressMessages(library(gdata)))
+suppressWarnings(suppressMessages(library(GenomicRanges)))
+suppressWarnings(suppressMessages(library(doParallel)))
 
 
 ###############This is past the input stage and into the analysis:
@@ -300,7 +313,7 @@ if ( ! file.exists(seg.file.path)) {
 
 
 ###Load in the relevant genome file, #todo make this an option that can be set.
-hg19.info.path <- paste0(current.dir, "/", "ucsc_hg19_chrominfo.txt")
+hg19.info.path <- paste0(current.dir, "ucsc_hg19_chrominfo.txt")
 hg19.info.df <- read.table(hg19.info.path, stringsAsFactors = FALSE, sep = "\t", header = TRUE)
 chrom.info.df <- hg19.info.df 
 
@@ -500,14 +513,10 @@ if (OVERWRITE_FLAG == TRUE) {
 		stop("Incorrect data.format.to.use input to mphase")
 
 	}
-	# print(chr)
-	# print(samp)
-	# print(p.or.q.vec[i])
-	# print(cpn.event.vec)
-	# print(samp.gain.amp.grs)
-	# print(sum(samp.gain.amp.grs$overlap_prop_query))											
-	# print(sum(samp.gain.amp.grs[ samp.gain.amp.grs$overlap_prop_query >= 0.25 ]$overlap_prop_query))
-	#So actually defining the segments that are lost or gained makes sense here..
+
+	#So we need the centromere postions for each arm:
+	#Add in p_end and q_start
+
 	cpn.call.state.vec <- rep("neutral", nrow(f.joint.segs.df))
     tot.raw.cpn.vec <- f.joint.segs.df$nAraw + f.joint.segs.df$nBraw
     log.tot.raw.over.ploidy.cpn.vec <- log2(tot.raw.cpn.vec / f.joint.segs.df$Ploidy)
@@ -515,12 +524,11 @@ if (OVERWRITE_FLAG == TRUE) {
 	cpn.call.state.vec[log.tot.raw.over.ploidy.cpn.vec <= log2(1.5 / 2)] <- "loss"
 	cpn.call.state.vec[tot.raw.cpn.vec >= ((2 * f.joint.segs.df$Ploidy[1]) + 1)] <- "amp"
 	cpn.call.state.vec[tot.raw.cpn.vec <= 0.5] <- "deep_loss"
-	f.joint.segs.df$cpn_call_for_arm <- cpn.call.state.vec
+	f.joint.segs.df$cpn_call <- cpn.call.state.vec
 	f.joint.segs.df$arm_or_focal_event <- "none"
 	f.joint.segs.df$arm_event_present <- "none"
+	f.joint.segs.df$within_chr_arm <- "not_in_arm"
 	f.joint.segs.df$uniq_id <- paste0(f.joint.segs.df$sample, "@", f.joint.segs.df$chr, ":", f.joint.segs.df$startpos, ":", f.joint.segs.df$endpos)
-
-
 	sample.vec <- unique(f.joint.segs.df$sample)
 	all.samp.grs <- makeGRangesFromDataFrame(f.joint.segs.df,
 			                         keep.extra.columns=FALSE,
@@ -548,6 +556,97 @@ if (OVERWRITE_FLAG == TRUE) {
 	                        strand.field="strand",
 	                        starts.in.df.are.0based=FALSE)
 
+	print("Introducing breakpoints at starts and ends of centromeres in original segmentation to allow calculation of arm level events in the original...")
+	new.all.samp.w.metadata.grs <- sort(all.samp.w.metadata.grs)
+	for ( chr in CHRS_TO_USE_VEC ) {
+
+		p.end.gr <- makeGRangesFromDataFrame(chrom.info.df[chrom.info.df$chrom == chr,],
+	                        keep.extra.columns=FALSE,
+	                        ignore.strand=FALSE,
+	                        seqinfo=NULL,
+	                        seqnames.field=c("chrom"),
+	                        start.field=c("p_end"),
+	                        end.field=c("p_end"),
+	                        strand.field="strand",
+	                        starts.in.df.are.0based=FALSE)
+		print(p.end.gr)
+		q.start.gr <- makeGRangesFromDataFrame(chrom.info.df[chrom.info.df$chrom == chr,],
+		                        keep.extra.columns=FALSE,
+		                        ignore.strand=FALSE,
+		                        seqinfo=NULL,
+		                        seqnames.field=c("chrom"),
+		                        start.field=c("q_start"),
+		                        end.field=c("q_start"),
+		                        strand.field="strand",
+		                        starts.in.df.are.0based=FALSE)
+		print(q.start.gr)
+
+		bps.to.introduce.grs.list <- list(p.end.gr, q.start.gr)
+		for (new.bp.gr in bps.to.introduce.grs.list) {
+
+			#DEBUG
+			#new.bp.gr <- bps.to.introduce.grs.list[[i]]
+
+			overlapping.seg.grs <- getOverlapGRanges(new.bp.gr, new.all.samp.w.metadata.grs)
+			#So go through each one, split into two,add to the dataset, remove the original, sort
+			if(length(overlapping.seg.grs) > 0) { 
+
+				for ( i in 1:length(overlapping.seg.grs) ) {
+
+					new.seg.one.template <- new.all.samp.w.metadata.grs[overlapping.seg.grs[i]$subject_hit_idx]
+					new.seg.one.start <- overlapping.seg.grs[i]$subject_start
+					new.seg.one.end <- start(new.bp.gr)
+
+					start(new.seg.one.template) <- new.seg.one.start
+					end(new.seg.one.template) <- new.seg.one.end
+					new.seg.one.template$uniq_id <- paste0(new.seg.one.template$sample,
+															"@",
+															as.character(seqnames(new.seg.one.template)),
+															":",
+															start(new.seg.one.template),
+															":",
+															end(new.seg.one.template))
+
+					new.seg.two.template <- new.all.samp.w.metadata.grs[overlapping.seg.grs[i]$subject_hit_idx]
+					new.seg.two.start  <- start(new.bp.gr) + 1
+					new.seg.two.end <- overlapping.seg.grs[i]$subject_end
+
+					start(new.seg.two.template) <- new.seg.two.start
+					end(new.seg.two.template) <- new.seg.two.end
+					new.seg.two.template$uniq_id <- paste0(new.seg.two.template$sample,
+															"@",
+															as.character(seqnames(new.seg.two.template)),
+															":",
+															start(new.seg.two.template),
+															":",
+															end(new.seg.two.template))
+					#Remove the original, so get the subject idx
+					all.orig.idx.vec <- 1:length(new.all.samp.w.metadata.grs)
+					idx.of.orig.segment <- overlapping.seg.grs[i]$subject_hit_idx
+					new.all.samp.w.metadata.grs <- new.all.samp.w.metadata.grs[ ! all.orig.idx.vec %in% idx.of.orig.segment ]
+
+					#So now add the new segs to the dataset and sort:
+					new.all.samp.w.metadata.grs <- sort(c(new.all.samp.w.metadata.grs, new.seg.one.template, new.seg.two.template))
+
+
+				}#end for ( i in 1:length(overlapping.seg.grs) ) {
+
+			}#end if(length(overlapping.seg.grs) > 0) { 
+
+		}#end 		for (new.bp.gr in bps.to.introduce.grs.list) {
+
+	}#end for ( chr in CHRS_TO_USE_VEC ) {
+
+	# print(chr)
+	# print(samp)
+	# print(p.or.q.vec[i])
+	# print(cpn.event.vec)
+	# print(samp.gain.amp.grs)
+	# print(sum(samp.gain.amp.grs$overlap_prop_query))											
+	# print(sum(samp.gain.amp.grs[ samp.gain.amp.grs$overlap_prop_query >= 0.25 ]$overlap_prop_query))
+	#So actually defining the segments that are lost or gained makes sense here..
+	print("Calculating arm level gain, loss, \"neutral\", and LOH events in the original segmentation...")
+	all.samp.w.metadata.grs <- new.all.samp.w.metadata.grs
 	gain.loss.name.list <- list(c("neutral"), c("gain", "amp"), c("loss", "deep_loss"),  c("LOH"))
 	gain.loss.name.list
 	names(gain.loss.name.list) <- c("neutral", "gain", "loss", "LOH")
@@ -557,19 +656,18 @@ if (OVERWRITE_FLAG == TRUE) {
 		chr.gr.list <- getChromosomeArmsGRangeList(chr, chrom.info.df)
 		#print(chr)
 		for ( i in 1:length(chr.gr.list) ) {
-			curr.chr.arm.gr <- chr.gr.list[[i]]
 
+			curr.chr.arm.gr <- chr.gr.list[[i]]
 			all.samp.overlap.grs <- getOverlapGRanges(curr.chr.arm.gr, all.samp.w.metadata.grs)
-			print("#####")
-			print(all.samp.grs)
+
 			for (samp in sample.vec) {
-				#print(samp)
-				#samp <- "B_LTX046_SU_T1-R1"
-				#So now let's do this for gain and loss:
-				for (cpn.event.vec in gain.loss.name.list) {
+
+				arm.level.events.present <- list()
+				for (j in 1:length(gain.loss.name.list)) {
+					cpn.event.vec <- gain.loss.name.list[[j]]
 					#cpn.event.vec <- c("loss", "deep_loss")
 					#First does the total area of the event add up to 80% of an arm:
-					if ( ! names(cpn.event.vec) %in% "LOH") {
+					if ( ! names(gain.loss.name.list)[j] %in% "LOH") {
 						samp.gain.amp.grs <- all.samp.overlap.grs[ all.samp.overlap.grs$cpn_call %in% cpn.event.vec &
 															   all.samp.overlap.grs$sample == samp
 																]
@@ -584,40 +682,35 @@ if (OVERWRITE_FLAG == TRUE) {
 
 					}
 
-
 					samp.arm.all.uniq.ids.vec <- samp.all.cpn.grs$uniq_id
-					arm.level.events.present <- c()
+					all.samp.w.metadata.grs[all.samp.w.metadata.grs$uniq_id %in% samp.arm.all.uniq.ids.vec]$within_chr_arm <- paste0(chr, p.or.q.vec[i])
 					if (sum(as.numeric(samp.gain.amp.grs$overlap_prop_query))/100 >= 0.74 & sum(samp.gain.amp.grs[ samp.gain.amp.grs$overlap_prop_query >= 0.2 ]$overlap_prop_query)/100 >= 0.5){
 
 							#So all segments in the arm should be annotated as being in an arm level event:
 							#All the larger segments 
-							arm.level.events.present <- c(arm.level.events.present, names(cpn.event.vec))
-							#So now 
-							arm.event.id.vec <- samp.gain.amp.grs[ samp.gain.amp.grs$overlap_prop_query >= 0.2 & samp.gain.amp.grs$cpn_call %in% cpn.event.vec ]$uniq_id
-							focal.event.id.vec <- samp.all.cpn.grs[ (samp.all.cpn.grs$overlap_prop_query < 0.2 & samp.all.cpn.grs$cpn_call %in% cpn.event.vec)
-																	  & (! (samp.all.cpn.grs$cpn_call %in% cpn.event.vec)) ]$uniq_id
-							#so anything that isn't an arm and was gained will be focal
-							print(arm.level.events.present)
+							arm.level.events.present[[names(gain.loss.name.list)[j]]] <- list()
+							#So now
 
+							arm.level.events.present[[names(gain.loss.name.list)[j]]]$arm_event_uniq_ids <- samp.gain.amp.grs[ samp.gain.amp.grs$overlap_prop_query >= 0.2 & samp.gain.amp.grs$cpn_call %in% cpn.event.vec ]$uniq_id
+							arm.level.events.present[[names(gain.loss.name.list)[j]]]$focal_event_uniq_ids <- samp.all.cpn.grs[ (samp.all.cpn.grs$overlap_prop_query < 0.2 & samp.all.cpn.grs$cpn_call %in% cpn.event.vec)
+																	  | (! (samp.all.cpn.grs$cpn_call %in% cpn.event.vec)) ]$uniq_id
+							#so anything that isn't an arm and was gained will be focal
 						}
 
 					} 
-					print("%%%%%%%%%%%%%%%%%")
-					if (length(arm.level.events.present) > 0) {
+					if (length(arm.level.events.present) >= 1) {
 
-						arm.cpn.event.present <- paste(arm.level.events.present, collapse = "_")
+						if (names(arm.level.events.present)[1] != "LOH") {
 
-						all.samp.w.metadata.grs[all.samp.w.metadata.grs$uniq_id %in% samp.arm.all.uniq.ids.vec ]$arm_event_present <- arm.cpn.event.present
+							all.samp.w.metadata.grs[all.samp.w.metadata.grs$uniq_id %in% arm.level.events.present[[1]]$arm_event_uniq_ids ]$arm_or_focal_event  <- "arm"
+							if (length(arm.level.events.present[[1]]$focal_event_uniq_ids) > 0) {
 
-						if (grepl("gain|loss", arm.cpn.event.present) ) {
+								all.samp.w.metadata.grs[all.samp.w.metadata.grs$uniq_id %in% arm.level.events.present[[1]]$focal_event_uniq_ids  ]$arm_or_focal_event  <- "focal"
 
-							arm.cpn.event.present.wo.loh <- gsub("_LOH", "", arm.cpn.event.present)
-
-							all.samp.w.metadata.grs[all.samp.w.metadata.grs$uniq_id %in% focal.event.id.vec ]$arm_or_focal_event  <- "focal"
-							all.samp.w.metadata.grs[all.samp.w.metadata.grs$uniq_id %in% arm.event.id.vec ]$arm_or_focal_event  <- "arm"
-
+							}
 
 						}
+						all.samp.w.metadata.grs[all.samp.w.metadata.grs$uniq_id %in% samp.arm.all.uniq.ids.vec ]$arm_event_present <- paste(names(arm.level.events.present), collapse="_")
 
 					} else {
 
@@ -628,21 +721,27 @@ if (OVERWRITE_FLAG == TRUE) {
 					
 				}#end for (cpn.event.vec in gain.loss.name.list) {
 
-				all.samp.w.metadata.grs[all.samp.w.metadata.grs$uniq_id %in% all.samp.overlap.grs$uniq_id ]$arm_event_present <- cpn.event.vec[1]
-
 			}#end for (samp in sample.vec) {
 
-		}#end for ( i in 1:length(chr.gr.list) ) {
+	}#end	for ( chr in CHRS_TO_USE_VEC ) {
 
-	}#end 	for ( chr in CHRS_TO_USE_VEC ) {
-
+	all.samp.w.metadata.df <- as.data.frame(all.samp.w.metadata.grs)
+	all.samp.w.metadata.df <- all.samp.w.metadata.df[with(all.samp.w.metadata.df, order(sample, seqnames, start)), ]
+	print(all.samp.w.metadata.df)
 	#Let's generate the minimum consistent segmentation now:
 
-	STOP
+	#Convert the all.samp.w.metadata.df to f.joint.segs.df
 
+	all.samp.w.metadata.conv.df <- all.samp.w.metadata.df[, grep("strand|width", colnames(all.samp.w.metadata.df), value = TRUE, invert=TRUE)]
+	colnames(all.samp.w.metadata.conv.df)[colnames(all.samp.w.metadata.conv.df)=="seqnames"] <- "chr"
+	colnames(all.samp.w.metadata.conv.df)[colnames(all.samp.w.metadata.conv.df)=="start"] <- "startpos"
+	colnames(all.samp.w.metadata.conv.df)[colnames(all.samp.w.metadata.conv.df)=="end"] <- "endpos"
+	#Reorder
+	correct.order.cols <- c( "sample","chr","startpos","endpos","n.het","cnTotal","nMajor","nMinor","Ploidy","ACF","nAraw","nBraw","patient","sample_name","cpn_call","arm_or_focal_event","arm_event_present","within_chr_arm","uniq_id")
+	f.joint.segs.df.new <- all.samp.w.metadata.conv.df[, correct.order.cols]
 
 	print("Getting proportion of chromosome arms in selected genome covered by segments from each (and all) samples:")
-	overlaps.between.samples.df <- compareOverlapsBetweenSamples(sample.vec, f.joint.segs.df, chrom.info.df, chrs.to.use.vec=CHRS_TO_USE_VEC)
+	overlaps.between.samples.df <- compareOverlapsBetweenSamples(sample.vec, f.joint.segs.df, chrom.info.df, chrs.to.use.vec= CHRS_TO_USE_VEC)
 	print(overlaps.between.samples.df)
 	#So the question is here are we going to allow single base bair segments?
 	print("Calculating intersections by GRanges...")
@@ -673,8 +772,6 @@ if (OVERWRITE_FLAG == TRUE) {
 		for ( i in 1:length(chr.gr.list) ) {
 
 			curr.chr.arm.gr <- chr.gr.list[[i]]
-			print("curr.chr.arm.gr")
-			print(curr.chr.arm.gr)
 			curr.chr.arm.gr.plus <- curr.chr.arm.gr
 			curr.chr.arm.gr.minus <- curr.chr.arm.gr
 			strand(curr.chr.arm.gr.plus) <- "+"
@@ -798,7 +895,6 @@ if (OVERWRITE_FLAG == TRUE) {
 	mock.cpn.matrix <- matrix(data=0, nrow=nrow(cpn.chr.start.end.df), ncol = length(sample.vec)) 
 	colnames(mock.cpn.matrix) <- sample.vec
 	mock.min.cons.seg.df <- cbind(cpn.chr.start.end.df, mock.cpn.matrix)
-
 
 	#All SNPs in these lists must have both a logr and baf value: all sample all seg logr baf lists is asas.lr.baf
 
@@ -1228,6 +1324,30 @@ new.cpn.full.joint.segs.df <- addNewRawAndIntCPNCallsToFinalSegmentationParallel
 																		)
 
 
+addOriginalSegmentInfoToFinalSegmentationNew <- function(all.seg.df, all.orig.samp.segs.anno.df) {
+
+	#Really assuming order is correct here!
+	all.seg.df$overlap_w_n_orig_samps <- all.orig.samp.segs.anno.df$overlap_w_n_samps
+	all.seg.df$num_segs_maps_to_in_orig_samp <-  all.orig.samp.segs.anno.df$num_segs_maps_to_in_samp
+	all.seg.df$in_intersection_w_orig_segs <-  all.orig.samp.segs.anno.df$in_intersection
+	all.seg.df$in_disjoint_set_w_orig_segs <-  all.orig.samp.segs.anno.df$in_disjoin_only
+	all.seg.df$not_present_in_orig_segs <-  all.orig.samp.segs.anno.df$in_arm_setdiff
+	all.seg.df$orig_samp_seg_name <- all.orig.samp.segs.anno.df$uniq_id
+	all.seg.df$orig_nMinor <- all.orig.samp.segs.anno.df$nMinor
+	all.seg.df$orig_nMajor <- all.orig.samp.segs.anno.df$nMajor
+	all.seg.df$orig_cnTotal <- all.orig.samp.segs.anno.df$cnTotal
+	all.seg.df$orig_cpn_call_vs_ploidy <- all.orig.samp.segs.anno.df$cpn_call
+	all.seg.df$orig_seg_in_whole_arm_event <- all.orig.samp.segs.anno.df$arm_event_present
+	all.seg.df$orig_seg_is_arm_or_focal_event <- all.orig.samp.segs.anno.df$arm_or_focal_event
+	all.seg.df$orig_arm_seg_present_in <- all.orig.samp.segs.anno.df$within_chr_arm
+
+	return(all.seg.df)
+
+}
+
+full.joint.segs.w.old.cpn.vs.ploidy.df <- addOriginalSegmentInfoToFinalSegmentationNew(new.cpn.full.joint.segs.df, sorted.all.bp.all.samps.segs.anno.df)
+
+
 # print("Mapping MCS segments back to original input and copy number states...")
 # full.joint.segs.w.old.cpn.vs.ploidy.df <- addOriginalSegmentInfoToFinalSegmentation(seg.name.vec = names(asas.ph.raw.cpn.lists[[1]]),
 # 																					sample.vec = names(purity.est.vec),
@@ -1244,7 +1364,7 @@ print("Adding CCF information and subclonal cpn calls to MCS output...")
 clonality.and.ccf.joint.segs.df <- addWithinSampleClonalityAndCCFToFinalSegmentation(seg.name.vec = names(asas.ph.raw.cpn.lists[[1]])
                                 ,all.seg.CCF.vals.list = all.seg.CCF.list
                                 ,all.seg.CCF.diff.from.exp.list = all.seg.CCF.diff.from.exp.list
-                                ,all.seg.df = new.cpn.full.joint.segs.df#full.joint.segs.w.old.cpn.vs.ploidy.df
+                                ,all.seg.df = full.joint.segs.w.old.cpn.vs.ploidy.df#new.cpn.full.joint.segs.df
                                 ,sample.vec = names(purity.est.vec)
                                 ,clonal.pval = PVAL_THRESH_VS_MIN_CCF
                                 ,diff.from.oth.p.val = PVAL_THRESH_VS_OTH_CHRS_SAME_CPN
@@ -1287,13 +1407,13 @@ full.joint.segs.logr.vs.ploidy.clonality.df <- determineAcrossSampleClonalityOfL
                                                         							tot.cpn.vs.ploidy.pval.thresh = PVAL_THRESH_VS_LOGR_FOR_CPN_EVENT)
 
 
-print("Testing whether any gains should be reclassified as amplifications...")
-full.joint.check.amps.vs.ploidy.clonality.df <- retestSubclonalAmps(all.seg.df = full.joint.segs.logr.vs.ploidy.clonality.df,
-																	all.samp.logr.df.list = all.samp.non.hz.logr.and.tot.cpn.df.list,
-																	all.samp.ph.BAF.df.list = patient.phased.BAF.df.list,   
-																	gain.threshold = GAIN_LOGR_THRESH,
-																	amp.threshold = AMP_LOGR_THRESH,
-																	p.val.for.converting.gain.to.amp = PVAL_THRESH_CONVERT_GAIN_TO_AMP)
+# print("Testing whether any gains should be reclassified as amplifications...")
+# full.joint.check.amps.vs.ploidy.clonality.df <- retestSubclonalAmps(all.seg.df = full.joint.segs.logr.vs.ploidy.clonality.df,
+# 																	all.samp.logr.df.list = all.samp.non.hz.logr.and.tot.cpn.df.list,
+# 																	all.samp.ph.BAF.df.list = patient.phased.BAF.df.list,   
+# 																	gain.threshold = GAIN_LOGR_THRESH,
+# 																	amp.threshold = AMP_LOGR_THRESH,
+# 																	p.val.for.converting.gain.to.amp = PVAL_THRESH_CONVERT_GAIN_TO_AMP)
 
 print(head(full.joint.segs.logr.vs.ploidy.clonality.df[,c("across_samp_cl_cpn_vs_ploidy_present","across_samp_sc_cpn_vs_ploidy_present")]))
 
@@ -1366,9 +1486,6 @@ full.joint.segs.df <- full.joint.segs.w.across.plotting.cols.df
 #full.joint.segs.df <- full.joint.segs.df[full.joint.segs.df$num_un_ph_hz_sites != 0 | full.joint.segs.df$num_ph_hz_sites != 0  | full.joint.segs.df$num_non_hz_sites != 0,]
 #print("Removing segments that do not map back to any original segments")
 #full.joint.segs.df <- full.joint.segs.df[full.joint.segs.df$orig_seg_name != "NA:NA:NA",]
-
-
-
 
 
 
