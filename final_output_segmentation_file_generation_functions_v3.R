@@ -2039,4 +2039,4 @@ initialiseFullOutputDataframe <- function(seg.name.vec, ploidy.est.vec, purity.e
         rownames(all.seg.df) <- row.names.vec
         return(all.seg.df)
 
-} 
+}
