@@ -8,7 +8,8 @@ snp.file.path <- args[5]#Points towards the snp files, of whatever format they a
 seg.file.path <- args[6]#Pintts towards the seg files, of whatever format they should be determined byh the data.format.to.use flag.
 overwrite.flag  <- as.logical(args[7])
 gamma.val <- args[8]
-intersection.or.whole.arm <- args[9]#Can either be intersection or whole_arm
+num.cores <- args[9]
+intersection.or.whole.arm <- args[10]#Can either be intersection or whole_arm
 
 
 #function taken from https://github.com/molgenis/molgenis-pipelines/wiki/How-to-source-another_file.R-from-within-your-R-script
@@ -164,33 +165,34 @@ current.dir <-  LocationOfThisScript()
 # overwrite.flag <- FALSE
 # gamma.val <- 0.5
 
-# patient  <-  "LTX021"
-# allow.dip.test.phasing.flag <- FALSE
-# output.directory.base.path <- "/Users/watkint/Desktop/MET048_mPhase_data/CN_het_TRACERx_no_diptest/"
-# data.format.to.use <- "TRACERx_exome"
-# snp.file.path <- "/Users/watkint/Desktop/MET048_mPhase_data/A_LTX021/exome/CN_het_TRACERx_no_diptest/LTX021_TRACERx_input_paths_df.txt"
-# seg.file.path <- "/Users/watkint/Desktop/MET048_mPhase_data/A_LTX021/exome/MSAI/LTX021_joint_segs_all_ascat_info.txt"
-# overwrite.flag <- TRUE
-# gamma.val <- 1
-# intersection.or.whole.arm <- "intersection"
-
 patient  <-  "LTX021"
 allow.dip.test.phasing.flag <- FALSE
-output.directory.base.path <- "/camp/project/proj-tracerx-lung/tctProjects/watkint/TRACERx100_lung_pan_can_analysis/release/A_LTX021/exome/CN_het_TRACERx_no_diptest/"
+output.directory.base.path <- "/Users/watkint/Desktop/MET048_mPhase_data/CN_het_TRACERx_no_diptest/"
 data.format.to.use <- "TRACERx_exome"
-snp.file.path <- "/camp/project/proj-tracerx-lung/tctProjects/watkint/TRACERx100_lung_pan_can_analysis/release/A_LTX021/exome/CN_het_TRACERx_no_diptest/LTX021_TRACERx_input_paths_df.txt"
-seg.file.path <- "/camp/project/proj-tracerx-lung/tctProjects/watkint/TRACERx100_lung_pan_can_analysis/release/A_LTX021/exome/MSAI/LTX021_joint_segs_all_ascat_info.txt"
+snp.file.path <- "/Users/watkint/Desktop/MET048_mPhase_data/A_LTX021/exome/CN_het_TRACERx_no_diptest/LTX021_TRACERx_input_paths_df.txt"
+seg.file.path <- "/Users/watkint/Desktop/MET048_mPhase_data/A_LTX021/exome/MSAI/LTX021_joint_segs_all_ascat_info.txt"
 overwrite.flag <- TRUE
 gamma.val <- 1
+num.cores <- 8
+intersection.or.whole.arm <- "intersection"
 
-patient  <-  "LTX046"
-allow.dip.test.phasing.flag <- FALSE
-output.directory.base.path <- "/camp/project/proj-tracerx-lung/tctProjects/watkint/TRACERx100_lung_pan_can_analysis/release/B_LTX046/exome/CN_het_TRACERx_no_diptest/"
-data.format.to.use <- "TRACERx_exome"
-snp.file.path <- "/camp/project/proj-tracerx-lung/tctProjects/watkint/TRACERx100_lung_pan_can_analysis/release/B_LTX046/exome/CN_het_TRACERx_no_diptest/LTX046_TRACERx_input_paths_df.txt"
-seg.file.path <- "/camp/project/proj-tracerx-lung/tctProjects/watkint/TRACERx100_lung_pan_can_analysis/release/B_LTX046/exome/MSAI/LTX046_joint_segs_all_ascat_info.txt"
-overwrite.flag <- TRUE
-gamma.val <- 1
+# patient  <-  "LTX021"
+# allow.dip.test.phasing.flag <- FALSE
+# output.directory.base.path <- "/camp/project/proj-tracerx-lung/tctProjects/watkint/TRACERx100_lung_pan_can_analysis/release/A_LTX021/exome/CN_het_TRACERx_no_diptest/"
+# data.format.to.use <- "TRACERx_exome"
+# snp.file.path <- "/camp/project/proj-tracerx-lung/tctProjects/watkint/TRACERx100_lung_pan_can_analysis/release/A_LTX021/exome/CN_het_TRACERx_no_diptest/LTX021_TRACERx_input_paths_df.txt"
+# seg.file.path <- "/camp/project/proj-tracerx-lung/tctProjects/watkint/TRACERx100_lung_pan_can_analysis/release/A_LTX021/exome/MSAI/LTX021_joint_segs_all_ascat_info.txt"
+# overwrite.flag <- TRUE
+# gamma.val <- 1
+
+# patient  <-  "LTX046"
+# allow.dip.test.phasing.flag <- FALSE
+# output.directory.base.path <- "/camp/project/proj-tracerx-lung/tctProjects/watkint/TRACERx100_lung_pan_can_analysis/release/B_LTX046/exome/CN_het_TRACERx_no_diptest/"
+# data.format.to.use <- "TRACERx_exome"
+# snp.file.path <- "/camp/project/proj-tracerx-lung/tctProjects/watkint/TRACERx100_lung_pan_can_analysis/release/B_LTX046/exome/CN_het_TRACERx_no_diptest/LTX046_TRACERx_input_paths_df.txt"
+# seg.file.path <- "/camp/project/proj-tracerx-lung/tctProjects/watkint/TRACERx100_lung_pan_can_analysis/release/B_LTX046/exome/MSAI/LTX046_joint_segs_all_ascat_info.txt"
+# overwrite.flag <- TRUE
+# gamma.val <- 1
 
 
 print("patient")
@@ -250,7 +252,8 @@ if ( ! file.exists(PLOT_OUTPUT_DIR) ) {
 	print("directory doesn't exist")
 
 }
-NUM_CORES <- 24
+NUM_CORES <- num.cores
+INTERSECTION_OR_ARM <- intersection.or.whole.arm
 GAMMA_VAL <- as.numeric(gamma.val)
 MAX_CPN_FOR_SUBCLONALITY <- 10
 MIN_CCF_TO_CONSIDER <- 0.15
@@ -497,7 +500,13 @@ if (OVERWRITE_FLAG == TRUE) {
 		stop("Incorrect data.format.to.use input to mphase")
 
 	}
-
+	# print(chr)
+	# print(samp)
+	# print(p.or.q.vec[i])
+	# print(cpn.event.vec)
+	# print(samp.gain.amp.grs)
+	# print(sum(samp.gain.amp.grs$overlap_prop_query))											
+	# print(sum(samp.gain.amp.grs[ samp.gain.amp.grs$overlap_prop_query >= 0.25 ]$overlap_prop_query))
 	#So actually defining the segments that are lost or gained makes sense here..
 	cpn.call.state.vec <- rep("neutral", nrow(f.joint.segs.df))
     tot.raw.cpn.vec <- f.joint.segs.df$nAraw + f.joint.segs.df$nBraw
@@ -541,16 +550,13 @@ if (OVERWRITE_FLAG == TRUE) {
 
 	gain.loss.name.list <- list(c("neutral"), c("gain", "amp"), c("loss", "deep_loss"),  c("LOH"))
 	gain.loss.name.list
-	names(gain.loss.name.list) <- c("gain", "loss")
+	names(gain.loss.name.list) <- c("neutral", "gain", "loss", "LOH")
 	p.or.q.vec <- c("p", "q")
 	for ( chr in CHRS_TO_USE_VEC ) {
 		#chr <- 21
 		chr.gr.list <- getChromosomeArmsGRangeList(chr, chrom.info.df)
 		#print(chr)
 		for ( i in 1:length(chr.gr.list) ) {
-			#print("p or q")
-			#print(i)
-			i <- 1
 			curr.chr.arm.gr <- chr.gr.list[[i]]
 
 			all.samp.overlap.grs <- getOverlapGRanges(curr.chr.arm.gr, all.samp.w.metadata.grs)
@@ -577,15 +583,11 @@ if (OVERWRITE_FLAG == TRUE) {
 																	]
 
 					}
-					print(chr)
-					print(samp)
-					print(p.or.q.vec[i])
-					print(cpn.event.vec)
-					print(samp.gain.amp.grs)
-					print(sum(samp.gain.amp.grs$overlap_prop_query))											
-					print(sum(samp.gain.amp.grs[ samp.gain.amp.grs$overlap_prop_query >= 0.25 ]$overlap_prop_query))
+
+
+					samp.arm.all.uniq.ids.vec <- samp.all.cpn.grs$uniq_id
 					arm.level.events.present <- c()
-					if (sum(as.numeric(samp.gain.amp.grs$overlap_prop_query))/100 >= 0.74) & sum(samp.gain.amp.grs[ samp.gain.amp.grs$overlap_prop_query >= 0.2 ]$overlap_prop_query)/100 >= 0.5){
+					if (sum(as.numeric(samp.gain.amp.grs$overlap_prop_query))/100 >= 0.74 & sum(samp.gain.amp.grs[ samp.gain.amp.grs$overlap_prop_query >= 0.2 ]$overlap_prop_query)/100 >= 0.5){
 
 							#So all segments in the arm should be annotated as being in an arm level event:
 							#All the larger segments 
@@ -599,24 +601,17 @@ if (OVERWRITE_FLAG == TRUE) {
 
 						}
 
-					} else {
-
-
-						all.samp.arm.uniq.ids.vec <- samp.all.cpn.grs$uniq_id
-
-
-					}
+					} 
 					print("%%%%%%%%%%%%%%%%%")
 					if (length(arm.level.events.present) > 0) {
 
 						arm.cpn.event.present <- paste(arm.level.events.present, collapse = "_")
 
-						all.samp.w.metadata.grs[all.samp.w.metadata.grs$uniq_id %in% all.samp.overlap.grs$uniq_id ]$arm_event_present <- arm.cpn.event.present
+						all.samp.w.metadata.grs[all.samp.w.metadata.grs$uniq_id %in% samp.arm.all.uniq.ids.vec ]$arm_event_present <- arm.cpn.event.present
 
 						if (grepl("gain|loss", arm.cpn.event.present) ) {
 
 							arm.cpn.event.present.wo.loh <- gsub("_LOH", "", arm.cpn.event.present)
-
 
 							all.samp.w.metadata.grs[all.samp.w.metadata.grs$uniq_id %in% focal.event.id.vec ]$arm_or_focal_event  <- "focal"
 							all.samp.w.metadata.grs[all.samp.w.metadata.grs$uniq_id %in% arm.event.id.vec ]$arm_or_focal_event  <- "arm"
@@ -626,21 +621,16 @@ if (OVERWRITE_FLAG == TRUE) {
 
 					} else {
 
-
+						all.samp.w.metadata.grs[all.samp.w.metadata.grs$uniq_id %in% samp.arm.all.uniq.ids.vec ]$arm_or_focal_event <- "focal"
 
 					}
 					#Next is there one segment with at least 50% of the arm in it:
 					
-
-					#if both of these are satisfied mark there being an arm event present:
-
-					#Now let's try smaller events
 				}#end for (cpn.event.vec in gain.loss.name.list) {
 
 				all.samp.w.metadata.grs[all.samp.w.metadata.grs$uniq_id %in% all.samp.overlap.grs$uniq_id ]$arm_event_present <- cpn.event.vec[1]
 
 			}#end for (samp in sample.vec) {
-
 
 		}#end for ( i in 1:length(chr.gr.list) ) {
 
@@ -648,7 +638,7 @@ if (OVERWRITE_FLAG == TRUE) {
 
 	#Let's generate the minimum consistent segmentation now:
 
-
+	STOP
 
 
 	print("Getting proportion of chromosome arms in selected genome covered by segments from each (and all) samples:")
