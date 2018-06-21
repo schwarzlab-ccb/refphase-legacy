@@ -1,5 +1,7 @@
 #!/usr/bin/env Rscript
 args = commandArgs(trailingOnly=TRUE)
+print("args")
+print(args)
 patient <- args[1]
 allow.dip.test.phasing.flag <- as.logical(args[2])
 output.directory.base.path <- args[3]
@@ -152,8 +154,10 @@ current.dir <-  LocationOfThisScript()
 # data.format.to.use <- "MEDICC"
 # snp.file.path <- "/home/camp/watkint/working/watkint/data/sottoriva_snp/release_v3/C_STX009/snp_array/MSAI/STX009_final_all_snps.txt"
 # seg.file.path <- "/home/camp/watkint/working/watkint/data/sottoriva_snp/release_v3/C_STX009/snp_array/MSAI/STX009_joint_segs_all_ascat_info.txt"
-# overwrite.flag <- FALSE
+# overwrite.flag <- TRUE
 # gamma.val <- 0.5
+# num.cores <- 12
+
 
 
 # patient  <-  "STX009"
@@ -184,7 +188,7 @@ current.dir <-  LocationOfThisScript()
 # seg.file.path <- "/camp/project/proj-tracerx-lung/tctProjects/watkint/TRACERx100_lung_pan_can_analysis/release/A_LTX021/exome/MSAI/LTX021_joint_segs_all_ascat_info.txt"
 # overwrite.flag <- TRUE
 # gamma.val <- 1
-# num.cores <- 8
+# num.cores <- 12
 # intersection.or.whole.arm <- "intersection"
 
 # patient  <-  "LTX046"
@@ -196,6 +200,138 @@ current.dir <-  LocationOfThisScript()
 # overwrite.flag <- TRUE
 # gamma.val <- 1
 # num.cores <- 24
+
+
+# patient  <-  "LTX041"
+# allow.dip.test.phasing.flag <- FALSE
+# output.directory.base.path <- "/camp/project/proj-tracerx-lung/tctProjects/watkint/TRACERx100_lung_pan_can_analysis/release/L_LTX041/exome/CN_het_TRACERx_no_diptest/"
+# data.format.to.use <- "TRACERx_exome"
+# snp.file.path <- "/camp/project/proj-tracerx-lung/tctProjects/watkint/TRACERx100_lung_pan_can_analysis/release/L_LTX041/exome/CN_het_TRACERx_no_diptest/LTX041_TRACERx_input_paths_df.txt"
+# seg.file.path <- "/camp/project/proj-tracerx-lung/tctProjects/watkint/TRACERx100_lung_pan_can_analysis/release/L_LTX041/exome/MSAI/LTX041_joint_segs_all_ascat_info.txt"
+# overwrite.flag <- TRUE
+# gamma.val <- 1
+# num.cores <- 24
+
+
+
+# patient  <-  "LTX181"
+# allow.dip.test.phasing.flag <- FALSE
+# output.directory.base.path <- "/camp/project/proj-tracerx-lung/tctProjects/watkint/TRACERx100_lung_pan_can_analysis/release/M_LTX181/exome/CN_het_TRACERx_no_diptest/"
+# data.format.to.use <- "TRACERx_exome"
+# snp.file.path <- "/camp/project/proj-tracerx-lung/tctProjects/watkint/TRACERx100_lung_pan_can_analysis/release/M_LTX181/exome/CN_het_TRACERx_no_diptest/LTX181_TRACERx_input_paths_df.txt"
+# seg.file.path <- "/camp/project/proj-tracerx-lung/tctProjects/watkint/TRACERx100_lung_pan_can_analysis/release/M_LTX181/exome/MSAI/LTX181_joint_segs_all_ascat_info.txt"
+# overwrite.flag <- TRUE
+# gamma.val <- 1
+# num.cores <- 24
+
+
+# patient <- "MTX002"
+# allow.dip.test.phasing.flag <- FALSE
+# output.directory.base.path <- "/home/camp/watkint/working/watkint/data/martinez/release_v3/R_MTX002/snp_array//CN_het_MEDICC_no_diptest/"
+# data.format.to.use<- "MEDICC"
+# snp.file.path<- "/home/camp/watkint/working/watkint/data/martinez/release_v3/R_MTX002/snp_array/MSAI/MTX002_final_all_snps.txt"
+# seg.file.path<- "/home/camp/watkint/working/watkint/data/martinez/release_v3/R_MTX002/snp_array/MSAI/MTX002_joint_segs_all_ascat_info.txt"
+# overwrite.flag<-TRUE
+# gamma.val <-0.5
+# num.cores <- 12
+
+# patient <- "BTX003"
+# allow.dip.test.phasing.flag <- FALSE
+# output.directory.base.path <- "/camp/lab/swantonc/working/watkint/data/loi/release/S_BTX003/exome//CN_het_TRACERx_no_diptest/"
+# data.format.to.use <- "TRACERx_exome"
+# snp.file.path <- "/camp/lab/swantonc/working/watkint/data/loi/release/S_BTX003/exome//CN_het_TRACERx_no_diptest//BTX003_TRACERx_input_paths_df.txt"
+# seg.file.path <- "/camp/lab/swantonc/working/watkint/data/loi/release/S_BTX003/exome//MSAI/BTX003_joint_segs_all_ascat_info.txt"
+# overwrite.flag <- TRUE
+# gamma.val <- 1
+# num.cores <- 12
+
+
+# patient <- "BTX004"
+# allow.dip.test.phasing.flag <- FALSE
+# output.directory.base.path <- "/home/camp/watkint/working/watkint/data/yates/release/Y_BTX004/WGS//CN_het_TRACERx_WGS_no_diptest/"
+# data.format.to.use <- "TRACERx_WGS"
+# snp.file.path <- "/home/camp/watkint/working/watkint/data/yates/release/Y_BTX004/WGS//CN_het_TRACERx_WGS_no_diptest/Y_BTX004_input_snp_files.txt"
+# seg.file.path <- "/home/camp/watkint/working/watkint/data/yates/release/Y_BTX004/WGS/MSAI/BTX004_joint_segs_all_ascat_info.txt"
+# overwrite.flag <- TRUE
+# gamma.val <- 1
+# num.cores <- 12
+
+
+# patient <- "RLX007"
+# allow.dip.test.phasing.flag <- FALSE
+# output.directory.base.path <- "/camp/lab/swantonc/working/lime/projects/PanCan/renal/gerlinger/release/G_RLX007/exome//CN_het_TRACERx_no_diptest/"
+# data.format.to.use <- "TRACERx_exome"
+# snp.file.path <- "/camp/lab/swantonc/working/lime/projects/PanCan/renal/gerlinger/release/G_RLX007/exome//CN_het_TRACERx_no_diptest//RLX007_TRACERx_input_paths_df.txt"
+# seg.file.path <- "/camp/lab/swantonc/working/lime/projects/PanCan/renal/gerlinger/release/G_RLX007/exome//MSAI/RLX007_joint_segs_all_ascat_info.txt"
+# overwrite.flag <- TRUE
+# gamma.val <- 1
+# num.cores <- 12
+
+
+# patient <- "KTX128"
+# allow.dip.test.phasing.flag <- FALSE
+# output.directory.base.path <- "/camp/project/proj-tracerx-lung/tctProjects/lime/projects/PanCan/renal/turajlic_txpipeline/release/E_KTX128/exome//CN_het_TRACERx_no_diptest/"
+# data.format.to.use <- "TRACERx_exome"
+# snp.file.path <- "/camp/project/proj-tracerx-lung/tctProjects/lime/projects/PanCan/renal/turajlic_txpipeline/release/E_KTX128/exome//CN_het_TRACERx_no_diptest//KTX128_TRACERx_input_paths_df.txt"
+# seg.file.path <- "/camp/project/proj-tracerx-lung/tctProjects/lime/projects/PanCan/renal/turajlic_txpipeline/release/E_KTX128/exome//MSAI/KTX128_joint_segs_all_ascat_info.txt"
+# overwrite.flag <- TRUE
+# gamma.val <- 1
+# num.cores <- 12
+
+
+# patient <- "KTX096"
+# allow.dip.test.phasing.flag <- FALSE
+# output.directory.base.path <- "/camp/project/proj-tracerx-lung/tctProjects/lime/projects/PanCan/renal/turajlic_txpipeline/release/E_KTX096/exome//CN_het_TRACERx_no_diptest/"
+# data.format.to.use <- "TRACERx_exome"
+# snp.file.path <- "/camp/project/proj-tracerx-lung/tctProjects/lime/projects/PanCan/renal/turajlic_txpipeline/release/E_KTX096/exome//CN_het_TRACERx_no_diptest//KTX096_TRACERx_input_paths_df.txt"
+# seg.file.path <- "/camp/project/proj-tracerx-lung/tctProjects/lime/projects/PanCan/renal/turajlic_txpipeline/release/E_KTX096/exome//MSAI/KTX096_joint_segs_all_ascat_info.txt"
+# overwrite.flag <- TRUE
+# gamma.val <- 1
+# num.cores <- 12
+
+
+# patient <- "PTX006"
+# allow.dip.test.phasing.flag <- FALSE
+# output.directory.base.path <- "/home/camp/watkint/working/watkint/data/gundem/release/G_PTX006/WGS//CN_het_TRACERx_WGS_no_diptest/"
+# data.format.to.use <- "TRACERx_WGS"
+# snp.file.path <- "/home/camp/watkint/working/watkint/data/gundem/release/G_PTX006/WGS//CN_het_TRACERx_WGS_no_diptest/G_PTX006_input_snp_files.txt"
+# seg.file.path <- "/home/camp/watkint/working/watkint/data/gundem/release/G_PTX006/WGS/MSAI/PTX006_joint_segs_all_ascat_info.txt"
+# overwrite.flag <- TRUE
+# gamma.val <- 1
+# num.cores <- 12
+
+
+# patient <- "KTX139"
+# allow.dip.test.phasing.flag <- FALSE
+# output.directory.base.path <- "/camp/project/proj-tracerx-lung/tctProjects/lime/projects/PanCan/renal/turajlic_txpipeline/release/E_KTX139/exome//CN_het_TRACERx_no_diptest/"
+# data.format.to.use <- "TRACERx_exome"
+# snp.file.path <- "/camp/project/proj-tracerx-lung/tctProjects/lime/projects/PanCan/renal/turajlic_txpipeline/release/E_KTX139/exome//CN_het_TRACERx_no_diptest//KTX139_TRACERx_input_paths_df.txt"
+# seg.file.path <- "/camp/project/proj-tracerx-lung/tctProjects/lime/projects/PanCan/renal/turajlic_txpipeline/release/E_KTX139/exome//MSAI/KTX139_joint_segs_all_ascat_info.txt"
+# overwrite.flag <- TRUE
+# gamma.val <- 1
+# num.cores <- 12
+
+
+# patient <- "KTX146"
+# allow.dip.test.phasing.flag <- FALSE
+# output.directory.base.path <- "/camp/project/proj-tracerx-lung/tctProjects/lime/projects/PanCan/renal/turajlic_txpipeline/release/E_KTX139/exome//CN_het_TRACERx_no_diptest/"
+# data.format.to.use <- "TRACERx_exome"
+# snp.file.path <- "/camp/project/proj-tracerx-lung/tctProjects/lime/projects/PanCan/renal/turajlic_txpipeline/release/E_KTX146/exome//CN_het_TRACERx_no_diptest//KTX146_TRACERx_input_paths_df.txt"
+# seg.file.path <- "/camp/project/proj-tracerx-lung/tctProjects/lime/projects/PanCan/renal/turajlic_txpipeline/release/E_KTX146/exome//MSAI/KTX146_joint_segs_all_ascat_info.txt"
+# overwrite.flag <- TRUE
+# gamma.val <- 1
+# num.cores <- 12
+
+
+patient <- "PTX013"
+allow.dip.test.phasing.flag <- FALSE
+output.directory.base.path <- "/home/camp/watkint/working/watkint/data/gundem/release/G_PTX013/WGS//CN_het_TRACERx_WGS_no_diptest/"
+data.format.to.use <- "TRACERx_WGS"
+snp.file.path <- "/home/camp/watkint/working/watkint/data/gundem/release/G_PTX013/WGS//CN_het_TRACERx_WGS_no_diptest/G_PTX013_input_snp_files.txt"
+seg.file.path <- "/home/camp/watkint/working/watkint/data/gundem/release/G_PTX013/WGS/MSAI/PTX013_joint_segs_all_ascat_info.txt"
+overwrite.flag <- TRUE
+gamma.val <- 1
+num.cores <- 12
 
 intersection.or.whole.arm <- "intersection"
 
@@ -215,7 +351,8 @@ print("overwrite.flag")
 print(overwrite.flag)
 print("gamma.val")
 print(gamma.val)
-
+print("num.cores")
+print(num.cores)
 
 #We need to be able to select the intersection of all regions or a full GISTIC compatible union with defined regions that will always be covered
 #What proportion of the chosen genome, in this case hg19, arms are covered by the segments that have been inputted.
@@ -265,7 +402,15 @@ if ( ! file.exists(PLOT_OUTPUT_DIR) ) {
 	print("directory doesn't exist")
 
 }
-NUM_CORES <- num.cores
+NUM_CORES <- as.numeric(num.cores)
+
+
+registerDoParallel(cores = NUM_CORES)
+print(foreach::getDoParWorkers())
+print(getDoParName())
+print(getDoParVersion())
+
+
 INTERSECTION_OR_ARM <- intersection.or.whole.arm
 GAMMA_VAL <- as.numeric(gamma.val)
 MAX_CPN_FOR_SUBCLONALITY <- 10
@@ -321,8 +466,11 @@ chrom.info.df <- hg19.info.df
 
 #Paths for saving/loading objects depending on OVERWRITE_FLAG
 #Reading in data object paths
+
 asas.SNPS.lr.and.or.baf.lists.path <- paste0(PLOT_OUTPUT_DIR, patient, "_asas_SNPS_lr_and_or_baf_lists_lists.RDS")
 asas.SNPs.w.both.lr.baf.snp.lists.path <- paste0(PLOT_OUTPUT_DIR, patient, "_asas_SNPs_w_both_lr_baf_snp_lists.RDS")
+min.cons.segs.df.write.path <- paste0(PLOT_OUTPUT_DIR, patient, "_min_cons_segs_df.txt")
+
 min.cons.segs.df.path <- paste0(PLOT_OUTPUT_DIR, patient, "_min_cons_segs_df.RDS")
 processed.orig.cpn.segs.df.path <- paste0(PLOT_OUTPUT_DIR, patient, "_processed_orig_cpn_segs_df.RDS")
 
@@ -340,20 +488,25 @@ all.seg.int.ob.xp.cpn.df.list.path <- paste0(PLOT_OUTPUT_DIR, patient, "_all_seg
 all.seg.CCF.diff.from.exp.list.path <- paste0(PLOT_OUTPUT_DIR, patient, "_all_seg_CCF_diff_from_exp_list.RDS")
 all.seg.clonal.in.all.samps.list.path <- paste0(PLOT_OUTPUT_DIR, patient, "_all_seg_clonal_in_all_samps_list.RDS")
 all.seg.greater.than.two.diff.list.path <- paste0(PLOT_OUTPUT_DIR, patient, "_all_seg_greater_than_two_diff_list.RDS")
-
+print("Finished generating paths...")
 #Load in the data: 
 #Note that the afunctions to create the single dataframes that it accepts are in the data_input_and_QC_functions.R
 if (OVERWRITE_FLAG == TRUE) {
 
+	f.joint.segs.df <- read.table(seg.file.path, stringsAsFactors = FALSE, sep = "\t", header = TRUE)
+	f.joint.segs.df$sample <- gsub("\\.", "-", gsub("_LogR", "", f.joint.segs.df$sample))
+	f.joint.segs.df$callState <- NULL
+	f.joint.segs.df$patient <- patient
+	f.joint.segs.df$sample_name <- paste(patient,sapply(f.joint.segs.df$sample, function(x) strsplit(x, split = "-")[[1]][2]), sep = ":")
+
+
 	if (data.format.to.use == "MEDICC") {
 
+		print("data format is MEDICC")
 		snp.file.df <- read.table(snp.file.path, stringsAsFactors = FALSE, sep = "\t", header = TRUE)
-		seg.file.df <- read.table(seg.file.path, stringsAsFactors = FALSE, sep = "\t", header = TRUE)
-		seg.file.df$sample <- gsub("\\.", "-", gsub("_LogR", "", seg.file.df$sample))
-		seg.file.df$callState <- NULL
-		seg.file.df$patient <- patient
-		seg.file.df$sample_name <- paste(patient, sapply(seg.file.df$sample, function(x) strsplit(x, split = "-")[[1]][2]), sep = ":")
-		processed.orig.cpn.segs.df <- errorCheckAndAddPloidyAdjRawCPNToSegDF(patient, seg.file.df)
+		processed.orig.cpn.segs.df <- errorCheckAndAddPloidyAdjRawCPNToSegDF(patient, f.joint.segs.df)
+		print(head(processed.orig.cpn.segs.df))
+		
 		sample.vec <- unique(processed.orig.cpn.segs.df$sample)
 		purity.est.vec <- processed.orig.cpn.segs.df[ ! duplicated(processed.orig.cpn.segs.df$sample), "ACF"]
 		names(purity.est.vec) <- sample.vec
@@ -362,100 +515,14 @@ if (OVERWRITE_FLAG == TRUE) {
 		min.cons.segs.df <- generateMinimumConsistentSegmentation(processed.orig.cpn.segs.df, chroms = 1:22, col.to.use = "ploidy_adj_tot_cpn")
 		min.cons.segs.df <- cleanAndErrorCheckMinConsSegs(min.cons.segs.df)
 		colnames(min.cons.segs.df)[1:3] <- c("chr", "startpos", "endpos")
-		all.samp.SNP.list <- list()
 
-		for ( samp in sample.vec ) {
-
-			print(samp)
-			print(head(snp.file.df))
-
-			ASCAT.summary <- data.frame(chr = as.numeric(snp.file.df$Chr),
-				                		pos = as.numeric(snp.file.df$Pos),
-				   						BAF = as.numeric(snp.file.df[, paste0(gsub("-" , "\\.", samp), "_BAF")]),
-				   						BAFsegmented = rep(NA, length(snp.file.df$Chr)),
-				   						logR = as.numeric(snp.file.df[, paste0(gsub("-", "\\.", samp), "_LogR")]),
-				   						logRsegmented = rep(NA, length(snp.file.df$Chr)),
-				   						stringsAsFactors = FALSE)
-
-			print(head(ASCAT.summary))
-
-			seg <- processed.orig.cpn.segs.df[processed.orig.cpn.segs.df$sample == samp,]
-
-			for ( j in 1:nrow(seg) ) {
-				#print(seg[j,])
-			  if (nrow(ASCAT.summary[ASCAT.summary$chr == seg[j ,]$chr
-			  						& ASCAT.summary$pos >= seg[j ,]$startpos 
-			  						& ASCAT.summary$pos <= seg[j ,]$endpos 
-			  						& ASCAT.summary$BAF != 2 ,]) > 0) {
-			  	
-			    if (seg[j ,]$nMajor == seg[j ,]$nMinor) {
-
-			      ASCAT.summary[ASCAT.summary$chr == seg[j ,]$chr
-			      			  & ASCAT.summary$pos >= seg[j ,]$startpos
-			      			  & ASCAT.summary$pos <= seg[j ,]$endpos,]$BAFsegmented <- 0.5
-			      
-			    } else {
-		
-			      avg.seg.baf <- 0.5 - mean(abs(as.numeric(ASCAT.summary[ASCAT.summary$chr == seg[j ,]$chr
-			      	 													& ASCAT.summary$pos >= seg[j ,]$startpos
-			      	 													& ASCAT.summary$pos <= seg[j ,]$endpos
-			      	 													& ASCAT.summary$BAF != 2 ,]$BAF)          - 0.5))
-
-			      ASCAT.summary[ASCAT.summary$chr == seg[j ,]$chr 
-			      			  & ASCAT.summary$pos >= seg[j ,]$startpos 
-			      			  & ASCAT.summary$pos <= seg[j ,]$endpos ,]$BAFsegmented <- avg.seg.baf
-
-			    }
-		 
-			  }#end if(nrow(ASCAT.summary[ASCAT.summary$chrom==seg[j,]$chr & ASCAT.summary$pos...
-
-			  if (nrow(ASCAT.summary[ASCAT.summary$chr == seg[j ,]$chr
-			                       & ASCAT.summary$pos >= seg[j ,]$startpos
-			                       & ASCAT.summary$pos <= seg[j ,]$endpos ,]) > 0) {
-
-			  	avg.seg.logr <- mean(ASCAT.summary[ASCAT.summary$chr == seg[j ,]$chr
-			  					   & ASCAT.summary$pos >= seg[j ,]$startpos
-			  					   & ASCAT.summary$pos <= seg[j ,]$endpos, ]$logR)
-
-			  	ASCAT.summary[ASCAT.summary$chr == seg[j ,]$chr
-			  			    & ASCAT.summary$pos >= seg[j ,]$startpos
-			  			    & ASCAT.summary$pos <= seg[j ,]$endpos ,]$logRsegmented <- avg.seg.logr
-
-			  }
-
-			}#end for ( j in 1:nrow(seg) ) {
-
-			all.samp.SNP.list[[samp]] <- ASCAT.summary
-
-		}#end for ( samp in sample.vec ) {
-
+		all.samp.SNP.list <- readInMEDICCInputFormatParallel(snp.file.df = snp.file.df,
+															processed.orig.cpn.segs.df = processed.orig.cpn.segs.df,
+															sample.vec = sample.vec,
+															num.cores = NUM_CORES)
 
 
 	} else if (data.format.to.use == "TRACERx_exome" | data.format.to.use == "TRACERx_snp_array") {
-
-		f.joint.segs.df <- read.table(seg.file.path, stringsAsFactors = FALSE, sep = "\t", header = TRUE)
-		f.joint.segs.df$sample <- gsub("\\.", "-", gsub("_LogR", "", f.joint.segs.df$sample))
-		f.joint.segs.df$callState <- NULL
-		f.joint.segs.df$patient <- patient
-		f.joint.segs.df$sample_name <- paste(patient, sapply(f.joint.segs.df$sample, function(x) strsplit(x, split = "-")[[1]][2]), sep = ":")
-
-		# gr.f.joint.segs.df <- f.joint.segs.df[,c("chr", "startpos", "endpos")]
-		# colnames(gr.f.joint.segs.df) <- c("Chromosome", "start", "end")
-
-		# gr.f.joint.segs.gr <- makeGRangesFromDataFrame(gr.f.joint.segs.df)
-		# gr.f.overlap.segs.gr <- countOverlaps(gr.f.joint.segs.gr)
-
-		# dj.gr.joint.segs.gr <- disjoin(gr.f.joint.segs.gr)
-		# joint.segs.df <- as.data.frame(dj.gr.joint.segs.gr)
-
-
-		# #So now we want to match up the old values...
-
-		# seg.test.df <- data.frame(Chromosome = chr.start.end.vec[1],
-		#           start = as.numeric(chr.start.end.vec[2]),
-		#           end = as.numeric(chr.start.end.vec[3]),
-		#           stringsAsFactors = FALSE)
-		# test.gen.range <- makeGRangesFromDataFrame(seg.test.df)
 
 		if (data.format.to.use == "TRACERx_exome") {
 
@@ -488,13 +555,6 @@ if (OVERWRITE_FLAG == TRUE) {
 
 	} else if (data.format.to.use == "TRACERx_WGS") {
 
-		f.joint.segs.df <- read.table(seg.file.path, stringsAsFactors = FALSE, sep = "\t", header = TRUE)
-		f.joint.segs.df$sample <- gsub("\\.", "-", gsub("_LogR", "", f.joint.segs.df$sample))
-		f.joint.segs.df$callState <- NULL
-		f.joint.segs.df$patient <- patient
-		f.joint.segs.df$sample_name <- paste(patient,sapply(f.joint.segs.df$sample, function(x) strsplit(x, split = "-")[[1]][2]), sep = ":")
-
-
 		array.type <- "WGS"
 		orig.cpn.segs.df <- f.joint.segs.df
 		processed.orig.cpn.segs.df <- errorCheckAndAddPloidyAdjRawCPNToSegDF(patient, orig.cpn.segs.df)
@@ -504,6 +564,7 @@ if (OVERWRITE_FLAG == TRUE) {
 		names(purity.est.vec) <- unique(processed.orig.cpn.segs.df$sample)
 		min.cons.segs.df <- generateMinimumConsistentSegmentation(processed.orig.cpn.segs.df, chroms = 1:22, col.to.use = "ploidy_adj_tot_cpn")
 		min.cons.segs.df <- cleanAndErrorCheckMinConsSegs(min.cons.segs.df)
+		print("Reading in WGS SNP data...")
 		all.samp.SNP.list <- getSNPDataForTRACERxWGS(snp.file.path)
 
 
@@ -569,7 +630,7 @@ if (OVERWRITE_FLAG == TRUE) {
 	                        end.field=c("p_end"),
 	                        strand.field="strand",
 	                        starts.in.df.are.0based=FALSE)
-		print(p.end.gr)
+		#print(p.end.gr)
 		q.start.gr <- makeGRangesFromDataFrame(chrom.info.df[chrom.info.df$chrom == chr,],
 		                        keep.extra.columns=FALSE,
 		                        ignore.strand=FALSE,
@@ -579,7 +640,7 @@ if (OVERWRITE_FLAG == TRUE) {
 		                        end.field=c("q_start"),
 		                        strand.field="strand",
 		                        starts.in.df.are.0based=FALSE)
-		print(q.start.gr)
+		#print(q.start.gr)
 
 		bps.to.introduce.grs.list <- list(p.end.gr, q.start.gr)
 		for (new.bp.gr in bps.to.introduce.grs.list) {
@@ -727,7 +788,7 @@ if (OVERWRITE_FLAG == TRUE) {
 
 	all.samp.w.metadata.df <- as.data.frame(all.samp.w.metadata.grs)
 	all.samp.w.metadata.df <- all.samp.w.metadata.df[with(all.samp.w.metadata.df, order(sample, seqnames, start)), ]
-	print(all.samp.w.metadata.df)
+	#print(all.samp.w.metadata.df)
 	#Let's generate the minimum consistent segmentation now:
 
 	#Convert the all.samp.w.metadata.df to f.joint.segs.df
@@ -800,10 +861,101 @@ if (OVERWRITE_FLAG == TRUE) {
 	#So now in parallel, let's take the set of disjoined original segments + their setdiff compared to the relevant genome's 
 	#non-acrocentric chromosome arms and get any matching original segmentation information as well as classify whether they were part of an intersection 
 	#between all regions, a disjoint set of some or were only in the setdiff and are therefore "dummy" segments.
+	# all.bp.chr.df <- as.data.frame(all.bp.chr.grs)
+	# for (i in 1:nrow(all.bp.chr.df)) {
+	# #foreach(curr.all.bp.chr.df = itx, .combine = c) %do% {
+
+	# 	curr.all.bp.chr.df <- all.bp.chr.df[i, ,drop=FALSE]
+	# 	require(GenomicRanges)
+	# 	curr.all.bp.chr.gr <- makeGRangesFromDataFrame(curr.all.bp.chr.df,
+	# 	                        keep.extra.columns=TRUE,
+	# 	                        ignore.strand=FALSE,
+	# 	                        seqinfo=NULL,
+	# 	                        seqnames.field=c("seqnames", "seqname",
+	# 	                                         "chromosome", "chrom",
+	# 	                                         "chr", "chromosome_name",
+	# 	                                         "seqid"),
+	# 	                        start.field=c("Start_Position","start","startpos"),
+	# 	                        end.field=c("End_Position", "end", "stop", "endpos"),
+	# 	                        strand.field="strand",
+	# 	                        starts.in.df.are.0based=FALSE)
+
+	# 	this.seg.name <- paste0(as.character(seqnames(curr.all.bp.chr.gr)), ":", start(curr.all.bp.chr.gr), ":", end(curr.all.bp.chr.gr))
+	# 	this.seg.samp.seg.names.vec <- paste(sample.vec, ":", this.seg.name, sep="")
+	# 	info.cols.vec <- c("overlap_w_n_samps","num_segs_maps_to_in_samp" ,"in_intersection", "in_disjoin_only", "in_arm_setdiff")
+
+	# 	all.samp.this.seg.bp.df <- data.frame(matrix(FALSE, length(sample.vec), length(info.cols.vec),
+	# 	                        dimnames = list(this.seg.samp.seg.names.vec, info.cols.vec)),
+	# 	                        stringsAsFactors = FALSE,
+	# 	                        check.names = FALSE)
+
+	# 	names(this.seg.samp.seg.names.vec) <- sample.vec
+	# 	all.samp.overlap.grs <- getOverlapGRanges(curr.all.bp.chr.gr, all.samp.w.metadata.grs)
+
+	# 	if (length(all.samp.overlap.grs) > 0) {
+
+	# 		all.samp.overlap.df <- as.data.frame(all.samp.overlap.grs, row.names = NULL)[0,][1:length(sample.vec),]
+	# 		rownames(all.samp.overlap.df) <- this.seg.samp.seg.names.vec
+
+	# 		matching.grs.sample.vec <- unique(all.samp.overlap.grs$sample)
+	# 		non.matching.sample.vec <- sample.vec[ ! sample.vec %in% matching.grs.sample.vec]
+	# 		all.samp.this.seg.bp.df[, "overlap_w_n_samps"] <- length(matching.grs.sample.vec)
+
+	# 	} else {
+
+	# 		all.samp.overlap.df <- as.data.frame(all.samp.overlap.grs)[1,]
+	# 		matching.grs.sample.vec <- c()
+	# 		non.matching.sample.vec <- sample.vec
+	# 	}
+
+	# 	if (all(sample.vec %in% matching.grs.sample.vec)) {
+
+	# 		all.samp.this.seg.bp.df[, "in_intersection"] <- TRUE
+
+	# 	} else if ( any(sample.vec %in% matching.grs.sample.vec) ) {#So now this means there's at least one segment missing
+
+	# 		all.samp.this.seg.bp.df[, "in_disjoin_only"] <- TRUE
+
+	# 	} else {
+
+	# 		all.samp.this.seg.bp.df[, "in_arm_setdiff"] <- TRUE
+
+	# 	}
+
+	# 	for ( match.samp in matching.grs.sample.vec ) {
+
+	# 		match.samp.overlap.grs <- all.samp.overlap.grs[all.samp.overlap.grs$sample == match.samp]
+	# 		all.samp.this.seg.bp.df[this.seg.samp.seg.names.vec[match.samp], "num_segs_maps_to_in_samp"] <- length(match.samp.overlap.grs)
+	# 		max.samp.overlap.gr <- match.samp.overlap.grs[ match.samp.overlap.grs$overlap_prop_query == max(match.samp.overlap.grs$overlap_prop_query) ]
+	# 		all.samp.overlap.df[this.seg.samp.seg.names.vec[match.samp],] <- as.data.frame(max.samp.overlap.gr)
+
+	# 	}
+
+	# 	if(length(non.matching.sample.vec) > 0) {
+
+	# 		all.samp.this.seg.bp.df[this.seg.samp.seg.names.vec[non.matching.sample.vec], "num_segs_maps_to_in_samp"] <- 0
+
+	# 	}
+
+	# 	#Creare a test dataframe
+	# 	(list(cbind(all.samp.this.seg.bp.df, all.samp.overlap.df)))
+
+	# }
+
+
+
+
+
+
+
 	print("Mapping the segments covering all bp of all arms back to input segments where appropriate....")
-	cl <- makeCluster(NUM_CORES)
-	registerDoParallel(cl)
-	foreach::getDoParWorkers()
+	#cl <- makeCluster(NUM_CORES)
+	print("NUM_CORES")
+	print(NUM_CORES)
+	#registerDoParallel(cores = NUM_CORES)
+	#print(foreach::getDoParWorkers())
+	#print(getDoParName())
+	#print(getDoParVersion())
 	ptm <- proc.time()
 	itx <- iter(as.data.frame(all.bp.chr.grs), by="row")
 	results <- foreach(curr.all.bp.chr.df = itx, .combine = c) %dopar% {
@@ -833,12 +985,22 @@ if (OVERWRITE_FLAG == TRUE) {
 
 		names(this.seg.samp.seg.names.vec) <- sample.vec
 		all.samp.overlap.grs <- getOverlapGRanges(curr.all.bp.chr.gr, all.samp.w.metadata.grs)
-		all.samp.overlap.df <- as.data.frame(all.samp.overlap.grs, row.names = NULL)[0,][1:4,]
-		rownames(all.samp.overlap.df) <- this.seg.samp.seg.names.vec
 
-		matching.grs.sample.vec <- unique(all.samp.overlap.grs$sample)
-		non.matching.sample.vec <- sample.vec[ ! sample.vec %in% matching.grs.sample.vec]
-		all.samp.this.seg.bp.df[, "overlap_w_n_samps"] <- length(matching.grs.sample.vec)
+		if (length(all.samp.overlap.grs) > 0) {
+
+			all.samp.overlap.df <- as.data.frame(all.samp.overlap.grs, row.names = NULL)[0,][1:length(sample.vec),]
+			rownames(all.samp.overlap.df) <- this.seg.samp.seg.names.vec
+
+			matching.grs.sample.vec <- unique(all.samp.overlap.grs$sample)
+			non.matching.sample.vec <- sample.vec[ ! sample.vec %in% matching.grs.sample.vec]
+			all.samp.this.seg.bp.df[, "overlap_w_n_samps"] <- length(matching.grs.sample.vec)
+
+		} else {
+
+			all.samp.overlap.df <- as.data.frame(all.samp.overlap.grs)[1,]
+			matching.grs.sample.vec <- c()
+			non.matching.sample.vec <- sample.vec
+		}
 
 		if (all(sample.vec %in% matching.grs.sample.vec)) {
 
@@ -869,11 +1031,12 @@ if (OVERWRITE_FLAG == TRUE) {
 
 		}
 
+
 		#Creare a test dataframe
 		return(list(cbind(all.samp.this.seg.bp.df, all.samp.overlap.df)))
 
 	}
-	stopCluster(cl)
+	#stopCluster(cl)
 	time.passed <- proc.time() - ptm
 	print("time.passed")
 	print(time.passed)
@@ -897,22 +1060,21 @@ if (OVERWRITE_FLAG == TRUE) {
 	mock.min.cons.seg.df <- cbind(cpn.chr.start.end.df, mock.cpn.matrix)
 
 	#All SNPs in these lists must have both a logr and baf value: all sample all seg logr baf lists is asas.lr.baf
-
 	ptm <- proc.time()
-	asas.SNPs.w.both.lr.baf.snp.lists <- cleanAndErrorCheckSNPsParallel(all.samp.SNP.list, mock.min.cons.seg.df, allow.logr.only.flag = FALSE)
+	asas.SNPs.w.both.lr.baf.snp.lists <- cleanAndErrorCheckSNPsParallel(all.samp.SNP.list, mock.min.cons.seg.df, allow.logr.only.flag = FALSE, num.cores = NUM_CORES, data.type = data.format.to.use)
 	time.taken <- proc.time() - ptm
 	print("time.taken")
 	print(time.taken)
 	##
 	#SNPs that only have LogR are permitted in these lists, but it also contains all the SNPs with both BAF and LogR
 	ptm <- proc.time()
-	asas.SNPS.lr.and.or.baf.lists <- cleanAndErrorCheckSNPsParallel(all.samp.SNP.list, mock.min.cons.seg.df, allow.logr.only.flag = TRUE)
+	asas.SNPS.lr.and.or.baf.lists <- cleanAndErrorCheckSNPsParallel(all.samp.SNP.list, mock.min.cons.seg.df, allow.logr.only.flag = TRUE,  num.cores = NUM_CORES, data.type = data.format.to.use)
 	time.taken <- proc.time() - ptm
 	print("time.taken")
 	print(time.taken)
 
 
-	# asas.SNPs.w.both.lr.baf.snp.lists <- cleanAndErrorCheckSNPsMPhase(all.samp.SNP.list, min.cons.segs.df, allow.logr.only.flag = FALSE)
+	#asas.SNPs.w.both.lr.baf.snp.lists <- cleanAndErrorCheckSNPsMPhase(all.samp.SNP.list, mock.min.cons.seg.df, allow.logr.only.flag = FALSE)
 	# asas.SNPS.lr.and.or.baf.lists <- cleanAndErrorCheckSNPsMPhase(all.samp.SNP.list, min.cons.segs.df, allow.logr.only.flag = TRUE)
 
 
@@ -924,13 +1086,19 @@ if (OVERWRITE_FLAG == TRUE) {
 	}
 
 	#save:
+	print("Saving snps files....")
+	print(asas.SNPS.lr.and.or.baf.lists.path)
 	saveRDS(asas.SNPS.lr.and.or.baf.lists, file = asas.SNPS.lr.and.or.baf.lists.path)
+	print(asas.SNPs.w.both.lr.baf.snp.lists.path)
 	saveRDS(asas.SNPs.w.both.lr.baf.snp.lists, file = asas.SNPs.w.both.lr.baf.snp.lists.path)
+	print(min.cons.segs.df.path)
 	saveRDS(min.cons.segs.df, file = min.cons.segs.df.path)
+	print(min.cons.segs.df.write.path)
+	write.table(min.cons.segs.df, file = min.cons.segs.df.write.path, sep = "\t", col.names=TRUE, row.names=FALSE, quote=FALSE)
 	saveRDS(processed.orig.cpn.segs.df, file = processed.orig.cpn.segs.df.path) 
 	saveRDS(ploidy.est.vec, file = ploidy.est.vec.path)
 	saveRDS(purity.est.vec, file = purity.est.vec.path)
-
+	
 } else if (OVERWRITE_FLAG == FALSE) {#end if (OVERWRITE_FLAG == TRUE) {
 
 	# if ( ! file.exists(processed.orig.cpn.segs.df.path) ) {
@@ -998,6 +1166,10 @@ if (OVERWRITE_FLAG == TRUE) {
                                                          sample.to.phase.seg.list = all.seg.phasing.info.list,
                                                          min.num.hz.snp.phasing = MIN_NUM_HZ_SNP_PHASING
                                                          )
+	if(length(patient.phased.BAF.df.list) <= 1) {
+
+		print("Error in generating phased BAF dataframes")
+	}
 	saveRDS(patient.phased.BAF.df.list, file = patient.phased.BAF.df.list.path)
 
 
@@ -1664,4 +1836,4 @@ for ( chrom in uniq.chrs ) {
 }#end for ( chrom in uniq.chrs ) {
 dev.off()
 
-testFinalOutputDataframe(full.joint.segs.df)
+#testFinalOutputDataframe(full.joint.segs.df)

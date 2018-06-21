@@ -133,8 +133,8 @@ addNewRawAndIntCPNCallsToFinalSegmentationParallel <- function(seg.name.vec,
 
     }
     iterable.samp.seg.df <- cbind(sample = sample.rep.vec, seg_name = all.samp.seg.name.vec)
-    cl <- makeCluster(NUM_CORES)
-    registerDoParallel(cl)
+    # cl <- makeCluster(NUM_CORES)
+    # registerDoParallel(cl)
     itx <- iter(iterable.samp.seg.df, by="row")
     print("Starting addNewRawAndIntCPNCallsToFinalSegmentationParallel:")
     # Create class which holds multiple results for each loop iteration.
@@ -301,13 +301,21 @@ addNewRawAndIntCPNCallsToFinalSegmentationParallel <- function(seg.name.vec,
 
                 } else if (nrow(datapoints.w.logr.only.df) == 0 & seg.has.fewer.than.min.hz.flag == TRUE) {#end  if(nrow(datapoints.w.logr.only.df) > 0) {
 
-                  ret.mrc$total_raw_cpn <- median(as.numeric(ph.cpnA.vec) + median(as.numeric(ph.cpnB.vec)))
-                  ret.mrc$total_int_cpn <- round(median(as.numeric(ph.cpnA.vec) + as.numeric(ph.cpnB.vec)))
-  
+
+                  #Nothing we can add here for now: as there's no way of accessing unphased hz snps
+                  # if( nrow(ss.baf.lr.baf.df) > 0 ) {
+                    
+                    #We could check this obkect for total copy number but... we haven't calculated unph total copy number in the object
+                    #and it would be irritating to have to call that function here. Sort out at a later date, likely  a v minor subset...
+
+                  # }
+                  # ret.mrc$total_raw_cpn <- median(as.numeric(ph.cpnA.vec) + median(as.numeric(ph.cpnB.vec)))
+                  # ret.mrc$total_int_cpn <- round(median(as.numeric(ph.cpnA.vec) + as.numeric(ph.cpnB.vec)))
+
                 } else if (nrow(datapoints.w.logr.only.df) == 0 & seg.has.fewer.than.min.hz.flag == FALSE) {
 
-
-
+                  ret.mrc$total_raw_cpn <- median(as.numeric(ph.cpnA.vec) + median(as.numeric(ph.cpnB.vec)))
+                  ret.mrc$total_int_cpn <- round(median(as.numeric(ph.cpnA.vec) + as.numeric(ph.cpnB.vec)))
 
                 }
 
@@ -320,19 +328,20 @@ addNewRawAndIntCPNCallsToFinalSegmentationParallel <- function(seg.name.vec,
                   ret.mrc$cnTotal <-  round(median(ss.dp.w.logr.only.df$tot_raw_un_ph_cpn))
 
 
-                } else if (nrow(datapoints.w.logr.only.df) == 0 & nrow(ss.baf.lr.baf.df) > 0) {
-
-                  ret.mrc$total_raw_cpn <- median(c(as.numeric(ph.cpnA.vec) + as.numeric(ph.cpnB.vec)))
+                } else if (nrow(datapoints.w.logr.only.df) == 0 & seg.has.fewer.than.min.hz.flag == TRUE) {
+                  
+                  #Note this doesn't guarantee that there will be phased cpn available. Rework at a later date
+                  #ret.mrc$total_raw_cpn <- median(c(as.numeric(ph.cpnA.vec) + as.numeric(ph.cpnB.vec)))
 
                 } #end  if (seg.has.fewer.than.min.hz.flag == TRUE) {
 
 
-           returnable.list <- list(ret.mrc)
+          returnable.list <- list(ret.mrc)
           names(returnable.list) <- paste0(samp.seg.df[,1], ":", samp.seg.df[,2])
           returnable.list
     }            
 
-    stopCluster(cl)
+    #stopCluster(cl)
 
 
     for ( samp in sample.vec ) {
@@ -463,9 +472,12 @@ addNewRawAndIntCPNCallsToFinalSegmentation <- function(seg.name.vec,
                                                 datapoints.w.BAF.df$pos >= as.numeric(chr.start.end.vec[2]) &
                                                 datapoints.w.BAF.df$pos <= as.numeric(chr.start.end.vec[3]), ,drop=FALSE]
                 datapoints.w.logr.only.df <- all.samp.logr.df.list[[samp]]
-
+                print("str(all.samp.ph.BAF.df.list, max=1)")
+                print(str(all.samp.ph.BAF.df.list, max=1))
+                print("head(datapoints.w.BAF.df)")
+                print(head(datapoints.w.BAF.df))
                 #Fill in the fields based on those sites that re hz:
-
+                print((head(ss.baf.lr.baf.df)))
                 all.seg.df[samp.seg.name,]$median_BAF  <- ss.baf.lr.baf.df$ph_median_segmented_BAF[1]
                 all.seg.df[samp.seg.name,]$mean_BAF <- mean(abs(0.5 - ss.baf.lr.baf.df$BAF))#Todo, check this was the correct change to mirrored
                 all.seg.df[samp.seg.name,]$stdev_BAF <- sd(abs(0.5 - ss.baf.lr.baf.df$BAF))#Todo, check this was the correct change to mirrored
@@ -516,26 +528,26 @@ addNewRawAndIntCPNCallsToFinalSegmentation <- function(seg.name.vec,
 
                 } else if (nrow(datapoints.w.logr.only.df) == 0 & seg.has.fewer.than.min.hz.flag == TRUE) {#end  if(nrow(datapoints.w.logr.only.df) > 0) {
 
-                  all.seg.df[samp.seg.name,]$total_raw_cpn <- median(as.numeric(ph.cpnA.vec) + median(as.numeric(ph.cpnB.vec)))
-                  all.seg.df[samp.seg.name,]$total_int_cpn <- round(median(as.numeric(ph.cpnA.vec) + as.numeric(ph.cpnB.vec)))
+                  #all.seg.df[samp.seg.name,]$total_raw_cpn <- median(as.numeric(ph.cpnA.vec) + median(as.numeric(ph.cpnB.vec)))
+                  #all.seg.df[samp.seg.name,]$total_int_cpn <- round(median(as.numeric(ph.cpnA.vec) + as.numeric(ph.cpnB.vec)))
   
                 } else if (nrow(datapoints.w.logr.only.df) == 0 & seg.has.fewer.than.min.hz.flag == FALSE) {
 
-
+                  all.seg.df[samp.seg.name,]$total_raw_cpn <- median(as.numeric(ph.cpnA.vec) + median(as.numeric(ph.cpnB.vec)))
+                  all.seg.df[samp.seg.name,]$total_int_cpn <- round(median(as.numeric(ph.cpnA.vec) + as.numeric(ph.cpnB.vec)))
 
 
                 }
 
                 #Now let's calculate the int toal copy number that we're going to use:
                 #Let's set the total copy number
-
                 if (nrow(datapoints.w.logr.only.df) > 0 & seg.has.fewer.than.min.hz.flag == TRUE) {
 
                     all.seg.df[samp.seg.name,]$non_hz_total_raw_cpn <- median(ss.dp.w.logr.only.df$tot_raw_un_ph_cpn)
                     all.seg.df[samp.seg.name,]$cnTotal <-  round(median(ss.dp.w.logr.only.df$tot_raw_un_ph_cpn))
 
 
-                } else if (nrow(datapoints.w.logr.only.df) == 0 & nrow(ss.baf.lr.baf.df) > 0) {
+                } else if (nrow(datapoints.w.logr.only.df) == 0 & seg.has.fewer.than.min.hz.flag == FALSE) {
 
                   all.seg.df[samp.seg.name,]$total_raw_cpn <- median(c(as.numeric(ph.cpnA.vec) + as.numeric(ph.cpnB.vec)))
 
@@ -1283,8 +1295,8 @@ addLogrDefinedCPNEventsToOutputSegmentationParallel <- function(sample.vec,
 
     }
     iterable.samp.seg.df <- cbind(sample = sample.rep.vec, seg_name = all.samp.seg.name.vec)
-    cl <- makeCluster(NUM_CORES)
-    registerDoParallel(cl)
+    # cl <- makeCluster(NUM_CORES)
+    # registerDoParallel(cl)
     itx <- iter(iterable.samp.seg.df, by="row")
     print("Starting parallel addLogrDefinedCPNEventsToOutputSegmentation:")
     MultiResultClass <- function()
@@ -1425,7 +1437,7 @@ addLogrDefinedCPNEventsToOutputSegmentationParallel <- function(sample.vec,
 
     }#end cpn.events.vs.ploidy.by.samp.seg.list <- foreach(samp.seg.df = itx, .combine = c) %dopar% {
 
-    stopCluster(cl)
+    #stopCluster(cl)
 
 
     for ( samp in sample.vec ) {
