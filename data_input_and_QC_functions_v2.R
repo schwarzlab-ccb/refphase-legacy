@@ -114,15 +114,96 @@ makeInputPathFileForTRACERxWGS <- function(pt.id, release.dir, array.type, save.
 
 
 
+# getSNPDataForTRACERxWGS <- function(snp.file.path) {
+
+#   pt.file.paths.df <- read.table(snp.file.path, stringsAsFactors = FALSE, sep = "\t", header = TRUE)
+#   sample.vec <- pt.file.paths.df$sample
+#   all.regions.ASCAT.list <- list()
+
+#   itx <- iter(sample.vec)
+#   #for ( samp in sample.vec ) {
+#   all.samp.SNP.df <- foreach(samp = itx, .combine = rbind) %dopar% {
+
+#     print(samp)
+#     samp.logr.baf.path <- pt.file.paths.df[pt.file.paths.df$sample == samp ,]$samp_logr_baf_file_path
+#     load(samp.logr.baf.path)#gives tumor.baf_logr
+#     samp.seg.path <- pt.file.paths.df[pt.file.paths.df$sample == samp ,]$samp_seg_file_path
+#     load(samp.seg.path)#gives seg
+
+#     ASCAT.summary               <- tumor.baf_logr[,c("chrom", "pos")]
+#     ASCAT.summary$BAF           <- tumor.baf_logr$BAF
+#     ASCAT.summary$logR          <- tumor.baf_logr[, samp]
+#     ASCAT.summary$BAFsegmented  <- NA
+#     ASCAT.summary$logRsegmented <- NA
+#     ASCAT.summary$sample <- samp
+#     colnames(ASCAT.summary)[colnames(ASCAT.summary) == "chrom"] <- chr
+
+#     for ( j in 1:nrow(seg) ) {
+
+#         if(nrow(ASCAT.summary[ASCAT.summary$chr == seg[j ,]$chr 
+#                             & ASCAT.summary$pos >= seg[j ,]$startpos
+#                             & ASCAT.summary$pos <= seg[j ,]$endpos,]) > 0) {
+
+#           if(seg[j,]$nMajor==seg[j,]$nMinor){
+            
+#             ASCAT.summary[ASCAT.summary$chr == seg[j ,]$chr
+#                         & ASCAT.summary$pos >= seg[j ,]$startpos 
+#                         & ASCAT.summary$pos <= seg[j ,]$endpos ,]$BAFsegmented <- 0.5
+            
+#           } else {
+            
+#             avg.seg.baf <- 0.5 - mean(abs(tumor.baf_logr[tumor.baf_logr$chr == seg[j ,]$chr
+#                                                        & tumor.baf_logr$pos >= seg[j ,]$startpos
+#                                                        & tumor.baf_logr$pos <= seg[j ,]$endpos,]$BAF - 0.5))
+            
+#             ASCAT.summary[ASCAT.summary$chrom == seg[j ,]$chr 
+#                         & ASCAT.summary$pos >= seg[j ,]$startpos 
+#                         & ASCAT.summary$pos <= seg[j ,]$endpos ,]$BAFsegmented <- avg.seg.baf
+            
+#           }
+
+#           avg.seg.logr <- mean(tumor.baf_logr[tumor.baf_logr$chr == seg[j ,]$chr 
+#                              & tumor.baf_logr$pos >= seg[j ,]$startpos 
+#                              & tumor.baf_logr$pos <= seg[j ,]$endpos, samp])
+          
+#           ASCAT.summary[ASCAT.summary$chr == seg[j ,]$chr 
+#                       & ASCAT.summary$pos >= seg[j ,]$startpos 
+#                       & ASCAT.summary$pos <= seg[j ,]$endpos,]$logRsegmented <- avg.seg.logr
+
+#         }#end if(nrow(ASCAT.summary[ASCAT.summary$chrom==seg[j,]$chr & ASCAT.summary$pos...
+
+#       }#end for ( j in 1:nrow(seg) ) {
+      
+#       ASCAT.summary
+
+#   }# end  for ( samp in sample.vec ) {
+
+
+#     all.samp.SNP.list <- list()
+#     for ( samp in sample.vec ) {
+
+#       samp.w.segmented.info.SNP.df <- all.samp.SNP.df[all.samp.SNP.df$sample==samp,]
+#       samp.w.segmented.info.SNP.df <- samp.w.segmented.info.SNP.df[, c("chr", "pos", "BAF", "BAFsegmented", "logR", "logRsegmented")]
+#       all.samp.SNP.list[[samp]] <- samp.w.segmented.info.SNP.df
+
+#     }
+
+#     return(all.regions.ASCAT.list)
+# }#end getSNPDataForTRACERxWGS
+
+
+
+
+
 getSNPDataForTRACERxWGS <- function(snp.file.path) {
 
   pt.file.paths.df <- read.table(snp.file.path, stringsAsFactors = FALSE, sep = "\t", header = TRUE)
   sample.vec <- pt.file.paths.df$sample
-  all.regions.ASCAT.list <- list()
 
-  itx <- iter(sample.vec)
-  #for ( samp in sample.vec ) {
-  all.samp.SNP.df <- foreach(samp = itx, .combine = rbind) %dopar% {
+  all.regions.ASCAT.SNP.list <- list()
+  all.regions.ASCAT.seg.df <- NULL
+  print("new WGS reader")
+  for (samp in sample.vec) {
 
     print(samp)
     samp.logr.baf.path <- pt.file.paths.df[pt.file.paths.df$sample == samp ,]$samp_logr_baf_file_path
@@ -136,139 +217,113 @@ getSNPDataForTRACERxWGS <- function(snp.file.path) {
     ASCAT.summary$BAFsegmented  <- NA
     ASCAT.summary$logRsegmented <- NA
     ASCAT.summary$sample <- samp
-    colnames(ASCAT.summary)[colnames(ASCAT.summary) == "chrom"] <- chr
+    colnames(ASCAT.summary)[colnames(ASCAT.summary) == "chrom"] <- "chr"
 
-    for ( j in 1:nrow(seg) ) {
+    if (is.null(all.regions.ASCAT.seg.df)) {
 
-        if(nrow(ASCAT.summary[ASCAT.summary$chr == seg[j ,]$chr 
-                            & ASCAT.summary$pos >= seg[j ,]$startpos
-                            & ASCAT.summary$pos <= seg[j ,]$endpos,]) > 0) {
+      all.regions.ASCAT.seg.df <- seg
 
-          if(seg[j,]$nMajor==seg[j,]$nMinor){
-            
-            ASCAT.summary[ASCAT.summary$chr == seg[j ,]$chr
-                        & ASCAT.summary$pos >= seg[j ,]$startpos 
-                        & ASCAT.summary$pos <= seg[j ,]$endpos ,]$BAFsegmented <- 0.5
-            
-          } else {
-            
-            avg.seg.baf <- 0.5 - mean(abs(tumor.baf_logr[tumor.baf_logr$chr == seg[j ,]$chr
-                                                       & tumor.baf_logr$pos >= seg[j ,]$startpos
-                                                       & tumor.baf_logr$pos <= seg[j ,]$endpos,]$BAF - 0.5))
-            
-            ASCAT.summary[ASCAT.summary$chrom == seg[j ,]$chr 
-                        & ASCAT.summary$pos >= seg[j ,]$startpos 
-                        & ASCAT.summary$pos <= seg[j ,]$endpos ,]$BAFsegmented <- avg.seg.baf
-            
-          }
+    } else {
 
-          avg.seg.logr <- mean(tumor.baf_logr[tumor.baf_logr$chr == seg[j ,]$chr 
-                             & tumor.baf_logr$pos >= seg[j ,]$startpos 
-                             & tumor.baf_logr$pos <= seg[j ,]$endpos, samp])
-          
-          ASCAT.summary[ASCAT.summary$chr == seg[j ,]$chr 
-                      & ASCAT.summary$pos >= seg[j ,]$startpos 
-                      & ASCAT.summary$pos <= seg[j ,]$endpos,]$logRsegmented <- avg.seg.logr
-
-        }#end if(nrow(ASCAT.summary[ASCAT.summary$chrom==seg[j,]$chr & ASCAT.summary$pos...
-
-      }#end for ( j in 1:nrow(seg) ) {
-      
-      ASCAT.summary
-
-  }# end  for ( samp in sample.vec ) {
-
-
-    all.samp.SNP.list <- list()
-    for ( samp in sample.vec ) {
-
-      samp.w.segmented.info.SNP.df <- all.samp.SNP.df[all.samp.SNP.df$sample==samp,]
-      samp.w.segmented.info.SNP.df <- samp.w.segmented.info.SNP.df[, c("chr", "pos", "BAF", "BAFsegmented", "logR", "logRsegmented")]
-      all.samp.SNP.list[[samp]] <- samp.w.segmented.info.SNP.df
-
+      all.regions.ASCAT.seg.df <- rbind(all.regions.ASCAT.seg.df, seg)
     }
 
-    return(all.regions.ASCAT.list)
-}#end getSNPDataForTRACERxWGS
+    all.regions.ASCAT.SNP.list[[samp]] <- ASCAT.summary
+
+  }
 
 
+  all.regions.ASCAT.seg.df$start_idx <- NA
+  all.regions.ASCAT.seg.df$end_idx <- NA
+  all.regions.ASCAT.seg.df$avg_seg_BAF <- NA
+  all.regions.ASCAT.seg.df$avg_seg_LogR <-NA
+  print(head(all.regions.ASCAT.seg.df))
+  itx <- iter(all.regions.ASCAT.seg.df, by="row")
 
-
-
-getSNPDataForTRACERxWGS <- function(snp.file.path) {
-
-  pt.file.paths.df <- read.table(snp.file.path, stringsAsFactors = FALSE, sep = "\t", header = TRUE)
-  sample.vec <- pt.file.paths.df$sample
-  all.regions.ASCAT.list <- list()
-
-  itx <- iter(sample.vec)
   #for ( samp in sample.vec ) {
-  all.samp.SNP.df <- foreach(samp = itx, .combine = rbind) %dopar% {
+  all.samp.SNP.df <- foreach(seg = itx, .combine = rbind) %dopar% {
 
-    print(samp)
-    samp.logr.baf.path <- pt.file.paths.df[pt.file.paths.df$sample == samp ,]$samp_logr_baf_file_path
-    load(samp.logr.baf.path)#gives tumor.baf_logr
-    samp.seg.path <- pt.file.paths.df[pt.file.paths.df$sample == samp ,]$samp_seg_file_path
-    load(samp.seg.path)#gives seg
+        #print(seg)
+        seg.to.return <- seg
 
-    ASCAT.summary               <- tumor.baf_logr[,c("chrom", "pos")]
-    ASCAT.summary$BAF           <- tumor.baf_logr$BAF
-    ASCAT.summary$logR          <- tumor.baf_logr[, samp]
-    ASCAT.summary$BAFsegmented  <- NA
-    ASCAT.summary$logRsegmented <- NA
-    ASCAT.summary$sample <- samp
-    
-    for ( j in 1:nrow(seg) ) {
+        # print(seg$chr)
+        # print(seg$startpos)
+        # print(seg$endpos)
+        ASCAT.summary <- all.regions.ASCAT.SNP.list[[seg$sample]]
 
-        if(nrow(ASCAT.summary[ASCAT.summary$chrom == seg[j ,]$chr 
-                            & ASCAT.summary$pos >= seg[j ,]$startpos
-                            & ASCAT.summary$pos <= seg[j ,]$endpos,]) > 0) {
+        ASCAT.summary$idx <- 1:nrow(ASCAT.summary)
 
-          if(seg[j,]$nMajor==seg[j,]$nMinor){
+        if(nrow(ASCAT.summary[ASCAT.summary$chr == seg$chr 
+                            & ASCAT.summary$pos >= seg$startpos
+                            & ASCAT.summary$pos <= seg$endpos,]) > 0) {
+
+          idx.vec <- ASCAT.summary[ASCAT.summary$chr == seg$chr 
+                            & ASCAT.summary$pos >= seg$startpos
+                            & ASCAT.summary$pos <= seg$endpos,]$idx
+          #print(idx.vec)
+          seg.to.return$start_idx <- min(idx.vec)
+          seg.to.return$end_idx <- max(idx.vec)
+
+          if(seg$nMajor == seg$nMinor){
             
-            ASCAT.summary[ASCAT.summary$chrom == seg[j ,]$chr
-                        & ASCAT.summary$pos >= seg[j ,]$startpos 
-                        & ASCAT.summary$pos <= seg[j ,]$endpos ,]$BAFsegmented <- 0.5
+            # ASCAT.summary[ASCAT.summary$chrom == seg$chr
+            #             & ASCAT.summary$pos >= seg$startpos 
+            #             & ASCAT.summary$pos <= seg$endpos ,]$BAFsegmented <- 0.5
+                        seg.to.return$avg_seg_BAF <- 0.5
             
           } else {
             
-            avg.seg.baf <- 0.5 - mean(abs(tumor.baf_logr[tumor.baf_logr$chrom == seg[j ,]$chr
-                                                       & tumor.baf_logr$pos >= seg[j ,]$startpos
-                                                       & tumor.baf_logr$pos <= seg[j ,]$endpos,]$BAF - 0.5))
+            avg.seg.baf <- 0.5 - mean(abs(tumor.baf_logr[tumor.baf_logr$chr == seg$chr
+                                                       & tumor.baf_logr$pos >= seg$startpos
+                                                       & tumor.baf_logr$pos <= seg$endpos,]$BAF - 0.5))
             
-            ASCAT.summary[ASCAT.summary$chrom == seg[j ,]$chr 
-                        & ASCAT.summary$pos >= seg[j ,]$startpos 
-                        & ASCAT.summary$pos <= seg[j ,]$endpos ,]$BAFsegmented <- avg.seg.baf
+            # ASCAT.summary[ASCAT.summary$chrom == seg$chr 
+            #             & ASCAT.summary$pos >= seg$startpos 
+            #             & ASCAT.summary$pos <= seg$endpos ,]$BAFsegmented <- avg.seg.baf
+                          seg.to.return$avg_seg_BAF <- avg.seg.baf
+
             
           }
 
-          avg.seg.logr <- mean(tumor.baf_logr[tumor.baf_logr$chrom == seg[j ,]$chr 
-                             & tumor.baf_logr$pos >= seg[j ,]$startpos 
-                             & tumor.baf_logr$pos <= seg[j ,]$endpos, samp])
+          avg.seg.logr <- mean(tumor.baf_logr[tumor.baf_logr$chr == seg$chr 
+                             & tumor.baf_logr$pos >= seg$startpos 
+                             & tumor.baf_logr$pos <= seg$endpos, samp])
           
-          ASCAT.summary[ASCAT.summary$chrom == seg[j ,]$chr 
-                      & ASCAT.summary$pos >= seg[j ,]$startpos 
-                      & ASCAT.summary$pos <= seg[j ,]$endpos,]$logRsegmented <- avg.seg.logr
+          # ASCAT.summary[ASCAT.summary$chrom == seg$chr 
+          #             & ASCAT.summary$pos >= seg$startpos 
+          #             & ASCAT.summary$pos <= seg$endpos,]$logRsegmented <- avg.seg.logr
+                      seg.to.return$avg_seg_LogR <- avg.seg.logr
 
         }#end if(nrow(ASCAT.summary[ASCAT.summary$chrom==seg[j,]$chr & ASCAT.summary$pos...
-
-      }#end for ( j in 1:nrow(seg) ) {
       
-      ASCAT.summary
+      seg.to.return
 
   }# end  for ( samp in sample.vec ) {
+  print("all.samp.SNP.df")
+  print(head(all.samp.SNP.df))
+  all.samp.SNP.df <- all.samp.SNP.df[with(all.samp.SNP.df, order(sample, chr, startpos)), ]
+  all.samp.SNP.list <- list()
+  for ( samp in sample.vec ) {
 
+      samp.seg.idx.df <- all.samp.SNP.df[all.samp.SNP.df$sample == samp,]    
+      samp.SNP.df <- all.regions.ASCAT.SNP.list[[samp]]
 
-    all.samp.SNP.list <- list()
-    for ( samp in sample.vec ) {
+    for ( j in 1:nrow(samp.seg.idx.df) ) {
 
-      samp.w.segmented.info.SNP.df <- all.samp.SNP.df[all.samp.SNP.df$sample==samp,]
-      samp.w.segmented.info.SNP.df <- samp.w.segmented.info.SNP.df[, c("chr", "pos", "BAF", "BAFsegmented", "logR", "logRsegmented")]
-      all.samp.SNP.list[[samp]] <- samp.w.segmented.info.SNP.df
+      if(is.na(samp.seg.idx.df[j,]$start_idx)) {
+
+        next
+
+      }
+      samp.SNP.df[as.numeric(samp.seg.idx.df[j,]$start_idx):as.numeric(samp.seg.idx.df[j,]$end_idx),]$BAFsegmented <- samp.seg.idx.df[j,]$avg_seg_BAF
+      samp.SNP.df[as.numeric(samp.seg.idx.df[j,]$start_idx):as.numeric(samp.seg.idx.df[j,]$end_idx),]$logRsegmented <- samp.seg.idx.df[j,]$avg_seg_LogR
 
     }
 
-    return(all.regions.ASCAT.list)
+    all.samp.SNP.list[[samp]] <- samp.SNP.df[, c("chr", "pos", "BAF", "BAFsegmented", "logR", "logRsegmented")]
+  }
+
+    return(all.samp.SNP.list)
 }#end getSNPDataForTRACERxWGS
 
 
@@ -1241,8 +1296,16 @@ getOverlapGRanges <- function(query, subject, output="gr", ...) {
       ASCAT.summary$sample <- samp
       #print(head(ASCAT.summary))
 
-      seg <- processed.orig.cpn.segs.df[processed.orig.cpn.segs.df$sample == samp,]
+      if(nrow(processed.orig.cpn.segs.df) == 0) {
 
+        stop("processed.orig.cpn.segs.df has no rows...")
+      }
+      seg <- processed.orig.cpn.segs.df[processed.orig.cpn.segs.df$sample == samp,]
+      if(nrow(processed.orig.cpn.segs.df) == 0) {
+
+        stop("processed.orig.cpn.segs.df subsetted by sample has no rows...")
+
+      }
       for ( j in 1:nrow(seg) ) {
         #print(seg[j,])
         #Are there any BAF values that aren't set at 2 (and thus shouldn't be used for allele specific cpn) present in this segment?
@@ -1251,7 +1314,7 @@ getOverlapGRanges <- function(query, subject, output="gr", ...) {
                     & ASCAT.summary$pos <= seg[j ,]$endpos 
                     & ASCAT.summary$BAF != 2 ,]) > 0) {
           #Is this segment balanced, if so set the BAFsegmented to 0.5
-          if (seg[j ,]$nMajor == seg[j ,]$nMinor) {
+          if (seg[j , ,]$nMajor == seg[j ,]$nMinor) {
 
             ASCAT.summary[ASCAT.summary$chr == seg[j ,]$chr
                     & ASCAT.summary$pos >= seg[j ,]$startpos
@@ -1263,11 +1326,11 @@ getOverlapGRanges <- function(query, subject, output="gr", ...) {
             avg.seg.baf <- 0.5 - mean(abs(as.numeric(ASCAT.summary[ASCAT.summary$chr == seg[j ,]$chr
                                         & ASCAT.summary$pos >= seg[j ,]$startpos
                                         & ASCAT.summary$pos <= seg[j ,]$endpos
-                                        & ASCAT.summary$BAF != 2 ,]$BAF)          - 0.5))
+                                        & ASCAT.summary$BAF != 2 , ]$BAF)          - 0.5))
 
             ASCAT.summary[ASCAT.summary$chr == seg[j ,]$chr 
                     & ASCAT.summary$pos >= seg[j ,]$startpos 
-                    & ASCAT.summary$pos <= seg[j ,]$endpos ,]$BAFsegmented <- avg.seg.baf
+                    & ASCAT.summary$pos <= seg[j ,]$endpos, ]$BAFsegmented <- avg.seg.baf
 
           }
      
@@ -1275,7 +1338,7 @@ getOverlapGRanges <- function(query, subject, output="gr", ...) {
         #We now need to calculate the average logr of any snps that are present
         if (nrow(ASCAT.summary[ASCAT.summary$chr == seg[j ,]$chr
                              & ASCAT.summary$pos >= seg[j ,]$startpos
-                             & ASCAT.summary$pos <= seg[j ,]$endpos ,]) > 0) {
+                             & ASCAT.summary$pos <= seg[j ,]$endpos , ]) > 0) {
 
           avg.seg.logr <- mean(ASCAT.summary[ASCAT.summary$chr == seg[j ,]$chr
                      & ASCAT.summary$pos >= seg[j ,]$startpos
@@ -1283,7 +1346,7 @@ getOverlapGRanges <- function(query, subject, output="gr", ...) {
 
           ASCAT.summary[ASCAT.summary$chr == seg[j ,]$chr
                   & ASCAT.summary$pos >= seg[j ,]$startpos
-                  & ASCAT.summary$pos <= seg[j ,]$endpos ,]$logRsegmented <- avg.seg.logr
+                  & ASCAT.summary$pos <= seg[j ,]$endpos , ]$logRsegmented <- avg.seg.logr
 
         }
 
@@ -1355,7 +1418,11 @@ cleanAndErrorCheckSNPsParallel <- function(all.samp.SNP.list, min.cons.seg.df, a
     return(me)
   }
   sites.in.each.samp.seg.list <- foreach(min.cons.seg.df = itx, .combine = c) %dopar% {
+  #for( i in 1:nrow(iterable.min.cons.seg.df)) {
 
+    #print(iterable.min.cons.seg.df[i,])
+    #min.cons.seg.df <- iterable.min.cons.seg.df[i, ,drop=FALSE]
+   # print(min.cons.seg.df)
     samp.SNP.df <- all.samp.SNP.list[[ min.cons.seg.df[, 4]]]
 
     if( "chr" %in% colnames(samp.SNP.df)) {
@@ -1403,6 +1470,7 @@ cleanAndErrorCheckSNPsParallel <- function(all.samp.SNP.list, min.cons.seg.df, a
   all.samps.prob.SNPs.vec <- unique(unlist(sapply(sites.in.each.samp.seg.list, function(x) x[["samp_prob_SNPs_vec"]])))
   print("Number of problem SNPs being removed:")
   print(length(all.samps.prob.SNPs.vec))
+  print(head(all.samps.prob.SNPs.vec))
 
   if (length(all.samps.prob.SNPs.vec) > 0) {
 

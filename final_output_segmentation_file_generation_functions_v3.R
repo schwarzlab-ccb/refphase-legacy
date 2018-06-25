@@ -192,6 +192,7 @@ addNewRawAndIntCPNCallsToFinalSegmentationParallel <- function(seg.name.vec,
                 ret.mrc <- MultiResultClass()
                 samp <- samp.seg.df[, 1]
                 seg.name <- samp.seg.df[, 2]
+                print(paste0(samp, "_", seg.name))
                 cpnX <- "cpnA"
                 #Fill in flag that shows whether segment has been phasing and CCF valculuation process, ie has greater than min num of hz snp positions
                 if ( length(all.seg.CCF.vals.list[[cpnX]][[seg.name]]) == 1) {
@@ -472,12 +473,12 @@ addNewRawAndIntCPNCallsToFinalSegmentation <- function(seg.name.vec,
                                                 datapoints.w.BAF.df$pos >= as.numeric(chr.start.end.vec[2]) &
                                                 datapoints.w.BAF.df$pos <= as.numeric(chr.start.end.vec[3]), ,drop=FALSE]
                 datapoints.w.logr.only.df <- all.samp.logr.df.list[[samp]]
-                print("str(all.samp.ph.BAF.df.list, max=1)")
-                print(str(all.samp.ph.BAF.df.list, max=1))
-                print("head(datapoints.w.BAF.df)")
-                print(head(datapoints.w.BAF.df))
+                # print("str(all.samp.ph.BAF.df.list, max=1)")
+                # print(str(all.samp.ph.BAF.df.list, max=1))
+                # print("head(datapoints.w.BAF.df)")
+                # print(head(datapoints.w.BAF.df))
                 #Fill in the fields based on those sites that re hz:
-                print((head(ss.baf.lr.baf.df)))
+                #print((head(ss.baf.lr.baf.df)))
                 all.seg.df[samp.seg.name,]$median_BAF  <- ss.baf.lr.baf.df$ph_median_segmented_BAF[1]
                 all.seg.df[samp.seg.name,]$mean_BAF <- mean(abs(0.5 - ss.baf.lr.baf.df$BAF))#Todo, check this was the correct change to mirrored
                 all.seg.df[samp.seg.name,]$stdev_BAF <- sd(abs(0.5 - ss.baf.lr.baf.df$BAF))#Todo, check this was the correct change to mirrored
