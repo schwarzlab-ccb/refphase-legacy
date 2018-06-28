@@ -126,7 +126,7 @@ current.dir <-  LocationOfThisScript()
 # snp.file.path <- "/home/camp/watkint/working/watkint/data/turajlic_wgs/release/T_KTX167/WGS/MSAI/KTX167_joint_snps.txt"
 # seg.file.path <- "/home/camp/watkint/working/watkint/data/turajlic_wgs/release/T_KTX167/WGS/MSAI/KTX167_joint_segs_all_ascat_info.txt"
 
-# #"patient"
+#"patient"
 # patient <- "MTX005"
 # allow.dip.test.phasing.flag <- FALSE
 # output.directory.base.path <- paste0("/home/camp/watkint/working/watkint/data/martinez/release_v3/R_",patient,"/snp_array//CN_het_MEDICC_no_diptest/")
@@ -386,19 +386,27 @@ current.dir <-  LocationOfThisScript()
 # num.cores <- 12
 
 
+# patient  <-  "LTX121"
+# allow.dip.test.phasing.flag <- FALSE
+# output.directory.base.path <- "/camp/project/proj-tracerx-lung/tctProjects/watkint/TRACERx100_lung_pan_can_analysis/release/A_LTX121/exome/CN_het_TRACERx_no_diptest/"
+# data.format.to.use <- "TRACERx_exome"
+# snp.file.path <- "/camp/project/proj-tracerx-lung/tctProjects/watkint/TRACERx100_lung_pan_can_analysis/release/A_LTX121/exome/CN_het_TRACERx_no_diptest/LTX121_TRACERx_input_paths_df.txt"
+# seg.file.path <- "/camp/project/proj-tracerx-lung/tctProjects/watkint/TRACERx100_lung_pan_can_analysis/release/A_LTX121/exome/MSAI/LTX121_joint_segs_all_ascat_info.txt"
+# overwrite.flag <- TRUE
+# gamma.val <- 1
+# num.cores <- 12
+# intersection.or.whole.arm <- "intersection"
 
-patient  <-  "LTX121"
+
+patient <- "MTX006"
 allow.dip.test.phasing.flag <- FALSE
-output.directory.base.path <- "/camp/project/proj-tracerx-lung/tctProjects/watkint/TRACERx100_lung_pan_can_analysis/release/A_LTX121/exome/CN_het_TRACERx_no_diptest/"
-data.format.to.use <- "TRACERx_exome"
-snp.file.path <- "/camp/project/proj-tracerx-lung/tctProjects/watkint/TRACERx100_lung_pan_can_analysis/release/A_LTX121/exome/CN_het_TRACERx_no_diptest/LTX121_TRACERx_input_paths_df.txt"
-seg.file.path <- "/camp/project/proj-tracerx-lung/tctProjects/watkint/TRACERx100_lung_pan_can_analysis/release/A_LTX121/exome/MSAI/LTX121_joint_segs_all_ascat_info.txt"
+output.directory.base.path <- paste0("/home/camp/watkint/working/watkint/data/martinez/release_v3/R_",patient,"/snp_array//CN_het_MEDICC_no_diptest/")
+data.format.to.use <- "MEDICC"
+snp.file.path <- paste0("/home/camp/watkint/working/watkint/data/martinez/release_v3/R_",patient,"/snp_array/MSAI/",patient,"_new_all_snps.txt")
+seg.file.path <- paste0("/home/camp/watkint/working/watkint/data/martinez/release_v3/R_",patient,"/snp_array/MSAI/",patient,"_joint_segs_all_ascat_info.txt")
 overwrite.flag <- TRUE
-gamma.val <- 1
+gamma.val <- 0.5
 num.cores <- 12
-intersection.or.whole.arm <- "intersection"
-
-intersection.or.whole.arm <- "intersection"
 
 print("patient")
 print(patient)
@@ -1007,7 +1015,6 @@ if (OVERWRITE_FLAG == TRUE) {
 	asas.SNPs.w.both.lr.baf.snp.lists <- cleanAndErrorCheckSNPsParallel(all.samp.SNP.list,
 																		min.cons.segs.df,
 																		allow.logr.only.flag = FALSE,
-																		num.cores = NUM_CORES,
 																		data.type = data.format.to.use)
 	print(asas.SNPs.w.both.lr.baf.snp.lists.path)
 	saveRDS(asas.SNPs.w.both.lr.baf.snp.lists, file = asas.SNPs.w.both.lr.baf.snp.lists.path)
@@ -1021,7 +1028,6 @@ if (OVERWRITE_FLAG == TRUE) {
 	asas.SNPS.lr.and.or.baf.lists <- cleanAndErrorCheckSNPsParallel(all.samp.SNP.list,
 																	min.cons.segs.df,
 																	allow.logr.only.flag = TRUE, 
-																	num.cores = NUM_CORES,
 																	data.type = data.format.to.use)
 	print(asas.SNPS.lr.and.or.baf.lists.path)
 	saveRDS(asas.SNPS.lr.and.or.baf.lists, file = asas.SNPS.lr.and.or.baf.lists.path)
@@ -1097,7 +1103,7 @@ if (OVERWRITE_FLAG == TRUE) {
 	                                            allow.dip.test.without.ASCAT.to.phase = ALLOW_DIPTEST_ALONE_PH_FLAG
 	                	                            )
 	print("Getting phasing to apply to all samples using getCombinedBAFDipTestPhasingParallel...")
-	# source(paste0(current.dir, "consensus_phasing_from_multiple_samples_functions_v2.R"))
+	source(paste0(current.dir, "consensus_phasing_from_multiple_samples_functions_v2.R"))
 	# all.seg.phasing.info.list <- getCombinedBAFDipTestPhasingParallel(asas.lr.baf.lists = asas.SNPs.w.both.lr.baf.snp.lists,
 	#                                             seg.name.vec = seg.name.vec,
 	#                                             ploidy.est.vec = ploidy.est.vec,
@@ -1394,6 +1400,26 @@ addOriginalSegmentInfoToFinalSegmentationNew <- function(all.seg.df, all.orig.sa
 }
 
 
+#Ok so now say we want to find out how many clonal and subclonal focal events there are, we need to:
+
+#Make focal original id column:
+
+#first identify clonal focal events
+
+#Now that we know which ones are clonal focal in terms of position
+#Subset by those that are also the same cpn vs ploidy all the way through
+#Now we have our set of clonal ammp+gain / deep_loss+loss / LOH/ LOH combined with loss
+
+
+
+
+
+#Now we also need  to repeat this exact same process for few and fewer samples
+#and split between gain/loss/ and LOH
+
+
+
+
 print("Mapping MCS segments back to original input and copy number states...")
 full.joint.segs.w.old.cpn.vs.ploidy.df <- addOriginalSegmentInfoToFinalSegmentationNew(new.cpn.full.joint.segs.df, sorted.all.bp.all.samps.segs.anno.df)
 
@@ -1614,7 +1640,188 @@ shouldSegsWithCPNXValuesBeJoined <- function(s.curr.df, s.next.df, pval.to.separ
 
 #Pseudocode the joining:
 
-#We are at the level of an arm
+
+#Need to add arms to all segments:
+
+# #All possible useful input:
+# patient.phased.BAF.df.list
+# > str(patient.phased.BAF.df.list[[1]], max=1)
+# 'data.frame':	33192 obs. of  11 variables:
+#  $ chrom                       : chr  "1" "1" "1" "1" ...
+#  $ pos                         : int  871020 879317 880390 881627 892460 894573 896064 897730 902108 906272 ...
+#  $ BAF                         : num  0.257 0.248 0.2 0.866 0.143 ...
+#  $ BAFsegmented                : num  0.23 0.23 0.23 0.23 0.23 ...
+#  $ logR                        : num  -0.271 -0.36 -0.385 -0.208 -0.571 ...
+#  $ logRsegmented               : num  -0.335 -0.335 -0.335 -0.335 -0.335 ...
+#  $ samp                        : chr  "A_LTX121_SU_T1-R1" "A_LTX121_SU_T1-R1" "A_LTX121_SU_T1-R1" "A_LTX121_SU_T1-R1" ...
+#  $ sample_phased_by_this_sample: chr  "A_LTX121_SU_T1-R1" "A_LTX121_SU_T1-R1" "A_LTX121_SU_T1-R1" "A_LTX121_SU_T1-R1" ...
+#  $ maj_is_cpnA_logic_vec       : num  0 0 0 1 0 1 0 0 0 1 ...
+#  $ maj_is_cpnB_logic_vec       : num  1 1 1 0 1 0 1 1 1 0 ...
+#  $ ph_median_segmented_BAF     : num  0.207 0.207 0.207 0.207 0.207 ...
+# all.seg.MSAI.by.BAF.ltnpd.present.list
+# all.samp.non.hz.logr.and.tot.cpn.df.list
+# > str(all.samp.non.hz.logr.and.tot.cpn.df.list[[1]], max=1)
+# 'data.frame':	921620 obs. of  7 variables:
+#  $ chrom            : chr  "1" "1" "1" "1" ...
+#  $ pos              : int  762273 762496 762497 777237 777318 777335 777361 777456 783071 783147 ...
+#  $ BAF              : num  1 NA NA NA NA ...
+#  $ BAFsegmented     : num  NA NA NA NA NA NA NA NA NA NA ...
+#  $ logR             : num  -0.0542 -0.2103 -0.2103 -0.4974 -0.3978 ...
+#  $ logRsegmented    : num  -0.335 -0.335 -0.335 -0.335 -0.335 ...
+#  $ tot_raw_un_ph_cpn: num  2.98 2.47 2.47 1.67 1.93 ...
+# asas.ph.raw.cpn.lists
+# > str(asas.ph.raw.cpn.lists[[1]], max=1)
+# List of 418
+#  $ 1:1:762272            :List of 9
+#  $ 1:762273:26136282     :List of 9
+# all.seg.CCF.list
+# > str(all.seg.CCF.list[[1]] ,max=1)
+# List of 418
+#  $ 1:1:762272            : logi NA
+#  $ 1:762273:26136282     :List of 2
+#  $ 1:26136283:26136297   : logi NA
+#  > str(all.seg.CCF.list[[1]][2])
+#  List of 1
+#   $ 1:762273:26136282:List of 2
+#    ..$ A_LTX121_SU_T1-R1:List of 9
+#    .. ..$ poss_sc_cpnA_low         : num [1:755] 2 2 2 2 2 2 2 2 2 2 ...
+#    .. ..$ poss_sc_cpnA_high        : num [1:755] 3 3 3 3 3 3 3 3 3 3 ...
+#    .. ..$ mean_frac_cpnA_low       : num [1:755] 0.83 0.83 0.83 0.83 0.83 0.83 0.83 0.83 0.83 0.83 ...
+#    .. ..$ mean_frac_cpnA_high      : num [1:755] 0.17 0.17 0.17 0.17 0.17 0.17 0.17 0.17 0.17 0.17 ...
+#    .. ..$ cpnA_orig_ph_obs_cpnA_vec: num [1:755] 2.19 2.03 2.17 2.88 1.98 ...
+#    .. ..$ cpnA_orig_ph_obs_cpnB_vec: num [1:755] 0.10186 0.000399 -0.205837 -0.400462 -0.501425 ...
+#    .. ..$ clean_ph_obs_cpnA_vec    : num [1:755] 2.19 2.03 2.17 2.88 1.98 ...
+#    .. ..$ frac_cpnA_low_vec        : num [1:755] 0.81 0.97 0.83 0.12 1 0.69 0.68 0.88 0.86 1 ...
+#    .. ..$ frac_cpnA_high_vec       : num [1:755] 0.19 0.03 0.17 0.88 0 ...
+#    ..$ A_LTX121_SU_T1-R2:List of 9
+#    .. ..$ poss_sc_cpnA_low         : num [1:755] 2 2 2 2 2 2 2 2 2 2 ...
+#    .. ..$ poss_sc_cpnA_high        : num [1:755] 3 3 3 3 3 3 3 3 3 3 ...
+#    .. ..$ mean_frac_cpnA_low       : num [1:755] 0.74 0.74 0.74 0.74 0.74 0.74 0.74 0.74 0.74 0.74 ...
+#    .. ..$ mean_frac_cpnA_high      : num [1:755] 0.26 0.26 0.26 0.26 0.26 0.26 0.26 0.26 0.26 0.26 ...
+#    .. ..$ cpnA_orig_ph_obs_cpnA_vec: num [1:755] 1.56 2.26 2.61 2.16 1.74 ...
+#    .. ..$ cpnA_orig_ph_obs_cpnB_vec: num [1:755] 0.32 -0.258 -0.22 -0.531 0.212 ...
+#    .. ..$ clean_ph_obs_cpnA_vec    : num [1:755] 1.56 2.26 2.61 2.16 1.74 ...
+#    .. ..$ frac_cpnA_low_vec        : num [1:755] 1 0.74 0.39 0.84 1 1 0.73 0.38 0.44 1 ...
+#    .. ..$ frac_cpnA_high_vec       : num [1:755] 0 0.26 0.61 0.16 0 0 0.27 0.62 0.56 0 ...
+# > str(all.seg.CCF.list[[2]][2])
+# List of 1
+# $ 1:762273:26136282:List of 2
+#  ..$ A_LTX121_SU_T1-R1:List of 9
+#  .. ..$ poss_sc_cpnB_low         : num [1:755] 1 1 1 1 1 1 1 1 1 1 ...
+#  .. ..$ poss_sc_cpnB_high        : num [1:755] 1 1 1 1 1 1 1 1 1 1 ...
+#  .. ..$ mean_frac_cpnB_low       : num [1:755] 0 0 0 0 0 0 0 0 0 0 ...
+#  .. ..$ mean_frac_cpnB_high      : num [1:755] 1 1 1 1 1 1 1 1 1 1 ...
+#  .. ..$ cpnB_orig_ph_obs_cpnA_vec: num [1:755] 2.19 2.03 2.17 2.88 1.98 ...
+#  .. ..$ cpnB_orig_ph_obs_cpnB_vec: num [1:755] 0.10186 0.000399 -0.205837 -0.400462 -0.501425 ...
+#  .. ..$ clean_ph_obs_cpnB_vec    : num [1:755] 0.10186 0.000399 0 0 0 ...
+#  .. ..$ frac_cpnB_low_vec        : num [1:755] 0 0 0 0 0 0 0 0 0 0 ...
+#  .. ..$ frac_cpnB_high_vec       : num [1:755] 1 1 1 1 1 1 1 1 1 1 ...
+#  ..$ A_LTX121_SU_T1-R2:List of 9
+#  .. ..$ poss_sc_cpnB_low         : num [1:755] 1 1 1 1 1 1 1 1 1 1 ...
+#  .. ..$ poss_sc_cpnB_high        : num [1:755] 1 1 1 1 1 1 1 1 1 1 ...
+#  .. ..$ mean_frac_cpnB_low       : num [1:755] 0 0 0 0 0 0 0 0 0 0 ...
+#  .. ..$ mean_frac_cpnB_high      : num [1:755] 1 1 1 1 1 1 1 1 1 1 ...
+#  .. ..$ cpnB_orig_ph_obs_cpnA_vec: num [1:755] 1.56 2.26 2.61 2.16 1.74 ...
+#  .. ..$ cpnB_orig_ph_obs_cpnB_vec: num [1:755] 0.32 -0.258 -0.22 -0.531 0.212 ...
+#  .. ..$ clean_ph_obs_cpnB_vec    : num [1:755] 0.32 0 0 0 0.212 ...
+#  .. ..$ frac_cpnB_low_vec        : num [1:755] 0 0 0 0 0 0 0 0 0 0 ...
+#  .. ..$ frac_cpnB_high_vec       : num [1:755] 1 1 1 1 1 1 1 1 1 1 ...
+# asas.SNPs.w.both.lr.baf.snp.lists
+# > str(asas.SNPs.w.both.lr.baf.snp.lists[[1]][2], max=1)
+# List of 1
+#  $ 1:762273:26136282:'data.frame':	755 obs. of  6 variables:
+# > str(asas.SNPs.w.both.lr.baf.snp.lists[[1]][2])
+# List of 1
+#  $ 1:762273:26136282:'data.frame':	755 obs. of  6 variables:
+#   ..$ chrom        : chr [1:755] "1" "1" "1" "1" ...
+#   ..$ pos          : int [1:755] 871020 879317 880390 881627 892460 894573 896064 897730 902108 906272 ...
+#   ..$ BAF          : num [1:755] 0.257 0.248 0.2 0.866 0.143 ...
+#   ..$ BAFsegmented : num [1:755] 0.23 0.23 0.23 0.23 0.23 ...
+#   ..$ logR         : num [1:755] -0.271 -0.36 -0.385 -0.208 -0.571 ...
+#   ..$ logRsegmented: num [1:755] -0.335 -0.335 -0.335 -0.335 -0.335 ...
+# asas.SNPS.lr.and.or.baf.lists
+# > str(asas.SNPS.lr.and.or.baf.lists[[1]][2])
+# List of 1
+#  $ 1:762273:26136282:'data.frame':	17836 obs. of  6 variables:
+#   ..$ chrom        : chr [1:17836] "1" "1" "1" "1" ...
+#   ..$ pos          : int [1:17836] 762273 762496 762497 777237 777318 777335 777361 777456 783071 783147 ...
+#   ..$ BAF          : num [1:17836] 1 NA NA NA NA ...
+#   ..$ BAFsegmented : num [1:17836] NA NA NA NA NA NA NA NA NA NA ...
+#   ..$ logR         : num [1:17836] -0.0542 -0.2103 -0.2103 -0.4974 -0.3978 ...
+#   ..$ logRsegmented: num [1:17836] -0.335 -0.335 -0.335 -0.335 -0.335 ...
+
+
+#So we want:
+# chr
+# pos
+# hz
+# non_hz
+# ph_cpn
+# tot_pn
+# BAF
+# logR
+
+
+joinSegmentsWithinSampleChromosomeArm <- function(arm.segs, arm.samp.ph.tot.cpn.df, cpnX) {
+
+
+	#Original input segments:
+
+	#Make a cpnA copy of the segments:
+	
+	#Make a cpnB copy of the segments:
+
+	#Make a cpnA results dataframe and list:
+
+	#Make a cpnA results dataframe and list:
+
+	#For each cpnA or cpnB
+
+	#Sort segments by size
+
+	#Choose the smallest segment
+
+	#Determine what kind of segment this smallest segment is
+
+	#Get the ante segment, if there is one
+
+	#Determine what kind of segment this preceding segment is
+
+	#Get the  pst segment, if there is one.
+
+	#Determine what kind of segment post segment is.
+
+	#So what are the possible cases:
+
+	#So each seg should have a vector that determines its identity and course of action.
+
+	#num_ph_hz,
+	#num_unph_hz,
+	#num_non_hz,
+	#non_cons_logr,
+	#has_ph_cpn,
+
+	#If they both have phased copy number -> test for difference using wilcox test
+	#									  -> test for MAD between means and see if lower than thesthold
+	#Join if nonsignificant/below threshold.
+	#else leave separate
+
+	#If one has phased copy number and the other doesn't? -> Test total copy number vs total copy number using wilcox test
+	#													  -> Test for mad between means of distribution
+	#Join if nonsignificant/below threshold
+
+	#If neither has phased copy number? -> Test total copy number 
+	#									-> 
+
+	#If nether has any data behind it?
+
+
+
+}
+
+
+
+#We are at the level of an arm:
 
 #Start with smallest segment:
 
@@ -1631,10 +1838,6 @@ shouldSegsWithCPNXValuesBeJoined <- function(s.curr.df, s.next.df, pval.to.separ
 	#					-> join to the largest segment as this is likely to be most accurate.
 
 
-#So what is the data that we need for joining?
-
-#We need the logr (and total copy number dataframes for that sample)
-#We need all the phased cpn values for all segments
 
 
 #What do we need to make
@@ -1680,13 +1883,37 @@ shouldSegsWithCPNXValuesBeJoined <- function(s.curr.df, s.next.df, pval.to.separ
 
 
 
-
 png(file = paste(PLOT_OUTPUT_DIR, patient, "_BAF_phased", ".png", sep=""), width = 1200, height = 1400)
 
 print("Plotting phased BAF across the genome...")
 plotAllSampleBAFsAcrossGenome(sample.vec, patient.phased.BAF.df.list, cpnA.allele.color = '#de2d2699', cpnB.allele.color= '#3182bd99')
 
 dev.off()
+
+####Plot all genome wide plots
+print("Plotting CCFs for cpnA and cpnB across the genome using cpn definition of subclonality...")
+png(file = paste(PLOT_OUTPUT_DIR, patient, "_CCF_w_cpn_thresh_cpnA", ".png", sep = ""), width = 1200, height = 1400)
+
+plotAllSampleCCFsAcrossGenome(asas.ph.raw.cpn.lists = asas.ph.raw.cpn.lists,
+                              full.joint.segs.df = full.joint.segs.w.phasing.df,
+                              sample.vec = sample.vec,
+                              all.seg.CCF.vals.list = all.seg.CCF.list,
+                              cpnX = "cpnA",
+                              use.cpn.or.ccf.thresh = "CPN")
+
+dev.off()
+
+png(file = paste(PLOT_OUTPUT_DIR, patient, "_CCF_w_cpn_thresh_cpnB", ".png", sep = ""), width = 1200, height = 1400)
+
+plotAllSampleCCFsAcrossGenome(asas.ph.raw.cpn.lists = asas.ph.raw.cpn.lists,
+                              full.joint.segs.df = full.joint.segs.w.phasing.df,
+                              sample.vec = sample.vec,
+                              all.seg.CCF.vals.list = all.seg.CCF.list,
+                              cpnX = "cpnB",
+                              use.cpn.or.ccf.thresh = "CPN")
+dev.off()
+
+
 
 STOP
 
@@ -1712,29 +1939,6 @@ plotAllSampleCCFsAcrossGenome(asas.ph.raw.cpn.lists = asas.ph.raw.cpn.lists,
                               all.seg.CCF.vals.list = all.seg.CCF.list,
                               cpnX = "cpnB",
                               use.cpn.or.ccf.thresh = "CCF")
-dev.off()
-
-####Plot all genome wide plots
-print("Plotting CCFs for cpnA and cpnB across the genome using cpn definition of subclonality...")
-png(file = paste(PLOT_OUTPUT_DIR, patient, "_CCF_w_cpn_thresh_cpnA", ".png", sep = ""), width = 1200, height = 1400)
-
-plotAllSampleCCFsAcrossGenome(asas.ph.raw.cpn.lists = asas.ph.raw.cpn.lists,
-                              full.joint.segs.df = full.joint.segs.w.phasing.df,
-                              sample.vec = sample.vec,
-                              all.seg.CCF.vals.list = all.seg.CCF.list,
-                              cpnX = "cpnA",
-                              use.cpn.or.ccf.thresh = "CPN")
-
-dev.off()
-
-png(file = paste(PLOT_OUTPUT_DIR, patient, "_CCF_w_cpn_thresh_cpnB", ".png", sep = ""), width = 1200, height = 1400)
-
-plotAllSampleCCFsAcrossGenome(asas.ph.raw.cpn.lists = asas.ph.raw.cpn.lists,
-                              full.joint.segs.df = full.joint.segs.w.phasing.df,
-                              sample.vec = sample.vec,
-                              all.seg.CCF.vals.list = all.seg.CCF.list,
-                              cpnX = "cpnB",
-                              use.cpn.or.ccf.thresh = "CPN")
 dev.off()
 
 

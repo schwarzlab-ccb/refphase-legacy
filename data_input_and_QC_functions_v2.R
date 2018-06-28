@@ -1377,7 +1377,7 @@ getOverlapGRanges <- function(query, subject, output="gr", ...) {
 ##
 ##Returns:
 ##
-cleanAndErrorCheckSNPsParallel <- function(all.samp.SNP.list, min.cons.seg.df, allow.logr.only.flag = FALSE, num.cores = 8, data.type = "MEDICC") {
+cleanAndErrorCheckSNPsParallel <- function(all.samp.SNP.list, min.cons.seg.df, allow.logr.only.flag = FALSE, data.type = "MEDICC") {
   # TODO add check that every single all.samp.SNP.list has the same SNPs..
   # Note error checking of removing NAs from the min.cons.seg.df should already have been performed
 
