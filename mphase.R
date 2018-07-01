@@ -213,7 +213,6 @@ current.dir <-  LocationOfThisScript()
 # num.cores <- 24
 
 
-
 # patient  <-  "LTX181"
 # allow.dip.test.phasing.flag <- FALSE
 # output.directory.base.path <- "/camp/project/proj-tracerx-lung/tctProjects/watkint/TRACERx100_lung_pan_can_analysis/release/M_LTX181/exome/CN_het_TRACERx_no_diptest/"
@@ -386,27 +385,27 @@ current.dir <-  LocationOfThisScript()
 # num.cores <- 12
 
 
-# patient  <-  "LTX121"
-# allow.dip.test.phasing.flag <- FALSE
-# output.directory.base.path <- "/camp/project/proj-tracerx-lung/tctProjects/watkint/TRACERx100_lung_pan_can_analysis/release/A_LTX121/exome/CN_het_TRACERx_no_diptest/"
-# data.format.to.use <- "TRACERx_exome"
-# snp.file.path <- "/camp/project/proj-tracerx-lung/tctProjects/watkint/TRACERx100_lung_pan_can_analysis/release/A_LTX121/exome/CN_het_TRACERx_no_diptest/LTX121_TRACERx_input_paths_df.txt"
-# seg.file.path <- "/camp/project/proj-tracerx-lung/tctProjects/watkint/TRACERx100_lung_pan_can_analysis/release/A_LTX121/exome/MSAI/LTX121_joint_segs_all_ascat_info.txt"
-# overwrite.flag <- TRUE
-# gamma.val <- 1
-# num.cores <- 12
+patient  <-  "LTX121"
+allow.dip.test.phasing.flag <- FALSE
+output.directory.base.path <- "/camp/project/proj-tracerx-lung/tctProjects/watkint/TRACERx100_lung_pan_can_analysis/release/A_LTX121/exome/CN_het_TRACERx_no_diptest/"
+data.format.to.use <- "TRACERx_exome"
+snp.file.path <- "/camp/project/proj-tracerx-lung/tctProjects/watkint/TRACERx100_lung_pan_can_analysis/release/A_LTX121/exome/CN_het_TRACERx_no_diptest/LTX121_TRACERx_input_paths_df.txt"
+seg.file.path <- "/camp/project/proj-tracerx-lung/tctProjects/watkint/TRACERx100_lung_pan_can_analysis/release/A_LTX121/exome/MSAI/LTX121_joint_segs_all_ascat_info.txt"
+overwrite.flag <- TRUE
+gamma.val <- 1
+num.cores <- 12
 # intersection.or.whole.arm <- "intersection"
 
 
-patient <- "MTX006"
-allow.dip.test.phasing.flag <- FALSE
-output.directory.base.path <- paste0("/home/camp/watkint/working/watkint/data/martinez/release_v3/R_",patient,"/snp_array//CN_het_MEDICC_no_diptest/")
-data.format.to.use <- "MEDICC"
-snp.file.path <- paste0("/home/camp/watkint/working/watkint/data/martinez/release_v3/R_",patient,"/snp_array/MSAI/",patient,"_new_all_snps.txt")
-seg.file.path <- paste0("/home/camp/watkint/working/watkint/data/martinez/release_v3/R_",patient,"/snp_array/MSAI/",patient,"_joint_segs_all_ascat_info.txt")
-overwrite.flag <- TRUE
-gamma.val <- 0.5
-num.cores <- 12
+# patient <- "MTX006"
+# allow.dip.test.phasing.flag <- FALSE
+# output.directory.base.path <- paste0("/home/camp/watkint/working/watkint/data/martinez/release_v3/R_",patient,"/snp_array//CN_het_MEDICC_no_diptest/")
+# data.format.to.use <- "MEDICC"
+# snp.file.path <- paste0("/home/camp/watkint/working/watkint/data/martinez/release_v3/R_",patient,"/snp_array/MSAI/",patient,"_new_all_snps.txt")
+# seg.file.path <- paste0("/home/camp/watkint/working/watkint/data/martinez/release_v3/R_",patient,"/snp_array/MSAI/",patient,"_joint_segs_all_ascat_info.txt")
+# overwrite.flag <- TRUE
+# gamma.val <- 0.5
+# num.cores <- 1
 
 print("patient")
 print(patient)
@@ -443,8 +442,8 @@ if( is.null(current.dir) ) {
 
 }
 source(paste0(current.dir, "utility_MPhase_functions.R"))
-source(paste0(current.dir, "data_input_and_QC_functions_v2.R"))
 source(paste0(current.dir, "minimum_consistent_segmentation_functions.R"))
+source(paste0(current.dir, "data_input_and_QC_functions_v2.R"))
 source(paste0(current.dir, "consensus_phasing_from_multiple_samples_functions_v2.R"))
 source(paste0(current.dir, "generation_of_phased_and_total_cpn_functions_v2.R"))
 source(paste0(current.dir, "MSAI_detection_functions.R"))
@@ -476,11 +475,53 @@ if ( ! file.exists(PLOT_OUTPUT_DIR) ) {
 }
 NUM_CORES <- as.numeric(num.cores)
 
-
 registerDoParallel(cores = NUM_CORES)
 print(foreach::getDoParWorkers())
 print(getDoParName())
 print(getDoParVersion())
+
+#Test the parallelisation as sometimes on some nodes parallel jobs file.
+print("Testing parallelisation....")
+test.parallel.vec <- sample(100:1200, NUM_CORES)
+itx <- iter(test.parallel.vec)
+test.parallel.list <- foreach(num = itx, .combine = c) %dopar% {
+
+
+	test.sqrt <- sqrt(num)
+	returnable.list <- list(test.sqrt)
+	names(returnable.list) <- as.character(num)
+	returnable.list
+
+}
+#So to test this, check the length of the list
+if (length(test.parallel.vec) != length(test.parallel.list) ) {
+
+	stop("ERROR, length of returned results of parallel test are not the same as the input... PARALLELISATION NOT WORKING")
+
+}
+for (test.value in test.parallel.vec) {
+
+	if ( ! as.character(test.value) %in% names(test.parallel.list)) {
+
+		stop("Error, test parallel value absent from returned results of parallel test... PARALLELISATION NOT WORKING")
+
+	}
+	if ( sqrt(test.value) != as.numeric(test.parallel.list[as.character(test.value)])) {
+
+		stop("Error, value returned by parallel test is not correct... PARALLELISATION NOT WORKING")
+
+	}
+
+}
+
+print("non parallelised input and results")
+series.test.vec <- sqrt(test.parallel.vec)
+names(series.test.vec) <- test.parallel.vec
+print(series.test.vec)
+print("parallelised results:")
+print(unlist(test.parallel.list))
+
+
 
 
 INTERSECTION_OR_ARM <- intersection.or.whole.arm
@@ -500,6 +541,7 @@ CHRS_TO_USE_VEC <- 1:22
 CONF_INT_FOR_CPNX_BAF_VS_EXP <- 0.9999
 PW_CPNA_CPNB_DIFF_AMPLITUDE_THRESH <- 0.001
 PVAL_THRESH_TO_JOIN_PH_SEGS <- 0.001
+PVAL_THRESH_TO_JOIN_TOT_SEGS <- 0.001
 MIN_PROP_SNP_SEP_THRESH <- 0.75
 PVAL_COMB_WILCOX_PH_THRESH <- 0.01
 PVAL_DIPTEST_AI_THRESH <- 0.01
@@ -534,6 +576,8 @@ chrom.info.df <- hg19.info.df
 
 #Paths for saving/loading objects depending on OVERWRITE_FLAG
 #Reading in data object paths
+input.snp.file.RDS.path <- paste0(PLOT_OUTPUT_DIR, patient, "_input_snp_file.RDS")
+all.samp.SNP.list.path <- paste0(PLOT_OUTPUT_DIR, patient, "_all_samp_SNP_list.RDS")
 asas.SNPS.lr.and.or.baf.lists.path <- paste0(PLOT_OUTPUT_DIR, patient, "_asas_SNPS_lr_and_or_baf_lists_lists.RDS")
 asas.SNPs.w.both.lr.baf.snp.lists.path <- paste0(PLOT_OUTPUT_DIR, patient, "_asas_SNPs_w_both_lr_baf_snp_lists.RDS")
 min.cons.segs.df.write.path <- paste0(PLOT_OUTPUT_DIR, patient, "_min_cons_segs_df.txt")
@@ -587,12 +631,22 @@ if (OVERWRITE_FLAG == TRUE) {
 
 	if (data.format.to.use == "MEDICC") {
 
-		print("data format is MEDICC")
-		snp.file.df <- read.table(snp.file.path, stringsAsFactors = FALSE, sep = "\t", header = TRUE)
+		print("data format is MEDICC, reading in sites text file...")
+
+		if (file.exists(input.snp.file.RDS.path)) {
+
+			snp.file.df <- readRDS(input.snp.file.RDS.path)
+
+		} else {
+
+			snp.file.df <- read.table(snp.file.path, stringsAsFactors = FALSE, sep = "\t", header = TRUE)
+			saveRDS(snp.file.df, file = input.snp.file.RDS.path)
+
+		}
 		all.samp.SNP.list <- readInMEDICCInputFormatParallel(snp.file.df = snp.file.df,
 															processed.orig.cpn.segs.df = f.joint.segs.df,
-															sample.vec = sample.vec,
-															num.cores = NUM_CORES)
+															sample.vec = sample.vec)
+															
 
 	} else if (data.format.to.use == "TRACERx_exome" | data.format.to.use == "TRACERx_snp_array") {
 
@@ -625,6 +679,14 @@ if (OVERWRITE_FLAG == TRUE) {
 
 	}
 
+	if (length(unique(sapply(all.samp.SNP.list.path, nrow))) != 1) {
+
+		stop("Not all sites are present in all samples' sites information read in, this needs to be fixed before running MPhase.")
+
+	}
+
+	#Save the loaded in data:
+	saveRDS(all.samp.SNP.list, file = all.samp.SNP.list.path)
 	#So we need the centromere postions for each arm:
 	#Add in p_end and q_start
 
@@ -1003,6 +1065,52 @@ if (OVERWRITE_FLAG == TRUE) {
 	sorted.all.bp.all.samps.segs.anno.df <- all.bp.all.samps.segs.anno.df[with(all.bp.all.samps.segs.anno.df, order(full_sample, Chromosome, Start_Position)), ]
 	sorted.all.bp.all.samps.segs.anno.df[1:50, 1:9]
 
+
+
+	###Add the chromosoem arms to the segments to make later joininbg etc much easier...
+	print("Adding chromosome arm annotation to all segments original and new...")
+	all.samp.all.bp.anno.grs <- makeGRangesFromDataFrame(sorted.all.bp.all.samps.segs.anno.df[,1:4],
+	                        keep.extra.columns=TRUE,
+	                        ignore.strand=FALSE,
+	                        seqinfo=NULL,
+	                        seqnames.field=c("Chromosome"),
+	                        start.field=c("Start_Position"),
+	                        end.field=c("End_Position"),
+	                        strand.field="*",
+	                        starts.in.df.are.0based=FALSE)
+	all.samp.all.bp.anno.grs$chr_arm <- "none"
+
+	for ( chr in CHRS_TO_USE_VEC ) {
+
+		chr.gr.list <- getChromosomeArmsGRangeList(chr, chrom.info.df)
+		#print(chr)
+		if (length(chr.gr.list) == 2 ) {
+
+			p.or.q.vec <- c("p", "q")
+
+		} else if (length(chr.gr.list) == 1 ) {
+
+			p.or.q.vec <- c("q")
+
+		} else {
+
+			stop("Error, no matching arms")
+
+		}
+
+		for ( i in 1:length(chr.gr.list) ) {
+
+			curr.chr.arm.gr <- chr.gr.list[[i]]
+			all.samp.overlap.grs <- getOverlapGRanges(all.samp.all.bp.anno.grs, curr.chr.arm.gr)
+			all.samp.all.bp.anno.grs[ all.samp.overlap.grs$query_hit_idx ]$chr_arm <- paste0(chr, p.or.q.vec[i])
+			
+		}#end for ( i in 1:length(chr.gr.list) ) {
+
+	}#end 	for ( chr in CHRS_TO_USE_VEC ) {
+	sorted.all.bp.all.samps.segs.anno.df$chr_arm <- all.samp.all.bp.anno.grs$chr_arm
+	#So now we have chromosome arms on everything...
+
+
 	cpn.chr.start.end.df <- sorted.all.bp.all.samps.segs.anno.df[sorted.all.bp.all.samps.segs.anno.df$full_sample==sorted.all.bp.all.samps.segs.anno.df[1,]$full_sample,1:3]
 	mock.cpn.matrix <- matrix(data=0, nrow=nrow(cpn.chr.start.end.df), ncol = length(sample.vec)) 
 	colnames(mock.cpn.matrix) <- sample.vec
@@ -1016,6 +1124,11 @@ if (OVERWRITE_FLAG == TRUE) {
 																		min.cons.segs.df,
 																		allow.logr.only.flag = FALSE,
 																		data.type = data.format.to.use)
+	if (length(unique(sapply(asas.SNPs.w.both.lr.baf.snp.lists, length))) != 1) {
+
+		stop("Not all segments are present in all samples' snp assignations, likely something has gone wrong, is the parallelisation working correctly?")
+
+	}
 	print(asas.SNPs.w.both.lr.baf.snp.lists.path)
 	saveRDS(asas.SNPs.w.both.lr.baf.snp.lists, file = asas.SNPs.w.both.lr.baf.snp.lists.path)
 	time.taken <- proc.time() - ptm
@@ -1025,10 +1138,18 @@ if (OVERWRITE_FLAG == TRUE) {
 	#SNPs that only have LogR are permitted in these lists, but it also contains all the SNPs with both BAF and LogR
 	ptm <- proc.time()
 	print("cleanAndErrorCheckSNPsParallel second")
+
 	asas.SNPS.lr.and.or.baf.lists <- cleanAndErrorCheckSNPsParallel(all.samp.SNP.list,
 																	min.cons.segs.df,
 																	allow.logr.only.flag = TRUE, 
 																	data.type = data.format.to.use)
+
+	if (length(unique(sapply(asas.SNPS.lr.and.or.baf.lists, length))) != 1) {
+
+		stop("Not all segments are present in all samples' snp assignations, likely something has gone wrong, is the parallelisation working correctly?")
+
+	}
+
 	print(asas.SNPS.lr.and.or.baf.lists.path)
 	saveRDS(asas.SNPS.lr.and.or.baf.lists, file = asas.SNPS.lr.and.or.baf.lists.path)
 	time.taken <- proc.time() - ptm
@@ -1394,6 +1515,8 @@ addOriginalSegmentInfoToFinalSegmentationNew <- function(all.seg.df, all.orig.sa
 	all.seg.df$orig_seg_in_whole_arm_event <- all.orig.samp.segs.anno.df$arm_event_present
 	all.seg.df$orig_seg_is_arm_or_focal_event <- all.orig.samp.segs.anno.df$arm_or_focal_event
 	all.seg.df$orig_arm_seg_present_in <- all.orig.samp.segs.anno.df$within_chr_arm
+	all.seg.df$chr_arm <- all.orig.samp.segs.anno.df$chr_arm
+
 
 	return(all.seg.df)
 
@@ -1761,86 +1884,415 @@ shouldSegsWithCPNXValuesBeJoined <- function(s.curr.df, s.next.df, pval.to.separ
 # BAF
 # logR
 
+source("new_seg_joining_functions.R")
 
-joinSegmentsWithinSampleChromosomeArm <- function(arm.segs, arm.samp.ph.tot.cpn.df, cpnX) {
+#Get all segment names  sorted by whether they're on a p por q arm...
 
+wilcoxTestWithErrorHandling <- function(x, y = NULL,
+            alternative = c("two.sided", "less", "greater"),
+            mu = 0, paired = FALSE, exact = FALSE, correct = TRUE,
+            conf.int = FALSE, conf.level = 0.95, errors.not.permitted="")
+             {
+    test.results <- tryCatch({
 
-	#Original input segments:
+      test.results <- wilcox.test(x = x,
+                                  y = y,
+                                  alternative = alternative,
+                                  mu = mu,
+                                  paired = paired,
+                                  exact = exact,
+                                  correct = correct,
+                                  conf.int = conf.int,
+                                  conf.level = conf.level)
 
-	#Make a cpnA copy of the segments:
-	
-	#Make a cpnB copy of the segments:
+      if ( is.na(test.results[["p.value"]]) | is.nan(test.results[["p.value"]])) {
 
-	#Make a cpnA results dataframe and list:
+        test.results[["stat"]] <- 1
+        test.results[["conf.int"]] <- c(NA, NA)
+        test.results[["p.value"]] <- 1
+        test.results[["p.val"]] <- 1
 
-	#Make a cpnA results dataframe and list:
+      }
+      
+      return(test.results)
 
-	#For each cpnA or cpnB
+      },
+       error = function(err) {
+          message(err)
+          write(paste(err$message, "\n"), stderr())
+          write("\n", stderr())
+          if(grepl("NULL", err$message) & "NULL" %in% errors.not.permitted){
+            stop("t.test ERROR with a NULL")
+          } else if (grepl("enough", err$message) & "enough" %in% errors.not.permitted){
+            stop("t.test ERROR with not enough")
+          } else if (grepl("constant", err$message) & "constant" %in% errors.not.permitted){
+            stop("t.test ERROR with constant data")
+          } else if(grepl("enough|constant|NULL", err$message) & "other" %in% errors.not.permitted){
+            stop(err$message)
+          }
+          # cat("\n")
+          # paste("Input for wilcox test")
+          # print("x")
+          # print(x)
+          # print("y")
+          # print(y)
+          # print("mu")
+          # print(mu)
+          # print("paired")
+          # print(paired)
+          # print("conf.level")
+          # print(conf.level)
+          test.results <- list()
+          test.results[["stat"]] <- 1
+          test.results[["conf.int"]] <- c(NA, NA)
+          test.results[["p.val"]] <- 1
+          return(test.results)
+        })
 
-	#Sort segments by size
+        if (is.na(test.results$p.val)) {
 
-	#Choose the smallest segment
+            test.results$p.val <- 1
+        }
 
-	#Determine what kind of segment this smallest segment is
-
-	#Get the ante segment, if there is one
-
-	#Determine what kind of segment this preceding segment is
-
-	#Get the  pst segment, if there is one.
-
-	#Determine what kind of segment post segment is.
-
-	#So what are the possible cases:
-
-	#So each seg should have a vector that determines its identity and course of action.
-
-	#num_ph_hz,
-	#num_unph_hz,
-	#num_non_hz,
-	#non_cons_logr,
-	#has_ph_cpn,
-
-	#If they both have phased copy number -> test for difference using wilcox test
-	#									  -> test for MAD between means and see if lower than thesthold
-	#Join if nonsignificant/below threshold.
-	#else leave separate
-
-	#If one has phased copy number and the other doesn't? -> Test total copy number vs total copy number using wilcox test
-	#													  -> Test for mad between means of distribution
-	#Join if nonsignificant/below threshold
-
-	#If neither has phased copy number? -> Test total copy number 
-	#									-> 
-
-	#If nether has any data behind it?
-
-
-
-}
-
-
-
-#We are at the level of an arm:
-
-#Start with smallest segment:
-
-#Out of the preceding and subsequent segment attempt the following with the smallest first:
-
-#There are a few cases:
-
-#The segment we are trying to join is:
-	#has allele specific cpn -> join if difference is non significant by significance threshold and mean cpn threshold
-	#only has total cpn -> test vs total cpn either side, if non-significant join to that segment and extend allele specific calls
-	#					-> if different, look at which segment was closest in total copy number to it:
-	#						-> extend the minor allele of the segment that is closest to it total cpn, make up the difference in using the major (default cpnA), mark that this was done
-	#has no information associated, or below a threahold (3 values?)
-	#					-> join to the largest segment as this is likely to be most accurate.
+        return(test.results)
+}#end wilcoxTestWithErrorHandling
+  
 
 
+source("new_seg_joining_functions.R")
 
 
-#What do we need to make
+chr.arms.present.vec <- unique(full.joint.segs.df$chr_arm)
+
+print("Make data frame of raw data behind each chromosome arm in which we will join the segments...")
+samp.arms <- list()
+for (samp in sample.vec) {
+	print(samp)
+	for (chr.arm in chr.arms.present.vec) {
+		print(chr.arm)
+		#So now we are within a chromosome arm we want to make a seg.name.vec that matches only the chromosome
+		samp.chr.arm.segs.df <- full.joint.segs.df[full.joint.segs.df$chr_arm %in% chr.arm
+						                         & full.joint.segs.df$sample %in% samp, ]
+		samp.chr.arm.seg.name.vec <- samp.chr.arm.segs.df$seg_name
+
+		joinable.df <- 	data.frame(chrom=numeric(0),
+					pos=numeric(0),
+					BAF=numeric(0),
+					BAFsegmented=numeric(0),
+					logR=numeric(0),
+					logRsegmented=numeric(0),
+					sample = character(0),
+					orig_seg_name=character(0),
+					chr_pos = character(0),
+					tot_raw_un_ph_cpn = character(0),
+					ph_cpnA  = numeric(0),
+					ph_cpnB = numeric(0),
+					stringsAsFactors=FALSE)
+		#Note that if there are no SNPs within a segment then it won't be recorded in this dataframe.
+		for (seg.name in samp.chr.arm.seg.name.vec) {
+			print(seg.name)
+			#Add the logr values
+			orig.seg.lr.and.or.baf.df <- asas.SNPS.lr.and.or.baf.lists[[samp]][[seg.name]]
+			if(nrow(orig.seg.lr.and.or.baf.df) > 0) {
+				#print("Adding original logr and baf...")
+				#print(nrow(orig.seg.lr.and.or.baf.df))
+				orig.seg.lr.and.or.baf.df$sample <- samp
+				orig.seg.lr.and.or.baf.df$orig_seg_name <- seg.name
+				orig.seg.lr.and.or.baf.df$chr_pos <- paste0(orig.seg.lr.and.or.baf.df$chrom, "_", orig.seg.lr.and.or.baf.df$pos)
+				orig.seg.lr.and.or.baf.df$tot_raw_un_ph_cpn <- NA
+				orig.seg.lr.and.or.baf.df$ph_cpnA <- NA
+				orig.seg.lr.and.or.baf.df$ph_cpnB <- NA
+
+				#Now let's get the cpn values
+				#Let's add the total copy number
+				#print("Adding total copy number...")
+				#print(nrow(orig.seg.lr.and.or.baf.df))
+				samp.logr.tot.cpn.df <- all.samp.non.hz.logr.and.tot.cpn.df.list[[samp]]
+				samp.logr.tot.cpn.df <- samp.logr.tot.cpn.df[ ! is.na(samp.logr.tot.cpn.df$chrom) ,]
+				samp.logr.tot.cpn.df$chr_pos <- paste0(samp.logr.tot.cpn.df$chrom, "_", samp.logr.tot.cpn.df$pos)
+				orig.seg.lr.and.or.baf.df$tot_raw_un_ph_cpn <- samp.logr.tot.cpn.df[match(orig.seg.lr.and.or.baf.df$chr_pos, samp.logr.tot.cpn.df$chr_pos),]$tot_raw_un_ph_cpn
+				
+				#Let's add phased copy number
+				seg.ph.cpn.list <- asas.ph.raw.cpn.lists[[samp]][[seg.name]]
+				if (  ! anyNA(seg.ph.cpn.list[1]$chr_vec) ) {
+					#print("Adding phased copy number...")
+					#print(nrow(orig.seg.lr.and.or.baf.df))
+					#make a dataframe:
+					samp.seg.ph.cpn.df <- data.frame(chrom = seg.ph.cpn.list$chr_vec,
+								pos = seg.ph.cpn.list$pos_vec,
+								ph_cpnA = seg.ph.cpn.list$ph_cpnA_vec,
+								ph_cpnB = seg.ph.cpn.list$ph_cpnB_vec,
+								chr_pos = paste0(seg.ph.cpn.list$chr_vec, "_", seg.ph.cpn.list$pos_vec),
+								stringsAsFactors = FALSE)
+					matching.vec <- match(samp.seg.ph.cpn.df$chr_pos, orig.seg.lr.and.or.baf.df$chr_pos)
+					matching.vec <- matching.vec[ ! is.na(matching.vec) ]
+					orig.seg.lr.and.or.baf.df[matching.vec, c("ph_cpnA", "ph_cpnB")] <- samp.seg.ph.cpn.df[, c("ph_cpnA", "ph_cpnB")]
+
+				}#end if ( ! is.na(seg.ph.cpn.list$chr_vec) ) {
+				#print(nrow(orig.seg.lr.and.or.baf.df))
+				orig.seg.lr.and.or.baf.df <- orig.seg.lr.and.or.baf.df[! is.na(orig.seg.lr.and.or.baf.df$chrom), ]
+				#print(nrow(orig.seg.lr.and.or.baf.df))
+				joinable.df <- rbind(joinable.df, orig.seg.lr.and.or.baf.df)
+				
+			}#end if(nrow(orig.seg.lr.and.or.baf.df) > 0) {
+
+		}#end for (seg.name in samp.chr.arm.seg.name.vec) {
+			#print(paste0(samp, "_", chr.arm))
+			samp.arms[[samp]][[chr.arm]] <- joinable.df
+
+	}#end for (chr.arm in chr.arms.present.vec) {
+
+}#for (samp in sample.vec) {
+
+
+
+MIN_PH_CPN <- 5
+NUM_TOT_CPN <- 5
+CPN_AVG_THRESH <- 0.75
+cpnX.vec <- c("ph_cpnA", "ph_cpnB")
+
+#Debugging values:
+#full_sample <- sapply(rownames(all.bp.all.samps.segs.df), function(x) strsplit(x, split = ":")[[1]][1])
+# cpnX.string <- "ph_cpnA"
+# chr.arm <- "3p"
+
+print("Join segments within each sample's arms if they meet signifcance criteria....")
+joined.samp.arms <- list()
+joined.samp.arms.inferred.ph.cpn <- list()
+for( samp in sample.vec) {
+
+	joined.samp.arms[[samp]] <- list()
+	joined.samp.arms.inferred.ph.cpn[[samp]] <- list()
+
+	for ( chr.arm in chr.arms.present.vec) {
+
+		chr.arm.joined.list <- list()
+
+		for (cpnX.string in cpnX.vec) {
+
+			samp.arm.sites.df <- samp.arms[[samp]][[chr.arm]]
+			samp.chr.arm.segs.df <- full.joint.segs.df[full.joint.segs.df$chr_arm %in% chr.arm
+							                         & full.joint.segs.df$sample %in% samp, ]
+			samp.chr.arm.seg.name.vec <- samp.chr.arm.segs.df$seg_name
+
+			#samp.arm.sites.df <- joinable.df
+
+			chr.vec <- as.numeric(sapply(samp.chr.arm.seg.name.vec, function(x) strsplit(x, split = ":")[[1]][1]))
+			start.vec <- as.numeric(sapply(samp.chr.arm.seg.name.vec, function(x) strsplit(x, split = ":")[[1]][2]))
+			end.vec <- as.numeric(sapply(samp.chr.arm.seg.name.vec, function(x) strsplit(x, split = ":")[[1]][3]))
+			arm.grs <- GRanges(seqnames=chr.vec,
+							ranges=IRanges(start.vec, end.vec),
+							strand=rep("*", length(chr.vec)))
+
+			if(length(getOverlapGRanges(arm.grs, arm.grs)) != length(arm.grs)) {
+
+				print(getOverlapGRanges(arm.grs, arm.grs))
+				stop("Error, overlapping granges within an arm!")
+
+			}
+
+			current.arm.grs <- arm.grs
+			orig.joining.vals.mat.and.arm.grs.list <- creatingArmJoiningInfoMatrixAndGranges(current.arm.grs, samp.arm.sites.df, cpnX.string)
+			orig.joining.vals.mat <- orig.joining.vals.mat.and.arm.grs.list[[1]]
+			orig.joining.vals.mat <- orig.joining.vals.mat[order(orig.joining.vals.mat[,"startpos"]),]
+			orig.current.arm.grs <- orig.joining.vals.mat.and.arm.grs.list[[2]]
+
+			old.length.current.arm.grs <- 0
+			while (length(current.arm.grs) != old.length.current.arm.grs & length(current.arm.grs) != 1) {
+
+				joining.vals.mat.and.arm.grs.list <- creatingArmJoiningInfoMatrixAndGranges(current.arm.grs, samp.arm.sites.df, cpnX.string)
+				joining.vals.mat <- joining.vals.mat.and.arm.grs.list[[1]]
+				current.arm.grs <- joining.vals.mat.and.arm.grs.list[[2]]
+				print("############")
+				print(current.arm.grs)
+				print(joining.vals.mat)
+				print("%%%%%%%%%%%%%")
+				# readline(prompt="Press [enter] to continue")
+				old.length.current.arm.grs <- length(current.arm.grs)
+				current.arm.grs <- attemptToJoinOneSegmentWithinChromArm(current.arm.grs, joining.vals.mat, samp.arm.sites.df, sorted.arm.grs, cpnX.string, MIN_PH_CPN, NUM_TOT_CPN, CPN_AVG_THRESH) 
+
+				if(length(getOverlapGRanges(current.arm.grs, current.arm.grs)) != length(current.arm.grs)) {
+					print(getOverlapGRanges(current.arm.grs, current.arm.grs))
+					stop("Error, overlapping granges within an arm!")
+				}
+				print(length(current.arm.grs))
+				print(old.length.current.arm.grs)
+			} #end while (length(current.arm.grs) == old.length.current.arm.grs ) {
+
+			final.joining.vals.mat.and.arm.grs.list <- creatingArmJoiningInfoMatrixAndGranges(current.arm.grs, samp.arm.sites.df, cpnX.string)
+			final.joining.vals.mat <- final.joining.vals.mat.and.arm.grs.list[[1]]
+			final.joining.vals.mat <- final.joining.vals.mat[order(final.joining.vals.mat[,"startpos"]), , drop = FALSE]
+			final.current.arm.grs <- final.joining.vals.mat.and.arm.grs.list[[2]]
+
+
+			print("Original arm grs")
+			#print(as.data.frame(sort(arm.grs)))
+			print(orig.joining.vals.mat)
+
+			sorted.joining.vals.mat <- joining.vals.mat[order(joining.vals.mat[,"startpos"]), ]
+			print("Final current.arm.grs")
+			print(final.joining.vals.mat)
+			#show(as.data.frame(sort(current.arm.grs)))
+
+			#readline(prompt="Press [enter] to continue")
+
+			# print("Final current.arm.grs")
+			# show(as.data.frame(sort(current.arm.grs)))
+			joined.samp.arms[[samp]][[chr.arm]][[cpnX.string]] <- as.data.frame(final.joining.vals.mat, stringsAsFactors=FALSE)
+			chr.arm.joined.list[[cpnX.string]] <- as.data.frame(final.joining.vals.mat, stringsAsFactors=FALSE)
+
+		} # end for (cpnX.string in cpnX.vec) {
+
+		#As a first pass
+		chr.arm.joined.w.int.cpn.list <- list()
+		for (cpnX.string in cpnX.vec) {
+
+			cpnX.chr.joined.df <- chr.arm.joined.list[[cpnX.string]]
+			cpnX.chr.joined.df[, paste0("int_",cpnX.string)] <- -1
+			#So now for each row calculate the total and phased copy number
+			for (k in 1:nrow(cpnX.chr.joined.df)) {
+
+				if (cpnX.chr.joined.df[k,"num_ph_cpn"] > MIN_PH_CPN) {
+					#Let's get the relevant copy number values from the samp.sites.df
+					cpnX.chr.joined.df[k, paste0("int_",cpnX.string)] <- ifelse(cpnX.chr.joined.df[k, ]$median_ph_cpn < 0, 
+																				0, 
+																				round(cpnX.chr.joined.df[k, ]$median_ph_cpn) )
+
+				}
+
+			}
+			chr.arm.joined.w.int.cpn.list[[cpnX.string]] <- cpnX.chr.joined.df
+			print(head(cpnX.chr.joined.df))
+
+		}
+		#So now we want to decide which segment we should use to fill all the any blank row.
+		#The segment will have failed to have been joined in both cpnA and cpnB dfs as it can only joined by tot cpn
+		#However the segments around it may have differet total copy numbers...
+		cpnA.joined.segs.df <- chr.arm.joined.w.int.cpn.list[[cpnX.vec[1]]]
+		cpnB.joined.segs.df <- chr.arm.joined.w.int.cpn.list[[cpnX.vec[2]]]
+		#Will dataframe to return
+		cpnA.no.blank.df <- cpnA.joined.segs.df
+		cpnB.no.blank.df <- cpnB.joined.segs.df
+
+		cpnA.joined.segs.grs <- makeGRangesFromDataFrame(cpnA.joined.segs.df,
+				                         		keep.extra.columns=TRUE,
+				                         		ignore.strand=TRUE,
+				                         		seqinfo=NULL,
+				                         		seqnames.field="chrom",
+				                         		start.field="startpos",
+				                         		end.field="endpos",
+				                         		starts.in.df.are.0based=FALSE)
+		only.ph.cpnA.joined.segs.grs <- cpnA.joined.segs.grs[cpnA.joined.segs.grs$num_ph_cpn >= MIN_PH_CPN]
+		cpnB.joined.segs.grs <- makeGRangesFromDataFrame(cpnB.joined.segs.df,
+				                         		keep.extra.columns=TRUE,
+				                         		ignore.strand=TRUE,
+				                         		seqinfo=NULL,
+				                         		seqnames.field="chrom",
+				                         		start.field="startpos",
+				                         		end.field="endpos",
+				                         		starts.in.df.are.0based=FALSE)
+		only.ph.cpnB.joined.segs.grs <- cpnB.joined.segs.grs[cpnB.joined.segs.grs$num_ph_cpn >= MIN_PH_CPN]
+
+		cpnX.joined.segs.df.list <- list(cpnA.joined.segs.df, cpnB.joined.segs.df)
+		cpnX.no.blank.df.list <- list(cpnA.no.blank.df, cpnB.no.blank.df)
+
+		for (j in 1:length(cpnX.joined.segs.df.list)) {
+			print(j)
+			cpnX.joined.segs.df <- cpnX.joined.segs.df.list[[1]]
+
+			for (k in 1:nrow(cpnX.joined.segs.df)) {
+
+				print(k)
+
+				if (cpnX.joined.segs.df[k, "num_ph_cpn"] < MIN_PH_CPN) {
+					#Let's get the relevant copy number values from the samp.sites.df
+					#So now we want to find out which of the neighboring segments it's closest to in both dfs.
+					#Make Query Grange:
+					query.seg.gr <- makeGRangesFromDataFrame(cpnX.joined.segs.df[k,],
+					                         		keep.extra.columns=TRUE,
+					                         		ignore.strand=TRUE,
+					                         		seqinfo=NULL,
+					                         		seqnames.field="chrom",
+					                         		start.field="startpos",
+					                         		end.field="endpos",
+					                         		starts.in.df.are.0based=FALSE)
+					#Note that there is the case that the segment is actaully between two others that don't have phased copy number
+					#Therefore we should also include the nearest segment with phaseable cpn...
+					#Or we can just subset the data.frame to remove all other segs that don't have phased copy number?
+					cpnA.precede.and.follow.gr.idx.vec <- c(follow(query.seg.gr, only.ph.cpnA.joined.segs.grs), precede(query.seg.gr, only.ph.cpnA.joined.segs.grs))
+					cpnA.sort.non.na.gr.pre.and.fol.idx.vec <- sort(cpnA.precede.and.follow.gr.idx.vec[ ! is.na(cpnA.precede.and.follow.gr.idx.vec)])
+					adj.ph.cpnA.grs <- only.ph.cpnA.joined.segs.grs[cpnA.sort.non.na.gr.pre.and.fol.idx.vec]
+					cpnA.tot.cpn.diff.vec <- abs(adj.ph.cpnA.grs$median_tot_cpn - query.seg.gr$median_tot_cpn)
+					cpnA.val <- adj.ph.cpnA.grs[which(cpnA.tot.cpn.diff.vec == min(cpnA.tot.cpn.diff.vec))]$int_ph_cpnA
+
+					cpnB.precede.and.follow.gr.idx.vec <- c(follow(query.seg.gr, only.ph.cpnB.joined.segs.grs), precede(query.seg.gr, only.ph.cpnB.joined.segs.grs))
+					cpnB.sort.non.na.gr.pre.and.fol.idx.vec <- sort(cpnB.precede.and.follow.gr.idx.vec[ ! is.na(cpnB.precede.and.follow.gr.idx.vec)])
+					adj.ph.cpnB.grs <- only.ph.cpnB.joined.segs.grs[cpnB.sort.non.na.gr.pre.and.fol.idx.vec]
+					cpnB.tot.cpn.diff.vec <- abs(adj.ph.cpnB.grs$median_tot_cpn - query.seg.gr$median_tot_cpn)
+					cpnB.val <- adj.ph.cpnB.grs[which(cpnB.tot.cpn.diff.vec == min(cpnB.tot.cpn.diff.vec))]$int_ph_cpnB
+
+					#now we want the total rounded to
+					query.seg.int.tot.cpn <- round(query.seg.gr$median_tot_cpn)
+					top.ratio.val <- max(cpnA.val, cpnB.val) / sum(cpnA.val, cpnB.val) 
+					min.ratio.val <- min(cpnA.val, cpnB.val) / sum(cpnA.val, cpnB.val) 
+					if (cpnA.val >= cpnB.val ) {
+
+						final.cpnA.val <- round(top.ratio.val * query.seg.int.tot.cpn)
+						final.cpnB.val <- round(min.ratio.val * query.seg.int.tot.cpn)
+
+					} else if (cpnA.val < cpnB.val) {
+
+						final.cpnA.val <- round(min.ratio.val * query.seg.int.tot.cpn)
+						final.cpnB.val <- round(top.ratio.val * query.seg.int.tot.cpn)
+					}
+
+
+					for (x in 1:length(cpnX.no.blank.df.list)) {
+					#So now we need to know which one is larger:
+						print(x)
+						if( nrow(cpnX.no.blank.df.list[[x]][cpnX.no.blank.df.list[[x]]$startpos == start(query.seg.gr) &
+										 cpnX.no.blank.df.list[[x]]$endpos == end(query.seg.gr) ,]) > 0){
+
+							if(x == 1) { 
+
+								final.int.ph.cpn.val <- final.cpnA.val
+								int.ph.cpn.string <- "int_ph_cpnA"
+
+							} else {
+
+								final.int.ph.cpn.val <- final.cpnB.val
+								int.ph.cpn.string <- "int_ph_cpnB"
+
+							}
+
+							cpnX.no.blank.df.list[[x]][cpnX.no.blank.df.list[[x]]$startpos == start(query.seg.gr) &
+											 cpnX.no.blank.df.list[[x]]$endpos == end(query.seg.gr), int.ph.cpn.string] <- final.int.ph.cpn.val
+
+						}
+
+					}#end for (x in 1:length(cpnX.no.blank.df.list)) {
+
+					#We should join the ones that remain the same..?
+					joined.samp.arms.inferred.ph.cpn[[samp]][[chr.arm]][["ph_cpnA"]] <- cpnX.no.blank.df.list[[1]]
+					joined.samp.arms.inferred.ph.cpn[[samp]][[chr.arm]][["ph_cpnB"]] <- cpnX.no.blank.df.list[[2]]
+
+				}#end if (cpnA.joined.segs.df[k, "num_ph_cpn"] < MIN_PH_CPN) {
+
+			}#end for (k in 1:nrow(cpnA.joined.segs.df)) {
+
+		}#end for (j in 1:length(cpnX.joined.segs.df.list)) {
+
+	}#end for ( chr.arm in chr.arms.present.vec) {
+
+} # end for( samp in sample.vec) {
+
+
+
+#Cool so now we can do both of these for cpn A and cpn B
+
+str(samp.arms, max=1)
+str(joined.samp.arms, max=1)
+str(joined.samp.arms.inferred.ph.cpn, max=1)
 
 
 
@@ -1849,36 +2301,6 @@ joinSegmentsWithinSampleChromosomeArm <- function(arm.segs, arm.samp.ph.tot.cpn.
 
 
 
-#Ok how to join the segments:
-#Order of choices:
-#First allele specific
-#Then total copy number
-#Then just joinin
-#Do it by arm
-
-
-#we'te going to need the lists that contain the information about the segments
-
-
-#Work within a chromosome arm:
-
-#Check whether any changes made for this segment (is this the first time we've seen it, if we see it twice then we know we've finished with the arm)
-#Get smallest segment
-
-#Segment with logr and baf? how can we join these?
-#Answer: they are completely separate so should be consudered differently:
-
-
-
-#What to we do if the segments have logr and no BAF?
-#First check whether total copy number differs from neighbors (smallest first) -> join if doesn't and maintain allele specific
-#If not then we don't have allele specific, try and keep lower allele count from cloest segment total
-#Then increase the other to match the total cn and mark that this was performed.
-
-#Segment with no logr or baf? Joint to largest segment next to them.
-
-
-#Add new segment and sort the set
 
 
 

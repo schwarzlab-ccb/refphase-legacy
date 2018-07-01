@@ -1272,14 +1272,19 @@ getOverlapGRanges <- function(query, subject, output="gr", ...) {
     ##
     ##Returns:
     ##
-    readInMEDICCInputFormatParallel <- function(snp.file.df, processed.orig.cpn.segs.df, sample.vec, num.cores = 8) {
+    readInMEDICCInputFormatParallel <- function(snp.file.df, processed.orig.cpn.segs.df, sample.vec) {
       # TODO add check that every single all.samp.SNP.list has the same SNPs..
       # Note error checking of removing NAs from the min.cons.seg.df should already have been performed
       # registerDoParallel(cores = num.cores)
-      # print(foreach::getDoParWorkers())
+    print(foreach::getDoParWorkers())
       # print(getDoParName())
       # print(getDoParVersion())
+     print("Calling readInMEDICCInputFormatParallel")
+     print("Reading in sites data for:")
+     print(sample.vec)
+     print("Starting parallel work:")
 
+     num.pre.parallel.samps <- length(unique(sample.vec))
      itx <- iter(sample.vec)
      all.samp.SNP.df <- foreach(samp = itx, .combine = rbind) %dopar% {
 
@@ -1351,16 +1356,36 @@ getOverlapGRanges <- function(query, subject, output="gr", ...) {
         }
 
       }#end for ( j in 1:nrow(seg) ) {
-
+      print(paste0("Returning: ", samp))
+      print(head(ASCAT.summary))
       ASCAT.summary
+      # returnable.list <- list(ASCAT.summary)
+      # names(returnable.list) <- samp
+      # returnable.list
+
 
     }#end for ( samp in sample.vec ) {
+    print("After parallel read in:")
+    print(head(all.samp.SNP.df))
+    print(unique(all.samp.SNP.df$sample))
+    print(length(unique(all.samp.SNP.df$sample)))
+    print(unique(all.samp.SNP.df$sample))
 
+    num.post.parallel.samps <- length(unique(all.samp.SNP.df$sample))
 
+    if (num.post.parallel.samps != num.pre.parallel.samps) {
+
+      print("parallelisation is not working properly, some parallel workers are not returning jobs correctly....")
+      print("Either investigate why some cores are not returning results, change to a different node or run in series.")
+      print("Running in series now...")
+    }
+
+    print("Assigning to list in expected format:")
     all.samp.SNP.list <- list()
     for ( samp in sample.vec ) {
-
-      samp.w.segmented.info.SNP.df <- all.samp.SNP.df[all.samp.SNP.df$sample==samp,]
+      print(samp)
+      samp.w.segmented.info.SNP.df <- all.samp.SNP.df[all.samp.SNP.df$sample==samp ,]
+      print(head(samp.w.segmented.info.SNP.df))
       samp.w.segmented.info.SNP.df <- samp.w.segmented.info.SNP.df[, c("chr", "pos", "BAF", "BAFsegmented", "logR", "logRsegmented")]
       all.samp.SNP.list[[samp]] <- samp.w.segmented.info.SNP.df
 
