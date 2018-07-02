@@ -385,12 +385,23 @@ current.dir <-  LocationOfThisScript()
 # num.cores <- 12
 
 
-patient  <-  "LTX121"
+# patient  <-  "LTX121"
+# allow.dip.test.phasing.flag <- FALSE
+# output.directory.base.path <- "/camp/project/proj-tracerx-lung/tctProjects/watkint/TRACERx100_lung_pan_can_analysis/release/A_LTX121/exome/CN_het_TRACERx_no_diptest/"
+# data.format.to.use <- "TRACERx_exome"
+# snp.file.path <- "/camp/project/proj-tracerx-lung/tctProjects/watkint/TRACERx100_lung_pan_can_analysis/release/A_LTX121/exome/CN_het_TRACERx_no_diptest/LTX121_TRACERx_input_paths_df.txt"
+# seg.file.path <- "/camp/project/proj-tracerx-lung/tctProjects/watkint/TRACERx100_lung_pan_can_analysis/release/A_LTX121/exome/MSAI/LTX121_joint_segs_all_ascat_info.txt"
+# overwrite.flag <- TRUE
+# gamma.val <- 1
+# num.cores <- 12
+# # intersection.or.whole.arm <- "intersection"
+
+# patient  <-  "LTX048"
 allow.dip.test.phasing.flag <- FALSE
-output.directory.base.path <- "/camp/project/proj-tracerx-lung/tctProjects/watkint/TRACERx100_lung_pan_can_analysis/release/A_LTX121/exome/CN_het_TRACERx_no_diptest/"
+output.directory.base.path <- "/camp/project/proj-tracerx-lung/tctProjects/watkint/TRACERx100_lung_pan_can_analysis/release/B_LTX048/exome/CN_het_TRACERx_no_diptest/"
 data.format.to.use <- "TRACERx_exome"
-snp.file.path <- "/camp/project/proj-tracerx-lung/tctProjects/watkint/TRACERx100_lung_pan_can_analysis/release/A_LTX121/exome/CN_het_TRACERx_no_diptest/LTX121_TRACERx_input_paths_df.txt"
-seg.file.path <- "/camp/project/proj-tracerx-lung/tctProjects/watkint/TRACERx100_lung_pan_can_analysis/release/A_LTX121/exome/MSAI/LTX121_joint_segs_all_ascat_info.txt"
+snp.file.path <- "/camp/project/proj-tracerx-lung/tctProjects/watkint/TRACERx100_lung_pan_can_analysis/release/B_LTX048/exome/CN_het_TRACERx_no_diptest/LTX048_TRACERx_input_paths_df.txt"
+seg.file.path <- "/camp/project/proj-tracerx-lung/tctProjects/watkint/TRACERx100_lung_pan_can_analysis/release/B_LTX048/exome/MSAI/LTX048_joint_segs_all_ascat_info.txt"
 overwrite.flag <- TRUE
 gamma.val <- 1
 num.cores <- 12
@@ -1263,6 +1274,103 @@ if (OVERWRITE_FLAG == TRUE) {
 																				  MSAI.BAF.LTPND.pval.thresh = MSAI_BAF_LTNPD_PVAL_THRESHOLD)
 	saveRDS(all.seg.MSAI.by.BAF.ltnpd.present.list, file = all.seg.MSAI.by.BAF.ltnpd.present.list.path)
 
+
+
+	print("Applying LTNPD MSAI detection to the original segments...")
+
+	
+
+	#So now we want to flip segments where MSAI has been detected and they were separated in the original data:
+	intersection.orig.mcs.df  <- sorted.all.bp.all.samps.segs.anno.df[sorted.all.bp.all.samps.segs.anno.df$in_intersection==TRUE,]
+	intersection.seg.name.vec <- paste0(intersection.orig.mcs.df$Chromosome,
+												":",
+												intersection.orig.mcs.df$Start_Position,
+												":",
+												intersection.orig.mcs.df$End_Position)
+	returnable.intersection.orig.mcs.df <- intersection.orig.mcs.df
+	unq.intersection.seg.name.vec <- unique(intersection.seg.name.vec)
+	for (seg.name in unq.intersection.seg.name.vec) {
+
+		#"5:24593514:36986185" MSAI in A_LTX121
+		all.samp.matching.seg.vec <- paste0(sample.vec, "@", seg.name)
+
+		#print(all.seg.MSAI.by.BAF.ltnpd.present.list[[seg.name]])
+
+		if (all.seg.MSAI.by.BAF.ltnpd.present.list[[seg.name]]$MSAI_detection_feasible %in% TRUE) {
+
+			#print("here")
+			seg.MPhase.MSAI.df <- all.seg.MSAI.by.BAF.ltnpd.present.list[[seg.name]]$all_samps_BAF_and_ltnpd_df
+			#print(seg.MPhase.MSAI.df)
+			seg.MPhase.MSAI.ASCAT.df <- cbind(seg.MPhase.MSAI.df, intersection.orig.mcs.df[paste0(sample.vec, ":", seg.name),])
+			seg.MPhase.MSAI.ASCAT.df$samp_seg_name <- paste0(sample.vec, ":", seg.name)
+			seg.MPhase.MSAI.ASCAT.df$balanced  <- seg.MPhase.MSAI.ASCAT.df$nMinor == seg.MPhase.MSAI.ASCAT.df$nMajor
+			AI.seg.MPhase.MSAI.ASCAT.df <- seg.MPhase.MSAI.ASCAT.df[seg.MPhase.MSAI.ASCAT.df$balanced == FALSE,]
+
+			#Need to check MSAI is ocurring in the original segmentation allelic imbalance calls
+			if ( FALSE %in% AI.seg.MPhase.MSAI.ASCAT.df$MSAI_pval_passed_thresh & TRUE %in% AI.seg.MPhase.MSAI.ASCAT.df$MSAI_pval_passed_thresh ) {
+
+				switched.samp.seg.names.vec <- AI.seg.MPhase.MSAI.ASCAT.df[AI.seg.MPhase.MSAI.ASCAT.df$MSAI_pval_passed_thresh == TRUE & AI.seg.MPhase.MSAI.ASCAT.df$poss_dominant_allele == "cpnB" ,]$samp_seg_name
+				old.nMinor.vec <- returnable.intersection.orig.mcs.df[switched.samp.seg.names.vec,]$nMinor
+				returnable.intersection.orig.mcs.df[switched.samp.seg.names.vec,]$nMinor <- intersection.orig.mcs.df[switched.samp.seg.names.vec,]$nMajor
+				returnable.intersection.orig.mcs.df[switched.samp.seg.names.vec,]$nMajor <- old.nMinor.vec
+
+			}#end if ( FALSE %in% AI.seg.MPhase.MSAI.ASCAT.df$balanced & TRUE %in% AI.seg.MPhase.MSAI.ASCAT.df$balanced ) {
+
+		}#end if (all.seg.MSAI.by.BAF.ltnpd.present.list[[seg.name]]$MSAI_detection_feasible %in% TRUE) {
+
+	}#end for (seg.name in intersection.seg.name.vec) {
+
+	#So now we have the original ASCAT segmentation and we want to make the MEDICC input from it
+
+	segs.to.make.MEDICC.input.df <- returnable.intersection.orig.mcs.df
+	#To do this we need to make it match the 
+	MEDICC.FASTA.file.list <- list()
+	for (chr in CHRS_TO_USE_VEC) {
+
+		MEDICC.FASTA.file.list[[chr]] <- list()
+		MEDICC.FASTA.file.list[[chr]]$chrom <- chr
+		MEDICC.FASTA.file.list[[chr]][["diploid"]]$samp <- ">diploid"
+
+		#select by 
+		chr.samp.segs.df <- segs.to.make.MEDICC.input.df[segs.to.make.MEDICC.input.df$sample == sample.vec[1]
+													& segs.to.make.MEDICC.input.df$Chromosome == chr, , drop = FALSE]
+
+		MEDICC.FASTA.file.list[[chr]][["diploid"]]$cpnA <- paste(rep("1", nrow(chr.samp.segs.df)), collapse="")
+		MEDICC.FASTA.file.list[[chr]][["diploid"]]$cpnB <- paste(rep("1", nrow(chr.samp.segs.df)), collapse="")
+
+
+		for (samp in sample.vec) {
+
+			chr.samp.segs.df <- segs.to.make.MEDICC.input.df[segs.to.make.MEDICC.input.df$sample == samp
+														& segs.to.make.MEDICC.input.df$Chromosome == chr, , drop = FALSE]
+
+			#So now let's format the copy number so it will fit MEDICC properly
+
+			MEDICC.FASTA.file.list[[chr]][[samp]]$samp <- paste0(">",samp)
+
+			chr.samp.cpnA.vec <- chr.samp.segs.df$nMajor
+			string.chr.samp.cpnA.vec <- as.character(chr.samp.cpnA.vec)
+			string.chr.samp.cpnA.vec[which(chr.samp.cpnA.vec >= 10)] <- "a"
+			chr.samp.cpnB.vec <- chr.samp.segs.df$nMinor
+			string.chr.samp.cpnB.vec <- as.character(chr.samp.cpnB.vec)
+			string.chr.samp.cpnB.vec[which(chr.samp.cpnB.vec >= 10)] <- "a"
+			#So now let's select the data frame
+
+			MEDICC.FASTA.file.list[[chr]][[samp]]$cpnA <- paste(chr.samp.cpnA.vec, collapse="") 
+			MEDICC.FASTA.file.list[[chr]][[samp]]$cpnB <-  paste(chr.samp.cpnB.vec, collapse="") 
+
+		}#end for (samp in sample.vec) {
+
+	}#for (chr in CHRS_TO_USE_VEC) {
+
+
+	returnable.intersection.orig.mcs.df
+
+
+	print(returnable.intersection.orig.mcs.df[returnable.intersection.orig.mcs.df$nMinor > returnable.intersection.orig.mcs.df$nMajor,])
+
+
+
 	#Todo add another method of detecting MSAI using only the BAF and a paired T test.
 	# all.seg.MSAI.by.BAF.ltnpd.present.list <- getAllSegsMirroredSubclonalAllelicImbalanceDetectionFromBAFList(seg.name.vec = seg.name.vec,
 	# 																										   sample.vec  = sample.vec,
@@ -2045,6 +2153,8 @@ for (samp in sample.vec) {
 }#for (samp in sample.vec) {
 
 
+all.sample.arms.underlying.raw.and.phased.data.path <- paste0(PLOT_OUTPUT_DIR, patient, "_all_sample_arm_underlying_raw_and_phased_data.RDS")
+saveRDS(samp.arms, file = all.sample.arms.underlying.raw.and.phased.data.path )
 
 MIN_PH_CPN <- 5
 NUM_TOT_CPN <- 5
@@ -2221,12 +2331,24 @@ for( samp in sample.vec) {
 					#Or we can just subset the data.frame to remove all other segs that don't have phased copy number?
 					cpnA.precede.and.follow.gr.idx.vec <- c(follow(query.seg.gr, only.ph.cpnA.joined.segs.grs), precede(query.seg.gr, only.ph.cpnA.joined.segs.grs))
 					cpnA.sort.non.na.gr.pre.and.fol.idx.vec <- sort(cpnA.precede.and.follow.gr.idx.vec[ ! is.na(cpnA.precede.and.follow.gr.idx.vec)])
+					#edge case where all segments are joined into a single segment so there are no preceding or following... get the nearest:
+					if (length(cpnA.sort.non.na.gr.pre.and.fol.idx.vec) == 0){
+						
+						cpnA.sort.non.na.gr.pre.and.fol.idx.vec <- nearest(query.seg.gr, only.ph.cpnA.joined.segs.grs)
+
+					}
 					adj.ph.cpnA.grs <- only.ph.cpnA.joined.segs.grs[cpnA.sort.non.na.gr.pre.and.fol.idx.vec]
 					cpnA.tot.cpn.diff.vec <- abs(adj.ph.cpnA.grs$median_tot_cpn - query.seg.gr$median_tot_cpn)
 					cpnA.val <- adj.ph.cpnA.grs[which(cpnA.tot.cpn.diff.vec == min(cpnA.tot.cpn.diff.vec))]$int_ph_cpnA
 
 					cpnB.precede.and.follow.gr.idx.vec <- c(follow(query.seg.gr, only.ph.cpnB.joined.segs.grs), precede(query.seg.gr, only.ph.cpnB.joined.segs.grs))
 					cpnB.sort.non.na.gr.pre.and.fol.idx.vec <- sort(cpnB.precede.and.follow.gr.idx.vec[ ! is.na(cpnB.precede.and.follow.gr.idx.vec)])
+					#edge case where all segments are joined into a single segment so there are no preceding or following... get the nearest:
+					if (length(cpnB.sort.non.na.gr.pre.and.fol.idx.vec) == 0){
+
+						cpnB.sort.non.na.gr.pre.and.fol.idx.vec <- nearest(query.seg.gr, only.ph.cpnB.joined.segs.grs)
+
+					}
 					adj.ph.cpnB.grs <- only.ph.cpnB.joined.segs.grs[cpnB.sort.non.na.gr.pre.and.fol.idx.vec]
 					cpnB.tot.cpn.diff.vec <- abs(adj.ph.cpnB.grs$median_tot_cpn - query.seg.gr$median_tot_cpn)
 					cpnB.val <- adj.ph.cpnB.grs[which(cpnB.tot.cpn.diff.vec == min(cpnB.tot.cpn.diff.vec))]$int_ph_cpnB
@@ -2271,12 +2393,12 @@ for( samp in sample.vec) {
 						}
 
 					}#end for (x in 1:length(cpnX.no.blank.df.list)) {
-
 					#We should join the ones that remain the same..?
-					joined.samp.arms.inferred.ph.cpn[[samp]][[chr.arm]][["ph_cpnA"]] <- cpnX.no.blank.df.list[[1]]
-					joined.samp.arms.inferred.ph.cpn[[samp]][[chr.arm]][["ph_cpnB"]] <- cpnX.no.blank.df.list[[2]]
 
-				}#end if (cpnA.joined.segs.df[k, "num_ph_cpn"] < MIN_PH_CPN) {
+				} #end if (cpnA.joined.segs.df[k, "num_ph_cpn"] < MIN_PH_CPN) {
+
+				joined.samp.arms.inferred.ph.cpn[[samp]][[chr.arm]][["ph_cpnA"]] <- cpnX.no.blank.df.list[[1]]
+				joined.samp.arms.inferred.ph.cpn[[samp]][[chr.arm]][["ph_cpnB"]] <- cpnX.no.blank.df.list[[2]]
 
 			}#end for (k in 1:nrow(cpnA.joined.segs.df)) {
 
@@ -2286,13 +2408,329 @@ for( samp in sample.vec) {
 
 } # end for( samp in sample.vec) {
 
-
-
-#Cool so now we can do both of these for cpn A and cpn B
-
 str(samp.arms, max=1)
 str(joined.samp.arms, max=1)
 str(joined.samp.arms.inferred.ph.cpn, max=1)
+
+
+
+all.sample.joined.cpnA.cnpB.cpnTot.arm.segs.path <- paste0(PLOT_OUTPUT_DIR, patient, "_all_sample_joined_separate_cpnA_cnpB_cpnTot_arm_segs.RDS")
+saveRDS(joined.samp.arms, file = all.sample.joined.cpnA.cnpB.cpnTot.arm.segs.path )
+
+
+all.sample.joined.cpnA.cnpB.arm.segs.path <- paste0(PLOT_OUTPUT_DIR, patient, "_all_sample_joined_separate_cpnA_cnpB_arm_segs.RDS")
+saveRDS(joined.samp.arms.inferred.ph.cpn, file = all.sample.joined.cpnA.cnpB.arm.segs.path )
+
+all.samp.arm.cpnA.cpnB.list <- list()
+#Remake separate segments...? Needed for plotting?
+for ( samp in sample.vec ) {
+
+	#initialise list sample output:
+	all.samp.arm.cpnA.cpnB.list[[samp]] <- list()
+
+	samp.joined.arms.list <- joined.samp.arms.inferred.ph.cpn[[samp]]
+	arms.present.vec <- names(samp.joined.arms.list)
+
+	for (arm in arms.present.vec) {
+
+		print(str(samp.joined.arms.list[[arm]], max=1))
+
+		samp.cpnA.arm.df <- samp.joined.arms.list[[arm]][["ph_cpnA"]]
+		samp.cpnA.arm.grs <- makeGRangesFromDataFrame(samp.cpnA.arm.df,
+				                         		keep.extra.columns=TRUE,
+				                         		seqnames.field="chrom",
+				                         		start.field="startpos",
+				                         		end.field="endpos",
+				                         		ignore.strand = TRUE,
+				                         		starts.in.df.are.0based=FALSE)
+		samp.cpnB.arm.df <- samp.joined.arms.list[[arm]][["ph_cpnB"]]
+		samp.cpnB.arm.grs <- makeGRangesFromDataFrame(samp.cpnB.arm.df,
+				                         		keep.extra.columns=TRUE,
+				                         		ignore.strand=TRUE,
+				                         		seqinfo=NULL,
+				                         		seqnames.field="chrom",
+				                         		start.field="startpos",
+				                         		end.field="endpos",
+				                         		starts.in.df.are.0based=FALSE)
+		#print(samp.cpnA.arm.df)
+		#print(samp.cpnB.arm.df)
+		no.mcols.samp.cpnA.arm.grs <- samp.cpnA.arm.grs
+		mcols(no.mcols.samp.cpnA.arm.grs) <- NULL
+		no.mcols.samp.cpnB.arm.grs <- samp.cpnB.arm.grs
+		mcols(no.mcols.samp.cpnB.arm.grs) <- NULL
+		samp.arm.dj.grs <- disjoin(append(no.mcols.samp.cpnA.arm.grs, no.mcols.samp.cpnB.arm.grs), ignore.strand = TRUE)
+		#print(samp.arm.dj.grs)
+		dj.arm.cpnA.grs <- getOverlapGRanges(samp.arm.dj.grs, samp.cpnA.arm.grs)
+		dj.arm.cpnB.grs <- getOverlapGRanges(samp.arm.dj.grs, samp.cpnB.arm.grs)
+
+		#So now we've made the
+		# print("Check making num_tot_cpn")
+		# print(dj.arm.cpnA.grs$num_tot_cpn)
+		# print(dj.arm.cpnB.grs$num_tot_cpn)
+		# print(cbind(dj.arm.cpnA.grs$num_tot_cpn, dj.arm.cpnB.grs$num_tot_cpn))
+		# print(apply(cbind(dj.arm.cpnA.grs$num_tot_cpn, dj.arm.cpnB.grs$num_tot_cpn), 1, min))
+
+		arm.mcs.cpn.df <- data.frame(sample = rep(samp, length(samp.arm.dj.grs)),
+					chrom = as.numeric(as.character(seqnames(samp.arm.dj.grs))),
+					arm = rep(arm,  length(samp.arm.dj.grs)),
+					startpos = start(samp.arm.dj.grs),
+					endpos = end(samp.arm.dj.grs),
+					num_hz = apply(cbind(dj.arm.cpnA.grs$num_ph_cpn, dj.arm.cpnB.grs$num_ph_cpn), 1, min),#Todo reconsider how we do this, may actually want to map it back to the original dataframe
+					num_non_hz = apply(cbind(dj.arm.cpnA.grs$num_tot_cpn, dj.arm.cpnB.grs$num_tot_cpn), 1, min),#Todo reconsider how we do this, may actually want to map it back to the original dataframe
+					mean_ph_cpnA = dj.arm.cpnA.grs$mean_ph_cpn,
+					median_ph_cpnA = dj.arm.cpnA.grs$median_ph_cpn,
+					int_ph_cpnA = dj.arm.cpnA.grs$int_ph_cpnA,
+					mean_ph_cpnB = dj.arm.cpnB.grs$mean_ph_cpn,
+					median_ph_cpnB = dj.arm.cpnB.grs$median_ph_cpn,
+					int_ph_cpnB = dj.arm.cpnB.grs$int_ph_cpnB,
+					int_tot_ph_cpn = dj.arm.cpnB.grs$int_ph_cpnB + dj.arm.cpnA.grs$int_ph_cpnA,
+					mean_tot_cpn = dj.arm.cpnA.grs$mean_tot_cpn,
+					median_tot_cpn = dj.arm.cpnA.grs$median_tot_cpn,
+					stringsAsFactors = FALSE)
+		print(arm.mcs.cpn.df)
+		all.samp.arm.cpnA.cpnB.list[[samp]][[arm]] <- arm.mcs.cpn.df
+
+	}#end for (arm in arms.present.vec) {
+
+}#end for ( samp in sample.vec ) {
+
+
+#Make a per sample joined cpnA and cpnB data.frame in the same format as ASCAT (ie segments wherever either cpnA or cpnB change.)
+samp.joined.cpnA.cpnB.segs.df.list <- list()
+for(samp in sample.vec) {
+
+	samp.joined.cpnA.cpnB.segs.df.list[[samp]] <- do.call(rbind, all.samp.arm.cpnA.cpnB.list[[samp]])
+
+}# for(samp in sample.vec) {
+all.samp.joined.cpnA.cpnB.df <- do.call(rbind, samp.joined.cpnA.cpnB.segs.df.list)
+
+
+
+#Now we want to make a per sample joined cpnA and cpnB dataframe where all breakpoints are shared between samples. Much like full.joint.segs.df above.
+all.samp.mcs.joined.cpnA.cpnB.df.list  <- list()
+#First thing we need to do is to come up with a disjoint set of Granges that incorporates all the breakpoints from each sample.
+all.samp.joined.cpnA.cpnB.grs <- makeGRangesFromDataFrame(all.samp.joined.cpnA.cpnB.df,
+				                         	keep.extra.columns=TRUE,
+				                         	ignore.strand=TRUE,
+				                         	seqinfo=NULL,
+				                         	seqnames.field="chrom",
+				                         	start.field="startpos",
+				                         	end.field="endpos",
+				                         	starts.in.df.are.0based=FALSE)
+all.samp.joined.cpnA.cpnB.for.dj.grs <- all.samp.joined.cpnA.cpnB.grs
+mcols(all.samp.joined.cpnA.cpnB.for.dj.grs) <- NULL
+all.samp.joined.cpnA.cpnB.dj.grs <- disjoin(all.samp.joined.cpnA.cpnB.for.dj.grs)
+for (samp in sample.vec) {
+	all.samp.joined.cpnA.cpnB.for.dj.grs
+
+	samp.joined.cpnA.cpnB.grs <- all.samp.joined.cpnA.cpnB.grs[ all.samp.joined.cpnA.cpnB.grs$sample == samp ]
+	samp.with.all.samp.dj.grs <- getOverlapGRanges(all.samp.joined.cpnA.cpnB.dj.grs, samp.joined.cpnA.cpnB.grs)
+
+	samp.mcs.over.all.samp.cpn.df <- data.frame(sample = rep(samp, length(samp.with.all.samp.dj.grs)),
+				chrom = as.numeric(as.character(seqnames(samp.with.all.samp.dj.grs))),
+				arm = samp.with.all.samp.dj.grs$arm,
+				startpos = start(samp.with.all.samp.dj.grs),
+				endpos = end(samp.with.all.samp.dj.grs),
+				num_hz = samp.with.all.samp.dj.grs$num_hz,#Todo reconsider how we do this, may actually want to map it back to the original dataframe
+				num_non_hz = samp.with.all.samp.dj.grs$num_non_hz,#Todo reconsider how we do this, may actually want to map it back to the original dataframe
+				mean_ph_cpnA = samp.with.all.samp.dj.grs$mean_ph_cpnA,
+				median_ph_cpnA = samp.with.all.samp.dj.grs$median_ph_cpnA,
+				int_ph_cpnA = samp.with.all.samp.dj.grs$int_ph_cpnA,
+				mean_ph_cpnB = samp.with.all.samp.dj.grs$mean_ph_cpnB,
+				median_ph_cpnB = samp.with.all.samp.dj.grs$median_ph_cpnB,
+				int_ph_cpnB = samp.with.all.samp.dj.grs$int_ph_cpnB,
+				int_tot_ph_cpn = samp.with.all.samp.dj.grs$int_ph_cpnB + samp.with.all.samp.dj.grs$int_ph_cpnA,
+				mean_tot_cpn = samp.with.all.samp.dj.grs$mean_tot_cpn,
+				median_tot_cpn = samp.with.all.samp.dj.grs$median_tot_cpn,
+				stringsAsFactors = FALSE)
+
+	all.samp.mcs.joined.cpnA.cpnB.df.list[[samp]] <-  samp.mcs.over.all.samp.cpn.df
+}#end for (samp in sample.vec) {
+all.samp.mcs.joined.cpnA.cpnB.df <- do.call(rbind, all.samp.mcs.joined.cpnA.cpnB.df.list)
+
+
+
+#So now we want to make the MEDICC input RDS based on this dataset's joined MPhase MCS results.
+
+
+
+
+
+
+
+
+plotCPNSegDFAccrossGenome <- function(segs.df ,sample.vec, cpn.cols.to.plot = c("int_ph_cpnA"), color.vec = c("black")) {
+
+  first.segs.df <- segs.df[segs.df$sample == samp,]
+  first.chr.start.end.df <- first.segs.df[,c("chr", "startpos", "endpos")]
+  first.chr.start.end.df <- apply(first.chr.start.end.df, 2, as.numeric)
+  #print("head(chr.start.end.df)")
+  chr.vec <- unique(first.segs.df[, "chr"])
+  #print(head(chr.start.end.df))
+  first.chroms.length.vec <- getChromLengthsVec(first.chr.start.end.df)
+  names(first.chroms.length.vec) <- unique(first.chr.start.end.df[, 1])
+
+  #print("chroms.length.vec")
+  #print(chroms.length.vec)
+  first.chrom.segs.to.plot.df <- getCumulativeChromLengthsForPlottingDF(first.chr.start.end.df, first.chroms.length.vec, chr.vec)
+  min.x               <- 0
+  min.y               <- -1.05
+  max.y               <- 8.5
+  max.x               <- as.numeric(max(first.chrom.segs.to.plot.df[, 3]))
+
+  num.samples  <- length(sample.vec)
+  first.samp <- sample.vec[1] 
+  last.samp <- sample.vec[length(sample.vec)] 
+
+  par(mfrow = c(num.samples, 1))
+
+  for ( samp in sample.vec ) {
+
+    #Set out border size for sub plot
+    if (samp == first.samp) {
+
+      par(mar = c(2, 3, 4, 3))
+
+    } else if (samp == last.samp) {
+
+      par(mar = c(4, 3, 2, 3))
+
+    } else {
+
+      par(mar = c(3, 3, 3, 3))
+
+    }
+    
+    plot(1
+         ,xlim = c(min.x, max.x)
+         ,ylim = c(min.y, max.y)
+         ,type = 'n'
+         ,xaxt = 'n'
+         ,yaxs = 'i'
+         ,yaxt = 'n'
+         ,xaxs = 'i'
+         ,ylab = ""
+         ,xlab = ""
+         ,lwd = 2
+         ,main = paste0(samp, " ", cpnX, " allele")
+         ,bty = "n")
+    box()
+
+    samp.seg.df <- segs.df[segs.df$sample == samp,]
+    samp.chr.start.end.df <- samp.seg.df[,c("chr", "startpos", "endpos")]
+    samp.chr.start.end.df <- apply(samp.chr.start.end.df, 2, as.numeric)
+    samp.chroms.length.vec <- getChromLengthsVec(samp.chr.start.end.df)
+    names(samp.chroms.length.vec) <- unique(samp.chr.start.end.df[, 1])
+    samp.chrom.segs.to.plot.df <- getCumulativeChromLengthsForPlottingDF(samp.chr.start.end.df, samp.chroms.length.vec, chr.vec)
+
+    print(head(samp.chrom.segs.to.plot.df))
+
+    for ( k in 1:nrow(samp.seg.df) ) {
+
+    	for(j in 1:length(cpn.cols.to.plot)) {
+
+    		segments(x0 = samp.chrom.segs.to.plot.df[k, "startpos"]
+    		         ,y0 = samp.seg.df[k, cpn.cols.to.plot[j]] - ((j-1) * 0.05)
+    		         ,x1 = samp.chrom.segs.to.plot.df[k, "endpos"]
+    		         ,y1 = samp.seg.df[k, cpn.cols.to.plot[j]] - ((j-1) * 0.05)
+    		         ,col = color.vec[j]
+    		         ,lwd = 3)
+
+    	}#end for(cpn.col in cpn.cols.to.plot) {
+
+    }#end   for ( seg.name in seg.name.vec ) {
+
+    axis(side = 2, las = 1)
+    abline(h = seq((min.y + 0.5), (max.y - 0.5), by = 1), lty = 'dashed', lwd = 0.75, col = 'gray')
+    
+    mtext(side = 3
+          ,at = getChromMidpointsVec(first.chrom.segs.to.plot.df[,1:3], unique(first.chr.start.end.df[,1]))
+          ,text = sort(unique(first.chrom.segs.to.plot.df[,1]))
+          ,cex = seq(0.6, 0.4, length.out = length(unique(first.chrom.segs.to.plot.df[,1])))
+          ,line = -1
+          #,lwd=0.5
+          )
+        
+    for (i in sort(unique(as.numeric(first.chrom.segs.to.plot.df[,1]))))
+    {
+      abline(v = max(as.numeric(first.chrom.segs.to.plot.df[first.chrom.segs.to.plot.df[,1] == i, 3]))
+             ,lwd = 0.5)
+      #,lty='dashed')
+    }#en
+
+  }#end for ( samp in sample.vec ) {
+
+}# plotSegDFAccrossGenome <- function(segs.df ,sample.vec, cpnX.vec) {
+
+#So now we want to plot:
+
+#We want to give each of relevant columns the same names in these dataframes and the plot them:
+#Chosem column names are:
+# int_ph_cpnA
+# int_ph_cpnB
+plottable.col.name.vec <- c("chr", "startpos", "endpos", "int_ph_cpnA", "int_ph_cpnB", "tot_int_cpn", "sample")
+
+#Original segments
+plottable.orig.joint.segs.df <- f.joint.segs.df[, c("chr","startpos", "endpos", "nMajor", "nMinor", "cnTotal", "sample")]
+plottable.orig.joint.segs.df <- plottable.orig.joint.segs.df[plottable.orig.joint.segs.df$chr %in% 1:22,]
+colnames(plottable.orig.joint.segs.df) <- plottable.col.name.vec
+#Full.joint.df segments
+plottable.mphase.mcs.segs.df <- full.joint.segs.df[, c("chr","startpos", "endpos", "ph_int_cpnA", "ph_int_cpnB", "total_int_cpn", "sample")]
+plottable.mphase.mcs.segs.df[is.na(plottable.mphase.mcs.segs.df)] <- -1
+colnames(plottable.mphase.mcs.segs.df) <- plottable.col.name.vec
+
+#Mphase joined segments
+plottable.mphase.samp.cpnA.cpnB.df <- all.samp.joined.cpnA.cpnB.df[, c("chrom","startpos", "endpos", "int_ph_cpnA", "int_ph_cpnB", "int_tot_ph_cpn", "sample")]
+colnames(plottable.mphase.samp.cpnA.cpnB.df) <- plottable.col.name.vec
+
+
+
+
+
+
+
+print("Plotting before and after copy number profiles for each region....")
+png(file = paste(PLOT_OUTPUT_DIR, patient, "_mphase_mcs_cpn_across_genome", ".png", sep=""), width = 1200, height = 1400)
+
+print("Plotting phased BAF across the genome...")
+plotCPNSegDFAccrossGenome(segs.df = plottable.mphase.mcs.segs.df, sample.vec = sample.vec, cpn.cols =c("int_ph_cpnA","int_ph_cpnB"), color.vec = c("green", "black"))
+
+dev.off()
+
+png(file = paste(PLOT_OUTPUT_DIR, patient, "_orig_ASCAT_across_genome", ".png", sep=""), width = 1200, height = 1400)
+
+print("Plotting phased BAF across the genome...")
+plotCPNSegDFAccrossGenome(segs.df = plottable.orig.joint.segs.df, sample.vec = sample.vec, cpn.cols =c("int_ph_cpnA","int_ph_cpnB"), color.vec = c("green", "black"))
+
+dev.off()
+
+
+png(file = paste(PLOT_OUTPUT_DIR, patient, "_mphase_joined_across_genome", ".png", sep=""), width = 1200, height = 1400)
+
+print("Plotting phased BAF across the genome...")
+plotCPNSegDFAccrossGenome(segs.df = plottable.mphase.samp.cpnA.cpnB.df, sample.vec = sample.vec, cpn.cols =c("int_ph_cpnA","int_ph_cpnB"), color.vec = c("green", "black"))
+
+dev.off()
+
+#TODO
+#So now we want to add the start and end idx of the snps inside the segment....
+
+
+
+
+
+#TODO 
+#We want to remake the segmentation so that it looks like ASCAT for plotting...
+
+#TODO plot the joined segmentation:
+
+
+#TODO 
+#Make full.join.segs.df into segments as well
+
+
+
+
 
 
 
