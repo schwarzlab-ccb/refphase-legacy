@@ -92,8 +92,8 @@ getAllSegAllSamplePhasedRawCPNList <- function(sample.vec, ploidy.est.vec, purit
 
 
     for ( seg.name in seg.name.vec ) {
-      print("Checking seg:")
-      print(seg.name)
+      # print("Checking seg:")
+      # print(seg.name)
       chr.len <- length(all.samples.phased.cpn.list[[1]][[seg.name]]$chr_vec)
       pos.len <- length(all.samples.phased.cpn.list[[1]][[seg.name]]$pos_vec)
       logr.len <- length(all.samples.phased.cpn.list[[1]][[seg.name]]$logr_vec)

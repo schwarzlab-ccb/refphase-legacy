@@ -17,8 +17,8 @@ getCombinedBAFDipTestPhasing <- function(asas.lr.baf.lists,
 
 
   sample.vec <- names(asas.lr.baf.lists)
-  print("sample.vec <- names(asas.lr.baf.lists)")
-  print(sample.vec)
+  # print("sample.vec <- names(asas.lr.baf.lists)")
+  # print(sample.vec)
 
   sample.to.phase.seg.list <- list()
 
@@ -40,16 +40,16 @@ getCombinedBAFDipTestPhasing <- function(asas.lr.baf.lists,
                                                                                                 gamma.val = gamma.val,
                                                                                                 min.num.hz.snp.phasing = min.num.hz.snp.phasing)
     sample.to.phase.seg.list[[seg.name]]$all_samp_phasing_comparison_list <- all.samp.seg.phasing.ability.list
-    print("all.samp.seg.phasing.ability.list")
-    print(str(all.samp.seg.phasing.ability.list, max=1))
+    # print("all.samp.seg.phasing.ability.list")
+    # print(str(all.samp.seg.phasing.ability.list, max=1))
     a.s.sum.phas.df <- data.frame(diptest_for_AI_pval = sapply(all.samp.seg.phasing.ability.list, function(x) x$diptest_for_AI_pval),
                                   ASCAT_called_as_AI = sapply(all.samp.seg.phasing.ability.list, function(x) x$ASCAT_called_as_AI),
                                   stringsAsFactors = FALSE)
     rownames(a.s.sum.phas.df) <- sample.vec
     #Reorder by which has best separation according to th eoriginal diptest, then subset to choose only samples that pass the threshold for having allelic imbalance.
     a.s.sum.phas.df <- a.s.sum.phas.df[with(a.s.sum.phas.df, order(diptest_for_AI_pval)), ]
-    print("a.s.sum.phas.df ")
-    print(a.s.sum.phas.df)
+    # print("a.s.sum.phas.df ")
+    # print(a.s.sum.phas.df)
     #Now select the samples that we will use to call for phasing.
     if (allow.dip.test.without.ASCAT.to.phase == TRUE) {
 
@@ -60,8 +60,8 @@ getCombinedBAFDipTestPhasing <- function(asas.lr.baf.lists,
       poss.phas.s.df <- a.s.sum.phas.df[a.s.sum.phas.df$ASCAT_called_as_AI == TRUE, ,drop = FALSE] 
 
     }
-    print("poss.phas.s.df after")
-    print(poss.phas.s.df)
+    # print("poss.phas.s.df after")
+    # print(poss.phas.s.df)
     #Now assess the samples that can actualy be phased...
     #initialise the seg mixture phasing to NULL so that, as a default, it won't be used:
     seg.mixture.phasing.list <- NULL
@@ -487,17 +487,17 @@ getAssessmentOfEachSamplesAbilityToPhaseAllOthersForSeg <- function(asas.lr.baf.
   for ( samp in sample.vec ) {
 
       #ref sample seg logr baf df
-      print(sample.vec)
-      print(samp)
-      print(seg.name)
-      print(str(asas.lr.baf.lists[[samp]][[seg.name]], max=1))
+      # print(sample.vec)
+      # print(samp)
+      # print(seg.name)
+      # print(str(asas.lr.baf.lists[[samp]][[seg.name]], max=1))
       ref.ss.lr.baf.df <- asas.lr.baf.lists[[samp]][[seg.name]]
-      print("ref.ss.lr.baf.df$BAFsegmented")
-      print(head(ref.ss.lr.baf.df$BAFsegmented))
-      print("ref.ss.lr.baf.df$BAF")
-      print(head(ref.ss.lr.baf.df$BAF))
-      print(nrow(ref.ss.lr.baf.df))
-      print(head(ref.ss.lr.baf.df$logr))
+      # print("ref.ss.lr.baf.df$BAFsegmented")
+      # print(head(ref.ss.lr.baf.df$BAFsegmented))
+      # print("ref.ss.lr.baf.df$BAF")
+      # print(head(ref.ss.lr.baf.df$BAF))
+      # print(nrow(ref.ss.lr.baf.df))
+      # print(head(ref.ss.lr.baf.df$logr))
       if ( nrow(ref.ss.lr.baf.df) < min.num.hz.snp.phasing) {
 
         next#Might actally want this to be a break as they should all have too few snps as it is joint segmentation with the same SNPs...
@@ -518,9 +518,9 @@ getAssessmentOfEachSamplesAbilityToPhaseAllOthersForSeg <- function(asas.lr.baf.
       ref.ss.maj.is.cpnB.idx.vec <- which(ref.ss.is.max.cpn.cpnA.cpnB.logical.df[, 2] == 1)
 
       sample.comparison.list[[samp]]$diptest_for_AI_pval <- as.numeric(dip.test(ref.ss.lr.baf.df$BAF)$p.val)
-      print(head(ref.ss.lr.baf.df))
-      print("ifelse(ref.ss.lr.baf.df$BAFsegmented[1] != 0.5, TRUE, FALSE)")
-      print(ifelse(ref.ss.lr.baf.df$BAFsegmented[1] != 0.5, TRUE, FALSE))
+      # print(head(ref.ss.lr.baf.df))
+      # print("ifelse(ref.ss.lr.baf.df$BAFsegmented[1] != 0.5, TRUE, FALSE)")
+      # print(ifelse(ref.ss.lr.baf.df$BAFsegmented[1] != 0.5, TRUE, FALSE))
       sample.comparison.list[[samp]]$ASCAT_called_as_AI <- ifelse(median(ref.ss.lr.baf.df$BAFsegmented, na.rm=TRUE) %in% 0.5, FALSE, TRUE)#Changed to 2 due to idxing but... as only uysed for plotting ignoring.
       samples.to.test.vec <- sample.vec[ ! sample.vec %in%  samp]
       sample.comparison.list <- assessPhasingAcrossSelectedSamples(seg.name = seg.name,

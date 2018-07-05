@@ -82,7 +82,7 @@ getAllSegsMSAIDetectionFromBAFListLTNPD <- function(seg.name.vec, sample.vec, as
         
       }#end for (test.samp in sample.vec[ ! sample.vec %in% ref.samp]) { 
 
-      all.seg.MSAI.by.BAF.ltnpd.present.list[[seg.name]]$MSAI_present_any_sample_by_thresh <- any(seg.all.samp.MSAI.results.df[test.samp,]$MSAI_pval_passed_thres)
+      all.seg.MSAI.by.BAF.ltnpd.present.list[[seg.name]]$MSAI_present_any_sample_by_thresh <- any(seg.all.samp.MSAI.results.df$MSAI_pval_passed_thres)
       all.seg.MSAI.by.BAF.ltnpd.present.list[[seg.name]]$MSAI_by_sample_df <- seg.all.samp.MSAI.results.df
       all.seg.MSAI.by.BAF.ltnpd.present.list[[seg.name]]$all_samps_BAF_and_ltnpd_df <- seg.all.samp.MSAI.results.df
 

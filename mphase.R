@@ -12,7 +12,7 @@ overwrite.flag  <- as.logical(args[7])
 gamma.val <- args[8]
 num.cores <- args[9]
 intersection.or.whole.arm <- args[10]#Can either be intersection or whole_arm
-
+options(stringsAsFactors = FALSE)
 
 #function taken from https://github.com/molgenis/molgenis-pipelines/wiki/How-to-source-another_file.R-from-within-your-R-script
 LocationOfThisScript  <-  function() { # Function LocationOfThisScript returns the location of this .R script (may be needed to source other files in same dir)
@@ -394,6 +394,17 @@ current.dir <-  LocationOfThisScript()
 # overwrite.flag <- TRUE
 # gamma.val <- 1
 # num.cores <- 12
+# intersection.or.whole.arm <- "intersection"
+
+# patient  <-  "LTX021"
+# allow.dip.test.phasing.flag <- FALSE
+# output.directory.base.path <- "/camp/project/proj-tracerx-lung/tctProjects/watkint/TRACERx100_lung_pan_can_analysis/release/A_LTX021/exome/CN_het_TRACERx_no_diptest/"
+# data.format.to.use <- "TRACERx_exome"
+# snp.file.path <- "/camp/project/proj-tracerx-lung/tctProjects/watkint/TRACERx100_lung_pan_can_analysis/release/A_LTX021/exome/CN_het_TRACERx_no_diptest/LTX021_TRACERx_input_paths_df.txt"
+# seg.file.path <- "/camp/project/proj-tracerx-lung/tctProjects/watkint/TRACERx100_lung_pan_can_analysis/release/A_LTX021/exome/MSAI/LTX021_joint_segs_all_ascat_info.txt"
+# overwrite.flag <- TRUE
+# gamma.val <- 1
+# num.cores <- 12
 # # intersection.or.whole.arm <- "intersection"
 
 # patient  <-  "LTX048"
@@ -406,6 +417,31 @@ current.dir <-  LocationOfThisScript()
 # gamma.val <- 1
 # num.cores <- 12
 # intersection.or.whole.arm <- "intersection"
+
+
+# patient  <-  "LTX068"
+# allow.dip.test.phasing.flag <- FALSE
+# output.directory.base.path <- "/camp/project/proj-tracerx-lung/tctProjects/watkint/TRACERx100_lung_pan_can_analysis/release/L_LTX068/exome/CN_het_TRACERx_no_diptest/"
+# data.format.to.use <- "TRACERx_exome"
+# snp.file.path <- "/camp/project/proj-tracerx-lung/tctProjects/watkint/TRACERx100_lung_pan_can_analysis/release/L_LTX068/exome/CN_het_TRACERx_no_diptest/LTX068_TRACERx_input_paths_df.txt"
+# seg.file.path <- "/camp/project/proj-tracerx-lung/tctProjects/watkint/TRACERx100_lung_pan_can_analysis/release/L_LTX068/exome/MSAI/LTX068_joint_segs_all_ascat_info.txt"
+# overwrite.flag <- TRUE
+# gamma.val <- 1
+# num.cores <- 12
+# intersection.or.whole.arm <- "intersection"
+
+
+# patient  <-  "LTX064"
+# allow.dip.test.phasing.flag <- FALSE
+# output.directory.base.path <- "/camp/project/proj-tracerx-lung/tctProjects/watkint/TRACERx100_lung_pan_can_analysis/release/L_LTX064/exome/CN_het_TRACERx_no_diptest/"
+# data.format.to.use <- "TRACERx_exome"
+# snp.file.path <- "/camp/project/proj-tracerx-lung/tctProjects/watkint/TRACERx100_lung_pan_can_analysis/release/L_LTX064/exome/CN_het_TRACERx_no_diptest/LTX064_TRACERx_input_paths_df.txt"
+# seg.file.path <- "/camp/project/proj-tracerx-lung/tctProjects/watkint/TRACERx100_lung_pan_can_analysis/release/L_LTX064/exome/MSAI/LTX064_joint_segs_all_ascat_info.txt"
+# overwrite.flag <- TRUE
+# gamma.val <- 1
+# num.cores <- 12
+# intersection.or.whole.arm <- "intersection"
+
 
 
 # patient <- "MTX006"
@@ -1275,6 +1311,399 @@ if (OVERWRITE_FLAG == TRUE) {
 	saveRDS(all.seg.MSAI.by.BAF.ltnpd.present.list, file = all.seg.MSAI.by.BAF.ltnpd.present.list.path)
 
 
+	##
+	##Params:
+	##
+	##Returns:
+	##
+	plotAllSampleCCFsAcrossGenome <- function(asas.ph.raw.cpn.lists, full.joint.segs.df, sample.vec, all.seg.CCF.vals.list, cpnX, use.cpn.or.ccf.thresh = "CCF") {
+
+	  Colours <- colorpanel(100, 'steelblue4', '#deebf7', 'steelblue4')
+	  #First get the consensus segmentation, probably want to filter out the smallest segments:
+	  #filter out the segments that are unphased
+	  phased.joint.segs.df  <- full.joint.segs.df[full.joint.segs.df$samp_used_to_phase != "too_few_SNPs",]
+	  #phased.joint.segs.df <- full.joint.segs.df
+	  chr.start.end.df <- phased.joint.segs.df[,c("chr", "startpos", "endpos")]
+	  chr.start.end.df <- apply(chr.start.end.df, 2, as.numeric)
+	  #print("head(chr.start.end.df)")
+
+	  chr.vec <- unique(full.joint.segs.df[, "chr"])
+	  #print(head(chr.start.end.df))
+	  chroms.length.vec <- getChromLengthsVec(chr.start.end.df)
+
+	  names(chroms.length.vec) <- unique(chr.start.end.df[, 1])
+
+	  #print("chroms.length.vec")
+	  #print(chroms.length.vec)
+	  chrom.segs.to.plot.df <- getCumulativeChromLengthsForPlottingDF(chr.start.end.df, chroms.length.vec, chr.vec)
+
+	  #print("head(chrom.segs.to.plot.df)")
+	  #print(head(chrom.segs.to.plot.df))
+	  min.x               <- 0
+	  min.y               <- -0.5
+	  max.y               <- 8.5
+	  max.x               <- as.numeric(max(chrom.segs.to.plot.df[, 3]))
+
+
+	  num.samples  <- length(sample.vec)
+	  first.samp <- sample.vec[1] 
+	  last.samp <- sample.vec[length(sample.vec)] 
+	  #sampJoinedSeg <- funJoinAdjacentSegments(copyITHRDS$sampComparisonList) is the equivalent
+
+	  par(mfrow = c(num.samples, 1))
+
+	  for ( samp in sample.vec ) {
+
+	    #Set out border size for sub plot
+	    if (samp == first.samp) {
+
+	      par(mar = c(2, 3, 4, 3))
+
+	    } else if (samp == last.samp) {
+
+	      par(mar = c(4, 3, 2, 3))
+
+	    } else {
+
+	      par(mar = c(3, 3, 3, 3))
+
+	    }
+	    plot(1
+	         ,xlim = c(min.x, max.x)
+	         ,ylim = c(min.y, max.y)
+	         ,type = 'n'
+	         ,xaxt = 'n'
+	         ,yaxs = 'i'
+	         ,yaxt = 'n'
+	         ,xaxs = 'i'
+	         ,ylab = ""
+	         ,xlab = ""
+	         ,lwd = 2
+	         ,main = paste0(samp, " ", cpnX, " allele")
+	         ,bty = "n")
+	    box()
+
+	    #"B_MET004_MT-M1"
+	    samp.vals.list <- asas.ph.raw.cpn.lists[[samp]]
+	    samp.one.vals.list <- asas.ph.raw.cpn.lists[[first.samp]]
+	    seg.name.vec <- phased.joint.segs.df$seg_name #names(all.seg.CCF.vals.list)
+	    for ( seg.name in seg.name.vec ) {
+
+	      #Will be NA if too few SNPs and can't be plotted, length of NA == 1, do this check to avoid warnings about checking only first element of list.
+	      if( length(all.seg.CCF.vals.list[[cpnX]][[seg.name]]) == 1 ) {
+
+	        next
+
+	      }
+
+	      chr.start.end.vec <- unlist(strsplit(seg.name, split = ":"))
+	      seg.samp.cpnX.vals.list <- samp.vals.list[[seg.name]]
+	      #print("str(seg.samp.cpnX.vals.list, max=1)")
+	      #print(str(seg.samp.cpnX.vals.list, max=1))
+	      seg.samp.one.cpnX.vals.list <- samp.one.vals.list[[seg.name]]
+	      #print("str(seg.samp.one.cpnX.vals.list, max=1)")
+	      #print(str(seg.samp.one.cpnX.vals.list, max=1))
+	      seg.ccf.cpnX.frac.vec   <- all.seg.CCF.vals.list[[cpnX]][[seg.name]][[samp]][[paste0("frac_", cpnX, "_low_vec")]]
+
+	      #print("print(str(seg.ccf.cpnX.frac.vec))")
+	      #print(str(seg.ccf.cpnX.frac.vec))
+
+	      seg.to.plot.df <- cbind(seg.samp.one.cpnX.vals.list$chr_vec,
+	                              seg.samp.one.cpnX.vals.list$pos_vec,
+	                              seg.samp.one.cpnX.vals.list$pos_vec,
+	                              seg.samp.cpnX.vals.list[[paste0("ph_", cpnX, "_vec")]],
+	                              seg.samp.cpnX.vals.list[[paste0("ph_", cpnX, "_vec")]],
+	                              seg.samp.cpnX.vals.list[[paste0("ph_", cpnX, "_vec")]],
+	                              seg.ccf.cpnX.frac.vec
+	                              )
+
+	      if (is.na(seg.to.plot.df[1,1])) {
+
+	        next
+
+	      }#end if(is.na(seg.to.plot.df[1,1])) {
+	      
+	      #toPlot <- cbind(logRBAFSample1$chrom,logRBAFSample1$pos,logRBAFSample1$pos,ABSample1,ABSample2)
+	      seg.to.plot.df[,1:3] <- getCumulativeChromLengthsForPlottingDF(apply(seg.to.plot.df[,1:3], 2, as.numeric), chroms.length.vec, chr.vec)
+	      seg.to.plot.df <- data.frame(seg.to.plot.df, stringsAsFactors = FALSE)
+	      colnames(seg.to.plot.df) <- c('chr','pos','pos','Sample1nA','Sample1nA','Sample1nA','CCF')
+
+	      seg.to.plot.df$Sample1nA <- ifelse(as.numeric(seg.to.plot.df$Sample1nA) > max.y, (max.y - 0.25), as.numeric(seg.to.plot.df$Sample1nA))
+
+	      colourCode <- ifelse(round(as.numeric(seg.to.plot.df$CCF) * 100) > 100, 100, round(as.numeric(seg.to.plot.df$CCF) * 100))
+	      colourCode <- ifelse(colourCode == 0, 1, colourCode)
+
+
+	      points(x = as.numeric(seg.to.plot.df$pos), y = as.numeric(seg.to.plot.df$Sample1nA)
+	             ,col = Colours[colourCode]
+	             ,cex = .5
+	             ,pch = 16)#ifelse(MSAIstatus==1,'#238b4550',ifelse(PValsPaired<0.001&totalPval<0.001,'#3182bd50','#fc927250')),cex=0.75,pch=16)
+	      par(lend = 1)
+	      segColour <- as.numeric(all.seg.CCF.vals.list[[cpnX]][[seg.name]][[samp]][[paste0("mean_frac_", cpnX, "_low")]])
+	      segColour <- Colours[(ifelse(segColour > 1, 1, segColour) * 100)]
+	      
+	      #So now very quickly we can check wehter that segment has been called significantly subclonal or not:
+	      #Here we want to implement the two options.. either use the CCF threshold or the CPN threshold
+
+	      if (use.cpn.or.ccf.thresh == "CCF") {
+
+	        sc.present <- full.joint.segs.df[paste0(samp, ":", seg.name), paste0("within_samp_sc_", cpnX, "_present")]
+
+	      } else if (use.cpn.or.ccf.thresh == "CPN") {
+
+	        sc.present <- full.joint.segs.df[paste0(samp, ":", seg.name), paste0("within_samp_sc_", cpnX, "_present_using_min_cpn_diff")]
+
+	      }
+
+	      if (sc.present == TRUE) {
+
+	        ccf.bar.color <- "yellow"
+
+	      } else {
+
+	        ccf.bar.color <-"#525252" 
+
+	      }
+
+	      segments(x0 = min(as.numeric(seg.to.plot.df$pos))
+	               ,y0 = all.seg.CCF.vals.list[[cpnX]][[seg.name]][[samp]][[paste0("poss_sc_", cpnX, "_low")]]
+	               ,x1 = max(as.numeric(seg.to.plot.df$pos))
+	               ,y1 = all.seg.CCF.vals.list[[cpnX]][[seg.name]][[samp]][[paste0("poss_sc_", cpnX, "_low")]]
+	               ,col = "#de2d26"
+	               ,lwd = 3)
+	      
+	      segments(x0 = min(as.numeric(seg.to.plot.df$pos))
+	               ,y0 = all.seg.CCF.vals.list[[cpnX]][[seg.name]][[samp]][[paste0("poss_sc_", cpnX, "_high")]]
+	               ,x1 = max(as.numeric(seg.to.plot.df$pos))
+	               ,y1 = all.seg.CCF.vals.list[[cpnX]][[seg.name]][[samp]][[paste0("poss_sc_", cpnX, "_high")]]
+	               ,col = "#31a354"
+	               ,lwd = 3)
+
+	      segments(x0 = min(as.numeric(seg.to.plot.df$pos))
+	               ,y0 = mean(c(as.numeric(seg.to.plot.df$Sample1nA)))
+	               ,x1 = max(as.numeric(seg.to.plot.df$pos)), y1 = mean(c(as.numeric(seg.to.plot.df$Sample1nA)))
+	               ,col = ccf.bar.color
+	               ,lwd = 3)
+	      
+	    }#end   for ( seg.name in seg.name.vec ) {
+
+	      axis(side = 2, las = 1)
+	      abline(h = seq((min.y + 0.5), (max.y - 0.5), by = 1), lty = 'dashed', lwd = 0.75, col = 'gray')
+	      
+	      mtext(side = 3
+	            ,at = getChromMidpointsVec(chrom.segs.to.plot.df[,1:3], unique(chr.start.end.df[,1]))
+	            ,text = sort(unique(chrom.segs.to.plot.df[,1]))
+	            ,cex = seq(0.6, 0.4, length.out = length(unique(chrom.segs.to.plot.df[,1])))
+	            ,line = -1
+	            #,lwd=0.5
+	      )
+	      
+	      for (i in sort(unique(as.numeric(chrom.segs.to.plot.df[,1]))))
+	      {
+	        abline(v = max(as.numeric(chrom.segs.to.plot.df[chrom.segs.to.plot.df[,1] == i, 3]))
+	               ,lwd = 0.5)
+	        #,lty='dashed')
+	      }#en
+
+	  }#end for ( samp in sample.vec ) {
+
+	}
+
+
+
+	plotAllSampleBAFsAndMSAIAcrossGenome <- function(sample.vec, all.seg.MSAI.by.BAF.ltnpd.present.list, patient.phased.BAF.df.list, cpnA.allele.color = '#de2d2699', cpnB.allele.color= '#3182bd99') {
+
+
+	  seg.name.vec <- names(all.seg.MSAI.by.BAF.ltnpd.present.list)
+	  chr.vec <- as.numeric(sapply(seg.name.vec, function(x) strsplit(x, split = ":")[[1]][1]))
+	  start.vec <- as.numeric(sapply(seg.name.vec, function(x) strsplit(x, split = ":")[[1]][2]))
+	  end.vec <- as.numeric(sapply(seg.name.vec, function(x) strsplit(x, split = ":")[[1]][3]))
+
+	  chr.start.end.df <- data.frame(chrom = as.numeric(chr.vec), startpos = as.numeric(start.vec), endpos = as.numeric(end.vec), stringsAsFactors=FALSE)
+
+	  # samp.BAF.df <- patient.phased.BAF.df.list[[1]]
+	  # chr.start.end.df <- samp.BAF.df[, c("chrom", "pos", "pos")]
+	  # chr.start.end.df <- apply(chr.start.end.df, 2, as.numeric)
+
+	  chr.vec <- unique(chr.start.end.df[, "chrom"])
+
+	  chroms.length.vec <- getChromLengthsVec(chr.start.end.df)
+	  names(chroms.length.vec) <- chr.vec
+	  chrom.segs.to.plot.df <- getCumulativeChromLengthsForPlottingDF(chr.start.end.df, chroms.length.vec, chr.vec)
+	  rownames(chrom.segs.to.plot.df) <- seg.name.vec
+
+	  min.x               <- 0
+	  min.y               <- -0.5
+	  max.y               <- 8.5
+	  max.x               <- as.numeric(max(chrom.segs.to.plot.df[,3]))
+
+	  num.samples  <- length(sample.vec)
+	  first.samp <- sample.vec[1] 
+	  last.samp <- sample.vec[length(sample.vec)] 
+	  #sampJoinedSeg <- funJoinAdjacentSegments(copyITHRDS$sampComparisonList) is the equivalent
+	  cpnA.allele.color = '#de2d2699'
+	  cpnB.allele.color= '#3182bd99'
+	  #png(file = paste(PLOT_OUTPUT_DIR, patient, "_BAF_phased", ".png", sep=""), width = 1200, height = 1400)
+
+	  par(mfrow = c(num.samples, 1))
+
+	  for ( samp in sample.vec ) {
+
+	    #Set out border size for sub plot
+	    if (samp == first.samp) {
+
+	      par(mar = c(2, 3, 4, 3))
+
+	    } else if (samp == last.samp) {
+
+	      par(mar = c(4, 3, 2, 3))
+
+	    } else {
+
+	      par(mar = c(3, 3, 3, 3))
+
+	    }
+
+	    samp.BAF.df <- patient.phased.BAF.df.list[[samp]]
+	    samp.BAF.df <- samp.BAF.df[, c("chrom", "pos", "pos", "BAF","BAFsegmented","logR","logRsegmented", "samp","sample_phased_by_this_sample","maj_is_cpnA_logic_vec","maj_is_cpnB_logic_vec","ph_median_segmented_BAF")]
+	    samp.BAF.df.to.plot <- getCumulativeChromLengthsForPlottingDF(samp.BAF.df, chroms.length.vec, chr.vec)
+	    samp.BAF.df <- samp.BAF.df.to.plot
+
+	    samp.BAF.df$color_to_plot <- ifelse(samp.BAF.df$maj_is_cpnA_logic_vec == 1, cpnA.allele.color, cpnB.allele.color)
+	    samp.BAF.df$mphase_segmented_BAF <- 0.5
+
+	    if(nrow(samp.BAF.df[grepl("none", samp.BAF.df$sample_phased_by_this_sample),]) > 0) {
+
+	      samp.BAF.df[grepl("none", samp.BAF.df$sample_phased_by_this_sample),]$ph_median_segmented_BAF <- 0.5
+
+
+	    }
+
+
+	    rownames(samp.BAF.df) <- 1:nrow(samp.BAF.df)
+	    plot(samp.BAF.df[, 2], samp.BAF.df$BAF,
+	        col = samp.BAF.df$color_to_plot,
+	        pch = 16,
+	        ylim = c(0, 1),
+	        cex = 1,
+	        main = samp,
+	        ylab = "BAF",
+	        xlab = "",
+	        las = 1, 
+	        xaxt = 'n')
+	    
+	    mtext(side = 3,
+	          at = getChromMidpointsVec(chrom.segs.to.plot.df, unique(chr.start.end.df[,1])),
+	          text = sort(unique(chrom.segs.to.plot.df[, 1])),
+	          cex = seq(0.6, 0.4, length.out = length(unique(chrom.segs.to.plot.df[, 1]))),
+	          line = -1)
+
+	    msai.present.seg.color <- "red"
+	    non.msai.seg.color <- "yellow"
+	    problem.seg.color <- "black"
+
+	    reference.samp.color <- "green"
+	    non.reference.samp.color <- "blue"
+	    no.detection.possible.color <- "grey"
+	    mixture.phasing.color <- "pink"
+
+
+	    for ( chr in sort(unique(as.numeric(chrom.segs.to.plot.df[, 1])))) {
+
+	      #plot the segments of MSAI detection:
+	      	chrom.seg.name.vec <- grep(paste0("^",chr,":"), names(all.seg.MSAI.by.BAF.ltnpd.present.list), value=TRUE)
+	      	#print(chrom.seg.name.vec)
+
+	      	for (chrom.seg.name in chrom.seg.name.vec) {
+
+	      		#MSAI seg colors
+	      		if ( length(all.seg.MSAI.by.BAF.ltnpd.present.list[[chrom.seg.name]]$MSAI_present_any_sample_by_thresh) > 0 ) {
+	      			#Color for the MSAI
+	      			#print(all.seg.MSAI.by.BAF.ltnpd.present.list[[chrom.seg.name]]$MSAI_present_any_sample_by_thresh %in% TRUE)
+	      			msai.seg.color <- ifelse(all.seg.MSAI.by.BAF.ltnpd.present.list[[chrom.seg.name]]$MSAI_present_any_sample_by_thresh %in% TRUE, msai.present.seg.color, non.msai.seg.color)
+
+	      		} else {#end if ( length(all.seg.MSAI.by.BAF.ltnpd.present.list[[chrom.seg.name]]$MSAI_present_any_sample_by_thresh) > 0 ) {
+
+	      			msai.seg.color <- problem.seg.color
+
+	      		}#end else
+
+	      		#Plot whether MSAI detected
+	      		segments(x0 = chrom.segs.to.plot.df[chrom.seg.name, 2]
+	      		         ,y0 = 0
+	      		         ,x1 = chrom.segs.to.plot.df[chrom.seg.name, 3]
+	      		         ,y1 = 0
+	      		         ,col = msai.seg.color
+	      		         ,lwd = 6)
+
+	      		#Plot if reference
+	      		if( length(all.seg.MSAI.by.BAF.ltnpd.present.list[[chrom.seg.name]]$MSAI_detection_feasible) > 0 ) {
+
+	      			if (all.seg.MSAI.by.BAF.ltnpd.present.list[[chrom.seg.name]]$MSAI_detection_feasible %in% TRUE) {
+
+	      				seg.msai.df <- all.seg.MSAI.by.BAF.ltnpd.present.list[[chrom.seg.name]]$MSAI_by_sample_df
+
+	      				if (grepl("mixture",all.seg.MSAI.by.BAF.ltnpd.present.list[[chrom.seg.name]]$MSAI_detection_info)){
+
+	      					ref.seg.color <- mixture.phasing.color
+
+	      				} else if (seg.msai.df[seg.msai.df$sample_name == samp,]$sample_is_ref == TRUE) {
+
+	      					ref.seg.color <- reference.samp.color
+
+	      				} else {
+
+	      					ref.seg.color <- non.reference.samp.color
+
+	      				}
+
+	      			} else {
+
+	      				ref.seg.color <- no.detection.possible.color
+
+	      			}
+
+	      		} else  {
+
+	      			ref.seg.color <- problem.seg.color
+
+	      		}
+	      		segments(x0 = chrom.segs.to.plot.df[chrom.seg.name, 2]
+	      		         ,y0 = 0.05
+	      		         ,x1 = chrom.segs.to.plot.df[chrom.seg.name, 3]
+	      		         ,y1 = 0.05
+	      		         ,col = ref.seg.color
+	      		         ,lwd = 6)
+	      		
+	      	} 
+
+
+	      abline(v = max(as.numeric(chrom.segs.to.plot.df[chrom.segs.to.plot.df[, 1] == chr, 3])), lwd = 0.5)
+
+	    			points(samp.BAF.df[, 2], samp.BAF.df$BAFsegmented, col = 'black', ylim = c(0 , 1), pch = 15, cex = 0.25)
+	   	 			points(samp.BAF.df[, 2], samp.BAF.df$ph_median_segmented_BAF, col = '#78c679', ylim = c(0 , 1), pch = 15, cex = 0.5)
+
+	    			points(samp.BAF.df[, 2], 1 - samp.BAF.df$BAFsegmented, col = 'black', ylim = c(0 , 1), pch = 15, cex = 0.25)
+	    			points(samp.BAF.df[, 2], 1 - samp.BAF.df$ph_median_segmented_BAF, col = '#78c679', ylim = c(0 , 1), pch = 15, cex = 0.5)
+
+
+	    }#end for ( chr in sort(unique(as.numeric(chrom.segs.to.plot.df[, 1])))) {
+	    box()
+
+	  }#end for ( samp in sample.vec ) {
+
+	  #dev.off()
+	}#end plotAllSampleBAFsAcrossGenome(...)
+
+
+	png(file = paste(PLOT_OUTPUT_DIR, patient, "_MSAI_detection_BAF_phased", ".png", sep=""), width = 1200, height = 1400)
+
+	print("Plotting phased BAF across the genome...")
+	plotAllSampleBAFsAndMSAIAcrossGenome(sample.vec, all.seg.MSAI.by.BAF.ltnpd.present.list, patient.phased.BAF.df.list, cpnA.allele.color = '#de2d2699', cpnB.allele.color= '#3182bd99')
+
+	dev.off()
+
+
 
 	print("Applying LTNPD MSAI detection to the original segments...")
 	#So now we have the original ASCAT segmentation and we want to make the MEDICC input from it
@@ -1323,7 +1752,7 @@ if (OVERWRITE_FLAG == TRUE) {
 	saveRDS(orig.intersection.mcs.w.MSAI.df, file = orig.intersection.mcs.w.MSAI.df.path)
 
 	#Needs MCS segmentation for the set of samples passed to MEDICC.
-	makeMEDICCInputListsFromSegmentationDF <- function(segs.to.make.MEDICC.input.df, sample.vec, chrs.to.use.vec, chr.col, cpnA.col, cpnB.col) {
+	makeMEDICCInputListsFromSegmentationDF <- function(segs.to.make.MEDICC.input.df, sample.vec, chrs.to.use.vec, chr.col, start.col, end.col, cpnA.col, cpnB.col) {
 
 		#To do this we need to make it match the 
 		MEDICC.FASTA.file.list <- list()
@@ -1347,7 +1776,6 @@ if (OVERWRITE_FLAG == TRUE) {
 															& segs.to.make.MEDICC.input.df[, chr.col] == chr, , drop = FALSE]
 
 				#So now let's format the copy number so it will fit MEDICC properly
-
 				MEDICC.FASTA.file.list[[chr]][[samp]]$samp <- paste0(">",samp)
 				chr.samp.cpnA.vec <- chr.samp.segs.df[, cpnA.col]
 				string.chr.samp.cpnA.vec <- as.character(chr.samp.cpnA.vec)
@@ -1356,9 +1784,13 @@ if (OVERWRITE_FLAG == TRUE) {
 				string.chr.samp.cpnB.vec <- as.character(chr.samp.cpnB.vec)
 				string.chr.samp.cpnB.vec[which(chr.samp.cpnB.vec >= 10)] <- "a"
 				#So now let's select the data frame
-
-				MEDICC.FASTA.file.list[[chr]][[samp]]$cpnA <- paste(chr.samp.cpnA.vec, collapse="") 
-				MEDICC.FASTA.file.list[[chr]][[samp]]$cpnB <-  paste(chr.samp.cpnB.vec, collapse="") 
+				MEDICC.FASTA.file.list[[chr]][[samp]]$chrom_vec <- rep(chr, nrow(chr.samp.segs.df))
+				MEDICC.FASTA.file.list[[chr]][[samp]]$startpos_vec <- chr.samp.segs.df[,  start.col]
+				MEDICC.FASTA.file.list[[chr]][[samp]]$endpos_vec <- chr.samp.segs.df[, end.col]
+				MEDICC.FASTA.file.list[[chr]][[samp]]$cpnA_vec <- chr.samp.segs.df[, cpnA.col]
+				MEDICC.FASTA.file.list[[chr]][[samp]]$cpnB_vec <- chr.samp.segs.df[, cpnB.col]
+				MEDICC.FASTA.file.list[[chr]][[samp]]$cpnA_string <- paste(chr.samp.cpnA.vec, collapse = "") 
+				MEDICC.FASTA.file.list[[chr]][[samp]]$cpnB_string <-  paste(chr.samp.cpnB.vec, collapse = "") 
 
 			}#end for (samp in sample.vec) {
 
@@ -1374,6 +1806,8 @@ if (OVERWRITE_FLAG == TRUE) {
 											sample.vec = sample.vec,
 											chrs.to.use.vec = CHRS_TO_USE_VEC,
 											chr.col = "Chromosome",
+											start.col = "Start_Position",
+											end.col = "End_Position",
 											cpnA.col = "nMajor",
 											cpnB.col = "nMinor"
 											)
@@ -1651,10 +2085,6 @@ addOriginalSegmentInfoToFinalSegmentationNew <- function(all.seg.df, all.orig.sa
 #Subset by those that are also the same cpn vs ploidy all the way through
 #Now we have our set of clonal ammp+gain / deep_loss+loss / LOH/ LOH combined with loss
 
-
-
-
-
 #Now we also need  to repeat this exact same process for few and fewer samples
 #and split between gain/loss/ and LOH
 
@@ -1799,205 +2229,53 @@ full.joint.segs.df <- full.joint.segs.w.across.plotting.cols.df
 full.joint.segs.df.path <- paste0(PLOT_OUTPUT_DIR, patient, "_full_joint_segs_df.RDS")
 saveRDS(full.joint.segs.df, file=full.joint.segs.df.path)
 
-#Need to add arms to all segments:
-# #All possible useful input:
-# patient.phased.BAF.df.list
-# > str(patient.phased.BAF.df.list[[1]], max=1)
-# 'data.frame':	33192 obs. of  11 variables:
-#  $ chrom                       : chr  "1" "1" "1" "1" ...
-#  $ pos                         : int  871020 879317 880390 881627 892460 894573 896064 897730 902108 906272 ...
-#  $ BAF                         : num  0.257 0.248 0.2 0.866 0.143 ...
-#  $ BAFsegmented                : num  0.23 0.23 0.23 0.23 0.23 ...
-#  $ logR                        : num  -0.271 -0.36 -0.385 -0.208 -0.571 ...
-#  $ logRsegmented               : num  -0.335 -0.335 -0.335 -0.335 -0.335 ...
-#  $ samp                        : chr  "A_LTX121_SU_T1-R1" "A_LTX121_SU_T1-R1" "A_LTX121_SU_T1-R1" "A_LTX121_SU_T1-R1" ...
-#  $ sample_phased_by_this_sample: chr  "A_LTX121_SU_T1-R1" "A_LTX121_SU_T1-R1" "A_LTX121_SU_T1-R1" "A_LTX121_SU_T1-R1" ...
-#  $ maj_is_cpnA_logic_vec       : num  0 0 0 1 0 1 0 0 0 1 ...
-#  $ maj_is_cpnB_logic_vec       : num  1 1 1 0 1 0 1 1 1 0 ...
-#  $ ph_median_segmented_BAF     : num  0.207 0.207 0.207 0.207 0.207 ...
-# all.seg.MSAI.by.BAF.ltnpd.present.list
-# all.samp.non.hz.logr.and.tot.cpn.df.list
-# > str(all.samp.non.hz.logr.and.tot.cpn.df.list[[1]], max=1)
-# 'data.frame':	921620 obs. of  7 variables:
-#  $ chrom            : chr  "1" "1" "1" "1" ...
-#  $ pos              : int  762273 762496 762497 777237 777318 777335 777361 777456 783071 783147 ...
-#  $ BAF              : num  1 NA NA NA NA ...
-#  $ BAFsegmented     : num  NA NA NA NA NA NA NA NA NA NA ...
-#  $ logR             : num  -0.0542 -0.2103 -0.2103 -0.4974 -0.3978 ...
-#  $ logRsegmented    : num  -0.335 -0.335 -0.335 -0.335 -0.335 ...
-#  $ tot_raw_un_ph_cpn: num  2.98 2.47 2.47 1.67 1.93 ...
-# asas.ph.raw.cpn.lists
-# > str(asas.ph.raw.cpn.lists[[1]], max=1)
-# List of 418
-#  $ 1:1:762272            :List of 9
-#  $ 1:762273:26136282     :List of 9
-# all.seg.CCF.list
-# > str(all.seg.CCF.list[[1]] ,max=1)
-# List of 418
-#  $ 1:1:762272            : logi NA
-#  $ 1:762273:26136282     :List of 2
-#  $ 1:26136283:26136297   : logi NA
-#  > str(all.seg.CCF.list[[1]][2])
-#  List of 1
-#   $ 1:762273:26136282:List of 2
-#    ..$ A_LTX121_SU_T1-R1:List of 9
-#    .. ..$ poss_sc_cpnA_low         : num [1:755] 2 2 2 2 2 2 2 2 2 2 ...
-#    .. ..$ poss_sc_cpnA_high        : num [1:755] 3 3 3 3 3 3 3 3 3 3 ...
-#    .. ..$ mean_frac_cpnA_low       : num [1:755] 0.83 0.83 0.83 0.83 0.83 0.83 0.83 0.83 0.83 0.83 ...
-#    .. ..$ mean_frac_cpnA_high      : num [1:755] 0.17 0.17 0.17 0.17 0.17 0.17 0.17 0.17 0.17 0.17 ...
-#    .. ..$ cpnA_orig_ph_obs_cpnA_vec: num [1:755] 2.19 2.03 2.17 2.88 1.98 ...
-#    .. ..$ cpnA_orig_ph_obs_cpnB_vec: num [1:755] 0.10186 0.000399 -0.205837 -0.400462 -0.501425 ...
-#    .. ..$ clean_ph_obs_cpnA_vec    : num [1:755] 2.19 2.03 2.17 2.88 1.98 ...
-#    .. ..$ frac_cpnA_low_vec        : num [1:755] 0.81 0.97 0.83 0.12 1 0.69 0.68 0.88 0.86 1 ...
-#    .. ..$ frac_cpnA_high_vec       : num [1:755] 0.19 0.03 0.17 0.88 0 ...
-#    ..$ A_LTX121_SU_T1-R2:List of 9
-#    .. ..$ poss_sc_cpnA_low         : num [1:755] 2 2 2 2 2 2 2 2 2 2 ...
-#    .. ..$ poss_sc_cpnA_high        : num [1:755] 3 3 3 3 3 3 3 3 3 3 ...
-#    .. ..$ mean_frac_cpnA_low       : num [1:755] 0.74 0.74 0.74 0.74 0.74 0.74 0.74 0.74 0.74 0.74 ...
-#    .. ..$ mean_frac_cpnA_high      : num [1:755] 0.26 0.26 0.26 0.26 0.26 0.26 0.26 0.26 0.26 0.26 ...
-#    .. ..$ cpnA_orig_ph_obs_cpnA_vec: num [1:755] 1.56 2.26 2.61 2.16 1.74 ...
-#    .. ..$ cpnA_orig_ph_obs_cpnB_vec: num [1:755] 0.32 -0.258 -0.22 -0.531 0.212 ...
-#    .. ..$ clean_ph_obs_cpnA_vec    : num [1:755] 1.56 2.26 2.61 2.16 1.74 ...
-#    .. ..$ frac_cpnA_low_vec        : num [1:755] 1 0.74 0.39 0.84 1 1 0.73 0.38 0.44 1 ...
-#    .. ..$ frac_cpnA_high_vec       : num [1:755] 0 0.26 0.61 0.16 0 0 0.27 0.62 0.56 0 ...
-# > str(all.seg.CCF.list[[2]][2])
-# List of 1
-# $ 1:762273:26136282:List of 2
-#  ..$ A_LTX121_SU_T1-R1:List of 9
-#  .. ..$ poss_sc_cpnB_low         : num [1:755] 1 1 1 1 1 1 1 1 1 1 ...
-#  .. ..$ poss_sc_cpnB_high        : num [1:755] 1 1 1 1 1 1 1 1 1 1 ...
-#  .. ..$ mean_frac_cpnB_low       : num [1:755] 0 0 0 0 0 0 0 0 0 0 ...
-#  .. ..$ mean_frac_cpnB_high      : num [1:755] 1 1 1 1 1 1 1 1 1 1 ...
-#  .. ..$ cpnB_orig_ph_obs_cpnA_vec: num [1:755] 2.19 2.03 2.17 2.88 1.98 ...
-#  .. ..$ cpnB_orig_ph_obs_cpnB_vec: num [1:755] 0.10186 0.000399 -0.205837 -0.400462 -0.501425 ...
-#  .. ..$ clean_ph_obs_cpnB_vec    : num [1:755] 0.10186 0.000399 0 0 0 ...
-#  .. ..$ frac_cpnB_low_vec        : num [1:755] 0 0 0 0 0 0 0 0 0 0 ...
-#  .. ..$ frac_cpnB_high_vec       : num [1:755] 1 1 1 1 1 1 1 1 1 1 ...
-#  ..$ A_LTX121_SU_T1-R2:List of 9
-#  .. ..$ poss_sc_cpnB_low         : num [1:755] 1 1 1 1 1 1 1 1 1 1 ...
-#  .. ..$ poss_sc_cpnB_high        : num [1:755] 1 1 1 1 1 1 1 1 1 1 ...
-#  .. ..$ mean_frac_cpnB_low       : num [1:755] 0 0 0 0 0 0 0 0 0 0 ...
-#  .. ..$ mean_frac_cpnB_high      : num [1:755] 1 1 1 1 1 1 1 1 1 1 ...
-#  .. ..$ cpnB_orig_ph_obs_cpnA_vec: num [1:755] 1.56 2.26 2.61 2.16 1.74 ...
-#  .. ..$ cpnB_orig_ph_obs_cpnB_vec: num [1:755] 0.32 -0.258 -0.22 -0.531 0.212 ...
-#  .. ..$ clean_ph_obs_cpnB_vec    : num [1:755] 0.32 0 0 0 0.212 ...
-#  .. ..$ frac_cpnB_low_vec        : num [1:755] 0 0 0 0 0 0 0 0 0 0 ...
-#  .. ..$ frac_cpnB_high_vec       : num [1:755] 1 1 1 1 1 1 1 1 1 1 ...
-# asas.SNPs.w.both.lr.baf.snp.lists
-# > str(asas.SNPs.w.both.lr.baf.snp.lists[[1]][2], max=1)
-# List of 1
-#  $ 1:762273:26136282:'data.frame':	755 obs. of  6 variables:
-# > str(asas.SNPs.w.both.lr.baf.snp.lists[[1]][2])
-# List of 1
-#  $ 1:762273:26136282:'data.frame':	755 obs. of  6 variables:
-#   ..$ chrom        : chr [1:755] "1" "1" "1" "1" ...
-#   ..$ pos          : int [1:755] 871020 879317 880390 881627 892460 894573 896064 897730 902108 906272 ...
-#   ..$ BAF          : num [1:755] 0.257 0.248 0.2 0.866 0.143 ...
-#   ..$ BAFsegmented : num [1:755] 0.23 0.23 0.23 0.23 0.23 ...
-#   ..$ logR         : num [1:755] -0.271 -0.36 -0.385 -0.208 -0.571 ...
-#   ..$ logRsegmented: num [1:755] -0.335 -0.335 -0.335 -0.335 -0.335 ...
-# asas.SNPS.lr.and.or.baf.lists
-# > str(asas.SNPS.lr.and.or.baf.lists[[1]][2])
-# List of 1
-#  $ 1:762273:26136282:'data.frame':	17836 obs. of  6 variables:
-#   ..$ chrom        : chr [1:17836] "1" "1" "1" "1" ...
-#   ..$ pos          : int [1:17836] 762273 762496 762497 777237 777318 777335 777361 777456 783071 783147 ...
-#   ..$ BAF          : num [1:17836] 1 NA NA NA NA ...
-#   ..$ BAFsegmented : num [1:17836] NA NA NA NA NA NA NA NA NA NA ...
-#   ..$ logR         : num [1:17836] -0.0542 -0.2103 -0.2103 -0.4974 -0.3978 ...
-#   ..$ logRsegmented: num [1:17836] -0.335 -0.335 -0.335 -0.335 -0.335 ...
 
+####Plot all genome wide plots
+print("Plotting CCFs for cpnA and cpnB across the genome using cpn definition of subclonality...")
+png(file = paste(PLOT_OUTPUT_DIR, patient, "_CCF_w_cpn_thresh_cpnA", ".png", sep = ""), width = 1200, height = 1400)
 
-#So we want:
-# chr
-# pos
-# hz
-# non_hz
-# ph_cpn
-# tot_pn
-# BAF
-# logR
+plotAllSampleCCFsAcrossGenome(asas.ph.raw.cpn.lists = asas.ph.raw.cpn.lists,
+                              full.joint.segs.df = full.joint.segs.w.phasing.df,
+                              sample.vec = sample.vec,
+                              all.seg.CCF.vals.list = all.seg.CCF.list,
+                              cpnX = "cpnA",
+                              use.cpn.or.ccf.thresh = "CPN")
 
+dev.off()
 
-#Get all segment names  sorted by whether they're on a p por q arm...
+png(file = paste(PLOT_OUTPUT_DIR, patient, "_CCF_w_cpn_thresh_cpnB", ".png", sep = ""), width = 1200, height = 1400)
 
-wilcoxTestWithErrorHandling <- function(x, y = NULL,
-            alternative = c("two.sided", "less", "greater"),
-            mu = 0, paired = FALSE, exact = FALSE, correct = TRUE,
-            conf.int = FALSE, conf.level = 0.95, errors.not.permitted="")
-             {
-    test.results <- tryCatch({
+plotAllSampleCCFsAcrossGenome(asas.ph.raw.cpn.lists = asas.ph.raw.cpn.lists,
+                              full.joint.segs.df = full.joint.segs.w.phasing.df,
+                              sample.vec = sample.vec,
+                              all.seg.CCF.vals.list = all.seg.CCF.list,
+                              cpnX = "cpnB",
+                              use.cpn.or.ccf.thresh = "CPN")
+dev.off()
 
-      test.results <- wilcox.test(x = x,
-                                  y = y,
-                                  alternative = alternative,
-                                  mu = mu,
-                                  paired = paired,
-                                  exact = exact,
-                                  correct = correct,
-                                  conf.int = conf.int,
-                                  conf.level = conf.level)
+################################################
 
-      if ( is.na(test.results[["p.value"]]) | is.nan(test.results[["p.value"]])) {
-
-        test.results[["stat"]] <- 1
-        test.results[["conf.int"]] <- c(NA, NA)
-        test.results[["p.value"]] <- 1
-        test.results[["p.val"]] <- 1
-
-      }
-      
-      return(test.results)
-
-      },
-       error = function(err) {
-          message(err)
-          write(paste(err$message, "\n"), stderr())
-          write("\n", stderr())
-          if(grepl("NULL", err$message) & "NULL" %in% errors.not.permitted){
-            stop("t.test ERROR with a NULL")
-          } else if (grepl("enough", err$message) & "enough" %in% errors.not.permitted){
-            stop("t.test ERROR with not enough")
-          } else if (grepl("constant", err$message) & "constant" %in% errors.not.permitted){
-            stop("t.test ERROR with constant data")
-          } else if(grepl("enough|constant|NULL", err$message) & "other" %in% errors.not.permitted){
-            stop(err$message)
-          }
-          # cat("\n")
-          # paste("Input for wilcox test")
-          # print("x")
-          # print(x)
-          # print("y")
-          # print(y)
-          # print("mu")
-          # print(mu)
-          # print("paired")
-          # print(paired)
-          # print("conf.level")
-          # print(conf.level)
-          test.results <- list()
-          test.results[["stat"]] <- 1
-          test.results[["conf.int"]] <- c(NA, NA)
-          test.results[["p.val"]] <- 1
-          return(test.results)
-        })
-
-        if (is.na(test.results$p.val)) {
-
-            test.results$p.val <- 1
-        }
-
-        return(test.results)
-}#end wilcoxTestWithErrorHandling
-  
 
 chr.arms.present.vec <- unique(full.joint.segs.df$chr_arm)
 
+
 print("Make data frame of raw data behind each chromosome arm in which we will join the segments...")
-samp.arms <- list()
-for (samp in sample.vec) {
-	print(samp)
-	for (chr.arm in chr.arms.present.vec) {
+
+
+arm.iterable.df <- expand.grid(sample.vec, chr.arms.present.vec, stringsAsFactors=FALSE)
+colnames(arm.iterable.df) <- c("sample", "arm")
+arm.iterable.df <- arm.iterable.df[with(arm.iterable.df, order(sample, arm)), ]
+samp.arm.itx <- iter(arm.iterable.df, by="row")
+
+samp.arms <- foreach(samp.arm.df = samp.arm.itx, .combine = c) %dopar% {
+
+# samp.arms <- list()
+# for (samp in sample.vec) {
+# 	print(samp)
+# 	for (chr.arm in chr.arms.present.vec) {
+
+		samp <- samp.arm.df$sample
+		chr.arm <- samp.arm.df$arm
 		print(chr.arm)
 		#So now we are within a chromosome arm we want to make a seg.name.vec that matches only the chromosome
 		samp.chr.arm.segs.df <- full.joint.segs.df[full.joint.segs.df$chr_arm %in% chr.arm
@@ -2067,11 +2345,38 @@ for (samp in sample.vec) {
 
 		}#end for (seg.name in samp.chr.arm.seg.name.vec) {
 			#print(paste0(samp, "_", chr.arm))
-			samp.arms[[samp]][[chr.arm]] <- joinable.df
 
-	}#end for (chr.arm in chr.arms.present.vec) {
 
-}#for (samp in sample.vec) {
+			#samp.arms[[samp]][[chr.arm]] <- joinable.df
+
+			returnable.list <- list(joinable.df)
+			names(returnable.list) <- paste0(samp, "_", chr.arm)
+			returnable.list
+
+}
+# 	}#end for (chr.arm in chr.arms.present.vec) {
+
+# }#for (samp in sample.vec) {
+
+
+#Quickly convert the results:
+parallel.samp.arms <- samp.arms 
+samp.arms <- list()
+for(samp in sample.vec) {
+
+	samp.arms[[samp]] <- list()
+
+	for(chr.arm in chr.arms.present.vec) {
+
+
+		samp.arms[[samp]][[chr.arm]] <- parallel.samp.arms[[paste0(samp, "_", chr.arm)]]
+
+	}
+
+}
+
+
+
 
 
 all.sample.arms.underlying.raw.and.phased.data.path <- paste0(PLOT_OUTPUT_DIR, patient, "_all_sample_arm_underlying_raw_and_phased_data.RDS")
@@ -2091,19 +2396,48 @@ print("Join segments within each sample's arms if they meet signifcance criteria
 #This needs to be parallelised... as it takes a while.
 #Let's try and debug it a bit more first, run it on the tx100.
 
-joined.samp.arms <- list()
-joined.samp.arms.inferred.ph.cpn <- list()
-for( samp in sample.vec) {
+JoinedArmMultiResultClass <- function(samp_chr_arm = NULL, joined_samp_arms=NULL, joined_samp_arms_inferred_ph_cpn=NULL)
+{
+  me <- list(
+  	samp_chr_arm = samp_chr_arm,
+  	joined_samp_arms = joined_samp_arms,
+    joined_samp_arms_inferred_ph_cpn = joined_samp_arms_inferred_ph_cpn
+  )
+  # Set the name for the class
+  class(me) <- append(class(me),"MultiResultClass")
+  return(me)
+}
 
-	joined.samp.arms[[samp]] <- list()
-	joined.samp.arms.inferred.ph.cpn[[samp]] <- list()
+source("/home/camp/watkint/working/watkint/scripts/multiregioncopynum/new_seg_joining_functions.R")
+joined.samp.arm.iterable.df <- expand.grid(sample.vec, chr.arms.present.vec, stringsAsFactors=FALSE)
+colnames(joined.samp.arm.iterable.df) <- c("sample", "arm")
+joined.samp.arm.iterable.df <- joined.samp.arm.iterable.df[with(joined.samp.arm.iterable.df, order(sample, arm)), ]
+joined.samp.arm.itx <- iter(joined.samp.arm.iterable.df, by="row")
+joined.samp.arms.list <- foreach(joined.samp.arm.df = joined.samp.arm.itx, .export=ls(envir=globalenv()), .combine = c) %dopar% {
 
-	for ( chr.arm in chr.arms.present.vec) {
+	require("GenomicRanges")
+# 	new.sample.vec <- sample.vec#[length(sample.vec)]
+# 	new.chr.arms.present.vec <- chr.arms.present.vec[34:34]
+# 	joined.samp.arms <- list()
+# 	joined.samp.arms.inferred.ph.cpn <- list()
+# for( samp in sample.vec) {
 
+# 	joined.samp.arms[[samp]] <- list()
+# 	joined.samp.arms.inferred.ph.cpn[[samp]] <- list()
+
+# 	for ( chr.arm in chr.arms.present.vec) {
+		#print("here")
+		# #Parallel version:
+		samp <- joined.samp.arm.df$sample
+		chr.arm <- joined.samp.arm.df$arm
+		#End parallel vesion
+		print(paste0(samp, "_", chr.arm))
 		chr.arm.joined.list <- list()
 
-		for (cpnX.string in cpnX.vec) {
-
+		for (cpnX.string in c("ph_cpnA", "ph_cpnB")) {
+			# print(cpnX.string)
+			# print(samp)
+			# print(chr.arm)
 			samp.arm.sites.df <- samp.arms[[samp]][[chr.arm]]
 			samp.chr.arm.segs.df <- full.joint.segs.df[full.joint.segs.df$chr_arm %in% chr.arm
 							                         & full.joint.segs.df$sample %in% samp, ]
@@ -2124,7 +2458,6 @@ for( samp in sample.vec) {
 				stop("Error, overlapping granges within an arm!")
 
 			}
-
 			current.arm.grs <- arm.grs
 			orig.joining.vals.mat.and.arm.grs.list <- creatingArmJoiningInfoMatrixAndGranges(current.arm.grs, samp.arm.sites.df, cpnX.string)
 			orig.joining.vals.mat <- orig.joining.vals.mat.and.arm.grs.list[[1]]
@@ -2137,10 +2470,10 @@ for( samp in sample.vec) {
 				joining.vals.mat.and.arm.grs.list <- creatingArmJoiningInfoMatrixAndGranges(current.arm.grs, samp.arm.sites.df, cpnX.string)
 				joining.vals.mat <- joining.vals.mat.and.arm.grs.list[[1]]
 				current.arm.grs <- joining.vals.mat.and.arm.grs.list[[2]]
-				print("############")
-				print(current.arm.grs)
-				print(joining.vals.mat)
-				print("%%%%%%%%%%%%%")
+				# print("############")
+				# print(current.arm.grs)
+				# print(joining.vals.mat)
+				# print("%%%%%%%%%%%%%")
 				# readline(prompt="Press [enter] to continue")
 				old.length.current.arm.grs <- length(current.arm.grs)
 				current.arm.grs <- attemptToJoinOneSegmentWithinChromArm(current.arm.grs, joining.vals.mat, samp.arm.sites.df, sorted.arm.grs, cpnX.string, MIN_PH_CPN, NUM_TOT_CPN, CPN_AVG_THRESH) 
@@ -2149,8 +2482,8 @@ for( samp in sample.vec) {
 					print(getOverlapGRanges(current.arm.grs, current.arm.grs))
 					stop("Error, overlapping granges within an arm!")
 				}
-				print(length(current.arm.grs))
-				print(old.length.current.arm.grs)
+				# print(length(current.arm.grs))
+				# print(old.length.current.arm.grs)
 			} #end while (length(current.arm.grs) == old.length.current.arm.grs ) {
 
 			final.joining.vals.mat.and.arm.grs.list <- creatingArmJoiningInfoMatrixAndGranges(current.arm.grs, samp.arm.sites.df, cpnX.string)
@@ -2158,34 +2491,22 @@ for( samp in sample.vec) {
 			final.joining.vals.mat <- final.joining.vals.mat[order(final.joining.vals.mat[,"startpos"]), , drop = FALSE]
 			final.current.arm.grs <- final.joining.vals.mat.and.arm.grs.list[[2]]
 
-
-			print("Original arm grs")
-			#print(as.data.frame(sort(arm.grs)))
-			print(orig.joining.vals.mat)
-
 			sorted.joining.vals.mat <- joining.vals.mat[order(joining.vals.mat[,"startpos"]), ]
-			print("Final current.arm.grs")
-			print(final.joining.vals.mat)
-			#show(as.data.frame(sort(current.arm.grs)))
-
-			#readline(prompt="Press [enter] to continue")
-
-			# print("Final current.arm.grs")
-			# show(as.data.frame(sort(current.arm.grs)))
-			joined.samp.arms[[samp]][[chr.arm]][[cpnX.string]] <- as.data.frame(final.joining.vals.mat, stringsAsFactors=FALSE)
+			##Serial version. commented out:
+			#joined.samp.arms[[samp]][[chr.arm]][[cpnX.string]] <- as.data.frame(final.joining.vals.mat, stringsAsFactors=FALSE)
+			###End Serial version.
 			chr.arm.joined.list[[cpnX.string]] <- as.data.frame(final.joining.vals.mat, stringsAsFactors=FALSE)
 
 		} # end for (cpnX.string in cpnX.vec) {
-
 		#As a first pass
 		chr.arm.joined.w.int.cpn.list <- list()
-		for (cpnX.string in cpnX.vec) {
+		for (cpnX.string in c("ph_cpnA", "ph_cpnB")) {
 
 			cpnX.chr.joined.df <- chr.arm.joined.list[[cpnX.string]]
 			cpnX.chr.joined.df[, paste0("int_",cpnX.string)] <- -1
 			#So now for each row calculate the total and phased copy number
 			for (k in 1:nrow(cpnX.chr.joined.df)) {
-
+				#print(cpnX.chr.joined.df[k,])
 				if (cpnX.chr.joined.df[k,"num_ph_cpn"] > MIN_PH_CPN) {
 					#Let's get the relevant copy number values from the samp.sites.df
 					cpnX.chr.joined.df[k, paste0("int_",cpnX.string)] <- ifelse(cpnX.chr.joined.df[k, ]$median_ph_cpn < 0, 
@@ -2196,12 +2517,14 @@ for( samp in sample.vec) {
 
 			}
 			chr.arm.joined.w.int.cpn.list[[cpnX.string]] <- cpnX.chr.joined.df
-			print(head(cpnX.chr.joined.df))
 
 		}
 		#So now we want to decide which segment we should use to fill all the any blank row.
 		#The segment will have failed to have been joined in both cpnA and cpnB dfs as it can only joined by tot cpn
 		#However the segments around it may have differet total copy numbers...
+
+		#So actually the function call starts up here:
+
 		cpnA.joined.segs.df <- chr.arm.joined.w.int.cpn.list[[cpnX.vec[1]]]
 		cpnB.joined.segs.df <- chr.arm.joined.w.int.cpn.list[[cpnX.vec[2]]]
 		#Will dataframe to return
@@ -2216,7 +2539,8 @@ for( samp in sample.vec) {
 				                         		start.field="startpos",
 				                         		end.field="endpos",
 				                         		starts.in.df.are.0based=FALSE)
-		only.ph.cpnA.joined.segs.grs <- cpnA.joined.segs.grs[cpnA.joined.segs.grs$num_ph_cpn >= MIN_PH_CPN]
+		#Checking for -1 as some of segments that have >= MIN_PH_CPN still lack ph cpn estimates, need to check this further. TODO
+		only.ph.cpnA.joined.segs.grs <- cpnA.joined.segs.grs[cpnA.joined.segs.grs$num_ph_cpn >= MIN_PH_CPN & cpnA.joined.segs.grs$int_ph_cpnA != -1 ]
 		cpnB.joined.segs.grs <- makeGRangesFromDataFrame(cpnB.joined.segs.df,
 				                         		keep.extra.columns=TRUE,
 				                         		ignore.strand=TRUE,
@@ -2225,20 +2549,23 @@ for( samp in sample.vec) {
 				                         		start.field="startpos",
 				                         		end.field="endpos",
 				                         		starts.in.df.are.0based=FALSE)
-		only.ph.cpnB.joined.segs.grs <- cpnB.joined.segs.grs[cpnB.joined.segs.grs$num_ph_cpn >= MIN_PH_CPN]
-
+		#Checking for -1 as some of segments that have >= MIN_PH_CPN still lack ph cpn estimates, need to check this further. TODO
+		only.ph.cpnB.joined.segs.grs <- cpnB.joined.segs.grs[cpnB.joined.segs.grs$num_ph_cpn >= MIN_PH_CPN & cpnB.joined.segs.grs$int_ph_cpnB != -1 ]
 		cpnX.joined.segs.df.list <- list(cpnA.joined.segs.df, cpnB.joined.segs.df)
 		cpnX.no.blank.df.list <- list(cpnA.no.blank.df, cpnB.no.blank.df)
 
+
+		#So this is really a function call:
+
 		for (j in 1:length(cpnX.joined.segs.df.list)) {
-			print(j)
-			cpnX.joined.segs.df <- cpnX.joined.segs.df.list[[1]]
+
+			cpnX.joined.segs.df <- cpnX.joined.segs.df.list[[j]]
 
 			for (k in 1:nrow(cpnX.joined.segs.df)) {
 
-				print(k)
+				#print(k)
 
-				if (cpnX.joined.segs.df[k, "num_ph_cpn"] < MIN_PH_CPN) {
+				if (cpnX.joined.segs.df[k, "num_ph_cpn"] < MIN_PH_CPN | cpnX.joined.segs.df[k, ncol(cpnX.joined.segs.df)] == -1 ) {
 					#Let's get the relevant copy number values from the samp.sites.df
 					#So now we want to find out which of the neighboring segments it's closest to in both dfs.
 					#Make Query Grange:
@@ -2257,14 +2584,12 @@ for( samp in sample.vec) {
 					cpnA.sort.non.na.gr.pre.and.fol.idx.vec <- sort(cpnA.precede.and.follow.gr.idx.vec[ ! is.na(cpnA.precede.and.follow.gr.idx.vec)])
 					#edge case where all segments are joined into a single segment so there are no preceding or following... get the nearest:
 					if (length(cpnA.sort.non.na.gr.pre.and.fol.idx.vec) == 0){
-						
-						cpnA.sort.non.na.gr.pre.and.fol.idx.vec <- nearest(query.seg.gr, only.ph.cpnA.joined.segs.grs)
 
+						cpnA.sort.non.na.gr.pre.and.fol.idx.vec <- nearest(query.seg.gr, only.ph.cpnA.joined.segs.grs)
 					}
 					adj.ph.cpnA.grs <- only.ph.cpnA.joined.segs.grs[cpnA.sort.non.na.gr.pre.and.fol.idx.vec]
 					cpnA.tot.cpn.diff.vec <- abs(adj.ph.cpnA.grs$median_tot_cpn - query.seg.gr$median_tot_cpn)
 					cpnA.val <- adj.ph.cpnA.grs[which(cpnA.tot.cpn.diff.vec == min(cpnA.tot.cpn.diff.vec))]$int_ph_cpnA
-
 					cpnB.precede.and.follow.gr.idx.vec <- c(follow(query.seg.gr, only.ph.cpnB.joined.segs.grs), precede(query.seg.gr, only.ph.cpnB.joined.segs.grs))
 					cpnB.sort.non.na.gr.pre.and.fol.idx.vec <- sort(cpnB.precede.and.follow.gr.idx.vec[ ! is.na(cpnB.precede.and.follow.gr.idx.vec)])
 					#edge case where all segments are joined into a single segment so there are no preceding or following... get the nearest:
@@ -2273,29 +2598,40 @@ for( samp in sample.vec) {
 						cpnB.sort.non.na.gr.pre.and.fol.idx.vec <- nearest(query.seg.gr, only.ph.cpnB.joined.segs.grs)
 
 					}
-					adj.ph.cpnB.grs <- only.ph.cpnB.joined.segs.grs[cpnB.sort.non.na.gr.pre.and.fol.idx.vec]
+					adj.ph.cpnB.grs <- only.ph.cpnB.joined.segs.grs[cpnB.sort.non.na.gr.pre.and.fol.idx.vec] 
 					cpnB.tot.cpn.diff.vec <- abs(adj.ph.cpnB.grs$median_tot_cpn - query.seg.gr$median_tot_cpn)
 					cpnB.val <- adj.ph.cpnB.grs[which(cpnB.tot.cpn.diff.vec == min(cpnB.tot.cpn.diff.vec))]$int_ph_cpnB
-
 					#now we want the total rounded to
 					query.seg.int.tot.cpn <- round(query.seg.gr$median_tot_cpn)
-					top.ratio.val <- max(cpnA.val, cpnB.val) / sum(cpnA.val, cpnB.val) 
-					min.ratio.val <- min(cpnA.val, cpnB.val) / sum(cpnA.val, cpnB.val) 
-					if (cpnA.val >= cpnB.val ) {
+					if (query.seg.int.tot.cpn < 0) {
 
-						final.cpnA.val <- round(top.ratio.val * query.seg.int.tot.cpn)
-						final.cpnB.val <- round(min.ratio.val * query.seg.int.tot.cpn)
+						query.seg.int.tot.cpn <- 0
 
-					} else if (cpnA.val < cpnB.val) {
-
-						final.cpnA.val <- round(min.ratio.val * query.seg.int.tot.cpn)
-						final.cpnB.val <- round(top.ratio.val * query.seg.int.tot.cpn)
 					}
+					if(cpnA.val == 0 & cpnB.val == 0) {
 
+						final.cpnA.val <- 0
+						final.cpnB.val <- 0
 
+					} else {
+
+						top.ratio.val <- max(cpnA.val, cpnB.val) / sum(cpnA.val, cpnB.val) 
+						min.ratio.val <- min(cpnA.val, cpnB.val) / sum(cpnA.val, cpnB.val) 
+						if (cpnA.val >= cpnB.val ) {
+
+							final.cpnA.val <- round(top.ratio.val * query.seg.int.tot.cpn)
+							final.cpnB.val <- round(min.ratio.val * query.seg.int.tot.cpn)
+
+						} else if (cpnA.val < cpnB.val) {
+
+							final.cpnA.val <- round(min.ratio.val * query.seg.int.tot.cpn)
+							final.cpnB.val <- round(top.ratio.val * query.seg.int.tot.cpn)
+						}
+
+					}
 					for (x in 1:length(cpnX.no.blank.df.list)) {
 					#So now we need to know which one is larger:
-						print(x)
+
 						if( nrow(cpnX.no.blank.df.list[[x]][cpnX.no.blank.df.list[[x]]$startpos == start(query.seg.gr) &
 										 cpnX.no.blank.df.list[[x]]$endpos == end(query.seg.gr) ,]) > 0){
 
@@ -2313,30 +2649,76 @@ for( samp in sample.vec) {
 
 							cpnX.no.blank.df.list[[x]][cpnX.no.blank.df.list[[x]]$startpos == start(query.seg.gr) &
 											 cpnX.no.blank.df.list[[x]]$endpos == end(query.seg.gr), int.ph.cpn.string] <- final.int.ph.cpn.val
+											 #print("!!!!!!!!@@@@@@@@@@@@!!!!!!!!!!!@@@@@@@@@@@@@@@@@@@@")
 
-						}
-
+						}#end if( nrow(cpnX.no.blank.df.list[[x]][cpnX.no.blank.df.list[[x]]$startpos == start(query.seg.gr) & ....
+										
 					}#end for (x in 1:length(cpnX.no.blank.df.list)) {
-					#We should join the ones that remain the same..?
 
 				} #end if (cpnA.joined.segs.df[k, "num_ph_cpn"] < MIN_PH_CPN) {
-
-				joined.samp.arms.inferred.ph.cpn[[samp]][[chr.arm]][["ph_cpnA"]] <- cpnX.no.blank.df.list[[1]]
-				joined.samp.arms.inferred.ph.cpn[[samp]][[chr.arm]][["ph_cpnB"]] <- cpnX.no.blank.df.list[[2]]
 
 			}#end for (k in 1:nrow(cpnA.joined.segs.df)) {
 
 		}#end for (j in 1:length(cpnX.joined.segs.df.list)) {
 
-	}#end for ( chr.arm in chr.arms.present.vec) {
+		if (any(cpnX.no.blank.df.list[[1]] == -1)) {
 
-} # end for( samp in sample.vec) {
+			stop("cpnX.no.blank.df.list[[1]] == -1")
+
+
+		}
+		if (any(cpnX.no.blank.df.list[[2]] == -1)) {
+
+			stop("cpnX.no.blank.df.list[[2]] == -1")
+
+
+		}
+
+# 		#Non-parallel version:
+# 		joined.samp.arms.inferred.ph.cpn[[samp]][[chr.arm]][["ph_cpnA"]] <- cpnX.no.blank.df.list[[1]]
+# 		joined.samp.arms.inferred.ph.cpn[[samp]][[chr.arm]][["ph_cpnB"]] <- cpnX.no.blank.df.list[[2]]
+
+# 	#The two braces below this are for non parallel version
+# 	}#end for ( chr.arm in chr.arms.present.vec) {
+
+# } # end for( samp in sample.vec) {
+
+	#Parallel workversion
+	joined.samp.arms.ret.mrc.inferred.ph.cpn <- list()
+	joined.samp.arms.ret.mrc.inferred.ph.cpn[[chr.arm]] <- list()
+	joined.samp.arms.ret.mrc.inferred.ph.cpn[[chr.arm]][["ph_cpnA"]] <- cpnX.no.blank.df.list[[1]]
+	joined.samp.arms.ret.mrc.inferred.ph.cpn[[chr.arm]][["ph_cpnB"]] <- cpnX.no.blank.df.list[[2]]
+	joined.arm.mrc <- JoinedArmMultiResultClass(samp_chr_arm = paste0(samp, "_", chr.arm),
+												joined_samp_arms=chr.arm.joined.w.int.cpn.list,
+												joined_samp_arms_inferred_ph_cpn=joined.samp.arms.ret.mrc.inferred.ph.cpn)
+	returnable.list <- list(joined.arm.mrc)
+	names(returnable.list) <- paste0(samp, "_", chr.arm)
+	return(returnable.list)
+	#Endparallel version
+
+}#Parallel version closing brace.
+
+#So now we need a function to unscramble the parallelised results stuff:
+
+joined.samp.arms <- list()
+joined.samp.arms.inferred.ph.cpn <- list()
+
+for(samp in sample.vec) {
+
+	joined.samp.arms[[samp]] <- list()
+	joined.samp.arms.inferred.ph.cpn[[samp]] <- list() 
+
+	for(chr.arm in chr.arms.present.vec) {
+
+		joined.samp.arms.inferred.ph.cpn[[samp]][[chr.arm]] <- joined.samp.arms.list[[paste0(samp, "_", chr.arm)]]$joined_samp_arms_inferred_ph_cpn[[chr.arm]]
+		joined.samp.arms[[samp]][[chr.arm]] <- joined.samp.arms.list[[paste0(samp, "_", chr.arm)]]$joined_samp_arms_inferred_ph_cpn
+
+	}
+
+}
 
 str(samp.arms, max=1)
-str(joined.samp.arms, max=1)
 str(joined.samp.arms.inferred.ph.cpn, max=1)
-
-
 
 all.sample.joined.cpnA.cnpB.cpnTot.arm.segs.path <- paste0(PLOT_OUTPUT_DIR, patient, "_all_sample_joined_separate_cpnA_cnpB_cpnTot_arm_segs.RDS")
 saveRDS(joined.samp.arms, file = all.sample.joined.cpnA.cnpB.cpnTot.arm.segs.path )
@@ -2346,6 +2728,7 @@ saveRDS(joined.samp.arms.inferred.ph.cpn, file = all.sample.joined.cpnA.cnpB.arm
 
 all.samp.arm.cpnA.cpnB.list <- list()
 #Remake separate segments...? Needed for plotting?
+print("Merging separate joined cpnA and cpnB tracks into single set of segments for each sample.")
 for ( samp in sample.vec ) {
 
 	#initialise list sample output:
@@ -2356,8 +2739,7 @@ for ( samp in sample.vec ) {
 
 	for (arm in arms.present.vec) {
 
-		print(str(samp.joined.arms.list[[arm]], max=1))
-
+		#print(str(samp.joined.arms.list[[arm]], max=1))
 		samp.cpnA.arm.df <- samp.joined.arms.list[[arm]][["ph_cpnA"]]
 		samp.cpnA.arm.grs <- makeGRangesFromDataFrame(samp.cpnA.arm.df,
 				                         		keep.extra.columns=TRUE,
@@ -2410,7 +2792,7 @@ for ( samp in sample.vec ) {
 					mean_tot_cpn = dj.arm.cpnA.grs$mean_tot_cpn,
 					median_tot_cpn = dj.arm.cpnA.grs$median_tot_cpn,
 					stringsAsFactors = FALSE)
-		print(arm.mcs.cpn.df)
+		#print(arm.mcs.cpn.df)
 		all.samp.arm.cpnA.cpnB.list[[samp]][[arm]] <- arm.mcs.cpn.df
 
 	}#end for (arm in arms.present.vec) {
@@ -2432,8 +2814,7 @@ all.samp.joined.cpnA.cpnB.df <- do.call(rbind, samp.joined.cpnA.cpnB.segs.df.lis
 all.samp.joined.cpnA.cpnB.df.path <- paste0(PLOT_OUTPUT_DIR, patient, "_all_samp_joined_cpnA_cpnB_df.RDS")
 saveRDS(all.samp.joined.cpnA.cpnB.df, file = all.samp.joined.cpnA.cpnB.df.path )
 
-
-
+print("Making new MCS segmentation based on joined segments... this will be used to generate MPhase MEDICC input...")
 #Now we want to make a per sample joined cpnA and cpnB dataframe where all breakpoints are shared between samples. Much like full.joint.segs.df above.
 all.samp.mcs.joined.cpnA.cpnB.df.list  <- list()
 #First thing we need to do is to come up with a disjoint set of Granges that incorporates all the breakpoints from each sample.
@@ -2487,17 +2868,15 @@ post.MPhase.MEDICC.FASTA.files.list <- makeMEDICCInputListsFromSegmentationDF(se
 										sample.vec = sample.vec,
 										chrs.to.use.vec = CHRS_TO_USE_VEC,
 										chr.col = "chrom",
+										start.col = "startpos",
+										end.col = "endpos",
 										cpnA.col = "int_ph_cpnA",
 										cpnB.col = "int_ph_cpnB"
+
 										)
 
 post.MPhase.MEDICC.FASTA.files.list.path <- paste0(PLOT_OUTPUT_DIR, patient, "_post_MPhase_MEDICC_FASTA_file_list.RDS")
 saveRDS(post.MPhase.MEDICC.FASTA.files.list, file = post.MPhase.MEDICC.FASTA.files.list.path )
-
-
-
-
-
 
 
 
@@ -2555,7 +2934,7 @@ plotCPNSegDFAccrossGenome <- function(segs.df ,sample.vec, cpn.cols.to.plot = c(
          ,ylab = ""
          ,xlab = ""
          ,lwd = 2
-         ,main = paste0(samp, " ", cpnX, " allele")
+         ,main = paste0("Phased Allele Specific Copy Number")
          ,bty = "n")
     box()
 
@@ -2566,7 +2945,7 @@ plotCPNSegDFAccrossGenome <- function(segs.df ,sample.vec, cpn.cols.to.plot = c(
     names(samp.chroms.length.vec) <- unique(samp.chr.start.end.df[, 1])
     samp.chrom.segs.to.plot.df <- getCumulativeChromLengthsForPlottingDF(samp.chr.start.end.df, samp.chroms.length.vec, chr.vec)
 
-    print(head(samp.chrom.segs.to.plot.df))
+    #print(head(samp.chrom.segs.to.plot.df))
 
     for ( k in 1:nrow(samp.seg.df) ) {
 
@@ -2627,7 +3006,6 @@ plottable.mphase.samp.cpnA.cpnB.df <- all.samp.joined.cpnA.cpnB.df[, c("chrom","
 colnames(plottable.mphase.samp.cpnA.cpnB.df) <- plottable.col.name.vec
 
 
-
 print("Plotting before and after copy number profiles for each region....")
 png(file = paste(PLOT_OUTPUT_DIR, patient, "_mphase_mcs_cpn_across_genome", ".png", sep=""), width = 1200, height = 1400)
 
@@ -2649,40 +3027,17 @@ plotCPNSegDFAccrossGenome(segs.df = plottable.mphase.samp.cpnA.cpnB.df, sample.v
 dev.off()
 
 
-png(file = paste(PLOT_OUTPUT_DIR, patient, "_BAF_phased", ".png", sep=""), width = 1200, height = 1400)
+# png(file = paste(PLOT_OUTPUT_DIR, patient, "_BAF_phased", ".png", sep=""), width = 1200, height = 1400)
 
-print("Plotting phased BAF across the genome...")
-plotAllSampleBAFsAcrossGenome(sample.vec, patient.phased.BAF.df.list, cpnA.allele.color = '#de2d2699', cpnB.allele.color= '#3182bd99')
+# print("Plotting phased BAF across the genome...")
+# plotAllSampleBAFsAcrossGenome(sample.vec, patient.phased.BAF.df.list, cpnA.allele.color = '#de2d2699', cpnB.allele.color= '#3182bd99')
 
-dev.off()
-
-####Plot all genome wide plots
-print("Plotting CCFs for cpnA and cpnB across the genome using cpn definition of subclonality...")
-png(file = paste(PLOT_OUTPUT_DIR, patient, "_CCF_w_cpn_thresh_cpnA", ".png", sep = ""), width = 1200, height = 1400)
-
-plotAllSampleCCFsAcrossGenome(asas.ph.raw.cpn.lists = asas.ph.raw.cpn.lists,
-                              full.joint.segs.df = full.joint.segs.w.phasing.df,
-                              sample.vec = sample.vec,
-                              all.seg.CCF.vals.list = all.seg.CCF.list,
-                              cpnX = "cpnA",
-                              use.cpn.or.ccf.thresh = "CPN")
-
-dev.off()
-
-png(file = paste(PLOT_OUTPUT_DIR, patient, "_CCF_w_cpn_thresh_cpnB", ".png", sep = ""), width = 1200, height = 1400)
-
-plotAllSampleCCFsAcrossGenome(asas.ph.raw.cpn.lists = asas.ph.raw.cpn.lists,
-                              full.joint.segs.df = full.joint.segs.w.phasing.df,
-                              sample.vec = sample.vec,
-                              all.seg.CCF.vals.list = all.seg.CCF.list,
-                              cpnX = "cpnB",
-                              use.cpn.or.ccf.thresh = "CPN")
-dev.off()
+# dev.off()
 
 
 
-# STOP
 
+##########OLD FIGURES.........................
 
 # ####Plot all genome wide plots
 # print("Plotting CCFs for cpnA and cpnB across the genome using CCF definition of subclonality...")

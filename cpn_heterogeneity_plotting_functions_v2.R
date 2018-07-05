@@ -207,6 +207,116 @@ plotAllSampleCCFsAcrossGenome <- function(asas.ph.raw.cpn.lists, full.joint.segs
 }
 
 
+
+plotAllSampleBAFsAndMSAIAcrossGenome <- function(full.joint.segs.df, sample.vec, patient.phased.BAF.df.list, cpnA.allele.color = '#de2d2699', cpnB.allele.color= '#3182bd99') {
+
+  samp.BAF.df <- patient.phased.BAF.df.list[[1]]
+  chr.start.end.df <- samp.BAF.df[, c("chrom", "pos", "pos")]
+  chr.start.end.df <- apply(chr.start.end.df, 2, as.numeric)
+
+  chr.vec <- unique(samp.BAF.df[, "chrom"])
+
+  chroms.length.vec <- getChromLengthsVec(chr.start.end.df)
+  names(chroms.length.vec) <- chr.vec
+  chrom.segs.to.plot.df <- getCumulativeChromLengthsForPlottingDF(chr.start.end.df, chroms.length.vec, chr.vec)
+  min.x               <- 0
+  min.y               <- -0.5
+  max.y               <- 8.5
+  max.x               <- as.numeric(max(chrom.segs.to.plot.df[,3]))
+
+  num.samples  <- length(sample.vec)
+  first.samp <- sample.vec[1] 
+  last.samp <- sample.vec[length(sample.vec)] 
+  #sampJoinedSeg <- funJoinAdjacentSegments(copyITHRDS$sampComparisonList) is the equivalent
+
+  par(mfrow = c(num.samples, 1))
+
+  for ( samp in sample.vec ) {
+
+    #Set out border size for sub plot
+    if (samp == first.samp) {
+
+      par(mar = c(2, 3, 4, 3))
+
+    } else if (samp == last.samp) {
+
+      par(mar = c(4, 3, 2, 3))
+
+    } else {
+
+      par(mar = c(3, 3, 3, 3))
+
+    }
+
+    samp.BAF.df <- patient.phased.BAF.df.list[[samp]]
+    samp.BAF.df$color_to_plot <- ifelse(samp.BAF.df$maj_is_cpnA_logic_vec == 1, cpnA.allele.color, cpnB.allele.color)
+    samp.BAF.df$mphase_segmented_BAF <- 0.5
+
+    if(nrow(samp.BAF.df[grepl("none", samp.BAF.df$sample_phased_by_this_sample),]) > 0) {
+
+      samp.BAF.df[grepl("none", samp.BAF.df$sample_phased_by_this_sample),]$ph_median_segmented_BAF <- 0.5
+
+
+    }
+    rownames(samp.BAF.df) <- 1:nrow(samp.BAF.df)
+    plot(chrom.segs.to.plot.df[, 2], samp.BAF.df$BAF,
+        col = samp.BAF.df$color_to_plot,
+        pch = 16,
+        ylim = c(0, 1),
+        cex = 1,
+        main = samp,
+        ylab = "BAF",
+        xlab = "",
+        las = 1, 
+        xaxt = 'n')
+    
+    mtext(side = 3,
+          at = getChromMidpointsVec(chrom.segs.to.plot.df, unique(chr.start.end.df[,1])),
+          text = sort(unique(chrom.segs.to.plot.df[, 1])),
+          cex = seq(0.6, 0.4, length.out = length(unique(chrom.segs.to.plot.df[, 1]))),
+          line = -1)
+
+    for ( chr in sort(unique(as.numeric(chrom.segs.to.plot.df[, 1])))) {
+
+      abline(v = max(as.numeric(chrom.segs.to.plot.df[chrom.segs.to.plot.df[, 1] == chr, 3])), lwd = 0.5)
+
+    }#end for ( chr in sort(unique(as.numeric(chrom.segs.to.plot.df[, 1])))) {
+
+    points(chrom.segs.to.plot.df[, 2], samp.BAF.df$BAFsegmented, col = 'black', ylim = c(0 , 1), pch = 15, cex = 0.25)
+    points(chrom.segs.to.plot.df[, 2], samp.BAF.df$ph_median_segmented_BAF, col = '#78c679', ylim = c(0 , 1), pch = 15, cex = 0.5)
+
+    points(chrom.segs.to.plot.df[, 2], 1 - samp.BAF.df$BAFsegmented, col = 'black', ylim = c(0 , 1), pch = 15, cex = 0.25)
+    points(chrom.segs.to.plot.df[, 2], 1 - samp.BAF.df$ph_median_segmented_BAF, col = '#78c679', ylim = c(0 , 1), pch = 15, cex = 0.5)
+
+    box()
+
+  }#end for ( samp in sample.vec ) {
+
+}#end plotAllSampleBAFsAcrossGenome(...)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 plotAllSampleBAFsAcrossGenome <- function(sample.vec, patient.phased.BAF.df.list, cpnA.allele.color = '#de2d2699', cpnB.allele.color= '#3182bd99') {
 
   samp.BAF.df <- patient.phased.BAF.df.list[[1]]
