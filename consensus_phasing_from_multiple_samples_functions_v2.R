@@ -23,7 +23,7 @@ getCombinedBAFDipTestPhasing <- function(asas.lr.baf.lists,
   sample.to.phase.seg.list <- list()
 
   for ( seg.name in seg.name.vec ) {
-    
+        print(seg.name)
     first.ss.lr.baf.df <- asas.lr.baf.lists[[sample.vec[1]]][[seg.name]]
     if (nrow(first.ss.lr.baf.df) < min.num.hz.snp.phasing) {
 
