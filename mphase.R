@@ -110,13 +110,15 @@ current.dir <-  LocationOfThisScript()
 # seg.file.path <- "/home/camp/watkint/working/watkint/data/gundem/release/G_PTX001/WGS/MSAI/PTX001_joint_segs_all_ascat_info.txt"
 
 
-# patient <- "BTX001"
-# allow.dip.test.phasing.flag <- FALSE
-# output.directory.base.path <- "/home/camp/watkint/working/watkint/data/yates/release/Y_BTX001/WGS//CN_het_TRACERx_WGS_no_diptest/"
-# data.format.to.use <- "TRACERx_WGS"
-# snp.file.path <- "/home/camp/watkint/working/watkint/data/yates/release/Y_BTX001/WGS//CN_het_TRACERx_WGS_no_diptest/Y_BTX001_input_snp_files.txt"
-# seg.file.path <- "/home/camp/watkint/working/watkint/data/yates/release/Y_BTX001/WGS/MSAI/BTX001_joint_segs_all_ascat_info.txt"
-#overwrite.flag <- FALSE
+patient <- "BTX001"
+allow.dip.test.phasing.flag <- FALSE
+output.directory.base.path <- "/home/camp/watkint/working/watkint/data/yates/release/Y_BTX001/WGS//CN_het_TRACERx_WGS_no_diptest/"
+data.format.to.use <- "TRACERx_WGS"
+snp.file.path <- "/home/camp/watkint/working/watkint/data/yates/release/Y_BTX001/WGS//CN_het_TRACERx_WGS_no_diptest/Y_BTX001_input_snp_files.txt"
+seg.file.path <- "/home/camp/watkint/working/watkint/data/yates/release/Y_BTX001/WGS/MSAI/BTX001_joint_segs_all_ascat_info.txt"
+overwrite.flag <- TRUE
+gamma.val <- 1
+num.cores <- 12
 
 
 # patient <- "KTX167"
@@ -425,7 +427,7 @@ current.dir <-  LocationOfThisScript()
 # overwrite.flag <- TRUE
 # gamma.val <- 1
 # num.cores <- 12
-# intersection.or.whole.arm <- "intersection"
+#intersection.or.whole.arm <- "intersection"
 
 # patient  <-  "LTX021"
 # allow.dip.test.phasing.flag <- FALSE
@@ -641,7 +643,7 @@ print("parallelised results:")
 print(unlist(test.parallel.list))
 
 
-
+intersection.or.whole.arm <- "intersection"
 
 INTERSECTION_OR_ARM <- intersection.or.whole.arm
 GAMMA_VAL <- as.numeric(gamma.val)
@@ -2388,9 +2390,14 @@ samp.arms <- foreach(samp.arm.df = samp.arm.itx, .combine = c) %dopar% {
 				#print(nrow(orig.seg.lr.and.or.baf.df))
 				samp.logr.tot.cpn.df <- all.samp.non.hz.logr.and.tot.cpn.df.list[[samp]]
 				samp.logr.tot.cpn.df <- samp.logr.tot.cpn.df[ ! is.na(samp.logr.tot.cpn.df$chrom) ,]
-				samp.logr.tot.cpn.df$chr_pos <- paste0(samp.logr.tot.cpn.df$chrom, "_", samp.logr.tot.cpn.df$pos)
-				orig.seg.lr.and.or.baf.df$tot_raw_un_ph_cpn <- samp.logr.tot.cpn.df[match(orig.seg.lr.and.or.baf.df$chr_pos, samp.logr.tot.cpn.df$chr_pos),]$tot_raw_un_ph_cpn
-				
+
+				if(nrow(samp.logr.tot.cpn.df) > 0) {
+
+					samp.logr.tot.cpn.df$chr_pos <- paste0(samp.logr.tot.cpn.df$chrom, "_", samp.logr.tot.cpn.df$pos)
+					orig.seg.lr.and.or.baf.df$tot_raw_un_ph_cpn <- samp.logr.tot.cpn.df[match(orig.seg.lr.and.or.baf.df$chr_pos, samp.logr.tot.cpn.df$chr_pos),]$tot_raw_un_ph_cpn
+
+				}
+			
 				#Let's add phased copy number
 				seg.ph.cpn.list <- asas.ph.raw.cpn.lists[[samp]][[seg.name]]
 				if (  ! anyNA(seg.ph.cpn.list[1]$chr_vec) ) {
@@ -2411,6 +2418,21 @@ samp.arms <- foreach(samp.arm.df = samp.arm.itx, .combine = c) %dopar% {
 				#print(nrow(orig.seg.lr.and.or.baf.df))
 				orig.seg.lr.and.or.baf.df <- orig.seg.lr.and.or.baf.df[! is.na(orig.seg.lr.and.or.baf.df$chrom), ]
 				#print(nrow(orig.seg.lr.and.or.baf.df))
+
+				#Now let's make sure that all the phased copy number has total cpn values 
+
+				samp.arm.sites.df[ is.na(samp.arm.sites.df$tot_raw_un_ph_cpn) 
+								& (! is.na(samp.arm.sites.df$ph_cpnA))
+								& (! is.na(samp.arm.sites.df$ph_cpnB)),  ]
+
+								nrow(samp.arm.sites.df[ is.na(samp.arm.sites.df$tot_raw_un_ph_cpn) 
+												& (! is.na(samp.arm.sites.df$ph_cpnA))
+												& (! is.na(samp.arm.sites.df$ph_cpnB)),  ])
+
+										nrow(samp.arm.sites.df[ ! (is.na(samp.arm.sites.df$tot_raw_un_ph_cpn) 
+												& (! is.na(samp.arm.sites.df$ph_cpnA))
+												& (! is.na(samp.arm.sites.df$ph_cpnB))),  ]
+
 				joinable.df <- rbind(joinable.df, orig.seg.lr.and.or.baf.df)
 				
 			}#end if(nrow(orig.seg.lr.and.or.baf.df) > 0) {
@@ -2485,23 +2507,23 @@ joined.samp.arm.iterable.df <- expand.grid(sample.vec, chr.arms.present.vec, str
 colnames(joined.samp.arm.iterable.df) <- c("sample", "arm")
 joined.samp.arm.iterable.df <- joined.samp.arm.iterable.df[with(joined.samp.arm.iterable.df, order(sample, arm)), ]
 joined.samp.arm.itx <- iter(joined.samp.arm.iterable.df, by="row")
-joined.samp.arms.list <- foreach(joined.samp.arm.df = joined.samp.arm.itx, .export=ls(envir=globalenv()), .combine = c) %dopar% {
+# joined.samp.arms.list <- foreach(joined.samp.arm.df = joined.samp.arm.itx, .export=ls(envir=globalenv()), .combine = c) %dopar% {
 
 	require("GenomicRanges")
-# 	new.sample.vec <- sample.vec#[length(sample.vec)]
-# 	new.chr.arms.present.vec <- chr.arms.present.vec[34:34]
-# 	joined.samp.arms <- list()
-# 	joined.samp.arms.inferred.ph.cpn <- list()
-# for( samp in sample.vec) {
+	new.sample.vec <- sample.vec#[length(sample.vec)]
+	#new.chr.arms.present.vec <- chr.arms.present.vec[34:34]
+	joined.samp.arms <- list()
+	joined.samp.arms.inferred.ph.cpn <- list()
+for( samp in sample.vec) {
 
-# 	joined.samp.arms[[samp]] <- list()
-# 	joined.samp.arms.inferred.ph.cpn[[samp]] <- list()
+	joined.samp.arms[[samp]] <- list()
+	joined.samp.arms.inferred.ph.cpn[[samp]] <- list()
 
-# 	for ( chr.arm in chr.arms.present.vec) {
+	for ( chr.arm in chr.arms.present.vec) {
 		#print("here")
 		# #Parallel version:
-		samp <- joined.samp.arm.df$sample
-		chr.arm <- joined.samp.arm.df$arm
+		# samp <- joined.samp.arm.df$sample
+		# chr.arm <- joined.samp.arm.df$arm
 		#End parallel vesion
 		print(paste0(samp, "_", chr.arm))
 		chr.arm.joined.list <- list()
@@ -2565,7 +2587,7 @@ joined.samp.arms.list <- foreach(joined.samp.arm.df = joined.samp.arm.itx, .expo
 
 			sorted.joining.vals.mat <- joining.vals.mat[order(joining.vals.mat[,"startpos"]), ]
 			##Serial version. commented out:
-			#joined.samp.arms[[samp]][[chr.arm]][[cpnX.string]] <- as.data.frame(final.joining.vals.mat, stringsAsFactors=FALSE)
+			joined.samp.arms[[samp]][[chr.arm]][[cpnX.string]] <- as.data.frame(final.joining.vals.mat, stringsAsFactors=FALSE)
 			###End Serial version.
 			chr.arm.joined.list[[cpnX.string]] <- as.data.frame(final.joining.vals.mat, stringsAsFactors=FALSE)
 
@@ -2733,42 +2755,42 @@ joined.samp.arms.list <- foreach(joined.samp.arm.df = joined.samp.arm.itx, .expo
 
 		}#end for (j in 1:length(cpnX.joined.segs.df.list)) {
 
-		if (any(cpnX.no.blank.df.list[[1]] == -1)) {
+		if (any(cpnX.no.blank.df.list[[1]] %in% -1)) {
 
 			stop("cpnX.no.blank.df.list[[1]] == -1")
 
 
 		}
-		if (any(cpnX.no.blank.df.list[[2]] == -1)) {
+		if (any(cpnX.no.blank.df.list[[2]] %in% -1)) {
 
 			stop("cpnX.no.blank.df.list[[2]] == -1")
 
 
 		}
 
-# 		#Non-parallel version:
-# 		joined.samp.arms.inferred.ph.cpn[[samp]][[chr.arm]][["ph_cpnA"]] <- cpnX.no.blank.df.list[[1]]
-# 		joined.samp.arms.inferred.ph.cpn[[samp]][[chr.arm]][["ph_cpnB"]] <- cpnX.no.blank.df.list[[2]]
+		#Non-parallel version:
+		joined.samp.arms.inferred.ph.cpn[[samp]][[chr.arm]][["ph_cpnA"]] <- cpnX.no.blank.df.list[[1]]
+		joined.samp.arms.inferred.ph.cpn[[samp]][[chr.arm]][["ph_cpnB"]] <- cpnX.no.blank.df.list[[2]]
 
-# 	#The two braces below this are for non parallel version
-# 	}#end for ( chr.arm in chr.arms.present.vec) {
+	#The two braces below this are for non parallel version
+	}#end for ( chr.arm in chr.arms.present.vec) {
 
-# } # end for( samp in sample.vec) {
+} # end for( samp in sample.vec) {
 
-	#Parallel workversion
-	joined.samp.arms.ret.mrc.inferred.ph.cpn <- list()
-	joined.samp.arms.ret.mrc.inferred.ph.cpn[[chr.arm]] <- list()
-	joined.samp.arms.ret.mrc.inferred.ph.cpn[[chr.arm]][["ph_cpnA"]] <- cpnX.no.blank.df.list[[1]]
-	joined.samp.arms.ret.mrc.inferred.ph.cpn[[chr.arm]][["ph_cpnB"]] <- cpnX.no.blank.df.list[[2]]
-	joined.arm.mrc <- JoinedArmMultiResultClass(samp_chr_arm = paste0(samp, "_", chr.arm),
-												joined_samp_arms=chr.arm.joined.w.int.cpn.list,
-												joined_samp_arms_inferred_ph_cpn=joined.samp.arms.ret.mrc.inferred.ph.cpn)
-	returnable.list <- list(joined.arm.mrc)
-	names(returnable.list) <- paste0(samp, "_", chr.arm)
-	return(returnable.list)
-	#Endparallel version
+# 	#Parallel workversion
+# 	joined.samp.arms.ret.mrc.inferred.ph.cpn <- list()
+# 	joined.samp.arms.ret.mrc.inferred.ph.cpn[[chr.arm]] <- list()
+# 	joined.samp.arms.ret.mrc.inferred.ph.cpn[[chr.arm]][["ph_cpnA"]] <- cpnX.no.blank.df.list[[1]]
+# 	joined.samp.arms.ret.mrc.inferred.ph.cpn[[chr.arm]][["ph_cpnB"]] <- cpnX.no.blank.df.list[[2]]
+# 	joined.arm.mrc <- JoinedArmMultiResultClass(samp_chr_arm = paste0(samp, "_", chr.arm),
+# 												joined_samp_arms=chr.arm.joined.w.int.cpn.list,
+# 												joined_samp_arms_inferred_ph_cpn=joined.samp.arms.ret.mrc.inferred.ph.cpn)
+# 	returnable.list <- list(joined.arm.mrc)
+# 	names(returnable.list) <- paste0(samp, "_", chr.arm)
+# 	return(returnable.list)
+# 	#Endparallel version
 
-}#Parallel version closing brace.
+# }#Parallel version closing brace.
 
 #So now we need a function to unscramble the parallelised results stuff:
 
