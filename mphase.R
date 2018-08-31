@@ -2365,7 +2365,9 @@ if (OVERWRITE_JOIN_INIT_MCS_FLAG == TRUE) {
 	  return(me)
 	}
 
-	source("/home/camp/watkint/working/watkint/scripts/multiregioncopynum/new_seg_joining_functions.R")
+	#source("/home/camp/watkint/working/watkint/scripts/multiregioncopynum/new_seg_joining_functions.R")
+	source(paste0(current.dir, "new_seg_joining_functions.R"))
+
 	joined.samp.arm.iterable.df <- expand.grid(sample.vec, chr.arms.present.vec, stringsAsFactors=FALSE)
 	colnames(joined.samp.arm.iterable.df) <- c("sample", "arm")
 	joined.samp.arm.iterable.df <- joined.samp.arm.iterable.df[with(joined.samp.arm.iterable.df, order(sample, arm)), ]
@@ -4577,7 +4579,9 @@ pj.full.joint.segs.w.cl.sc.focal.df$within_samp_cpnB_passed <- init.sc.cpnB.vec 
 #This is he accessible genome from CNVkit, including to try and remove the seemingly erroneous LOH present in at the end of some chromosomes that seems to 
 #be related to potentially repetitive regions close to the cetnromeres.
 #TODO this should actually go at the top of the script and run all the way through with this...
-access.path <- "/camp/project/proj-tracerx-lung/tctProjects/pancan_multisample/reference_data/access-10kb.hg19.bed"
+
+#access.path <- "/camp/project/proj-tracerx-lung/tctProjects/pancan_multisample/reference_data/access-10kb.hg19.bed"
+access.path <- paste0(current.dir, "access-10kb.hg19.bed")
 access.df <- read.table(access.path, sep="\t", header=F, stringsAsFactors=F)
 access.df$V1 <- gsub("chr","", access.df$V1) 
 access.df$V1 <- gsub("X","23", access.df$V1)
@@ -4695,7 +4699,6 @@ getWeightedProportionOfGenome <- function(segs.subset.to.interest.df, empty.all.
 																												sum(as.numeric(all.pt.tot.chrom.size.df[all.pt.tot.chrom.size.df$sample == samp,]$width)))
 
 	}#end for (samp in sample.vec) {
-
 
 	pt.mphase.wgii.df <- aggregate(prop_event_width ~ sample, w.seg.df, sum)
 
@@ -4830,7 +4833,7 @@ dev.off()
 #Plot the CCFs for the final thing:
 
 #########OLD FIGURES.........................
-source("cpn_heterogeneity_plotting_functions_v2.R")
+source(paste0(current.dir, "cpn_heterogeneity_plotting_functions_v2.R"))
 ####Plot all genome wide plots
 print("Plotting CCFs for cpnA and cpnB across the genome using CCF definition of subclonality...")
 png(file = paste(PLOT_OUTPUT_DIR, patient, "_CCF_w_cpn_thresh_cpnA_pj", ".png", sep = ""), width = 1200, height = 1400)
@@ -4896,7 +4899,8 @@ plottable.pj.mphase.mcs.df <- transform(plottable.pj.mphase.mcs.df, ph_raw_cpnA 
 colnames(plottable.pj.mphase.mcs.df) <- c("chr","startpos", "endpos", "ph_raw_cpnA", "ph_raw_cpnB", "int_tot_ph_cpn", "sample")
 
 
-source("cpn_heterogeneity_plotting_functions_v2.R")
+source(paste0(current.dir, "cpn_heterogeneity_plotting_functions_v2.R"))
+
 #We're missing some stuff here:
 
 
