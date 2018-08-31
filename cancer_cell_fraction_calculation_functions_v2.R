@@ -122,12 +122,14 @@ calculateWhetherSegCPNDiffFromIntegerExpectedAndAllMatchingSampCPN <- function(a
             samp.pvals.diff.from.exp.list[[samp]][[paste0("round_int_", cpnX)]] <- s.samps.int.ob.xp.cpn.df[samp, paste0("round_int_", cpnX)]
             samp.pvals.diff.from.exp.list[[samp]][[paste0(cpnX, "_pval_vs_oth_cpn_match_chrs_raw_cpn")]] <- t.test.raw.seg.cpn.vs.all.matching.cpn.raw$p.value
             samp.pvals.diff.from.exp.list[[samp]][[paste0(cpnX, "_pval_vs_round_int_cpn")]] <- t.test.raw.seg.vs.cpn.int$p.value
+
+            samp.pvals.diff.from.exp.list[[samp]][[paste0(cpnX, "_median_oth_cpn_match_chrs_raw_cpn")]]  <- median(all.match.cpn.vals.vec)
+            samp.pvals.diff.from.exp.list[[samp]][[paste0(cpnX, "_mean_oth_cpn_match_chrs_raw_cpn")]]  <- mean(all.match.cpn.vals.vec)
+
             #print("chrs.w.same.cpn.vec")
             #print(chrs.w.same.cpn.vec)
             #print(str(samp.pvals.diff.from.exp.list, max=1))
             samp.pvals.diff.from.exp.list[[samp]][[paste0(cpnX, "_num_chrs_w_match_int_cpn_vec")]]  <- chrs.w.same.cpn.vec
-            samp.pvals.diff.from.exp.list[[samp]][[paste0("median_", cpnX, "_greater_than_match_raw_cpn")]] <- median.seg.raw.cpn.greater.than.matched.cpn
-            samp.pvals.diff.from.exp.list[[samp]][[paste0("median_", cpnX, "_greater_than_match_int_cpn")]] <- median.seg.raw.cpn.greater.seg.int.cpn
 
       }#end for ( samp in sample.vec ) {
 
@@ -395,7 +397,7 @@ getSegCPNXMeanAndAllRawCCFsDF <- function(ss.mean.cpnX.obs, ss.ph.cpnX.vals.vec,
 
   ss.mean.cpnX.obs <- ifelse(ss.mean.cpnX.obs < 0, 0, ss.mean.cpnX.obs)
 
-  if (seg.use.default.ccf == TRUE) {
+  if (seg.use.default.ccf.flag == TRUE) {
 
     ss.mean.frac.cpnX.low <- 0
     ss.mean.frac.cpnX.high <- 1

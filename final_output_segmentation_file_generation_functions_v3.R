@@ -132,7 +132,7 @@ addNewRawAndIntCPNCallsToFinalSegmentationParallel <- function(seg.name.vec,
        sample.rep.vec <- c(sample.rep.vec, rep(samp, (length(seg.name.vec))))
 
     }
-    iterable.samp.seg.df <- cbind(sample = sample.rep.vec, seg_name = all.samp.seg.name.vec)
+    iterable.samp.seg.df <- cbind(sample = sample.rep.vec, seg_name = all.samp.seg.name.vec, stringsAsFactors=FALSE)
     # cl <- makeCluster(NUM_CORES)
     # registerDoParallel(cl)
     itx <- iter(iterable.samp.seg.df, by="row")
@@ -831,10 +831,10 @@ addOriginalSegmentInfoToFinalSegmentation <- function(seg.name.vec,
 
 
 
-addWithinSampleChangeToCpnAndAllelicImbalanceCalls <- function(all.seg.df) {
+addWithinSampleChangeToCpnAndAllelicImbalanceCalls <- function(all.seg.df, sample.vec, seg.name.vec) {
 
     for ( samp in sample.vec ) {
-
+        print(samp)
         for ( seg.name in seg.name.vec ) {
 
             if (length(sample.vec) > 1) {
@@ -842,12 +842,14 @@ addWithinSampleChangeToCpnAndAllelicImbalanceCalls <- function(all.seg.df) {
             } else {
                 samp.seg.name <- seg.name
             }
-
+            print(samp.seg.name)
             #In some cases we may not be able to do this as the they are 
             #Add where the new nMinor differs
             if ( is.na(all.seg.df[samp.seg.name, ]$nMinor) == TRUE ){
-                #If couldn't phase then there won't be any change to the nMinmor, should probably change this to  
+                #If couldn't phase then there won't be any change to the nMinmor, should probably change this to 
+                print("skipping to next seg.")
                 next
+
 
             }
 
@@ -858,9 +860,9 @@ addWithinSampleChangeToCpnAndAllelicImbalanceCalls <- function(all.seg.df) {
             #Add where the total copy number differs
             all.seg.df[samp.seg.name, ]$cnTotal_change <- all.seg.df[samp.seg.name, ]$cnTotal != all.seg.df[samp.seg.name, ]$orig_cnTotal
 
-            all.seg.df[samp.seg.name, ]$within_samp_cl_AI_present <- (all.seg.df[samp.seg.name, ]$nMinor != all.seg.df[samp.seg.name, ]$nMajor) 
+            all.seg.df[samp.seg.name, ]$within_samp_cl_AI_present <- (as.numeric(all.seg.df[samp.seg.name, ]$nMinor) != as.numeric(all.seg.df[samp.seg.name, ]$nMajor)) 
 
-            all.seg.df[samp.seg.name, ]$within_samp_cl_LOH_present <- min(all.seg.df[samp.seg.name, ]$nMinor, all.seg.df[samp.seg.name, ]$nMajor) == 0
+            all.seg.df[samp.seg.name, ]$within_samp_cl_LOH_present <- min(as.numeric(all.seg.df[samp.seg.name, ]$nMinor), as.numeric(all.seg.df[samp.seg.name, ]$nMajor)) == 0
 
             #Todo, Should this be exor?
             all.seg.df[samp.seg.name, ]$within_samp_sc_AI_present <- (all.seg.df[samp.seg.name, ]$nMinor == all.seg.df[samp.seg.name, ]$nMajor) & 
@@ -887,7 +889,6 @@ addWithinSampleChangeToCpnAndAllelicImbalanceCalls <- function(all.seg.df) {
   return(all.seg.df)
 
 }#end addChangeToCpnAndAllelicImbalanceCalls <- function()
-
 
 
 
@@ -1063,6 +1064,7 @@ addWithinSampleClonalityAndCCFToFinalSegmentation <- function(seg.name.vec
                         #Test for evidence of subclonality within the segment for cpnA
                         mu.ccf.val <- 1 - min.CCF.to.consider.val
 
+                        cpnX.mean.and.median.flag <- TRUE
                         if (all.seg.df[samp.seg.name, paste0("psc_", cpnX, "_low")] == all.seg.df[samp.seg.name, paste0("psc_", cpnX, "_high")]) { 
                             #print("balanced cpn")
                             all.seg.df[samp.seg.name, paste0("sc_", cpnX, "_high_or_low_dominate")] <- NA
@@ -1079,8 +1081,10 @@ addWithinSampleClonalityAndCCFToFinalSegmentation <- function(seg.name.vec
                             mu.cpn.val <- all.seg.df[samp.seg.name, paste0("psc_", cpnX, "_low")] + min.cpn.to.consider.val
                             cpnA.cpn.mu.test.subclonal <- wilcoxTestWithErrorHandling(ph.cpnX.vec, mu = mu.cpn.val, alternative = "greater", exact = FALSE)
                             all.seg.df[samp.seg.name, paste0("sc_", cpnX, "_vs_min_cpn_pval")] <- cpnA.cpn.mu.test.subclonal$p.value
+
+                            cpnX.mean.and.median.flag <- mean(ph.cpnX.vec) > mu.cpn.val & median(ph.cpnX.vec) > mu.cpn.val
                             
-                        } else {#end   if ( median(seg.CCF.val.list[[seg.name]][[samp]]$frac_cpnA_low_vec) > median(seg.CCF.val.list[[seg.name]][[samp]]$frac_cpnA_high_vec) ) {
+                        } else  {#end   if ( median(seg.CCF.val.list[[seg.name]][[samp]]$frac_cpnA_low_vec) > median(seg.CCF.val.list[[seg.name]][[samp]]$frac_cpnA_high_vec) ) {
                             cpnA.test.subclonal <- wilcoxTestWithErrorHandling(ss.frac.poss.sc.cpnX.high.vec, mu = mu.ccf.val, alternative = "less", exact = FALSE)
                             all.seg.df[samp.seg.name, paste0("sc_", cpnX, "_high_or_low_dominate")] <- "HIGH"
                             all.seg.df[samp.seg.name, paste0("sc_", cpnX, "_vs_min_CCF_pval")] <- cpnA.test.subclonal$p.value
@@ -1089,16 +1093,63 @@ addWithinSampleClonalityAndCCFToFinalSegmentation <- function(seg.name.vec
                             cpnA.cpn.mu.test.subclonal <- wilcoxTestWithErrorHandling(ph.cpnX.vec, mu = mu.cpn.val, alternative = "less", exact = FALSE)
                             all.seg.df[samp.seg.name, paste0("sc_", cpnX, "_vs_min_cpn_pval")] <- cpnA.cpn.mu.test.subclonal$p.value
 
+                            cpnX.mean.and.median.flag <- mean(ph.cpnX.vec) < mu.cpn.val & median(ph.cpnX.vec) < mu.cpn.val
+
+
                         }
                         #readline(prompt="Press [enter] to continue")
                         #We need to refactor this magic number out of this
                         cpnX.pval.vs.other.chroms <- 1e-120
+                        abs.diff.from.oth.match.cpn.chrs.flag <- TRUE
+                        directionality.vs.oth.cpn.match.chrs.raw.cpn <- TRUE
                         all.seg.df[samp.seg.name, paste0("num_other_chrs_same_", cpnX, "_cpn")] <- length(seg.diff.from.others.list[[paste0(cpnX, "_num_chrs_w_match_int_cpn_vec")]])
+
+
                         if (all.seg.df[samp.seg.name, paste0("num_other_chrs_same_", cpnX, "_cpn")] >= min.num.other.chrs) {
 
                             cpnX.pval.vs.other.chroms <- seg.diff.from.others.list[[paste0(cpnX,"_pval_vs_oth_cpn_match_chrs_raw_cpn")]]
+                            mean.oth.cpn.match.chrs.raw.cpn <- seg.diff.from.others.list[[paste0(cpnX, "_mean_oth_cpn_match_chrs_raw_cpn")]]
+                            median.oth.cpn.match.chrs.raw.cpn <- seg.diff.from.others.list[[paste0(cpnX, "_median_oth_cpn_match_chrs_raw_cpn")]]
+                            print("######3")
+                            print(mean(ph.cpnX.vec))
+                            print(mean.oth.cpn.match.chrs.raw.cpn)
+                            print(median(ph.cpnX.vec))
+                            print(median.oth.cpn.match.chrs.raw.cpn)
+                            print("$$$$$$$$$$$$$$$$")
+                            print(abs(mean(ph.cpnX.vec) - mean.oth.cpn.match.chrs.raw.cpn))
+                            print(abs(median(ph.cpnX.vec) - median.oth.cpn.match.chrs.raw.cpn))
+                            print("##########")
+                            abs.diff.from.oth.match.cpn.chrs.flag <- abs(mean(ph.cpnX.vec) - mean.oth.cpn.match.chrs.raw.cpn) >= 0.04  & abs(median(ph.cpnX.vec) - median.oth.cpn.match.chrs.raw.cpn) >= 0.04
 
-                        }
+                            
+                            if( all.seg.df[samp.seg.name, paste0("psc_", cpnX, "_high")] <= all.seg.df[samp.seg.name, paste0("ph_int_", cpnX)]) {
+
+                                if (all.seg.df[samp.seg.name, paste0("sc_", cpnX, "_high_or_low_dominate")] %in% "HIGH") {
+
+                                    directionality.vs.oth.cpn.match.chrs.raw.cpn <- mean(ph.cpnX.vec) < mean.oth.cpn.match.chrs.raw.cpn
+
+                                } else if (all.seg.df[samp.seg.name, paste0("sc_", cpnX, "_high_or_low_dominate")] %in% "LOW") {
+
+                                    directionality.vs.oth.cpn.match.chrs.raw.cpn <- mean(ph.cpnX.vec) > mean.oth.cpn.match.chrs.raw.cpn
+
+                                }
+
+                            } else if (all.seg.df[samp.seg.name, paste0("psc_", cpnX, "_high")] - all.seg.df[samp.seg.name, paste0("ph_int_", cpnX)] == 1){
+
+                                if (all.seg.df[samp.seg.name, paste0("sc_", cpnX, "_high_or_low_dominate")] %in% "HIGH") {
+
+                                    directionality.vs.oth.cpn.match.chrs.raw.cpn <- mean(ph.cpnX.vec) > mean.oth.cpn.match.chrs.raw.cpn
+
+                                } else if (all.seg.df[samp.seg.name, paste0("sc_", cpnX, "_high_or_low_dominate")] %in% "LOW") {
+
+                                    directionality.vs.oth.cpn.match.chrs.raw.cpn <- mean(ph.cpnX.vec) < mean.oth.cpn.match.chrs.raw.cpn
+
+                                }
+
+                            }#end if( all.seg.df[samp.seg.name, paste0("psc_", cpnX, "_high")]) {
+
+
+                        }#end if (all.seg.df[samp.seg.name, paste0("num_other_chrs_same_", cpnX, "_cpn")] >= min.num.other.chrs) {
                         all.seg.df[samp.seg.name, paste0("vs_other_chrs_same_", cpnX, "_pval")] <- cpnX.pval.vs.other.chroms 
 
 
@@ -1118,13 +1169,62 @@ addWithinSampleClonalityAndCCFToFinalSegmentation <- function(seg.name.vec
                         if (all.seg.df[samp.seg.name, paste0("frac_psc_",cpnX,"_low")] > 1 |
                            all.seg.df[samp.seg.name, paste0("frac_psc_",cpnX,"_high")] > 1 |
                            all.seg.df[samp.seg.name, paste0("sc_",cpnX,"_vs_min_cpn_pval")] >= clonal.pval |
+                           all.seg.df[samp.seg.name, paste0("sc_",cpnX,"_vs_min_CCF_pval")] >= clonal.pval |
                            all.seg.df[samp.seg.name, paste0("vs_other_chrs_same_",cpnX,"_pval")] >= diff.from.oth.p.val) {
 
                             all.seg.df[samp.seg.name, paste0("within_samp_sc_", cpnX, "_present_using_min_cpn_diff")] <-  FALSE
 
+
+                            print("conditions:")
+                            print(all.seg.df[samp.seg.name, paste0("frac_psc_",cpnX,"_low")])
+                            print(all.seg.df[samp.seg.name, paste0("frac_psc_",cpnX,"_high")])
+                            print(all.seg.df[samp.seg.name, paste0("sc_",cpnX,"_vs_min_cpn_pval")])
+                            print(all.seg.df[samp.seg.name, paste0("sc_",cpnX,"_vs_min_CCF_pval")])
+                            print(all.seg.df[samp.seg.name, paste0("vs_other_chrs_same_",cpnX,"_pval")])
+                            print(samp)
+                            print(seg.name)
+                            print(mean(ph.cpnX.vec))
+                            print(median(ph.cpnX.vec))
+                            print(cpnX.mean.and.median.flag)
+                            print(abs.diff.from.oth.match.cpn.chrs.flag)
+                            print(directionality.vs.oth.cpn.match.chrs.raw.cpn)
+
+
+                            # if ( grepl("^5:", seg.name) ) {
+                            #     readline(prompt="Press [enter] to continue")
+                            # }
+
+
                         } else {
 
-                            all.seg.df[samp.seg.name, paste0("within_samp_sc_", cpnX, "_present_using_min_cpn_diff")] <- TRUE
+                            if (cpnX.mean.and.median.flag == TRUE & abs.diff.from.oth.match.cpn.chrs.flag == TRUE & directionality.vs.oth.cpn.match.chrs.raw.cpn == TRUE) {    
+
+                                all.seg.df[samp.seg.name, paste0("within_samp_sc_", cpnX, "_present_using_min_cpn_diff")] <- TRUE
+
+
+                                print(all.seg.df[samp.seg.name,])
+                                print(str(seg.diff.from.others.list, max=1))
+
+                                print("conditions:")
+                                print(all.seg.df[samp.seg.name, paste0("frac_psc_",cpnX,"_low")])
+                                print(all.seg.df[samp.seg.name, paste0("frac_psc_",cpnX,"_high")])
+                                print(all.seg.df[samp.seg.name, paste0("sc_",cpnX,"_vs_min_cpn_pval")])
+                                print(all.seg.df[samp.seg.name, paste0("sc_",cpnX,"_vs_min_CCF_pval")])
+                                print(all.seg.df[samp.seg.name, paste0("vs_other_chrs_same_",cpnX,"_pval")])
+                                print(samp)
+                                print(seg.name)
+                                print(mean(ph.cpnX.vec))
+                                print(median(ph.cpnX.vec))
+
+                               # 
+
+
+
+                            } else {
+
+                                all.seg.df[samp.seg.name, paste0("within_samp_sc_", cpnX, "_present_using_min_cpn_diff")] <- FALSE
+
+                            }
 
                         }
 
@@ -1218,7 +1318,7 @@ addLogrDefinedCPNEventsToOutputSegmentationParallel <- function(sample.vec,
                    low.obs.logr.conf.int,
                    high.obs.logr.conf.int,
                    gen.t.test.pval,
-                   alt.t.test.pval)  
+                   alt.t.test.pval, stringsAsFactors = FALSE)  
       return(out)
       
     }#end checkSegGainOrLossSignificance <- function(ss.baf.lr.baf.df, samp.to.check, ploidy.est.vec, purity.est.vec, threshold) {
@@ -1366,7 +1466,7 @@ addLogrDefinedCPNEventsToOutputSegmentationParallel <- function(sample.vec,
             if (nrow(ss.dp.w.logr.only.df) > 0) {
 
                 ss.comb.baf.lr.baf.df <- rbind(ss.baf.lr.baf.df[, c("chrom", "pos", "BAF", "BAFsegmented", "logR", "logRsegmented")],
-                                    ss.dp.w.logr.only.df[, c("chrom", "pos", "BAF", "BAFsegmented", "logR", "logRsegmented")])
+                                    ss.dp.w.logr.only.df[, c("chrom", "pos", "BAF", "BAFsegmented", "logR", "logRsegmented")], stringsAsFactors=FALSE)
 
             } else {#end if (nrow(ss.dp.w.logr.only.df) > 0) {
 
@@ -1533,7 +1633,7 @@ addLogrDefinedCPNEventsToOutputSegmentation <- function(sample.vec,
                     if (nrow(ss.dp.w.logr.only.df) > 0) {
 
                         ss.comb.baf.lr.baf.df <- rbind(ss.baf.lr.baf.df[, c("chrom", "pos", "BAF", "BAFsegmented", "logR", "logRsegmented")],
-                                            ss.dp.w.logr.only.df[, c("chrom", "pos", "BAF", "BAFsegmented", "logR", "logRsegmented")])
+                                            ss.dp.w.logr.only.df[, c("chrom", "pos", "BAF", "BAFsegmented", "logR", "logRsegmented")], stringsAsFactors = FALSE)
 
                     } else {#end if (nrow(ss.dp.w.logr.only.df) > 0) {
 
@@ -1664,7 +1764,7 @@ addMSAIDetectionByLTNPDToOutputSegmentation <- function(sample.vec,
 addParallelEventsByMSAIToOutputSegmentation <- function(all.segs.df) {
 
   #So first just subset by anything with MSAI calls:
-
+  all.segs.df <- a
   matched.MSAI.loss.segs.df <- all.segs.df[(! is.na(all.segs.df$any_across_samp_MSAI)) 
                                             & all.segs.df$any_across_samp_MSAI == TRUE
                                             & all.segs.df$cpn_event_vs_ploidy %in% c("loss", "deep_loss"),]
@@ -1674,9 +1774,12 @@ addParallelEventsByMSAIToOutputSegmentation <- function(all.segs.df) {
   matched.MSAI.LOH.segs.df <- all.segs.df[(! is.na(all.segs.df$any_across_samp_MSAI)) 
                                             & all.segs.df$any_across_samp_MSAI == TRUE
                                             & all.segs.df$min_int_cpnX == 0,]
-  matched.MSAI.LOH.or.loss.segs.df <- all.segs.df[(! is.na(all.segs.df$any_across_samp_MSAI)) 
-                                                  & all.segs.df$any_across_samp_MSAI == TRUE 
-                                                  & (all.segs.df$min_int_cpnX == 0 | all.segs.df$cpn_event_vs_ploidy %in% c("loss", "deep_loss")),]
+
+
+    matched.MSAI.LOH.segs.df <- a[(! is.na(a$any_across_samp_MSAI)) 
+                                              & a$any_across_samp_MSAI == TRUE
+                                              & a$min_int_cpnX == 0,]
+
 
   MSAI.gain.seg.names.vec <- unique(matched.MSAI.gain.segs.df$seg_name)
   MSAI.loss.seg.names.vec <- unique(matched.MSAI.loss.segs.df$seg_name)
@@ -1718,7 +1821,7 @@ addParallelEventsByMSAIToOutputSegmentation <- function(all.segs.df) {
 
     seg.MSAI.LOH.df <- matched.MSAI.LOH.segs.df[matched.MSAI.LOH.segs.df$seg_name == seg.name ,]
 
-    if ("cpnA" %in% matched.MSAI.LOH.segs.df$dominant_allele & "cpnB" %in% seg.MSAI.LOH.df$dominant_allele) {
+    if ("cpnA" %in% seg.MSAI.LOH.df$dominant_allele & "cpnB" %in% seg.MSAI.LOH.df$dominant_allele) {
 
       all.segs.df[rownames(seg.MSAI.LOH.df) ,]$is_parallel_LOH <- TRUE
 
@@ -1800,6 +1903,8 @@ addPanCanColumnDefinitionToSegDF <- function(all.seg.df) {
 
     ss.df <- all.seg.df[samp.seg.name.vec, ]
     #all.samps.seg.df <- all.seg.df[samp.seg.name.vec,]
+
+    #TODO FIX THIS, currently reduces the amount of MSAI that's not correct. For now use other columns...
     if(is.na(all.seg.df[samp.seg.name.vec ,]$within_samp_sc_cpnA_present[1]) | is.na(all.seg.df[samp.seg.name.vec ,]$within_samp_sc_cpnB_present[1])) {
 
       next
@@ -1814,13 +1919,13 @@ addPanCanColumnDefinitionToSegDF <- function(all.seg.df) {
       all.seg.df[samp.seg.name.vec ,]$pt_seg_parallel_MSAI_loss <- any(ss.df$is_parallel_loss, na.rm = TRUE)
       all.seg.df[samp.seg.name.vec ,]$pt_seg_parallel_MSAI_LOH <- any(ss.df$is_parallel_LOH, na.rm = TRUE)
       all.seg.df[samp.seg.name.vec ,]$pt_seg_parallel_MSAI_loss_or_LOH <- any(ss.df$is_parallel_loss_and_or_LOH, na.rm = TRUE)
+      #TODO revisit this! and change definition so that it's EITHER clonal LOH OR clonal loss vs ploidy not some combination...
       all.seg.df[samp.seg.name.vec ,]$pt_seg_cl_loss_LOH_no_MSAI <- (! any(ss.df$any_across_samp_MSAI, na.rm = TRUE)) & all(ss.df$cpn_event_vs_ploidy %in% c("loss", "deep_loss") | ss.df$min_int_cpnX == 0)
       all.seg.df[samp.seg.name.vec ,]$pt_seg_cl_gain_amp_no_MSAI <- (! any(ss.df$any_across_samp_MSAI, na.rm = TRUE)) & all(ss.df$cpn_event_vs_ploidy %in% c("gain", "amp"))
       all.seg.df[samp.seg.name.vec ,]$pt_seg_sc_loss_LOH_incl_MSAI <- (any(ss.df$any_across_samp_MSAI, na.rm = TRUE) & all(ss.df$cpn_event_vs_ploidy %in% c("loss", "amp"))) | (! (all(ss.df$cpn_event_vs_ploidy %in% c("loss", "deep_loss") | ss.df$min_int_cpnX == 0)))& (any(ss.df$cpn_event_vs_ploidy %in% c("loss", "deep_loss") | ss.df$min_int_cpnX == 0))  
       all.seg.df[samp.seg.name.vec ,]$pt_seg_sc_gain_amp_incl_MSAI <- (any(ss.df$any_across_samp_MSAI, na.rm = TRUE) & all(ss.df$cpn_event_vs_ploidy %in% c("gain", "amp"))) | ((! all(ss.df$cpn_event_vs_ploidy %in% c("gain", "amp"))) & any(ss.df$cpn_event_vs_ploidy %in% c("gain", "amp")))
 
     }#end  if( ! is.na(all.seg.df[samp.seg.name.vec ,]$within_samp_sc_cpnA_present[1]) | ! is.na(all.seg.df[samp.seg.name.vec ,]$within_samp_sc_cpnB_present[1])) {
-
 
   }#end   for ( seg.name in seg.name.vec ) {
   
@@ -2021,10 +2126,10 @@ initialiseFullOutputDataframe <- function(seg.name.vec, ploidy.est.vec, purity.e
                 pt_seg_sc_loss_LOH_incl_MSAI = rep(NA, nr),
                 pt_seg_sc_gain_amp_incl_MSAI = rep(NA, nr),
                 #sample summary data that could go into a different dataframe
-                orig_wgii = rep(NA, nr),
-                wgii = rep(NA, nr),
-                within_samp_cl_wgii = rep(NA, nr),
-                within_samp_sc_wgii = rep(NA, nr),
+                orig_WGII = rep(NA, nr),
+                mphase_WGII = rep(NA, nr),
+                within_samp_cl_WGII = rep(NA, nr),
+                within_samp_sc_WGII = rep(NA, nr),
                 logr_data_quality = rep(NA, nr),
                 TRACERx_het_measure = rep(NA, nr),
                 mphase_het_measure = rep(NA, nr),
@@ -2051,5 +2156,31 @@ initialiseFullOutputDataframe <- function(seg.name.vec, ploidy.est.vec, purity.e
 
         rownames(all.seg.df) <- row.names.vec
         return(all.seg.df)
+
+}
+
+
+addOriginalSegmentInfoToFinalSegmentationNew <- function(all.seg.df, all.orig.samp.segs.anno.df) {
+
+    #Really assuming order is correct here!
+    all.seg.df$overlap_w_n_orig_samps <- all.orig.samp.segs.anno.df$overlap_w_n_samps
+    all.seg.df$num_segs_maps_to_in_orig_samp <-  all.orig.samp.segs.anno.df$num_segs_maps_to_in_samp
+    all.seg.df$in_intersection_w_orig_segs <-  all.orig.samp.segs.anno.df$in_intersection
+    all.seg.df$in_disjoint_set_w_orig_segs <-  all.orig.samp.segs.anno.df$in_disjoin_only
+    all.seg.df$not_present_in_orig_segs <-  all.orig.samp.segs.anno.df$in_arm_setdiff
+    all.seg.df$orig_samp_seg_name <- all.orig.samp.segs.anno.df$uniq_id
+    all.seg.df$orig_cpnA_raw <- all.orig.samp.segs.anno.df$nAraw
+    all.seg.df$orig_cpnB_raw <- all.orig.samp.segs.anno.df$nBraw
+    all.seg.df$orig_nMinor <- all.orig.samp.segs.anno.df$nMinor
+    all.seg.df$orig_nMajor <- all.orig.samp.segs.anno.df$nMajor
+    all.seg.df$orig_cnTotal <- all.orig.samp.segs.anno.df$cnTotal
+    all.seg.df$orig_cpn_call_vs_ploidy <- all.orig.samp.segs.anno.df$cpn_call
+    all.seg.df$orig_seg_in_whole_arm_event <- all.orig.samp.segs.anno.df$arm_event_present
+    all.seg.df$orig_seg_is_arm_or_focal_event <- all.orig.samp.segs.anno.df$arm_or_focal_event
+    all.seg.df$orig_arm_seg_present_in <- all.orig.samp.segs.anno.df$within_chr_arm
+    all.seg.df$chr_arm <- all.orig.samp.segs.anno.df$chr_arm
+
+
+    return(all.seg.df)
 
 }

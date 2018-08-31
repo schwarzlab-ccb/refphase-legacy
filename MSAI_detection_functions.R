@@ -35,7 +35,7 @@ getAllSegsMSAIDetectionFromBAFListLTNPD <- function(seg.name.vec, sample.vec, as
         all.seg.MSAI.by.BAF.ltnpd.present.list[[seg.name]]$MSAI_detection_info <- "phasing_from_single_sample_used"#Note might be an issue here, is it only
 
       }# end else if (ref.samp == "mixture") {
-      nr <- length(asas.SNPs.w.both.lr.baf.snp.lists[[1]][[seg.name]]$BAF)
+      nr <- length(asas.SNPS.lr.and.or.baf.lists[[1]][[seg.name]]$BAF)
       lower.band.col.names <- paste0(sample.vec, "_ltnpd_in_lower")
       upper.band.col.names <- paste0(sample.vec, "_ltnpd_in_upper") 
       interleaved.col.names <- c(rbind(sample.vec, lower.band.col.names, upper.band.col.names))
@@ -46,9 +46,9 @@ getAllSegsMSAIDetectionFromBAFListLTNPD <- function(seg.name.vec, sample.vec, as
 
       for ( samp in sample.vec ) {
 
-        all.samp.seg.baf.df[[samp]] <- asas.SNPs.w.both.lr.baf.snp.lists[[samp]][[seg.name]]$BAF
-        all.samp.seg.baf.df[[paste0(samp, "_ltnpd_in_lower")]] <- getLogTruncNormProbabilityDensitiesBAFvsLowerOrUpper(lower.or.upper.mu = 0.33, baf.vector = asas.SNPs.w.both.lr.baf.snp.lists[[samp]][[seg.name]]$BAF)
-        all.samp.seg.baf.df[[paste0(samp, "_ltnpd_in_upper")]] <- getLogTruncNormProbabilityDensitiesBAFvsLowerOrUpper(lower.or.upper.mu = 0.66, baf.vector = asas.SNPs.w.both.lr.baf.snp.lists[[samp]][[seg.name]]$BAF)
+        all.samp.seg.baf.df[[samp]] <- asas.SNPS.lr.and.or.baf.lists[[samp]][[seg.name]]$BAF
+        all.samp.seg.baf.df[[paste0(samp, "_ltnpd_in_lower")]] <- getLogTruncNormProbabilityDensitiesBAFvsLowerOrUpper(lower.or.upper.mu = 0.33, baf.vector = asas.SNPS.lr.and.or.baf.lists[[samp]][[seg.name]]$BAF)
+        all.samp.seg.baf.df[[paste0(samp, "_ltnpd_in_upper")]] <- getLogTruncNormProbabilityDensitiesBAFvsLowerOrUpper(lower.or.upper.mu = 0.66, baf.vector = asas.SNPS.lr.and.or.baf.lists[[samp]][[seg.name]]$BAF)
 
       }#end for ( samp in sample.vec ) {
 

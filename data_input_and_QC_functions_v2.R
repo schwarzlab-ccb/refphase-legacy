@@ -1402,12 +1402,12 @@ getOverlapGRanges <- function(query, subject, output="gr", ...) {
 ##
 ##Returns:
 ##
-cleanAndErrorCheckSNPsParallel <- function(all.samp.SNP.list, min.cons.seg.df, allow.logr.only.flag = FALSE, data.type = "MEDICC") {
+cleanAndErrorCheckSNPsParallel <- function(all.samp.SNP.list, mcs.seg.to.use.df, allow.logr.only.flag = FALSE, data.type = "MEDICC") {
   # TODO add check that every single all.samp.SNP.list has the same SNPs..
   # Note error checking of removing NAs from the min.cons.seg.df should already have been performed
 
-  min.cpn.vals.df <- min.cons.seg.df[,4:ncol(min.cons.seg.df)]
-  seg.name.vec <- paste(min.cons.seg.df[, 1], min.cons.segs.df[, 2], min.cons.segs.df[, 3], sep=":")
+  min.cpn.vals.df <- mcs.seg.to.use.df[,4:ncol(mcs.seg.to.use.df)]
+  seg.name.vec <- paste(mcs.seg.to.use.df[, 1], mcs.seg.to.use.df[, 2], mcs.seg.to.use.df[, 3], sep=":")
   #min.cpn.vals.df <- min.cpn.vals.df[ ! is.na(rowSums(min.cpn.vals.df)), ,drop = FALSE] 
   working.all.samp.SNP.list <- list()
   all.samps.prob.SNPs.vec <- c()
@@ -1422,7 +1422,9 @@ cleanAndErrorCheckSNPsParallel <- function(all.samp.SNP.list, min.cons.seg.df, a
 
   }
 
-  iterable.min.cons.seg.df <- cbind(do.call("rbind", replicate(length(sample.vec), min.cons.seg.df[,1:3], simplify = FALSE)), sample = sample.rep.vec)
+  iterable.min.cons.seg.df <- cbind(do.call("rbind", replicate(length(sample.vec), mcs.seg.to.use.df[,1:3], simplify = FALSE)), sample = sample.rep.vec)
+  library("gdata")
+  iterable.min.cons.seg.df <- drop.levels(iterable.min.cons.seg.df)
   #cl <- makeCluster(NUM_CORES)
   #registerDoParallel(cl)
   itx <- iter(iterable.min.cons.seg.df, by="row")
@@ -1442,23 +1444,23 @@ cleanAndErrorCheckSNPsParallel <- function(all.samp.SNP.list, min.cons.seg.df, a
     class(me) <- append(class(me),"MultiResultClass")
     return(me)
   }
-  sites.in.each.samp.seg.list <- foreach(min.cons.seg.df = itx, .combine = c) %dopar% {
+  sites.in.each.samp.seg.list <- foreach(it.min.cons.seg.df = itx, .combine = c) %dopar% {
   #for( i in 1:nrow(iterable.min.cons.seg.df)) {
 
-    #print(iterable.min.cons.seg.df[i,])
+   # print(iterable.min.cons.seg.df[i,])
     #min.cons.seg.df <- iterable.min.cons.seg.df[i, ,drop=FALSE]
-   # print(min.cons.seg.df)
-    samp.SNP.df <- all.samp.SNP.list[[ min.cons.seg.df[, 4]]]
-
+    #print(min.cons.seg.df)
+    samp.SNP.df <- all.samp.SNP.list[[ it.min.cons.seg.df[, 4]]]
+    
     if( "chr" %in% colnames(samp.SNP.df)) {
 
           colnames(samp.SNP.df)[colnames(samp.SNP.df) == "chr"] <- "chrom"
 
     }
-
-    samp.seg.logR.BAF.df <- samp.SNP.df[ samp.SNP.df$chrom == min.cons.seg.df[, 1] 
-                                       & samp.SNP.df$pos >= min.cons.seg.df[, 2] 
-                                       & samp.SNP.df$pos <= min.cons.seg.df[, 3], ,drop = FALSE]
+    print(it.min.cons.seg.df)
+    samp.seg.logR.BAF.df <- samp.SNP.df[ samp.SNP.df$chrom == it.min.cons.seg.df[, 1] 
+                                       & samp.SNP.df$pos >= it.min.cons.seg.df[, 2] 
+                                       & samp.SNP.df$pos <= it.min.cons.seg.df[, 3], ,drop = FALSE]
     samp.prob.SNPs.vec <- c()
     if (data.type == "TRACERx_WGS") {
 
@@ -1466,13 +1468,13 @@ cleanAndErrorCheckSNPsParallel <- function(all.samp.SNP.list, min.cons.seg.df, a
 
     } else if (allow.logr.only.flag == FALSE & data.type == "TRACERx_exome") {
 
-      samp.prob.SNPs.vec <- rownames(samp.seg.logR.BAF.df[is.na(samp.seg.logR.BAF.df$BAFsegmented),])
+      samp.prob.SNPs.vec <- rownames(samp.seg.logR.BAF.df[is.na(samp.seg.logR.BAF.df$BAFsegmented), ,drop = FALSE ])
       samp.seg.logR.BAF.df <- samp.seg.logR.BAF.df[samp.seg.logR.BAF.df$BAF != 2, ,drop = FALSE]
       samp.seg.logR.BAF.df <- samp.seg.logR.BAF.df[! is.na(samp.seg.logR.BAF.df$BAFsegmented), ,drop = FALSE]
 
     } else if (allow.logr.only.flag == FALSE & data.type == "MEDICC") {
 
-      samp.prob.SNPs.vec <- c(samp.prob.SNPs.vec, rownames(samp.seg.logR.BAF.df[samp.seg.logR.BAF.df$BAF == 2,]))
+      samp.prob.SNPs.vec <- c(samp.prob.SNPs.vec, rownames(samp.seg.logR.BAF.df[samp.seg.logR.BAF.df$BAF == 2, , drop = FALSE ]))
       samp.seg.logR.BAF.df <- samp.seg.logR.BAF.df[as.numeric(samp.seg.logR.BAF.df$BAF) != 2, ,drop = FALSE]
       samp.seg.logR.BAF.df <- samp.seg.logR.BAF.df[! is.na(samp.seg.logR.BAF.df$BAFsegmented), ,drop = FALSE]
       #colnames(samp.seg.logR.BAF.df)[colnames(samp.seg.logR.BAF.df) == "chr"] <- "chrom"
@@ -1483,15 +1485,16 @@ cleanAndErrorCheckSNPsParallel <- function(all.samp.SNP.list, min.cons.seg.df, a
     
     }
 
-    result <- MultiResultClass(samp_seg_name = paste0(min.cons.seg.df[, 4], "@", min.cons.seg.df[, 1], ":", min.cons.seg.df[, 2], ":", min.cons.seg.df[, 3]),
+    result <- MultiResultClass(samp_seg_name = paste0(it.min.cons.seg.df[, 4], "@", it.min.cons.seg.df[, 1], ":", it.min.cons.seg.df[, 2], ":", it.min.cons.seg.df[, 3]),
                   samp_seg_logR_BAF_df = samp.seg.logR.BAF.df,
                   samp_prob_SNPs_vec = samp.prob.SNPs.vec)
     result.list <- list(result)
-    names(result.list) <- paste0(min.cons.seg.df[, 4], "@", min.cons.seg.df[, 1], ":", min.cons.seg.df[, 2], ":", min.cons.seg.df[, 3])
+    names(result.list) <- paste0(it.min.cons.seg.df[, 4], "@", it.min.cons.seg.df[, 1], ":", it.min.cons.seg.df[, 2], ":", it.min.cons.seg.df[, 3])
     result.list
 
   }
 
+  #saveRDS(sites.in.each.samp.seg.list, file = )
   all.samps.prob.SNPs.vec <- unique(unlist(sapply(sites.in.each.samp.seg.list, function(x) x[["samp_prob_SNPs_vec"]])))
   print("Number of problem SNPs being removed:")
   print(length(all.samps.prob.SNPs.vec))
@@ -1500,6 +1503,7 @@ cleanAndErrorCheckSNPsParallel <- function(all.samp.SNP.list, min.cons.seg.df, a
   if (length(all.samps.prob.SNPs.vec) > 0) {
 
     samp.seg.itx <- iter(sites.in.each.samp.seg.list)
+
     clean.sites.in.each.samp.seg.list <- foreach(samp.seg.mrc = samp.seg.itx, .combine = c) %dopar% {
 
       seg.name <- strsplit(samp.seg.mrc$samp_seg_name, "@")[[1]][2]
@@ -1520,7 +1524,6 @@ cleanAndErrorCheckSNPsParallel <- function(all.samp.SNP.list, min.cons.seg.df, a
 
   }
 
-  #stopCluster(cl)
 
   for ( samp.seg.name in names(clean.sites.in.each.samp.seg.list) ) {
 
