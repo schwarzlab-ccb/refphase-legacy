@@ -3,16 +3,22 @@ args = commandArgs(trailingOnly=TRUE)
 print("args")
 print(args)
 patient <- args[1]
+#At the moment MPhase will only try to call MSAI and new copy number in areas of the genome identified as allelically imbalanced 
+#Enable this flag to try and find more allelic imbalance but this will probably break.
 allow.dip.test.phasing.flag <- as.logical(args[2])
 output.directory.base.path <- args[3]
 data.format.to.use <- args[4]#Default for this is MEDICC, but can specify TRACERx_exome, TRACERx_snp_array or TRACERx_WGS
 snp.file.path <- args[5]#Points towards the snp files, of whatever format they are given that should be used based on data.format to use.
 seg.file.path <- args[6]#Pintts towards the seg files, of whatever format they should be determined byh the data.format.to.use flag.
 overwrite.flag  <- as.logical(args[7])
-gamma.val <- args[8]
-num.cores <- args[9]
-intersection.or.whole.arm <- args[10]#Can either be intersection or whole_arm
+gamma.val <- args[8]#for sequencing it's 1 and SNP array it's 0.4/0.5 but this is platform specific see ASCAT help pages.
+num.cores <- args[9]#number of cores for the do parallel package functions
+intersection.or.whole.arm <- args[10]#Can either be intersection or whole_arm, do we take the only intersection of segments from each sample 
+#or do attempt to fill in the gaps between every segment in each sample so that the entire genome is covered (so output from any sample can run in GISTIC
+#as all will cover the same genomic area)
 options(stringsAsFactors = FALSE)
+
+
 
 #function taken from https://github.com/molgenis/molgenis-pipelines/wiki/How-to-source-another_file.R-from-within-your-R-script
 LocationOfThisScript  <-  function() { # Function LocationOfThisScript returns the location of this .R script (may be needed to source other files in same dir)
@@ -679,6 +685,8 @@ current.dir <-  LocationOfThisScript()
 # gamma.val <- 1
 # num.cores <- 7
 
+
+
 # patient  <-  "LTX121"
 # allow.dip.test.phasing.flag <- FALSE
 # output.directory.base.path <- "/Users/watkint/Desktop/MET048_mPhase_data/CN_het_TRACERx_no_diptest/"
@@ -691,6 +699,8 @@ current.dir <-  LocationOfThisScript()
 # intersection.or.whole.arm <- "intersection"
 
 
+
+#Best example to run as is exome and only has two samples.
 patient  <-  "LTX121"
 allow.dip.test.phasing.flag <- FALSE
 output.directory.base.path <- "/camp/project/proj-tracerx-lung/tctProjects/watkint/TRACERx100_lung_pan_can_analysis/release/A_LTX121/exome/CN_het_TRACERx_no_diptest/"
@@ -753,7 +763,7 @@ source(paste0(current.dir, "data_input_and_QC_functions_v2.R"))
 source(paste0(current.dir, "consensus_phasing_from_multiple_samples_functions_v2.R"))
 source(paste0(current.dir, "generation_of_phased_and_total_cpn_functions_v2.R"))
 source(paste0(current.dir, "MSAI_detection_functions.R"))
-source(paste0(current.dir, "pairwise_cpn_comparison_and_heterogeneity_functions.R"))
+source(paste0(current.dir, "pairwise_cpn_comparison_and_heterogeneity_functions.R"))#Legacy code, not really used anymore as of 11/09/2018
 source(paste0(current.dir, "cancer_cell_fraction_calculation_functions_v2.R"))
 source(paste0(current.dir, "final_output_segmentation_file_generation_functions_v3.R"))
 source(paste0(current.dir, "new_seg_joining_functions.R"))
@@ -775,10 +785,13 @@ MIN_NUM_HZ_SNP_PHASING <- 5
 OVERWRITE_FLAG <- as.logical(overwrite.flag)
 
 PLOTTING_FLAG <- FALSE
-JOINED_SEGS_ERROR_CHECKING_FLAG <- FALSE
 
-OVERWRITE_FLAG <- FALSE
-OVERWRITE_INIT_MCS_ADD_INFO_FLAG <- FALSE
+#Pre joining overwrite flag
+OVERWRITE_FLAG <- FALSE#Load in the pre-joining results and don't regenerate them.
+
+#POST JOINING FLAGS to run sections of code
+JOINED_SEGS_ERROR_CHECKING_FLAG <- FALSE
+OVERWRITE_INIT_MCS_ADD_INFO_FLAG <- FALSE#Using joined segs on second run throughof MPhase
 OVERWRITE_ARM_INFO_FOR_JOIN_INIT_MCS_FLAG <- FALSE
 OVERWRITE_JOIN_INIT_MCS_FLAG <- FALSE
 
@@ -844,37 +857,37 @@ print(series.test.vec)
 print("parallelised results:")
 print(unlist(test.parallel.list))
 
-
+#TODO why is is this variable being reassigned here....
 intersection.or.whole.arm <- "intersection"
+
+
 
 INTERSECTION_OR_ARM <- intersection.or.whole.arm
 GAMMA_VAL <- as.numeric(gamma.val)
 MAX_CPN_FOR_SUBCLONALITY <- 10
-MIN_CCF_TO_CONSIDER <- 0.2
-MIN_CPN_TO_CONSIDER <- 0.2
-MIN_NUM_CHRS <- 2
+MIN_CCF_TO_CONSIDER <- 0.2 #This the median raw CCF different to the integer +/- this value.
+MIN_CPN_TO_CONSIDER <- 0.2 #This the median raw cpn different to the integer +/- this value.
+MIN_NUM_CHRS <- 2#This is the minimum no of chromosomes used for comparisons to other other chromosomes when calling subclonal events
 PVAL_THRESH_VS_MIN_CCF <- 0.001
 
-
-
-PVAL_THRESH_VS_OTH_CHRS_SAME_CPN <- 0.01
+PVAL_THRESH_VS_OTH_CHRS_SAME_CPN <- 0.01#T test p value threshold for trying to call subclonal copy numnber...
 GAIN_LOGR_THRESH <- log2(2.5 / 2)
 LOSS_LOGR_THRESH <- log2(1.5 / 2)
 AMP_LOGR_THRESH <- log2(4 / 2)
 DEEP_LOSS_LOGR_THRESH <- log2(0.5 / 2)
 PVAL_THRESH_VS_LOGR_FOR_CPN_EVENT <- 0.01
 CHRS_TO_USE_VEC <- 1:22
-CONF_INT_FOR_CPNX_BAF_VS_EXP <- 0.9999
-PW_CPNA_CPNB_DIFF_AMPLITUDE_THRESH <- 0.001
-PVAL_THRESH_TO_JOIN_PH_SEGS <- 0.001
-PVAL_THRESH_TO_JOIN_TOT_SEGS <- 0.001
-MIN_PROP_SNP_SEP_THRESH <- 0.75
-PVAL_COMB_WILCOX_PH_THRESH <- 0.01
-PVAL_DIPTEST_AI_THRESH <- 0.01
+CONF_INT_FOR_CPNX_BAF_VS_EXP <- 0.9999#used for CCF ca;culations 
+PW_CPNA_CPNB_DIFF_AMPLITUDE_THRESH <- 0.001#Legacy, used for pairwise comparisons between samples
+PVAL_THRESH_TO_JOIN_PH_SEGS <- 0.001#P value thresholds for  joining segements on phased raw cpn values
+PVAL_THRESH_TO_JOIN_TOT_SEGS <- 0.001#Some segments don't have phased copy number but we can try and join based on the total cpn
+MIN_PROP_SNP_SEP_THRESH <- 0.75 #legacy minimum  proportion of snps to be separated by phasing, if fewer, try a more complicated phasing currently deactivated 11/09/2018 
+PVAL_COMB_WILCOX_PH_THRESH <- 0.01  #threshold for testing whether the BAFs are separated across all the samples when comparing phasings
+PVAL_DIPTEST_AI_THRESH <- 0.01#Test to decide whether there is allelic imbalance, not being used as of  11/09/2018  
 ALLOW_DIPTEST_ALONE_PH_FLAG <- allow.dip.test.phasing.flag
-MSAI_BAF_LTNPD_PVAL_THRESHOLD <- 0.001
-MSAI_CPNX_PVAL_THRESHOLD <- 0.001
-PVAL_THRESH_CONVERT_GAIN_TO_AMP  <- 0.01
+MSAI_BAF_LTNPD_PVAL_THRESHOLD <- 0.001#P value threshold to call MSAI
+MSAI_CPNX_PVAL_THRESHOLD <- 0.001#Legacy, can also detect MSAI from the phased copy number not ust the BAF 
+PVAL_THRESH_CONVERT_GAIN_TO_AMP  <- 0.01#Legacy, but might need to be re-implemented, is an amplification significantly different to a gain in a different region?
 
 if (is.null(output.directory.base.path)) {
 
@@ -928,10 +941,13 @@ all.seg.greater.than.two.diff.list.path <- paste0(PLOT_OUTPUT_DIR, patient, "_al
 
 print("Finished generating paths...")
 #Load in the data: 
-#Note that the afunctions to create the single dataframes that it accepts are in the data_input_and_QC_functions.R
+#Note that the functions to create the single dataframes that it accepts are in the data_input_and_QC_functions.R
 if (OVERWRITE_FLAG == TRUE) {
 
 	f.joint.segs.df <- read.table(seg.file.path, stringsAsFactors = FALSE, sep = "\t", header = TRUE)
+
+	#Legacy, but I wanted to add in the thresholds for gain/loss etc as they were called in the TRACER NEJM 2017 paper
+	#Might be useful... it is aved as part of f.joint.segs.df
 	f.joint.segs.df$sample <- gsub("\\.", "-", gsub("_LogR", "", f.joint.segs.df$sample))
 	f.joint.segs.df$callState <- NULL
 	f.joint.segs.df$patient <- patient
@@ -1013,7 +1029,7 @@ if (OVERWRITE_FLAG == TRUE) {
 
 	}
 
-	#Save the loaded in data:
+	#Save the loaded in data: 
 	saveRDS(all.samp.SNP.list, file = all.samp.SNP.list.path)
 	#So we need the centromere postions for each arm:
 	#Add in p_end and q_start
@@ -1248,7 +1264,7 @@ if (OVERWRITE_FLAG == TRUE) {
 
 
 	#Now we need to make sure that every bp of the relevant genome's non-acrocentric chromosome arms has a 
-	#corresponding segment, dummy or otherise 
+	#corresponding segment, dummy or otherwise 
 	print("Creating set of segments that cover all bp in the non-acrocentric selected chromosomes' arms of the selected genome...")
 	all.bp.chr.grs <- NULL
 	for ( chr in CHRS_TO_USE_VEC ) {
@@ -1444,6 +1460,10 @@ if (OVERWRITE_FLAG == TRUE) {
 	colnames(mock.cpn.matrix) <- sample.vec
 	min.cons.segs.df <- cbind(cpn.chr.start.end.df, mock.cpn.matrix)
 
+	#Minimum consistent segmentation is finished! Let's get the SNPs and their LogR and BAF values amd assign to segments.
+
+
+
 	#All SNPs in these lists must have both a logr and baf value: all sample all seg logr baf lists is asas.lr.baf
 	ptm <- proc.time()
 	print("cleanAndErrorCheckSNPsParallel first")
@@ -1523,6 +1543,7 @@ if (OVERWRITE_FLAG == TRUE) {
 #TODO move this up 
 #Let's come up with the original wgii score pre MPhase based on the segmentation:
 source(paste0(current.dir, "MEDICC_input_creation_functions.R"))
+
 sample.vec <- names(asas.SNPs.w.both.lr.baf.snp.lists)
 sample.pre.Mphase.wgii.list <- list()
 for (samp in sample.vec) {
@@ -1911,7 +1932,7 @@ if (OVERWRITE_FLAG == TRUE) {
 
 
 
-
+#Make a table that contains all the relevant information: subclonal calls... gain and loss vs ploidy etc etc etc 
 if (OVERWRITE_INIT_MCS_ADD_INFO_FLAG == TRUE) {
 
 	#Let's initialise the first joint output:
@@ -2073,7 +2094,7 @@ if (OVERWRITE_INIT_MCS_ADD_INFO_FLAG == TRUE) {
 	"across_samp_cl_LOH",
 	"across_samp_sc_LOH")]))
 
-
+	#Legacy mostly, trying to make definitions that Emilia was doing and put them ion here to ensure they were correct
 	full.joint.segs.w.across.plotting.cols.df <- addPanCanColumnDefinitionToSegDF(full.joint.segs.w.across.samp.AI.stats.df)
 
 	print(full.joint.segs.w.across.plotting.cols.df[, c("pt_seg_cl_loss_LOH_no_MSAI", "pt_seg_sc_loss_LOH_incl_MSAI", "pt_seg_cl_gain_amp_no_MSAI", "pt_seg_sc_gain_amp_incl_MSAI")])
@@ -2150,7 +2171,6 @@ if (PLOTTING_FLAG == TRUE) {
 
 
 
-
 if (OVERWRITE_ARM_INFO_FOR_JOIN_INIT_MCS_FLAG == TRUE) {
 
 
@@ -2158,8 +2178,7 @@ if (OVERWRITE_ARM_INFO_FOR_JOIN_INIT_MCS_FLAG == TRUE) {
 
 
 	print("Make data frame of raw data behind each chromosome arm in which we will join the segments...")
-
-
+	#Make a data onject containing info needed to join segments together 
 	arm.iterable.df <- expand.grid(sample.vec, chr.arms.present.vec, stringsAsFactors=FALSE)
 	colnames(arm.iterable.df) <- c("sample", "arm")
 	arm.iterable.df <- arm.iterable.df[with(arm.iterable.df, order(sample, arm)), ]
@@ -4902,8 +4921,6 @@ colnames(plottable.pj.mphase.mcs.df) <- c("chr","startpos", "endpos", "ph_raw_cp
 source(paste0(current.dir, "cpn_heterogeneity_plotting_functions_v2.R"))
 
 #We're missing some stuff here:
-
-
 
 asas.SNPs.w.both.lr.baf.snp.lists.pj <- readRDS(file = asas.SNPs.w.both.lr.baf.snp.lists.pj.path)
 asas.SNPS.lr.and.or.baf.lists.pj <- readRDS(file = asas.SNPS.lr.and.or.baf.lists.pj.path)

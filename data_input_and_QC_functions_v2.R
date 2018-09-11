@@ -31,11 +31,12 @@ makeInputPathFileForTRACERxExomeSNPArray <- function(pt.id, sample.vec, release.
 
     }
 
-  }
+  }#end for ( samp in sample.vec ) {
+
 
   write.table(pt.file.paths.df, file = save.output.path , row.names = FALSE, sep = "\t", quote = FALSE)
 
-}
+}#end makeInputPathFileForTRACERxExomeSNPArray
 
 getSNPDataForTRACERxExomeSNPArray <- function(pt.file.paths.df) {
 
