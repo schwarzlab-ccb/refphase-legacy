@@ -2081,9 +2081,9 @@ if (OVERWRITE_INIT_MCS_ADD_INFO_FLAG == TRUE) {
 															"is_parallel_loss_and_or_LOH")]))
 
 	print("Adding comparison between original cpn calls and MPhase copy number calling to MCS output...")
-	full.joint.segs.within.and.changed.cpn.info.df <- addWithinSampleChangeToCpnAndAllelicImbalanceCalls(full.joint.segs.w.parallel.cpn.events.df)
-
-
+	full.joint.segs.within.and.changed.cpn.info.df <- addWithinSampleChangeToCpnAndAllelicImbalanceCalls(all.seg.df = full.joint.segs.w.parallel.cpn.events.df,
+																										sample.vec = sample.vec,
+																										seg.name.vec = unique(seg.name.vec))
 
 
 
@@ -4549,7 +4549,7 @@ rownames(pj.full.joint.segs.w.cl.sc.focal.df) <- rownames(full.joint.segs.df.pj)
 
 pj.full.joint.segs.w.cl.sc.focal.df <- addWithinSampleChangeToCpnAndAllelicImbalanceCalls(all.seg.df = pj.full.joint.segs.w.cl.sc.focal.df,
 																						 sample.vec = sample.vec,
-																						 seg.name.vec = unique(seg.name.vec.pj))
+																						 seg.name.vec = seg.name.vec.pj)
 
 
 pj.full.joint.segs.w.cl.sc.focal.wd.sc.df.path <- paste(PLOT_OUTPUT_DIR, patient, "_pj_full_joint_segs_df_w_cl_sc_focal_counts_ws_sc.RDS", sep="")

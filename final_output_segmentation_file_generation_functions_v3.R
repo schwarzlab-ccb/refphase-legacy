@@ -1773,11 +1773,9 @@ addParallelEventsByMSAIToOutputSegmentation <- function(all.segs.df) {
   matched.MSAI.LOH.segs.df <- all.segs.df[(! is.na(all.segs.df$any_across_samp_MSAI)) 
                                             & all.segs.df$any_across_samp_MSAI == TRUE
                                             & all.segs.df$min_int_cpnX == 0,]
-
-
-    matched.MSAI.LOH.segs.df <- a[(! is.na(a$any_across_samp_MSAI)) 
-                                              & a$any_across_samp_MSAI == TRUE
-                                              & a$min_int_cpnX == 0,]
+  matched.MSAI.LOH.or.loss.segs.df <- all.segs.df[(! is.na(all.segs.df$any_across_samp_MSAI)) 
+                                            & all.segs.df$any_across_samp_MSAI == TRUE 
+                                            & (all.segs.df$min_int_cpnX == 0 | all.segs.df$cpn_event_vs_ploidy %in% c("loss", "deep_loss")),]
 
 
   MSAI.gain.seg.names.vec <- unique(matched.MSAI.gain.segs.df$seg_name)
