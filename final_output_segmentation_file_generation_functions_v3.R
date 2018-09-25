@@ -1764,7 +1764,6 @@ addMSAIDetectionByLTNPDToOutputSegmentation <- function(sample.vec,
 addParallelEventsByMSAIToOutputSegmentation <- function(all.segs.df) {
 
   #So first just subset by anything with MSAI calls:
-  all.segs.df <- a
   matched.MSAI.loss.segs.df <- all.segs.df[(! is.na(all.segs.df$any_across_samp_MSAI)) 
                                             & all.segs.df$any_across_samp_MSAI == TRUE
                                             & all.segs.df$cpn_event_vs_ploidy %in% c("loss", "deep_loss"),]

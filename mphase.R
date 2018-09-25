@@ -700,17 +700,17 @@ current.dir <-  LocationOfThisScript()
 
 
 
-#Best example to run as is exome and only has two samples.
-patient  <-  "LTX121"
-allow.dip.test.phasing.flag <- FALSE
-output.directory.base.path <- "/camp/project/proj-tracerx-lung/tctProjects/watkint/TRACERx100_lung_pan_can_analysis/release/A_LTX121/exome/CN_het_TRACERx_no_diptest/"
-data.format.to.use <- "TRACERx_exome"
-snp.file.path <- "/camp/project/proj-tracerx-lung/tctProjects/watkint/TRACERx100_lung_pan_can_analysis/release/A_LTX121/exome/CN_het_TRACERx_no_diptest/LTX121_TRACERx_input_paths_df.txt"
-seg.file.path <- "/camp/project/proj-tracerx-lung/tctProjects/watkint/TRACERx100_lung_pan_can_analysis/release/A_LTX121/exome/MSAI/LTX121_joint_segs_all_ascat_info.txt"
-overwrite.flag <- TRUE
-gamma.val <- 1
-num.cores <- 4
-intersection.or.whole.arm <- "intersection"
+# #Best example to run as is exome and only has two samples.
+# patient  <-  "LTX121"
+# allow.dip.test.phasing.flag <- FALSE
+# output.directory.base.path <- "/camp/project/proj-tracerx-lung/tctProjects/watkint/TRACERx100_lung_pan_can_analysis/release/A_LTX121/exome/CN_het_TRACERx_no_diptest/"
+# data.format.to.use <- "TRACERx_exome"
+# snp.file.path <- "/camp/project/proj-tracerx-lung/tctProjects/watkint/TRACERx100_lung_pan_can_analysis/release/A_LTX121/exome/CN_het_TRACERx_no_diptest/LTX121_TRACERx_input_paths_df.txt"
+# seg.file.path <- "/camp/project/proj-tracerx-lung/tctProjects/watkint/TRACERx100_lung_pan_can_analysis/release/A_LTX121/exome/MSAI/LTX121_joint_segs_all_ascat_info.txt"
+# overwrite.flag <- TRUE
+# gamma.val <- 1
+# num.cores <- 4
+# intersection.or.whole.arm <- "intersection"
 
 # patient <- "BTX024"
 # allow.dip.test.phasing.flag <- FALSE
@@ -784,20 +784,20 @@ MIN_NUM_HZ_SNP_PHASING <- 5
 #PLOT_OUTPUT_DIR <- NULL
 OVERWRITE_FLAG <- as.logical(overwrite.flag)
 
-PLOTTING_FLAG <- FALSE
+PLOTTING_FLAG <- TRUE
 
 #Pre joining overwrite flag
-OVERWRITE_FLAG <- FALSE#Load in the pre-joining results and don't regenerate them.
+OVERWRITE_FLAG <- TRUE#Load in the pre-joining results and don't regenerate them.
 
 #POST JOINING FLAGS to run sections of code
 JOINED_SEGS_ERROR_CHECKING_FLAG <- FALSE
-OVERWRITE_INIT_MCS_ADD_INFO_FLAG <- FALSE#Using joined segs on second run throughof MPhase
-OVERWRITE_ARM_INFO_FOR_JOIN_INIT_MCS_FLAG <- FALSE
-OVERWRITE_JOIN_INIT_MCS_FLAG <- FALSE
+OVERWRITE_INIT_MCS_ADD_INFO_FLAG <- TRUE#Using joined segs on second run throughof MPhase
+OVERWRITE_ARM_INFO_FOR_JOIN_INIT_MCS_FLAG <- TRUE
+OVERWRITE_JOIN_INIT_MCS_FLAG <- TRUE
 
-OVERWRITE_JOINED_CCF_CALC_FLAG <- FALSE
-OVERWRITE_JOINED_MCS_ADD_INFO_FLAG <- FALSE
-CALCULATE_JOINED_ARM_FOCAL_FLAG <- FALSE
+OVERWRITE_JOINED_CCF_CALC_FLAG <- TRUE
+OVERWRITE_JOINED_MCS_ADD_INFO_FLAG <- TRUE
+CALCULATE_JOINED_ARM_FOCAL_FLAG <- TRUE
 CALCULATE_FOCAL_EVENT_CLONALITY_FLAG <- TRUE
 GENERATE_GISTIC_INPUT_FLAG <- FALSE
 
@@ -911,7 +911,12 @@ if ( ! file.exists(seg.file.path)) {
 ###Load in the relevant genome file, #todo make this an option that can be set.
 hg19.info.path <- paste0(current.dir, "ucsc_hg19_chrominfo.txt")
 hg19.info.df <- read.table(hg19.info.path, stringsAsFactors = FALSE, sep = "\t", header = TRUE)
-chrom.info.df <- hg19.info.df 
+
+chrom.info.df <- hg19.info.df
+
+
+access.path <- paste0(current.dir, "access-10kb.hg19.bed")
+access.df <- read.table(access.path, sep="\t", header=F, stringsAsFactors=F)
 
 #Paths for saving/loading objects depending on OVERWRITE_FLAG
 #Reading in data object paths
@@ -3615,8 +3620,6 @@ if (OVERWRITE_JOINED_MCS_ADD_INFO_FLAG == TRUE) {
 	# full.joint.segs.w.old.cpn.vs.ploidy.df.pj <- addOriginalSegmentInfoToFinalSegmentationNew(new.cpn.full.joint.segs.df.pj, sorted.all.bp.all.samps.segs.anno.df.pj)
 
 	#sorted.all.bp.all.samps.segs.anno.df.pj
-
-
 
 	print("Adding CCF information and subclonal cpn calls to MCS output...")
 	clonality.and.ccf.joint.segs.df.pj <- addWithinSampleClonalityAndCCFToFinalSegmentation(seg.name.vec = names(asas.ph.raw.cpn.lists.pj[[1]])
