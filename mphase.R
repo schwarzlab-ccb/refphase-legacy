@@ -4552,9 +4552,8 @@ pj.full.joint.segs.w.cl.sc.focal.df <- addWithinSampleChangeToCpnAndAllelicImbal
 																						 seg.name.vec = seg.name.vec.pj)
 
 
-pj.full.joint.segs.w.cl.sc.focal.wd.sc.df.path <- paste(PLOT_OUTPUT_DIR, patient, "_pj_full_joint_segs_df_w_cl_sc_focal_counts_ws_sc.RDS", sep="")
-pj.full.joint.segs.w.cl.sc.focal.df <- readRDS(file = pj.full.joint.segs.w.cl.sc.focal.wd.sc.df.path)
-
+# pj.full.joint.segs.w.cl.sc.focal.wd.sc.df.path <- paste(PLOT_OUTPUT_DIR, patient, "_pj_full_joint_segs_df_w_cl_sc_focal_counts_ws_sc.RDS", sep="")
+# pj.full.joint.segs.w.cl.sc.focal.df <- readRDS(file = pj.full.joint.segs.w.cl.sc.focal.wd.sc.df.path)
 
 pj.full.joint.segs.w.cl.sc.focal.df$within_samp_cpnA_passed <- FALSE
 pj.full.joint.segs.w.cl.sc.focal.df$within_samp_cpnB_passed <- FALSE
@@ -4822,25 +4821,6 @@ post.MPhase.MCS.MEDICC.FASTA.files.list <- makeMEDICCInputListsFromSegmentationD
 										)
 post.MPhase.MCS.MEDICC.FASTA.files.list.path <- paste0(PLOT_OUTPUT_DIR, patient, "_post_MPhase_MCS_MEDICC_FASTA_file_list.RDS")
 saveRDS(post.MPhase.MCS.MEDICC.FASTA.files.list, file = post.MPhase.MCS.MEDICC.FASTA.files.list.path)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 #Plot the BAFs again for the final thing
