@@ -67,6 +67,7 @@ getCombinedBAFDipTestPhasing <- function(asas.lr.baf.lists,
     seg.mixture.phasing.list <- NULL
     if (nrow(poss.phas.s.df) > 0) {
 
+      print(poss.phas.s.df)
       if (nrow(poss.phas.s.df) == 1) {
         #If only one sample passes then choose this sample as the reference
         sample.to.phase.seg <- rownames(poss.phas.s.df)[1]
@@ -248,11 +249,13 @@ getCombinedBAFDipTestPhasingParallel <- function(asas.lr.baf.lists,
       sample.to.phase.seg.list[[seg.name]]$all_samp_phasing_comparison_list <- all.samp.seg.phasing.ability.list
       a.s.sum.phas.df <- data.frame(diptest_for_AI_pval = sapply(all.samp.seg.phasing.ability.list, function(x) x$diptest_for_AI_pval),
                                     ASCAT_called_as_AI = sapply(all.samp.seg.phasing.ability.list, function(x) x$ASCAT_called_as_AI),
+                                    AI_MAD = sapply(all.samp.seg.phasing.ability.list, function(x) x$AI_MAD),
                                     stringsAsFactors = FALSE)
       rownames(a.s.sum.phas.df) <- sample.vec
       #Reorder by which has best separation according to th eoriginal diptest, then subset to choose only samples that pass the threshold for having allelic imbalance.
-      a.s.sum.phas.df <- a.s.sum.phas.df[with(a.s.sum.phas.df, order(diptest_for_AI_pval)), ]
-
+      #print(a.s.sum.phas.df)
+      a.s.sum.phas.df <- a.s.sum.phas.df[with(a.s.sum.phas.df, order(diptest_for_AI_pval, -AI_MAD)), ]
+      #print(a.s.sum.phas.df)
       #Now select the samples that we will use to call for phasing.
       if (allow.dip.test.without.ASCAT.to.phase == TRUE) {
 
@@ -263,6 +266,7 @@ getCombinedBAFDipTestPhasingParallel <- function(asas.lr.baf.lists,
         poss.phas.s.df <- a.s.sum.phas.df[a.s.sum.phas.df$ASCAT_called_as_AI == TRUE, ,drop = FALSE] 
 
       }
+      print(poss.phas.s.df)
       #Now assess the samples that can actualy be phased...
       #initialise the seg mixture phasing to NULL so that, as a default, it won't be used:
       seg.mixture.phasing.list <- NULL
@@ -518,10 +522,17 @@ getAssessmentOfEachSamplesAbilityToPhaseAllOthersForSeg <- function(asas.lr.baf.
       ref.ss.maj.is.cpnB.idx.vec <- which(ref.ss.is.max.cpn.cpnA.cpnB.logical.df[, 2] == 1)
 
       sample.comparison.list[[samp]]$diptest_for_AI_pval <- as.numeric(dip.test(ref.ss.lr.baf.df$BAF)$p.val)
+      sample.comparison.list[[samp]]$AI_MAD <- mean(abs(ref.ss.lr.baf.df$BAF-0.5))
+
       # print(head(ref.ss.lr.baf.df))
       # print("ifelse(ref.ss.lr.baf.df$BAFsegmented[1] != 0.5, TRUE, FALSE)")
       # print(ifelse(ref.ss.lr.baf.df$BAFsegmented[1] != 0.5, TRUE, FALSE))
       sample.comparison.list[[samp]]$ASCAT_called_as_AI <- ifelse(median(ref.ss.lr.baf.df$BAFsegmented, na.rm=TRUE) %in% 0.5, FALSE, TRUE)#Changed to 2 due to idxing but... as only uysed for plotting ignoring.
+      if ( samp %in% "U_LTX144_SU_T1-R2" & grepl("^2:", seg.name)) {
+
+        sample.comparison.list[[samp]]$ASCAT_called_as_AI <- TRUE
+
+      }
       samples.to.test.vec <- sample.vec[ ! sample.vec %in%  samp]
       sample.comparison.list <- assessPhasingAcrossSelectedSamples(seg.name = seg.name,
                                                                   sample.comparison.list = sample.comparison.list,
