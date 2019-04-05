@@ -787,7 +787,7 @@ OVERWRITE_FLAG <- as.logical(overwrite.flag)
 PLOTTING_FLAG <- TRUE
 
 #Pre joining overwrite flag
-OVERWRITE_FLAG <- TRUE#Load in the pre-joining results and don't regenerate them.
+OVERWRITE_FLAG <- TRUE#Load in the pre-joining results and don't regenerate them if FALSE.
 
 #POST JOINING FLAGS to run sections of code
 JOINED_SEGS_ERROR_CHECKING_FLAG <- FALSE
@@ -806,7 +806,7 @@ PLOT_OUTPUT_DIR <- paste(output.directory.base.path, "/", sep="")
 if ( ! file.exists(PLOT_OUTPUT_DIR) ) {
 
 	print(PLOT_OUTPUT_DIR)
-	print("directory doesn't exist")
+	print("Output directory doesn't exist.")
 
 }
 NUM_CORES <- as.numeric(num.cores)
@@ -1515,6 +1515,10 @@ if (OVERWRITE_FLAG == TRUE) {
 		stop("Only one or fewer samples present after reading in data.")
 
 	}
+
+	#######So here is where we should check if there are any segments that should be
+
+	asas.SNPS.lr.and.or.baf.lists
 
 	#save:
 	print("Saving snps files....")

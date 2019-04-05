@@ -528,11 +528,11 @@ getAssessmentOfEachSamplesAbilityToPhaseAllOthersForSeg <- function(asas.lr.baf.
       # print("ifelse(ref.ss.lr.baf.df$BAFsegmented[1] != 0.5, TRUE, FALSE)")
       # print(ifelse(ref.ss.lr.baf.df$BAFsegmented[1] != 0.5, TRUE, FALSE))
       sample.comparison.list[[samp]]$ASCAT_called_as_AI <- ifelse(median(ref.ss.lr.baf.df$BAFsegmented, na.rm=TRUE) %in% 0.5, FALSE, TRUE)#Changed to 2 due to idxing but... as only uysed for plotting ignoring.
-      if ( samp %in% "U_LTX144_SU_T1-R2" & grepl("^2:", seg.name)) {
+      # if ( samp %in% "U_LTX144_SU_T1-R2" & grepl("^2:", seg.name)) {
 
-        sample.comparison.list[[samp]]$ASCAT_called_as_AI <- TRUE
+      #   sample.comparison.list[[samp]]$ASCAT_called_as_AI <- TRUE
 
-      }
+      # }
       samples.to.test.vec <- sample.vec[ ! sample.vec %in%  samp]
       sample.comparison.list <- assessPhasingAcrossSelectedSamples(seg.name = seg.name,
                                                                   sample.comparison.list = sample.comparison.list,

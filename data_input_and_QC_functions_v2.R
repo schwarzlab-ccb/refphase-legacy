@@ -40,32 +40,100 @@ makeInputPathFileForTRACERxExomeSNPArray <- function(pt.id, sample.vec, release.
 
 getSNPDataForTRACERxExomeSNPArray <- function(pt.file.paths.df) {
 
-  sample.vec <- pt.file.paths.df$sample
-  all.samples.ASCAT.list <- list()
+  # sample.vec <- pt.file.paths.df$sample
+  # all.samples.ASCAT.list <- list()
   
-  for ( samp in sample.vec ) {
+  # for ( samp in sample.vec ) {
 
-    samp.ASCAT.obj <- pt.file.paths.df[pt.file.paths.df$sample == samp, ]$samp_ascat_bc_path
-    samp.ASCAT.obj <- load(samp.ASCAT.obj)
-    samp.ASCAT.obj <- get(samp.ASCAT.obj)
+  #   samp.ASCAT.obj <- pt.file.paths.df[pt.file.paths.df$sample == samp, ]$samp_ascat_bc_path
+  #   #/camp/project/proj-tracerx-lung/tracerx/release_tx500_180615//B_LTX094//exome/ASCAT/B_LTX094_SU_T1-R3/B_LTX094_SU_T1-R3.ascat.bc.RData
+  #   samp.ASCAT.obj <- load(samp.ASCAT.obj)
+  #   samp.ASCAT.obj <- get(samp.ASCAT.obj)
 
-    samp.ASCAT.summary               <- samp.ASCAT.obj$SNPpos
-    samp.ASCAT.summary$BAF           <- NA
-    samp.ASCAT.summary$BAFsegmented  <- NA
-    samp.ASCAT.summary$logR          <- NA
-    samp.ASCAT.summary$logRsegmented <- NA
+  #   samp.ASCAT.summary               <- samp.ASCAT.obj$SNPpos
+  #   samp.ASCAT.summary$BAF           <- NA
+  #   samp.ASCAT.summary$BAFsegmented  <- NA
+  #   samp.ASCAT.summary$logR          <- NA
+  #   samp.ASCAT.summary$logRsegmented <- NA
 
-    samp.ASCAT.summary[rownames(samp.ASCAT.obj$Tumor_LogR_segmented),]$logRsegmented           <- samp.ASCAT.obj$Tumor_LogR_segmented[,1]
-    samp.ASCAT.summary[rownames(samp.ASCAT.obj$Tumor_BAF),]$BAF                                <- samp.ASCAT.obj$Tumor_BAF[[1]]
-    samp.ASCAT.summary[rownames(samp.ASCAT.obj$Tumor_BAF_segmented[[1]]),]$BAFsegmented        <- samp.ASCAT.obj$Tumor_BAF_segmented[[1]][,1]
-    samp.ASCAT.summary[rownames(samp.ASCAT.obj$Tumor_LogR),]$logR                              <- samp.ASCAT.obj$Tumor_LogR[[1]]
+  #   samp.ASCAT.summary[rownames(samp.ASCAT.obj$Tumor_LogR_segmented),]$logRsegmented           <- samp.ASCAT.obj$Tumor_LogR_segmented[,1]
+  #   samp.ASCAT.summary[rownames(samp.ASCAT.obj$Tumor_BAF),]$BAF                                <- samp.ASCAT.obj$Tumor_BAF[[1]]
+  #   samp.ASCAT.summary[rownames(samp.ASCAT.obj$Tumor_BAF_segmented[[1]]),]$BAFsegmented        <- samp.ASCAT.obj$Tumor_BAF_segmented[[1]][,1]
+  #   samp.ASCAT.summary[rownames(samp.ASCAT.obj$Tumor_LogR),]$logR                              <- samp.ASCAT.obj$Tumor_LogR[[1]]
 
 
-    all.samples.ASCAT.list[[samp]] <- samp.ASCAT.summary
+  #   all.samples.ASCAT.list[[samp]] <- samp.ASCAT.summary
 
-  }#end getSNPDataForTRACERxExomeSNPArray
+  # }#end getSNPDataForTRACERxExomeSNPArray
 
-  return(all.samples.ASCAT.list)
+  # return(all.samples.ASCAT.list)
+
+
+  # pt.dir <- paste(release.dir, pt.id, "/", array.type, "/ASCAT/", sep="")
+  # regions <- grep("FAILED",grep(".txt$|.complete$|*EXCLUDE*|*ManualQC*", list.files(pt.dir), value = TRUE, invert = TRUE), invert = TRUE, value = TRUE)
+  regions <- pt.file.paths.df$sample
+  for ( i in 1:length(regions) ) {
+
+    samp.ASCAT.obj.path <- pt.file.paths.df[pt.file.paths.df$sample == regions[i], ]$samp_ascat_bc_path
+    reg.logr.baf.path <- gsub(".ascat.bc.", ".tumor.baf_logr.", samp.ASCAT.obj.path)
+    reg.seg.path <- gsub(".bc.", ".seg.", samp.ASCAT.obj.path)
+
+    #reg.logr.baf.path <- paste(DirToConsider, regions[i], "/", regions[i], ".tumor.baf_logr.RData", sep="")
+    load(reg.logr.baf.path)#gives tumor.baf_logr obj
+
+    #reg.seg.path <- paste(DirToConsider, regions[i], "/", regions[i], ".ascat.seg.RData", sep="")
+    load(reg.seg.path)#gives reg.seg.path
+
+    ASCAT.summary               <- tumor.baf_logr[, c("chrom", "pos")]
+    ASCAT.summary$BAF           <- tumor.baf_logr$BAF
+    ASCAT.summary$logR          <- tumor.baf_logr[, regions[i]]
+    ASCAT.summary$BAFsegmented  <- NA
+    ASCAT.summary$logRsegmented <- NA
+
+    all.regions.ASCAT.list <- list()
+
+    #Update the fake ASCAT.summaary BAFsegmetned and logRsegmented
+    for ( j in 1:nrow(seg) ) {
+
+      if(nrow(ASCAT.summary[ASCAT.summary$chrom == seg[j ,]$chr
+                            & ASCAT.summary$pos >= seg[j ,]$startpos
+                            & ASCAT.summary$pos <= seg[j ,]$endpos ,]) > 0) {
+
+        if(seg[j,]$nMajor == seg[j,]$nMinor) {
+          
+          ASCAT.summary[ASCAT.summary$chrom == seg[j ,]$chr
+                        & ASCAT.summary$pos >= seg[j ,]$startpos
+                        & ASCAT.summary$pos <= seg[j ,]$endpos ,]$BAFsegmented <- 0.5
+          
+        } else {
+          
+          avg.seg.baf <- 0.5 - mean(abs(tumor.baf_logr[tumor.baf_logr$chrom == seg[j ,]$chr
+                                                       & tumor.baf_logr$pos >= seg[j ,]$startpos
+                                                       & tumor.baf_logr$pos <= seg[j ,]$endpos,]$BAF - 0.5))
+
+          ASCAT.summary[ASCAT.summary$chrom == seg[j ,]$chr 
+                      & ASCAT.summary$pos >= seg[j ,]$startpos
+                      & ASCAT.summary$pos <= seg[j ,]$endpos ,]$BAFsegmented <- avg.seg.baf
+          
+        }
+
+        avg.seg.logr <- mean(tumor.baf_logr[tumor.baf_logr$chrom == seg[j ,]$chr
+                                          & tumor.baf_logr$pos >= seg[j ,]$startpos
+                                          & tumor.baf_logr$pos <= seg[j ,]$endpos, regions[i]])
+
+        ASCAT.summary[ASCAT.summary$chrom == seg[j ,]$chr
+                    & ASCAT.summary$pos >= seg[j ,]$startpos
+                    & ASCAT.summary$pos <= seg[j ,]$endpos,]$logRsegmented <- avg.seg.logr
+
+      }#end if(nrow(ASCAT.summary[ASCAT.summary$chrom==seg[j,]$chr & ASCAT.summary$pos...
+
+    }#end for ( j in 1:nrow(seg) ) {
+    
+    all.regions.ASCAT.list[[regions[i]]] <- ASCAT.summary
+
+  }#end for ( i in 1:length(regions) )
+
+  return(all.regions.ASCAT.list)
 
 }#end getSNPDataForTRACERxExomeSNPArray <- function(pt.file.paths.df) {
 
