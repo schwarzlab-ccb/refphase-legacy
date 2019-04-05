@@ -203,8 +203,8 @@ getCombinedBAFDipTestPhasingParallel <- function(asas.lr.baf.lists,
   # comb.wilcox.snp.sep.p.val.threshold = PVAL_COMB_WILCOX_PH_THRESH
   # allow.dip.test.without.ASCAT.to.phase = ALLOW_DIPTEST_ALONE_PH_FLAG
 
-  source("/home/camp/watkint/working/watkint/scripts/multiregioncopynum/consensus_phasing_from_multiple_samples_functions_v2.R")
-  source("/home/camp/watkint/working/watkint/scripts/multiregioncopynum/utility_MPhase_functions.R")
+  #source("/home/camp/watkint/working/watkint/scripts/multiregioncopynum/consensus_phasing_from_multiple_samples_functions_v2.R")
+  #source("/home/camp/watkint/working/watkint/scripts/multiregioncopynum/utility_MPhase_functions.R")
 
   sample.vec <- names(asas.lr.baf.lists)
   sample.to.phase.seg.list <- list()
