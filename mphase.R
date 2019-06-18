@@ -723,6 +723,30 @@ current.dir <-  LocationOfThisScript()
 # num.cores <- 6
 
 
+# patient <- "LTX021"
+# allow.dip.test.phasing.flag <- FALSE
+# output.directory.base.path <- "/camp/project/proj-tracerx-lung/tracerx/release_tx421_20190411/A_LTX021/exome/MPhase/"
+# data.format.to.use <- "TRACERx_exome"
+# snp.file.path <- "/camp/project/proj-tracerx-lung/tracerx/release_tx421_20190411/A_LTX021/exome/MPhase//LTX021_TRACERx_input_paths_df.txt"
+# seg.file.path <- "/camp/project/proj-tracerx-lung/tracerx/release_tx421_20190411/A_LTX021/exome/MPhase//LTX021_joint_segs_all_ascat_info.txt"
+# overwrite.flag <- TRUE
+# gamma.val <- 1
+# num.cores <- 1
+
+
+
+# patient <- "LTX064"
+# allow.dip.test.phasing.flag <- FALSE
+# output.directory.base.path <- "/camp/project/proj-tracerx-lung/tracerx/release_tx421_20190411/L_LTX064/exome/MPhase/"
+# data.format.to.use <- "TRACERx_exome"
+# snp.file.path <- "/camp/project/proj-tracerx-lung/tracerx/release_tx421_20190411/L_LTX064/exome/MPhase//LTX064_TRACERx_input_paths_df.txt"
+# seg.file.path <- "/camp/project/proj-tracerx-lung/tracerx/release_tx421_20190411/L_LTX064/exome/MPhase//LTX064_joint_segs_all_ascat_info.txt"
+# overwrite.flag <- TRUE
+# gamma.val <- 1
+# num.cores <- 1
+
+
+
 print("patient")
 print(patient)
 print("allow.dip.test.phasing.flag")
@@ -1010,7 +1034,7 @@ if (OVERWRITE_FLAG == TRUE) {
 		#So we want to read in a file that looks like this:	#patient_id sample_id ascat_bc_file_path 
 		pt.snp.file.paths.df <- read.table(snp.file.path, stringsAsFactors = FALSE, sep = "\t", header = TRUE)
 		print("Reading in SNP data...")
-		all.samp.SNP.list <- getSNPDataForTRACERxExomeSNPArray(pt.snp.file.paths.df)
+		all.samp.SNP.list <- getSNPDataForTRACERxExomeSNPArray(pt.file.paths.df = pt.snp.file.paths.df, joint.segs.df =  f.joint.segs.df)
 
 
 
@@ -1028,10 +1052,11 @@ if (OVERWRITE_FLAG == TRUE) {
 
 	}
 
-	if (length(unique(sapply(all.samp.SNP.list.path, nrow))) != 1) {
+	if (length(unique(unlist(lapply(all.samp.SNP.list, nrow)))) != 1 | length(all.samp.SNP.list) < 2) {
 
-		stop("Not all sites are present in all samples' sites information read in, this needs to be fixed before running MPhase.")
-
+		stop("Not all sites are present in all samples' sites information read in or too few samples are present at this stage, this needs to be fixed before running MPhase.")
+		print("length(all.samp.SNP.list)")
+		rint(length(all.samp.SNP.list))
 	}
 
 	#Save the loaded in data: 
@@ -1477,6 +1502,7 @@ if (OVERWRITE_FLAG == TRUE) {
 																		mcs.seg.to.use.df =min.cons.segs.df,
 																		allow.logr.only.flag = FALSE,
 																		data.type = data.format.to.use)
+	print(str(asas.SNPs.w.both.lr.baf.snp.lists))
 	if (length(unique(sapply(asas.SNPs.w.both.lr.baf.snp.lists, length))) != 1) {
 
 		stop("Not all segments are present in all samples' snp assignations, likely something has gone wrong, is the parallelisation working correctly?")
@@ -4940,6 +4966,8 @@ for (samp in sample.vec) {
 }
 
 
+mphase.complete.file.path <- paste(PLOT_OUTPUT_DIR, patient, ".MPhase.complete", sep="")
+system("touch mphase.complete.file.path")
 
 
 
