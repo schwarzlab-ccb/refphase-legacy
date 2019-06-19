@@ -24,7 +24,7 @@ joinSegAndReturnNewArmGranges <- function(arm.idx.vec, curr.gr.idx, adj.idx, adj
 		kept.arm.chr.vec <- as.numeric(as.character(seqnames(sorted.arm.grs[kept.arm.idxs])))
 		kept.arm.start.vec <- start(sorted.arm.grs[kept.arm.idxs])
 		kept.arm.end.vec <- end(sorted.arm.grs[kept.arm.idxs])
-		
+
 	} else {
 
 		kept.arm.chr.vec <- c()
@@ -59,7 +59,7 @@ joinSegAndReturnNewArmGranges <- function(arm.idx.vec, curr.gr.idx, adj.idx, adj
 
 }#end joinSegAndReturnNewArmGranges
 
-#Try to join using phasing 
+#Try to join using phasing
 attemptToJoinSegbyPhasedCPN <- function(curr.seg.mat, adj.segs.mat, samp.arm.sites.df, arm.idx.vec, curr.gr.idx, sorted.arm.grs, cpnX.string, MIN_PH_CPN) {
 	#print("called attemptToJoinSegbyPhasedCPN")
 	new.unsorted.arm.grs <- sorted.arm.grs
@@ -88,7 +88,7 @@ attemptToJoinSegbyPhasedCPN <- function(curr.seg.mat, adj.segs.mat, samp.arm.sit
 				# print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
 				# print("!!!!!!!!!!!!!!!!!!! SEGS ARE JOINED !!!!!!!!!!!!!!!!!!!!!!!!")
 				# print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-					#Join segment and make a new set of granges for the arm 
+					#Join segment and make a new set of granges for the arm
 				new.unsorted.arm.grs <- joinSegAndReturnNewArmGranges(arm.idx.vec = arm.idx.vec,
 												 					  curr.gr.idx = curr.gr.idx,
 												 					  adj.idx = k,
@@ -126,7 +126,7 @@ attemptToJoinSegbyTotalCPN <- function(curr.seg.mat, adj.segs.mat, samp.arm.site
 
 		if (curr.seg.mat[,"num_tot_cpn"] >= NUM_TOT_CPN & adj.segs.mat[k, "num_tot_cpn"] >= NUM_TOT_CPN) {
 
-			join.by.phased.cpn.not.possible <- curr.seg.mat[,"num_ph_cpn"] < MIN_PH_CPN | adj.segs.mat[k, "num_ph_cpn"] < MIN_PH_CPN 
+			join.by.phased.cpn.not.possible <- curr.seg.mat[,"num_ph_cpn"] < MIN_PH_CPN | adj.segs.mat[k, "num_ph_cpn"] < MIN_PH_CPN
 			if (join.by.phased.cpn.not.possible == FALSE) {
 
 				#print("NOT ATTEMPTING TO JOIN BY TOT CPN AS ALREADY ATTEMPTED PHASED.")
@@ -143,7 +143,7 @@ attemptToJoinSegbyTotalCPN <- function(curr.seg.mat, adj.segs.mat, samp.arm.site
 				# print(curr.seg.mat[, "num_tot_cpn"])
 				# print(adj.segs.mat[k,  "num_tot_cpn"])
 				tot.p.val <- wilcoxTestWithErrorHandling(cur.tot.cpn.vec, adj.tot.cpn.vec)$p.val
-					
+
 				if (tot.p.val > PVAL_THRESH_TO_JOIN_TOT_SEGS) {
 
 					# print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
@@ -209,7 +209,7 @@ attemptToJoinSegbyMeanTotalCPNAlone <- function(curr.seg.mat, adj.segs.mat, samp
 	}#end for (k in 1:nrow(adj.segs.mat)) {
 
 	return(new.unsorted.arm.grs)
-	
+
 }#end attemptToJoinSegbyMeanTotalCPNAlone
 
 
@@ -258,7 +258,7 @@ joinBlankSegsToMostConfidentCall <- function(curr.seg.mat, adj.segs.mat, samp.ar
 	}#end for (k in 1:nrow(adj.segs.mat)) {
 
 	return(new.unsorted.arm.grs)
-  
+
 
 }
 
@@ -290,7 +290,7 @@ wilcoxTestWithErrorHandling <- function(x, y = NULL,
         test.results[["p.val"]] <- 1
 
       }
-      
+
       return(test.results)
 
       },
@@ -344,7 +344,7 @@ creatingArmJoiningInfoMatrixAndGranges <- function(arm.grs, samp.arm.sites.df, c
 	proc.arm.grs <- arm.grs
 	# print("proc.arm.grs")
 	# print(proc.arm.grs)
-	proc.arm.grs$width <- GenomicRanges::width(proc.arm.grs)
+	proc.arm.grs$seg_width <- GenomicRanges::width(proc.arm.grs)
 	# print("proc.arm.grs")
 	# print(proc.arm.grs)
 	joining.vals.mat.col.names.vec <- c("chrom", "startpos", "endpos", "gr_idx",
@@ -375,18 +375,18 @@ creatingArmJoiningInfoMatrixAndGranges <- function(arm.grs, samp.arm.sites.df, c
 		# print("cpnX.string")
 		# print(cpnX.string)
 		# print("head(seg.ph.cpn.sites.df)")
-		# print(head(seg.ph.cpn.sites.df))					
+		# print(head(seg.ph.cpn.sites.df))
 		num.ph.cpn <- length(seg.ph.cpn.sites.df[,cpnX.string])
 		# print("num.ph.cpn")
 		# print(num.ph.cpn)
-		
+
 		if (num.ph.cpn > 0) {
 
 			joining.vals.mat[idx, "num_ph_cpn"]    <- num.ph.cpn
 			joining.vals.mat[idx, "mean_ph_cpn"]   <- mean(seg.ph.cpn.sites.df[,cpnX.string])
 			joining.vals.mat[idx, "median_ph_cpn"] <- median(seg.ph.cpn.sites.df[,cpnX.string])
 			# print(joining.vals.mat)
-			
+
 		}#end if (num.ph.cpn > 0) {
 		#using run length encodings here as we have the issue that many logr values, due to being 1000G positiosn
 		#are often very close together and thus are, in reality, a single datapoint...
@@ -405,7 +405,7 @@ creatingArmJoiningInfoMatrixAndGranges <- function(arm.grs, samp.arm.sites.df, c
 
 	proc.arm.grs$num_ph_cpn <- joining.vals.mat[,"num_ph_cpn"]
 	proc.arm.grs$num_tot_cpn <- joining.vals.mat[,"num_tot_cpn"]
-	sorted.arm.grs <- proc.arm.grs[ order(proc.arm.grs$num_ph_cpn, proc.arm.grs$num_tot_cpn, proc.arm.grs$width) ]
+	sorted.arm.grs <- proc.arm.grs[ order(proc.arm.grs$num_ph_cpn, proc.arm.grs$num_tot_cpn, proc.arm.grs$seg_width) ]
 	joining.vals.mat <- joining.vals.mat[match(GenomicRanges::start(sorted.arm.grs), joining.vals.mat[, "startpos"]) , , drop = FALSE]
 	joining.vals.mat[, "gr_idx"] <- 1:nrow(joining.vals.mat)
 
@@ -482,7 +482,7 @@ attemptToJoinOneSegmentWithinChromArm <- function(current.arm.grs, joining.vals.
 																	curr.gr.idx = curr.ord.idx,
 																	sorted.arm.grs = current.arm.grs,
 																	NUM_TOT_CPN = NUM_TOT_CPN,
-																	CPN_AVG_THRESH = CPN_AVG_THRESH)  
+																	CPN_AVG_THRESH = CPN_AVG_THRESH)
 		#print("Returning from current.arm.grs")
 		if( length(new.unsorted.arm.grs) != length(current.arm.grs)) {
 
@@ -513,7 +513,7 @@ attemptToJoinOneSegmentWithinChromArm <- function(current.arm.grs, joining.vals.
 			next
 
 		}
-		
+
 		curr.ord.idx <- curr.ord.idx + 1
 
 	}#end while ( curr.gr.idx <= length(sorted.arm.grs) ) {
@@ -532,7 +532,7 @@ attemptToJoinOneSegmentWithinChromArm <- function(current.arm.grs, joining.vals.
 ## Q       -------------
 ## S --------------
 ##
-## query_contained_in_subject: startin & endin 
+## query_contained_in_subject: startin & endin
 ## Q     -----
 ## S --------------
 ##
@@ -542,7 +542,7 @@ attemptToJoinOneSegmentWithinChromArm <- function(current.arm.grs, joining.vals.
 #Params:
 # query: one or more granges/iranges that you wish to compare to the subject
 # subject: one or more grangaes/ranges that you wish to be compared with the query
-# output: specifies the output type either "gr" for genomic range or "df" for dataframe 
+# output: specifies the output type either "gr" for genomic range or "df" for dataframe
 #Returns a dataframe/grange with following columns/fields:
 # seqnames: this is just Grange name for chrom of the input GRange
 # start: start of the input GRange
@@ -562,7 +562,7 @@ attemptToJoinOneSegmentWithinChromArm <- function(current.arm.grs, joining.vals.
 # overlap_prop_query: proportion of query Grange covered by overlap
 # overlap_prop_subject: proportion of subject/result grange covered by overlap
 # overlap_type: what kind of overlap it is (edited)
-# 
+#
 #Also returns all the metadata in the subject, ie original columns holding non-genomic position information
 #Todo add widths for everything
 getOverlapGRanges <- function(query, subject, output="gr", ...) {
@@ -571,7 +571,7 @@ getOverlapGRanges <- function(query, subject, output="gr", ...) {
         if(!((class(query) == "GRanges" & class(subject) == "GRanges") | (class(query) == "IRanges" & class(subject) == "IRanges"))) {
                 stop("Query and subject need to be of same class, either GRanges or IRanges!")
         }
-        
+
         ## Find overlapping ranges
         if(class(query) == "GRanges") {
           seqlengths(query) <- rep(NA, length(seqlengths(query)))
@@ -582,7 +582,7 @@ getOverlapGRanges <- function(query, subject, output="gr", ...) {
         query <- query[overlap.index.mat[, 1]]
         subject <- subject[overlap.index.mat[, 2]]
         overlap.mat <- cbind(query_start = start(query), query_end = end(query), subject_start = start(subject), subject_end = end(subject))
-  
+
         ## Pre-queries for overlaps
   startup <- overlap.mat[,"subject_start"] < overlap.mat[,"query_start"]
   enddown <- overlap.mat[,"subject_end"] > overlap.mat[,"query_end"]
@@ -592,16 +592,16 @@ getOverlapGRanges <- function(query, subject, output="gr", ...) {
   ## Overlap types
   olup <- startup & endin
   oldown <- startin & enddown
-  inside <- startin & endin 
+  inside <- startin & endin
   contained <- startup & enddown
-  
+
         ## Overlap types in one vector
   overlap_type <- rep("", length(overlap.mat[,"query_start"]))
   overlap_type[olup] <- "upstream_overlap"
   overlap_type[oldown] <- "downstream_overlap"
-  overlap_type[inside] <- "subject_inside_query" 
+  overlap_type[inside] <- "subject_inside_query"
   overlap_type[contained] <- "query_contained_in_subject"
-  
+
         ## Overlap positions
   overlap_start <- rep(0, length(overlap.mat[, "query_start"]))
   overlap_end <- rep(0, length(overlap.mat[, "query_start"]))
@@ -618,7 +618,7 @@ getOverlapGRanges <- function(query, subject, output="gr", ...) {
   overlap_length <- (overlap_end - overlap_start) + 1
         overlap_prop_query <- overlap_length / width(query) * 100
         overlap_prop_subject <- overlap_length / width(subject) * 100
-  
+
   ## Output type
         oldf <- data.frame(query_hit_idx=overlap.index.mat[,1], subject_hit_idx=overlap.index.mat[,2], overlap.mat, overlap_start, overlap_end, overlap_length, overlap_prop_query, overlap_prop_subject, overlap_type)
         if(class(query) == "GRanges") {
@@ -631,8 +631,8 @@ getOverlapGRanges <- function(query, subject, output="gr", ...) {
                 if(class(query)=="GRanges") {
                         elementMetadata(query) <- cbind(as.data.frame(elementMetadata(query)), oldf, mcols(subject))
                 }
-                if(class(query)=="IRanges") {#Todo add the metadata in th eiranges 
-                        query <- GRanges(seqnames = Rle(rep("dummy", length(query))), ranges = IRanges(start=oldf[,"query_start"], end=oldf[,"query_end"]), strand = Rle(strand(rep("+", length(query)))), oldf)  
+                if(class(query)=="IRanges") {#Todo add the metadata in th eiranges
+                        query <- GRanges(seqnames = Rle(rep("dummy", length(query))), ranges = IRanges(start=oldf[,"query_start"], end=oldf[,"query_end"]), strand = Rle(strand(rep("+", length(query)))), oldf)
                 }
                 return(query)
         }
