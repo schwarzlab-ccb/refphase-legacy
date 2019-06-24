@@ -24,7 +24,7 @@ makeInputPathFileForTRACERxExomeSNPArray <- function(pt.id, sample.vec, release.
     } else if (file.exists(samp.regular.file.path)) {
 
       pt.file.paths.df[pt.file.paths.df$sample == samp, ]$samp_ascat_bc_path <- samp.regular.file.path
-      
+
     } else {
 
       stop("No sample ascat bc object present in either a QC or regular directory")
@@ -42,7 +42,7 @@ getSNPDataForTRACERxExomeSNPArray <- function(pt.file.paths.df, joint.segs.df) {
 
   # sample.vec <- pt.file.paths.df$sample
   # all.samples.ASCAT.list <- list()
-  
+
   # for ( samp in sample.vec ) {
 
   #   samp.ASCAT.obj <- pt.file.paths.df[pt.file.paths.df$sample == samp, ]$samp_ascat_bc_path
@@ -97,6 +97,7 @@ getSNPDataForTRACERxExomeSNPArray <- function(pt.file.paths.df, joint.segs.df) {
     #reg.seg.path <- gsub(".bc.", ".seg.", samp.ASCAT.obj.path)
 
     #reg.logr.baf.path <- paste(DirToConsider, regions[i], "/", regions[i], ".tumor.baf_logr.RData", sep="")
+    cat("Attempting to load:", reg.logr.baf.path, "\n")
     if (file.exists(reg.logr.baf.path)) {
 
       load(reg.logr.baf.path)
@@ -137,26 +138,26 @@ getSNPDataForTRACERxExomeSNPArray <- function(pt.file.paths.df, joint.segs.df) {
 
 
         if(seg[j,]$nMajor == seg[j,]$nMinor) {
-          
+
           ASCAT.summary[ASCAT.summary$chrom == seg[j ,]$chr
                         & ASCAT.summary$pos >= seg[j ,]$startpos
                         & ASCAT.summary$pos <= seg[j ,]$endpos ,]$BAFsegmented <- 0.5
 
                         print("0.5")
-          
+
         } else {#end if(seg[j,]$nMajor == seg[j,]$nMinor) {
 
           if(nrow(ASCAT.summary[ASCAT.summary$chrom == seg[j ,]$chr
                             & ASCAT.summary$pos >= seg[j ,]$startpos
                             & ASCAT.summary$pos <= seg[j ,]$endpos
                             & ! is.na(ASCAT.summary$BAF) ,]) > 0 ) {
-          
+
             avg.seg.baf <- 0.5 - mean(abs(tumor.baf_logr[tumor.baf_logr$chrom == seg[j ,]$chr
                                                        & tumor.baf_logr$pos >= seg[j ,]$startpos
                                                        & tumor.baf_logr$pos <= seg[j ,]$endpos
                                                        & ! is.na(ASCAT.summary$BAF),]$BAF - 0.5))
 
-            ASCAT.summary[ASCAT.summary$chrom == seg[j ,]$chr 
+            ASCAT.summary[ASCAT.summary$chrom == seg[j ,]$chr
                       & ASCAT.summary$pos >= seg[j ,]$startpos
                       & ASCAT.summary$pos <= seg[j ,]$endpos ,]$BAFsegmented <- avg.seg.baf
 
@@ -164,15 +165,15 @@ getSNPDataForTRACERxExomeSNPArray <- function(pt.file.paths.df, joint.segs.df) {
           } else {#end if nrow(ASCAT.summary[ASCAT.summary$chrom == seg[j ,]$chr....
 
 
-             ASCAT.summary[ASCAT.summary$chrom == seg[j ,]$chr 
+             ASCAT.summary[ASCAT.summary$chrom == seg[j ,]$chr
                       & ASCAT.summary$pos >= seg[j ,]$startpos
                       & ASCAT.summary$pos <= seg[j ,]$endpos ,]$BAFsegmented <- 0.5
 
           }
 
-        }#end 
-          
-        
+        }#end
+
+
 
         avg.seg.logr <- mean(tumor.baf_logr[tumor.baf_logr$chrom == seg[j ,]$chr
                                           & tumor.baf_logr$pos >= seg[j ,]$startpos
@@ -185,7 +186,7 @@ getSNPDataForTRACERxExomeSNPArray <- function(pt.file.paths.df, joint.segs.df) {
       }#end if(nrow(ASCAT.summary[ASCAT.summary$chrom==seg[j,]$chr & ASCAT.summary$pos...
 
     }#end for ( j in 1:nrow(seg) ) {
-    
+
     all.regions.ASCAT.list[[regions[i]]] <- ASCAT.summary
 
   }#end for ( i in 1:length(regions) )
@@ -207,7 +208,7 @@ makeInputPathFileForTRACERxWGS <- function(pt.id, release.dir, array.type, save.
                 samp_seg_file_path = rep("None", length(sample.vec)),
                 stringsAsFactors = FALSE)
 
-  
+
   for ( samp in sample.vec ) {
 
     samp.logr.baf.path <- paste(pt.dir, samp, "/", samp, ".tumor.baf_logr.RData", sep="")
@@ -266,40 +267,40 @@ makeInputPathFileForTRACERxWGS <- function(pt.id, release.dir, array.type, save.
 
 #     for ( j in 1:nrow(seg) ) {
 
-#         if(nrow(ASCAT.summary[ASCAT.summary$chr == seg[j ,]$chr 
+#         if(nrow(ASCAT.summary[ASCAT.summary$chr == seg[j ,]$chr
 #                             & ASCAT.summary$pos >= seg[j ,]$startpos
 #                             & ASCAT.summary$pos <= seg[j ,]$endpos,]) > 0) {
 
 #           if(seg[j,]$nMajor==seg[j,]$nMinor){
-            
+
 #             ASCAT.summary[ASCAT.summary$chr == seg[j ,]$chr
-#                         & ASCAT.summary$pos >= seg[j ,]$startpos 
+#                         & ASCAT.summary$pos >= seg[j ,]$startpos
 #                         & ASCAT.summary$pos <= seg[j ,]$endpos ,]$BAFsegmented <- 0.5
-            
+
 #           } else {
-            
+
 #             avg.seg.baf <- 0.5 - mean(abs(tumor.baf_logr[tumor.baf_logr$chr == seg[j ,]$chr
 #                                                        & tumor.baf_logr$pos >= seg[j ,]$startpos
 #                                                        & tumor.baf_logr$pos <= seg[j ,]$endpos,]$BAF - 0.5))
-            
-#             ASCAT.summary[ASCAT.summary$chrom == seg[j ,]$chr 
-#                         & ASCAT.summary$pos >= seg[j ,]$startpos 
+
+#             ASCAT.summary[ASCAT.summary$chrom == seg[j ,]$chr
+#                         & ASCAT.summary$pos >= seg[j ,]$startpos
 #                         & ASCAT.summary$pos <= seg[j ,]$endpos ,]$BAFsegmented <- avg.seg.baf
-            
+
 #           }
 
-#           avg.seg.logr <- mean(tumor.baf_logr[tumor.baf_logr$chr == seg[j ,]$chr 
-#                              & tumor.baf_logr$pos >= seg[j ,]$startpos 
+#           avg.seg.logr <- mean(tumor.baf_logr[tumor.baf_logr$chr == seg[j ,]$chr
+#                              & tumor.baf_logr$pos >= seg[j ,]$startpos
 #                              & tumor.baf_logr$pos <= seg[j ,]$endpos, samp])
-          
-#           ASCAT.summary[ASCAT.summary$chr == seg[j ,]$chr 
-#                       & ASCAT.summary$pos >= seg[j ,]$startpos 
+
+#           ASCAT.summary[ASCAT.summary$chr == seg[j ,]$chr
+#                       & ASCAT.summary$pos >= seg[j ,]$startpos
 #                       & ASCAT.summary$pos <= seg[j ,]$endpos,]$logRsegmented <- avg.seg.logr
 
 #         }#end if(nrow(ASCAT.summary[ASCAT.summary$chrom==seg[j,]$chr & ASCAT.summary$pos...
 
 #       }#end for ( j in 1:nrow(seg) ) {
-      
+
 #       ASCAT.summary
 
 #   }# end  for ( samp in sample.vec ) {
@@ -379,11 +380,11 @@ getSNPDataForTRACERxWGS <- function(snp.file.path) {
 
         ASCAT.summary$idx <- 1:nrow(ASCAT.summary)
 
-        if(nrow(ASCAT.summary[ASCAT.summary$chr == seg$chr 
+        if(nrow(ASCAT.summary[ASCAT.summary$chr == seg$chr
                             & ASCAT.summary$pos >= seg$startpos
                             & ASCAT.summary$pos <= seg$endpos,]) > 0) {
 
-          idx.vec <- ASCAT.summary[ASCAT.summary$chr == seg$chr 
+          idx.vec <- ASCAT.summary[ASCAT.summary$chr == seg$chr
                             & ASCAT.summary$pos >= seg$startpos
                             & ASCAT.summary$pos <= seg$endpos,]$idx
           #print(idx.vec)
@@ -391,37 +392,37 @@ getSNPDataForTRACERxWGS <- function(snp.file.path) {
           seg.to.return$end_idx <- max(idx.vec)
 
           if(seg$nMajor == seg$nMinor){
-            
+
             # ASCAT.summary[ASCAT.summary$chrom == seg$chr
-            #             & ASCAT.summary$pos >= seg$startpos 
+            #             & ASCAT.summary$pos >= seg$startpos
             #             & ASCAT.summary$pos <= seg$endpos ,]$BAFsegmented <- 0.5
                         seg.to.return$avg_seg_BAF <- 0.5
-            
+
           } else {
-            
+
             avg.seg.baf <- 0.5 - mean(abs(tumor.baf_logr[tumor.baf_logr$chr == seg$chr
                                                        & tumor.baf_logr$pos >= seg$startpos
                                                        & tumor.baf_logr$pos <= seg$endpos,]$BAF - 0.5))
-            
-            # ASCAT.summary[ASCAT.summary$chrom == seg$chr 
-            #             & ASCAT.summary$pos >= seg$startpos 
+
+            # ASCAT.summary[ASCAT.summary$chrom == seg$chr
+            #             & ASCAT.summary$pos >= seg$startpos
             #             & ASCAT.summary$pos <= seg$endpos ,]$BAFsegmented <- avg.seg.baf
                           seg.to.return$avg_seg_BAF <- avg.seg.baf
 
-            
+
           }
 
-          avg.seg.logr <- mean(tumor.baf_logr[tumor.baf_logr$chr == seg$chr 
-                             & tumor.baf_logr$pos >= seg$startpos 
+          avg.seg.logr <- mean(tumor.baf_logr[tumor.baf_logr$chr == seg$chr
+                             & tumor.baf_logr$pos >= seg$startpos
                              & tumor.baf_logr$pos <= seg$endpos, samp])
-          
-          # ASCAT.summary[ASCAT.summary$chrom == seg$chr 
-          #             & ASCAT.summary$pos >= seg$startpos 
+
+          # ASCAT.summary[ASCAT.summary$chrom == seg$chr
+          #             & ASCAT.summary$pos >= seg$startpos
           #             & ASCAT.summary$pos <= seg$endpos,]$logRsegmented <- avg.seg.logr
                       seg.to.return$avg_seg_LogR <- avg.seg.logr
 
         }#end if(nrow(ASCAT.summary[ASCAT.summary$chrom==seg[j,]$chr & ASCAT.summary$pos...
-      
+
       seg.to.return
 
   }# end  for ( samp in sample.vec ) {
@@ -431,7 +432,7 @@ getSNPDataForTRACERxWGS <- function(snp.file.path) {
   all.samp.SNP.list <- list()
   for ( samp in sample.vec ) {
 
-      samp.seg.idx.df <- all.samp.SNP.df[all.samp.SNP.df$sample == samp,]    
+      samp.seg.idx.df <- all.samp.SNP.df[all.samp.SNP.df$sample == samp,]
       samp.SNP.df <- all.regions.ASCAT.SNP.list[[samp]]
 
     for ( j in 1:nrow(samp.seg.idx.df) ) {
@@ -511,7 +512,7 @@ getAllSNPsWithLogRatioDataTRACERxFormatASCATBC <- function(pt.id, array.type="ex
       reg.ASCAT.summary$BAFsegmented  <- NA
       reg.ASCAT.summary$logR          <- NA
       reg.ASCAT.summary$logRsegmented <- NA
-      
+
       reg.ASCAT.summary[rownames(reg.ASCAT.obj$Tumor_LogR_segmented),]$logRsegmented           <- reg.ASCAT.obj$Tumor_LogR_segmented[,1]
       reg.ASCAT.summary[rownames(reg.ASCAT.obj$Tumor_BAF) ,]$BAF                                <- reg.ASCAT.obj$Tumor_BAF[[1]]
       reg.ASCAT.summary[rownames(reg.ASCAT.obj$Tumor_BAF_segmented[[1]]),]$BAFsegmented        <- reg.ASCAT.obj$Tumor_BAF_segmented[[1]][,1]
@@ -548,7 +549,7 @@ getSNPsWithBAFandLogRatioDataTRACERxFormatASCATBC <- function(pt.id, array.type=
       reg.ASCAT.summary$BAFsegmented  <- NA
       reg.ASCAT.summary$logR          <- NA
       reg.ASCAT.summary$logRsegmented <- NA
-      
+
       reg.ASCAT.summary[rownames(reg.ASCAT.obj$Tumor_LogR_segmented),]$logRsegmented           <- reg.ASCAT.obj$Tumor_LogR_segmented[,1]
       reg.ASCAT.summary[rownames(reg.ASCAT.obj$Tumor_BAF),]$BAF                                <- reg.ASCAT.obj$Tumor_BAF[[1]]
       reg.ASCAT.summary[rownames(reg.ASCAT.obj$Tumor_BAF_segmented[[1]]),]$BAFsegmented        <- reg.ASCAT.obj$Tumor_BAF_segmented[[1]][,1]
@@ -596,21 +597,21 @@ getSNPDataFromTRACERxFormatBAFLogRData <- function(pt.id, release.dir, array.typ
                             & ASCAT.summary$pos <= seg[j ,]$endpos ,]) > 0) {
 
         if(seg[j,]$nMajor == seg[j,]$nMinor) {
-          
+
           ASCAT.summary[ASCAT.summary$chrom == seg[j ,]$chr
                         & ASCAT.summary$pos >= seg[j ,]$startpos
                         & ASCAT.summary$pos <= seg[j ,]$endpos ,]$BAFsegmented <- 0.5
-          
+
         } else {
-          
+
           avg.seg.baf <- 0.5 - mean(abs(tumor.baf_logr[tumor.baf_logr$chrom == seg[j ,]$chr
                                                        & tumor.baf_logr$pos >= seg[j ,]$startpos
                                                        & tumor.baf_logr$pos <= seg[j ,]$endpos,]$BAF - 0.5))
 
-          ASCAT.summary[ASCAT.summary$chrom == seg[j ,]$chr 
+          ASCAT.summary[ASCAT.summary$chrom == seg[j ,]$chr
                       & ASCAT.summary$pos >= seg[j ,]$startpos
                       & ASCAT.summary$pos <= seg[j ,]$endpos ,]$BAFsegmented <- avg.seg.baf
-          
+
         }
 
         avg.seg.logr <- mean(tumor.baf_logr[tumor.baf_logr$chrom == seg[j ,]$chr
@@ -624,7 +625,7 @@ getSNPDataFromTRACERxFormatBAFLogRData <- function(pt.id, release.dir, array.typ
       }#end if(nrow(ASCAT.summary[ASCAT.summary$chrom==seg[j,]$chr & ASCAT.summary$pos...
 
     }#end for ( j in 1:nrow(seg) ) {
-    
+
     all.regions.ASCAT.list[[regions[i]]] <- ASCAT.summary
 
   }#end for ( i in 1:length(regions) )
@@ -645,7 +646,7 @@ cleanAndErrorCheckMinConsSegs <- function(min.cons.seg.df) {
 
   min.cons.segs.df[min.cons.segs.df == '-Inf'] <- -3
   min.cons.segs.df[min.cons.segs.df == 'Inf'] <- 3
-  #remove any NA rows 
+  #remove any NA rows
   min.cons.seg.df <- min.cons.seg.df[!is.na(rowSums(min.cons.seg.df[,4:ncol(min.cons.seg.df)])),,drop=FALSE]
 
   return(min.cons.seg.df)
@@ -663,7 +664,7 @@ cleanAndErrorCheckSNPsMPhase <- function(all.samp.SNP.list, min.cons.segs.df, al
   min.cpn.vals.df <- min.cons.segs.df[, 4:ncol(min.cons.segs.df)]
   seg.name.vec <- paste(min.cons.segs.df[, 1], min.cons.segs.df[, 2], min.cons.segs.df[, 3], sep = ":")
   sample.vec <- colnames(min.cpn.vals.df)
-  min.cpn.vals.df <- min.cpn.vals.df[!is.na(rowSums(min.cpn.vals.df)), ,drop = FALSE] 
+  min.cpn.vals.df <- min.cpn.vals.df[!is.na(rowSums(min.cpn.vals.df)), ,drop = FALSE]
   working.all.samp.SNP.list <- list()
   all.samps.prob.SNPs.vec <- c()
 
@@ -699,7 +700,7 @@ cleanAndErrorCheckSNPsMPhase <- function(all.samp.SNP.list, min.cons.segs.df, al
       #Todo,
       #Another case is that we might have any of the SNPs removed might be the start or end position of the joint segs, if this is the case it might break downstream
       #analyses, we should stop the analysis if this is the case and say clean up the input data.
-     
+
       colnames(samp.seg.logR.BAF.df)[colnames(samp.seg.logR.BAF.df) == "chr"] <- "chrom"
       working.all.samp.SNP.list[[sample]][[seg.name.vec[seg.idx]]] <- samp.seg.logR.BAF.df
 
@@ -718,7 +719,7 @@ cleanAndErrorCheckSNPsMPhase <- function(all.samp.SNP.list, min.cons.segs.df, al
 
     for (seg.idx in 1:nrow(min.cpn.vals.df)) {
 
-      working.all.samp.SNP.list[[sample]][[seg.name.vec[seg.idx]]] <- working.all.samp.SNP.list[[sample]][[seg.name.vec[seg.idx]]][!rownames(working.all.samp.SNP.list[[sample]][[seg.name.vec[seg.idx]]])%in%all.samps.prob.SNPs.vec, ,drop=FALSE] 
+      working.all.samp.SNP.list[[sample]][[seg.name.vec[seg.idx]]] <- working.all.samp.SNP.list[[sample]][[seg.name.vec[seg.idx]]][!rownames(working.all.samp.SNP.list[[sample]][[seg.name.vec[seg.idx]]])%in%all.samps.prob.SNPs.vec, ,drop=FALSE]
 
     }#end for (seg.idx in 1:nrow(min.cpn.vals.df))
 
@@ -738,7 +739,7 @@ cleanAndErrorCheckSNPs <- function(all.samp.SNP.list, min.cons.seg.df, allow.log
   #Note error checking of removing NAs from the min.cons.seg.df should already have been performed
   min.cpn.vals.df <- min.cons.seg.df[,4:ncol(min.cons.seg.df)]
   seg.name.vec <- paste(min.cons.seg.df[, 1], min.cons.segs.df[, 2], min.cons.segs.df[, 3], sep=":")
-  #min.cpn.vals.df <- min.cpn.vals.df[ ! is.na(rowSums(min.cpn.vals.df)), ,drop = FALSE] 
+  #min.cpn.vals.df <- min.cpn.vals.df[ ! is.na(rowSums(min.cpn.vals.df)), ,drop = FALSE]
   sample.vec <- colnames(min.cpn.vals.df)
   working.all.samp.SNP.list <- list()
   all.samps.prob.SNPs.vec <- c()
@@ -751,8 +752,8 @@ cleanAndErrorCheckSNPs <- function(all.samp.SNP.list, min.cons.seg.df, allow.log
 
       samp.SNP.df <- all.samp.SNP.list[[sample]]
 
-      samp.seg.logR.BAF.df <- samp.SNP.df[ samp.SNP.df$chrom == min.cons.seg.df[seg.idx, 1] 
-                                         & samp.SNP.df$pos >= min.cons.seg.df[seg.idx, 2] 
+      samp.seg.logR.BAF.df <- samp.SNP.df[ samp.SNP.df$chrom == min.cons.seg.df[seg.idx, 1]
+                                         & samp.SNP.df$pos >= min.cons.seg.df[seg.idx, 2]
                                          & samp.SNP.df$pos <= min.cons.seg.df[seg.idx, 3], ,drop = FALSE]
 
       #Catch any snp values that have a BAF but no logr in any region, these are likely incorrect
@@ -790,7 +791,7 @@ cleanAndErrorCheckSNPs <- function(all.samp.SNP.list, min.cons.seg.df, allow.log
 
   #   for (seg.idx in 1:nrow(min.cpn.vals.df)) {
 
-  #     working.all.samp.SNP.list[[sample]][[seg.name.vec[seg.idx]]] <- working.all.samp.SNP.list[[sample]][[seg.name.vec[seg.idx]]][ ! rownames(working.all.samp.SNP.list[[sample]][[seg.name.vec[seg.idx]]])%in%all.samps.prob.SNPs.vec, ,drop=FALSE] 
+  #     working.all.samp.SNP.list[[sample]][[seg.name.vec[seg.idx]]] <- working.all.samp.SNP.list[[sample]][[seg.name.vec[seg.idx]]][ ! rownames(working.all.samp.SNP.list[[sample]][[seg.name.vec[seg.idx]]])%in%all.samps.prob.SNPs.vec, ,drop=FALSE]
 
   #   }#end for (seg.idx in 1:nrow(min.cpn.vals.df))
 
@@ -852,7 +853,7 @@ getAllPatientSamplesAndIntersectionGRangesList <- function(sample.vec, f.joint.s
   overall.intersection.gr <- NULL
   for ( samp in sample.vec ) {
 
-    samp.gr <- makeGRangesFromDataFrame(f.joint.segs.df[f.joint.segs.df$sample==samp 
+    samp.gr <- makeGRangesFromDataFrame(f.joint.segs.df[f.joint.segs.df$sample==samp
                       ,],
                             keep.extra.columns=FALSE,
                             ignore.strand=FALSE,
@@ -897,7 +898,7 @@ compareOverlapsBetweenSamples <- function(sample.vec, f.joint.segs.df, hg19.info
   chr.info.df <- hg19.info.df[hg19.info.df$chrom %in% chrs.to.use.vec,]
   p.name.vec <- chr.info.df$p_name
   q.name.vec <- chr.info.df$q_name
-  arm.vec <- c(rbind(p.name.vec, q.name.vec)) 
+  arm.vec <- c(rbind(p.name.vec, q.name.vec))
   p.q.vec <- c("p", "q")
 
   samp.gr.list <- getAllPatientSamplesAndIntersectionGRangesList(sample.vec, f.joint.segs.df)
@@ -907,7 +908,7 @@ compareOverlapsBetweenSamples <- function(sample.vec, f.joint.segs.df, hg19.info
                           stringsAsFactors = FALSE,
                           check.names = FALSE)
   arm.coverage.df$arm <- arm.vec
-  #how 
+  #how
 
   #So now we want to take the intersection and compare the sizes of the
 
@@ -956,7 +957,7 @@ joinTwoGrangesIntoOne <- function(gr.one, gr.two) {
   new.start <- start(s.comb.grs)[1]
   new.end <- end(s.comb.grs)[length(end(s.comb.grs))]
 
-  joined.gr <- GRanges(seqnames = chr, 
+  joined.gr <- GRanges(seqnames = chr,
              ranges = IRanges(new.start, new.end))
 
   # gr.list <- GRangesList(gr.one,gr.two)
@@ -982,7 +983,7 @@ removeSingleBasePairSegmentsFromIntersectionGranges <- function(all.grs, min.wid
 
     return(working.no.ones.grs)
 
-    
+
   }
   for ( idx in 1:length(width.one.grs) ) {
 
@@ -1022,7 +1023,7 @@ removeSingleBasePairSegmentsFromIntersectionGranges <- function(all.grs, min.wid
 ##
 getChromosomeArmsGRangeList <- function(current.chr, chrom.info.df) {
 
-  arm.df.list <- list() 
+  arm.df.list <- list()
   p.arm.df <- data.frame(
   chrom  = current.chr,
   start = chrom.info.df[chrom.info.df$chrom == current.chr,]$p_start,
@@ -1082,7 +1083,7 @@ getChromosomeArmsGRangeList <- function(current.chr, chrom.info.df) {
 ## Q       -------------
 ## S --------------
 ##
-## query_contained_in_subject: startin & endin 
+## query_contained_in_subject: startin & endin
 ## Q     -----
 ## S --------------
 ##
@@ -1092,7 +1093,7 @@ getChromosomeArmsGRangeList <- function(current.chr, chrom.info.df) {
 #Params:
 # query: one or more granges/iranges that you wish to compare to the subject
 # subject: one or more grangaes/ranges that you wish to be compared with the query
-# output: specifies the output type either "gr" for genomic range or "df" for dataframe 
+# output: specifies the output type either "gr" for genomic range or "df" for dataframe
 #Returns a dataframe/grange with following columns/fields:
 # seqnames: this is just Grange name for chrom of the input GRange
 # start: start of the input GRange
@@ -1112,17 +1113,17 @@ getChromosomeArmsGRangeList <- function(current.chr, chrom.info.df) {
 # overlap_prop_query: proportion of query Grange covered by overlap
 # overlap_prop_subject: proportion of subject/result grange covered by overlap
 # overlap_type: what kind of overlap it is (edited)
-# 
+#
 #Also returns all the metadata in the subject, ie original columns holding non-genomic position information
 #Todo add widths for everything
 getOverlapGRanges <- function(query, subject, output="gr", ...) {
         require(GenomicRanges); require(IRanges)
-        
+
         ## Input check
         if(!((class(query) == "GRanges" & class(subject) == "GRanges") | (class(query) == "IRanges" & class(subject) == "IRanges"))) {
                 stop("Query and subject need to be of same class, either GRanges or IRanges!")
         }
-        
+
         ## Find overlapping ranges
         if(class(query) == "GRanges") {
           seqlengths(query) <- rep(NA, length(seqlengths(query)))
@@ -1133,7 +1134,7 @@ getOverlapGRanges <- function(query, subject, output="gr", ...) {
         query <- query[overlap.index.mat[, 1]]
         subject <- subject[overlap.index.mat[, 2]]
         overlap.mat <- cbind(query_start = start(query), query_end = end(query), subject_start = start(subject), subject_end = end(subject))
-  
+
         ## Pre-queries for overlaps
   startup <- overlap.mat[,"subject_start"] < overlap.mat[,"query_start"]
   enddown <- overlap.mat[,"subject_end"] > overlap.mat[,"query_end"]
@@ -1143,16 +1144,16 @@ getOverlapGRanges <- function(query, subject, output="gr", ...) {
   ## Overlap types
   olup <- startup & endin
   oldown <- startin & enddown
-  inside <- startin & endin 
+  inside <- startin & endin
   contained <- startup & enddown
-  
+
         ## Overlap types in one vector
   overlap_type <- rep("", length(overlap.mat[,"query_start"]))
   overlap_type[olup] <- "upstream_overlap"
   overlap_type[oldown] <- "downstream_overlap"
-  overlap_type[inside] <- "subject_inside_query" 
+  overlap_type[inside] <- "subject_inside_query"
   overlap_type[contained] <- "query_contained_in_subject"
-  
+
         ## Overlap positions
   overlap_start <- rep(0, length(overlap.mat[, "query_start"]))
   overlap_end <- rep(0, length(overlap.mat[, "query_start"]))
@@ -1169,7 +1170,7 @@ getOverlapGRanges <- function(query, subject, output="gr", ...) {
   overlap_length <- (overlap_end - overlap_start) + 1
         overlap_prop_query <- overlap_length / width(query) * 100
         overlap_prop_subject <- overlap_length / width(subject) * 100
-  
+
   ## Output type
         oldf <- data.frame(query_hit_idx=overlap.index.mat[,1], subject_hit_idx=overlap.index.mat[,2], overlap.mat, overlap_start, overlap_end, overlap_length, overlap_prop_query, overlap_prop_subject, overlap_type)
         if(class(query) == "GRanges") {
@@ -1182,8 +1183,8 @@ getOverlapGRanges <- function(query, subject, output="gr", ...) {
                 if(class(query)=="GRanges") {
                         elementMetadata(query) <- cbind(as.data.frame(elementMetadata(query)), oldf, mcols(subject))
                 }
-                if(class(query)=="IRanges") {#Todo add the metadata in th eiranges 
-                        query <- GRanges(seqnames = Rle(rep("dummy", length(query))), ranges = IRanges(start=oldf[,"query_start"], end=oldf[,"query_end"]), strand = Rle(strand(rep("+", length(query)))), oldf)  
+                if(class(query)=="IRanges") {#Todo add the metadata in th eiranges
+                        query <- GRanges(seqnames = Rle(rep("dummy", length(query))), ranges = IRanges(start=oldf[,"query_start"], end=oldf[,"query_end"]), strand = Rle(strand(rep("+", length(query)))), oldf)
                 }
                 return(query)
         }
@@ -1207,7 +1208,7 @@ getOverlapGRanges <- function(query, subject, output="gr", ...) {
 
 #   min.cpn.vals.df <- min.cons.seg.df[,4:ncol(min.cons.seg.df)]
 #   seg.name.vec <- paste(min.cons.seg.df[, 1], min.cons.segs.df[, 2], min.cons.segs.df[, 3], sep=":")
-#   #min.cpn.vals.df <- min.cpn.vals.df[ ! is.na(rowSums(min.cpn.vals.df)), ,drop = FALSE] 
+#   #min.cpn.vals.df <- min.cpn.vals.df[ ! is.na(rowSums(min.cpn.vals.df)), ,drop = FALSE]
 #   working.all.samp.SNP.list <- list()
 #   all.samps.prob.SNPs.vec <- c()
 
@@ -1229,8 +1230,8 @@ getOverlapGRanges <- function(query, subject, output="gr", ...) {
 
 #     samp.SNP.df <- all.samp.SNP.list[[ min.cons.seg.df[, 4]]]
 
-#     samp.seg.logR.BAF.df <- samp.SNP.df[ samp.SNP.df$chrom == min.cons.seg.df[, 1] 
-#                                        & samp.SNP.df$pos >= min.cons.seg.df[, 2] 
+#     samp.seg.logR.BAF.df <- samp.SNP.df[ samp.SNP.df$chrom == min.cons.seg.df[, 1]
+#                                        & samp.SNP.df$pos >= min.cons.seg.df[, 2]
 #                                        & samp.SNP.df$pos <= min.cons.seg.df[, 3], ,drop = FALSE]
 
 #     if (allow.logr.only.flag == FALSE) {
@@ -1243,7 +1244,7 @@ getOverlapGRanges <- function(query, subject, output="gr", ...) {
 #     samp.seg.logR.BAF.df.list <- list(samp.seg.logR.BAF.df, samp.prob.SNPs.vec)
 #     names(samp.seg.logR.BAF.df.list) <- paste0(min.cons.seg.df[, 4], "@", min.cons.seg.df[, 1], ":", min.cons.seg.df[, 2], ":", min.cons.seg.df[, 3])
 
-#     return(samp.seg.logR.BAF.df.list)                               
+#     return(samp.seg.logR.BAF.df.list)
 #   }
 
 #   #Create the list dataobject we're expecting:
@@ -1267,7 +1268,7 @@ getOverlapGRanges <- function(query, subject, output="gr", ...) {
 
 #     for (seg.idx in 1:nrow(min.cpn.vals.df)) {
 
-#       working.all.samp.SNP.list[[sample]][[seg.name.vec[seg.idx]]] <- working.all.samp.SNP.list[[sample]][[seg.name.vec[seg.idx]]][ ! rownames(working.all.samp.SNP.list[[sample]][[seg.name.vec[seg.idx]]])%in%all.samps.prob.SNPs.vec, ,drop=FALSE] 
+#       working.all.samp.SNP.list[[sample]][[seg.name.vec[seg.idx]]] <- working.all.samp.SNP.list[[sample]][[seg.name.vec[seg.idx]]][ ! rownames(working.all.samp.SNP.list[[sample]][[seg.name.vec[seg.idx]]])%in%all.samps.prob.SNPs.vec, ,drop=FALSE]
 
 #     }#end for (seg.idx in 1:nrow(min.cpn.vals.df))
 
@@ -1276,7 +1277,7 @@ getOverlapGRanges <- function(query, subject, output="gr", ...) {
 #   return(working.all.samp.SNP.list)
 
 # }#end <- function(all.samp.SNP.list, min.cons.seg.df)
- 
+
 
 # # ##
 # ##Params:
@@ -1289,7 +1290,7 @@ getOverlapGRanges <- function(query, subject, output="gr", ...) {
 
 #   min.cpn.vals.df <- min.cons.seg.df[,4:ncol(min.cons.seg.df)]
 #   seg.name.vec <- paste(min.cons.seg.df[, 1], min.cons.segs.df[, 2], min.cons.segs.df[, 3], sep=":")
-#   #min.cpn.vals.df <- min.cpn.vals.df[ ! is.na(rowSums(min.cpn.vals.df)), ,drop = FALSE] 
+#   #min.cpn.vals.df <- min.cpn.vals.df[ ! is.na(rowSums(min.cpn.vals.df)), ,drop = FALSE]
 #   working.all.samp.SNP.list <- list()
 #   all.samps.prob.SNPs.vec <- c()
 
@@ -1310,7 +1311,7 @@ getOverlapGRanges <- function(query, subject, output="gr", ...) {
 #   print("Starting parallel assignation of snps to segs:")
 #   # Create class which holds multiple results for each loop iteration.
 #   # Each loop iteration populates two properties: $result1 and $result2.
-#   # For a great tutorial on S3 classes, see: 
+#   # For a great tutorial on S3 classes, see:
 #   # http://www.cyclismo.org/tutorial/R/s3Classes.html#creating-an-s3-class
 #   MultiResultClass <- function(samp_seg_name=NULL, samp_seg_logR_BAF_df=NULL, samp_prob_SNPs_vec=NULL)
 #   {
@@ -1327,8 +1328,8 @@ getOverlapGRanges <- function(query, subject, output="gr", ...) {
 
 #     samp.SNP.df <- all.samp.SNP.list[[ min.cons.seg.df[, 4]]]
 
-#     samp.seg.logR.BAF.df <- samp.SNP.df[ samp.SNP.df$chrom == min.cons.seg.df[, 1] 
-#                                        & samp.SNP.df$pos >= min.cons.seg.df[, 2] 
+#     samp.seg.logR.BAF.df <- samp.SNP.df[ samp.SNP.df$chrom == min.cons.seg.df[, 1]
+#                                        & samp.SNP.df$pos >= min.cons.seg.df[, 2]
 #                                        & samp.SNP.df$pos <= min.cons.seg.df[, 3], ,drop = FALSE]
 
 #     if (allow.logr.only.flag == FALSE) {
@@ -1393,12 +1394,63 @@ getOverlapGRanges <- function(query, subject, output="gr", ...) {
 
 # }#end cleanAndErrorCheckSNPsParallel <- function(all.samp.SNP.list, min.cons.seg.df,
 
+# Read in a set of ascat.bc files and create the requisite all.samp.SNP.list
+#
+# > x <- readRDS("LTX121_all_samp_SNP_list.RDS")
+# > str(x)
+# List of 2
+#  $ A_LTX121_SU_T1-R1:'data.frame':      938946 obs. of  6 variables:
+#   ..$ chrom        : num [1:938946] 1 1 1 1 1 1 1 1 1 1 ...
+#   ..$ pos          : int [1:938946] 762273 762496 762497 777237 777318 777335 777361 777456 783071 783147 ...
+#   ..$ BAF          : num [1:938946] NA NA NA NA NA NA NA NA NA NA ...
+#   ..$ logR         : num [1:938946] -0.049 -0.161 -0.161 -0.542 -0.46 -0.46 -0.46 -0.166 -0.047 -0.013 ...
+#   ..$ BAFsegmented : num [1:938946] 0.231 0.231 0.231 0.231 0.231 ...
+#   ..$ logRsegmented: num [1:938946] -0.327 -0.327 -0.327 -0.327 -0.327 ...
+#  $ A_LTX121_SU_T1-R2:'data.frame':      938946 obs. of  6 variables:
+#   ..$ chrom        : num [1:938946] 1 1 1 1 1 1 1 1 1 1 ...
+#   ..$ pos          : int [1:938946] 762273 762496 762497 777237 777318 777335 777361 777456 783071 783147 ...
+#   ..$ BAF          : num [1:938946] NA NA NA NA NA NA NA NA NA NA ...
+#   ..$ logR         : num [1:938946] 0.061 -0.052 -0.052 -0.214 -0.068 -0.068 -0.068 -0.073 -0.054 -0.05 ...
+#   ..$ BAFsegmented : num [1:938946] 0.333 0.333 0.333 0.333 0.333 ...
+#   ..$ logRsegmented: num [1:938946] -0.22 -0.22 -0.22 -0.22 -0.22 ...
+#
+readInASCAT <- function(sample_table, segs, samples) {
+  all_snps <- list()
+  print(sample_table)
+
+  for (sample in samples) {
+    sample_info <- sample_table[sample,]
+    cat("Starting to read sample", sample_info$samp_ascat_bc_path, "\n")
+    ascat_bc <- readRDS(sample_info$samp_ascat_bc_path)
+
+    # First check to see which SNPs are heterozygous
+    normal_baf <- ascat_bc$Germline_BAF[[1]]
+    is_homozygous <- normal_baf < 0.3 | normal_baf > 0.7
+    is_heterozygous <- !(is.na(normal_baf) | is_homozygous)
+    cat("# of heterozygous SNPs:", sum(is_heterozygous), "\n")
+
+    samp_data <- data.frame(chrom = gsub("chr", "", as.character(ascat_bc$SNPpos$chr))[is_heterozygous],
+                            pos = ascat_bc$SNPpos$pos[is_heterozygous],
+                            BAF = ascat_bc$Tumor_BAF[[1]][is_heterozygous],
+                            logR = ascat_bc$Tumor_LogR[[1]][is_heterozygous],
+                            # FIXME: huge hack. BAFsegmented does not contain all SNPs, so we
+                            # substitute the original BAFs here. This is only used for plotting I
+                            # think, so it shouldn't alter the CN estimation.
+                            BAFsegmented = rep(0.0, sum(is_heterozygous)),
+                            #samp_data$BAFsegmented = ascat_bc$Tumor_BAF_segmented[is_heterozygous]
+                            logRsegmented = ascat_bc$Tumor_LogR_segmented[is_heterozygous])
+    all_snps[[sample]] <- samp_data
+  }
+
+  return(all_snps)
+}
+
   ##
     ##Params:
     ##
     ##Returns:
     ##
-    readInMEDICCInputFormatParallel <- function(snp.file.df, processed.orig.cpn.segs.df, sample.vec) {
+readInMEDICCInputFormatParallel <- function(snp.file.df, processed.orig.cpn.segs.df, sample.vec) {
       # TODO add check that every single all.samp.SNP.list has the same SNPs..
       # Note error checking of removing NAs from the min.cons.seg.df should already have been performed
       # registerDoParallel(cores = num.cores)
@@ -1441,8 +1493,8 @@ getOverlapGRanges <- function(query, subject, output="gr", ...) {
         #print(seg[j,])
         #Are there any BAF values that aren't set at 2 (and thus shouldn't be used for allele specific cpn) present in this segment?
         if (nrow(ASCAT.summary[ASCAT.summary$chr == seg[j ,]$chr
-                    & ASCAT.summary$pos >= seg[j ,]$startpos 
-                    & ASCAT.summary$pos <= seg[j ,]$endpos 
+                    & ASCAT.summary$pos >= seg[j ,]$startpos
+                    & ASCAT.summary$pos <= seg[j ,]$endpos
                     & ASCAT.summary$BAF != 2 ,]) > 0) {
           #Is this segment balanced, if so set the BAFsegmented to 0.5
           if (seg[j , ,]$nMajor == seg[j ,]$nMinor) {
@@ -1450,21 +1502,21 @@ getOverlapGRanges <- function(query, subject, output="gr", ...) {
             ASCAT.summary[ASCAT.summary$chr == seg[j ,]$chr
                     & ASCAT.summary$pos >= seg[j ,]$startpos
                     & ASCAT.summary$pos <= seg[j ,]$endpos,]$BAFsegmented <- 0.5
-            
-          } else {#Segment is balanced so we need to calculate the value of the BAF segmented and apply it to all these values 
-          
+
+          } else {#Segment is balanced so we need to calculate the value of the BAF segmented and apply it to all these values
+
 
             avg.seg.baf <- 0.5 - mean(abs(as.numeric(ASCAT.summary[ASCAT.summary$chr == seg[j ,]$chr
                                         & ASCAT.summary$pos >= seg[j ,]$startpos
                                         & ASCAT.summary$pos <= seg[j ,]$endpos
                                         & ASCAT.summary$BAF != 2 , ]$BAF)          - 0.5))
 
-            ASCAT.summary[ASCAT.summary$chr == seg[j ,]$chr 
-                    & ASCAT.summary$pos >= seg[j ,]$startpos 
+            ASCAT.summary[ASCAT.summary$chr == seg[j ,]$chr
+                    & ASCAT.summary$pos >= seg[j ,]$startpos
                     & ASCAT.summary$pos <= seg[j ,]$endpos, ]$BAFsegmented <- avg.seg.baf
 
           }
-     
+
         }#end if(nrow(ASCAT.summary[ASCAT.summary$chrom==seg[j,]$chr & ASCAT.summary$pos...
         #We now need to calculate the average logr of any snps that are present
         if (nrow(ASCAT.summary[ASCAT.summary$chr == seg[j ,]$chr
@@ -1534,7 +1586,7 @@ cleanAndErrorCheckSNPsParallel <- function(all.samp.SNP.list, mcs.seg.to.use.df,
 
   min.cpn.vals.df <- mcs.seg.to.use.df[,4:ncol(mcs.seg.to.use.df)]
   seg.name.vec <- paste(mcs.seg.to.use.df[, 1], mcs.seg.to.use.df[, 2], mcs.seg.to.use.df[, 3], sep=":")
-  #min.cpn.vals.df <- min.cpn.vals.df[ ! is.na(rowSums(min.cpn.vals.df)), ,drop = FALSE] 
+  #min.cpn.vals.df <- min.cpn.vals.df[ ! is.na(rowSums(min.cpn.vals.df)), ,drop = FALSE]
   working.all.samp.SNP.list <- list()
   all.samps.prob.SNPs.vec <- c()
 
@@ -1557,7 +1609,7 @@ cleanAndErrorCheckSNPsParallel <- function(all.samp.SNP.list, mcs.seg.to.use.df,
   print("Starting parallel assignation of snps to segs:")
   # Create class which holds multiple results for each loop iteration.
   # Each loop iteration populates two properties: $result1 and $result2.
-  # For a great tutorial on S3 classes, see: 
+  # For a great tutorial on S3 classes, see:
   # http://www.cyclismo.org/tutorial/R/s3Classes.html#creating-an-s3-class
   MultiResultClass <- function(samp_seg_name=NULL, samp_seg_logR_BAF_df=NULL, samp_prob_SNPs_vec=NULL)
   {
@@ -1577,15 +1629,15 @@ cleanAndErrorCheckSNPsParallel <- function(all.samp.SNP.list, mcs.seg.to.use.df,
     #min.cons.seg.df <- iterable.min.cons.seg.df[i, ,drop=FALSE]
     #print(min.cons.seg.df)
     samp.SNP.df <- all.samp.SNP.list[[ it.min.cons.seg.df[, 4]]]
-    
+
     if( "chr" %in% colnames(samp.SNP.df)) {
 
           colnames(samp.SNP.df)[colnames(samp.SNP.df) == "chr"] <- "chrom"
 
     }
     print(it.min.cons.seg.df)
-    samp.seg.logR.BAF.df <- samp.SNP.df[ samp.SNP.df$chrom == it.min.cons.seg.df[, 1] 
-                                       & samp.SNP.df$pos >= it.min.cons.seg.df[, 2] 
+    samp.seg.logR.BAF.df <- samp.SNP.df[ samp.SNP.df$chrom == it.min.cons.seg.df[, 1]
+                                       & samp.SNP.df$pos >= it.min.cons.seg.df[, 2]
                                        & samp.SNP.df$pos <= it.min.cons.seg.df[, 3], ,drop = FALSE]
     samp.prob.SNPs.vec <- c()
     if (data.type == "TRACERx_WGS") {
@@ -1608,7 +1660,7 @@ cleanAndErrorCheckSNPsParallel <- function(all.samp.SNP.list, mcs.seg.to.use.df,
     } else {
 
       samp.prob.SNPs.vec <- c()
-    
+
     }
 
     result <- MultiResultClass(samp_seg_name = paste0(it.min.cons.seg.df[, 4], "@", it.min.cons.seg.df[, 1], ":", it.min.cons.seg.df[, 2], ":", it.min.cons.seg.df[, 3]),
@@ -1685,8 +1737,8 @@ cleanAndErrorCheckSNPsParallel <- function(all.samp.SNP.list, mcs.seg.to.use.df,
  #     print(seg.idx)
  #     samp.SNP.df <- all.samp.SNP.list[[sample]]
 
- #     samp.seg.logR.BAF.df <- samp.SNP.df[ samp.SNP.df$chrom == min.cons.seg.df[seg.idx, 1] 
- #                                        & samp.SNP.df$pos >= min.cons.seg.df[seg.idx, 2] 
+ #     samp.seg.logR.BAF.df <- samp.SNP.df[ samp.SNP.df$chrom == min.cons.seg.df[seg.idx, 1]
+ #                                        & samp.SNP.df$pos >= min.cons.seg.df[seg.idx, 2]
  #                                        & samp.SNP.df$pos <= min.cons.seg.df[seg.idx, 3], ,drop = FALSE]
 
  #     #Catch any snp values that have a BAF but no logr in any region, these are likely incorrect
@@ -1740,8 +1792,8 @@ cleanAndErrorCheckSNPsParallel <- function(all.samp.SNP.list, mcs.seg.to.use.df,
     #     #print(seg[j,])
     #     #Are there any BAF values that aren't set at 2 (and thus shouldn't be used for allele specific cpn) present in this segment?
     #     if (nrow(ASCAT.summary[ASCAT.summary$chr == seg[j ,]$chr
-    #                 & ASCAT.summary$pos >= seg[j ,]$startpos 
-    #                 & ASCAT.summary$pos <= seg[j ,]$endpos 
+    #                 & ASCAT.summary$pos >= seg[j ,]$startpos
+    #                 & ASCAT.summary$pos <= seg[j ,]$endpos
     #                 & ASCAT.summary$BAF != 2 ,]) > 0) {
     #       #Is this segment balanced, if so set the BAFsegmented to 0.5
     #       if (seg[j ,]$nMajor == seg[j ,]$nMinor) {
@@ -1749,21 +1801,21 @@ cleanAndErrorCheckSNPsParallel <- function(all.samp.SNP.list, mcs.seg.to.use.df,
     #         ASCAT.summary[ASCAT.summary$chr == seg[j ,]$chr
     #                 & ASCAT.summary$pos >= seg[j ,]$startpos
     #                 & ASCAT.summary$pos <= seg[j ,]$endpos,]$BAFsegmented <- 0.5
-            
-    #       } else {#Segment is balanced so we need to calculate the value of the BAF segmented and apply it to all these values 
-          
+
+    #       } else {#Segment is balanced so we need to calculate the value of the BAF segmented and apply it to all these values
+
 
     #         avg.seg.baf <- 0.5 - mean(abs(as.numeric(ASCAT.summary[ASCAT.summary$chr == seg[j ,]$chr
     #                                     & ASCAT.summary$pos >= seg[j ,]$startpos
     #                                     & ASCAT.summary$pos <= seg[j ,]$endpos
     #                                     & ASCAT.summary$BAF != 2 ,]$BAF)          - 0.5))
 
-    #         ASCAT.summary[ASCAT.summary$chr == seg[j ,]$chr 
-    #                 & ASCAT.summary$pos >= seg[j ,]$startpos 
+    #         ASCAT.summary[ASCAT.summary$chr == seg[j ,]$chr
+    #                 & ASCAT.summary$pos >= seg[j ,]$startpos
     #                 & ASCAT.summary$pos <= seg[j ,]$endpos ,]$BAFsegmented <- avg.seg.baf
 
     #       }
-     
+
     #     }#end if(nrow(ASCAT.summary[ASCAT.summary$chrom==seg[j,]$chr & ASCAT.summary$pos...
     #     #We now need to calculate the average logr of any snps that are present
     #     if (nrow(ASCAT.summary[ASCAT.summary$chr == seg[j ,]$chr

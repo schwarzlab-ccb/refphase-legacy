@@ -3,7 +3,7 @@
 library(optparse)
 library(digest)
 
-options(error = function() traceback(2))
+#options(error = function() traceback(2))
 
 option_list <- list(
     make_option(c("--patient"), default="",
@@ -1102,6 +1102,16 @@ if (OVERWRITE_FLAG == TRUE) {
 		all.samp.SNP.list <- getSNPDataForTRACERxWGS(snp.file.path)
 
 
+	} else if (data.format.to.use == "ASCAT") {
+    # Parse a bunch of rds files containing ascat.bc objects
+    snp.file.paths.df <- read.delim(snp.file.path,
+                              stringsAsFactors = FALSE,
+                              header = TRUE,
+                              row.names = "sample")
+    all.samp.SNP.list <- readInASCAT(snp.file.paths.df,
+                                     f.joint.segs.df,
+                                     sample.vec)
+
 	} else {
 
 		print(data.format.to.use)
@@ -1110,10 +1120,13 @@ if (OVERWRITE_FLAG == TRUE) {
 	}
 
 	if (length(unique(unlist(lapply(all.samp.SNP.list, nrow)))) != 1 | length(all.samp.SNP.list) < 2) {
+		print("length(all.samp.SNP.list)")
+		print(length(all.samp.SNP.list))
+		print("length(unique(unlist(lapply(all.samp.SNP.list, nrow))))")
+    print(length(unique(unlist(lapply(all.samp.SNP.list, nrow)))))
+    print(lapply(all.samp.SNP.list, nrow))
 
 		stop("Not all sites are present in all samples' sites information read in or too few samples are present at this stage, this needs to be fixed before running MPhase.")
-		print("length(all.samp.SNP.list)")
-		rint(length(all.samp.SNP.list))
 	}
 
 	#Save the loaded in data:
@@ -5038,8 +5051,8 @@ for (samp in sample.vec) {
 }
 
 
-mphase.complete.file.path <- paste(PLOT_OUTPUT_DIR, patient, ".MPhase.complete", sep="")
-system("touch mphase.complete.file.path")
+#mphase.complete.file.path <- paste(PLOT_OUTPUT_DIR, patient, ".MPhase.complete", sep="")
+#system("touch mphase.complete.file.path")
 
 
 
