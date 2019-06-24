@@ -1429,16 +1429,20 @@ readInASCAT <- function(sample_table, segs, samples) {
     is_heterozygous <- !(is.na(normal_baf) | is_homozygous)
     cat("# of heterozygous SNPs:", sum(is_heterozygous), "\n")
 
-    samp_data <- data.frame(chrom = gsub("chr", "", as.character(ascat_bc$SNPpos$chr))[is_heterozygous],
-                            pos = ascat_bc$SNPpos$pos[is_heterozygous],
-                            BAF = ascat_bc$Tumor_BAF[[1]][is_heterozygous],
-                            logR = ascat_bc$Tumor_LogR[[1]][is_heterozygous],
+    # Mask non-heterozygous SNPs with NA
+    baf <- ascat_bc$Tumor_BAF[[1]]
+    baf[!is_heterozygous] <- NA
+
+    samp_data <- data.frame(chrom = gsub("chr", "", as.character(ascat_bc$SNPpos$chr)),
+                            pos = ascat_bc$SNPpos$pos,
+                            BAF = baf,
+                            logR = ascat_bc$Tumor_LogR[[1]],
                             # FIXME: huge hack. BAFsegmented does not contain all SNPs, so we
                             # substitute the original BAFs here. This is only used for plotting I
                             # think, so it shouldn't alter the CN estimation.
-                            BAFsegmented = rep(0.0, sum(is_heterozygous)),
+                            BAFsegmented = rep(NA, length(baf)),
                             #samp_data$BAFsegmented = ascat_bc$Tumor_BAF_segmented[is_heterozygous]
-                            logRsegmented = ascat_bc$Tumor_LogR_segmented[is_heterozygous])
+                            logRsegmented = ascat_bc$Tumor_LogR_segmented)
     all_snps[[sample]] <- samp_data
   }
 
