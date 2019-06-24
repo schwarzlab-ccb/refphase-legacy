@@ -3,8 +3,6 @@
 library(optparse)
 library(digest)
 
-#options(error = function() traceback(2))
-
 option_list <- list(
     make_option(c("--patient"), default="",
                 help="Patient id"),
@@ -26,6 +24,8 @@ option_list <- list(
                 help="CPU cores (default=1)"),
     make_option(c("--segment-type"), default="intersection",
                 help="Segment type, intersection or whole_arm (default=1)"),
+    make_option(c("--genome"), default="hg19",
+                help="Human genome version (default=hg19, also supports hg38)"),
     make_option(c("--seed"), default=2134234,
                 help="Random seed")
     )
@@ -52,30 +52,10 @@ overwrite.flag  <- conf$overwrite
 gamma.val <- conf$gamma #for sequencing it's 1 and SNP array it's 0.4/0.5 but this is platform specific see ASCAT help pages.
 num.cores <- conf$cores #number of cores for the do parallel package functions
 intersection.or.whole.arm <- conf$segment_type #Can either be intersection or whole_arm, do we take the only intersection of segments from each sample
+genome <- conf$genome  # hg19 or hg38
 #or do attempt to fill in the gaps between every segment in each sample so that the entire genome is covered (so output from any sample can run in GISTIC
 #as all will cover the same genomic area)
 options(stringsAsFactors = FALSE)
-
-#args = commandArgs(trailingOnly=TRUE)
-#print("args")
-#print(args)
-#patient <- args[1]
-##At the moment MPhase will only try to call MSAI and new copy number in areas of the genome identified as allelically imbalanced
-##Enable this flag to try and find more allelic imbalance but this will probably break.
-#allow.dip.test.phasing.flag <- as.logical(args[2])
-#output.directory.base.path <- args[3]
-#data.format.to.use <- args[4]#Default for this is MEDICC, but can specify TRACERx_exome, TRACERx_snp_array or TRACERx_WGS
-#snp.file.path <- args[5]#Points towards the snp files, of whatever format they are given that should be used based on data.format to use.
-#seg.file.path <- args[6]#Pintts towards the seg files, of whatever format they should be determined byh the data.format.to.use flag.
-#overwrite.flag  <- as.logical(args[7])
-#gamma.val <- args[8]#for sequencing it's 1 and SNP array it's 0.4/0.5 but this is platform specific see ASCAT help pages.
-#num.cores <- args[9]#number of cores for the do parallel package functions
-#intersection.or.whole.arm <- args[10]#Can either be intersection or whole_arm, do we take the only intersection of segments from each sample
-##or do attempt to fill in the gaps between every segment in each sample so that the entire genome is covered (so output from any sample can run in GISTIC
-##as all will cover the same genomic area)
-#options(stringsAsFactors = FALSE)
-#
-#
 
 #function taken from https://github.com/molgenis/molgenis-pipelines/wiki/How-to-source-another_file.R-from-within-your-R-script
 LocationOfThisScript  <-  function() { # Function LocationOfThisScript returns the location of this .R script (may be needed to source other files in same dir)
@@ -110,698 +90,6 @@ LocationOfThisScript  <-  function() { # Function LocationOfThisScript returns t
 }#end LocationOfThisScript  <-  function()
 
 current.dir <-  LocationOfThisScript()
-
-# #Debugging option parameters:
-# patient <- "MET048"
-# allow.dip.test.phasing.flag  <- FALSE
-# output.directory.base.path <- "/home/camp/watkint/working/watkint/data/brastianos/release_v2/B_MET048/exome/CN_het"
-# data.format.to.use <- "MEDICC"
-# snp.file.path <- "/home/camp/watkint/working/watkint/data/brastianos/release_v2/B_MET048/exome/MSAI/MET048_joint_snps.txt"
-# seg.file.path <- "/home/camp/watkint/working/watkint/data/brastianos/release_v2/B_MET048/exome/MSAI/MET048_joint_segs_all_ascat_info.txt"
-# ##########
-# mphase.script.path <- "/home/camp/watkint/working/watkint/scripts/multiregioncopynum/mphase.R"
-# #MEDICC format for TRACERx example
-# medicc.mphase.command <- paste("Rscript", mphase.script.path, patient, allow.dip.test.phasing.flag, data.format.to.use, snp.file.path, seg.file.path, sep=" ")
-
-# #Debugging option parameters:
-# patient <- "MET073"
-# allow.dip.test.phasing.flag  <- FALSE
-# output.directory.base.path <- paste("/home/camp/watkint/working/watkint/data/brastianos/release_v2/","B_", patient, "/exome/CN_het_TRACERx_no_diptest/", sep = "")
-# data.format.to.use <- "TRACERx_exome"
-# snp.file.path <- paste0(output.directory.base.path, patient, "_TRACERx_input_paths_df.txt")
-# seg.file.path <- paste("/home/camp/watkint/working/watkint/data/brastianos/release_v2/", "B_", patient, "/exome/MSAI/", patient, "_joint_segs_all_ascat_info.txt", sep = "")
-# overwrite.flag <- FALSE
-# gamma.val <- 1
-# ##########
-#mphase.script.path <- "/home/camp/watkint/working/watkint/scripts/multiregioncopynum/mphase.R"
-#TRACERx format for TRACERx example
-#tracerx.mphase.command <- paste("Rscript", mphase.script.path, patient, allow.dip.test.phasing.flag, data.format.to.use, snp.file.path, seg.file.path, sep= " ")
-
-# #Debugging option parameters:
-# patient <- "ETX014"
-# allow.dip.test.phasing.flag  <- FALSE
-# # M_ETX014/exome/CN_het_MEDICC_no_diptest
-# output.directory.base.path <- paste("/home/camp/watkint/working/watkint/data/murugaesu/release/","M_", patient, "/exome/CN_het_TRACERx_no_diptest/", sep = "")
-# data.format.to.use <- "TRACERx_exome"
-# snp.file.path <- paste0(output.directory.base.path, patient, "_TRACERx_input_paths_df.txt")
-# seg.file.path <- paste("/home/camp/watkint/working/watkint/data/murugaesu/release/", "M_", patient, "/exome/MSAI/", patient, "_joint_segs_all_ascat_info.txt", sep = "")
-# ##########
-# mphase.script.path <- "/home/camp/watkint/working/watkint/scripts/multiregioncopynum/mphase.R"
-# #TRACERx format for TRACERx example
-# tracerx.mphase.command <- paste("Rscript", mphase.script.path, patient, allow.dip.test.phasing.flag, data.format.to.use, snp.file.path, seg.file.path, sep= " ")
-
-
-
-# # #Debugging option parameters:
-# # patient <- "MET048"
-# allow.dip.test.phasing.flag  <- FALSE
-# output.directory.base.path <- "/Users/watkint/Desktop/MET048_mPhase_data/CN_het_output/"
-# data.format.to.use <- "MEDICC"
-# snp.file.path <- "/Users/watkint/Desktop/MET048_mPhase_data/MET048_joint_snps.txt"
-# seg.file.path <- "/Users/watkint/Desktop/MET048_mPhase_data/MET048_joint_segs_all_ascat_info.txt"
-# ##########
-# mphase.script.path <- "/Users/watkint/code/multiregioncopynum/mphase.R"
-# #MEDICC format for TRACERx example
-# medicc.mphase.command <- paste("Rscript", mphase.script.path, patient, allow.dip.test.phasing.flag, data.format.to.use, snp.file.path, seg.file.path, sep=" ")
-
-
-# patient <- "PTX001"
-# allow.dip.test.phasing.flag <- FALSE
-# output.directory.base.path <- "/home/camp/watkint/working/watkint/data/gundem/release/G_PTX001/WGS/CN_het_MEDICC_no_diptest/"
-# data.format.to.use <- "MEDICC"
-# snp.file.path <- "/home/camp/watkint/working/watkint/data/gundem/release/G_PTX001/WGS/MSAI/PTX001_joint_snps.txt"
-# seg.file.path <- "/home/camp/watkint/working/watkint/data/gundem/release/G_PTX001/WGS/MSAI/PTX001_joint_segs_all_ascat_info.txt"
-
-
-# patient <- "BTX001"
-# allow.dip.test.phasing.flag <- FALSE
-# output.directory.base.path <- "/home/camp/watkint/working/watkint/data/yates/release/Y_BTX001/WGS//CN_het_TRACERx_WGS_no_diptest/"
-# data.format.to.use <- "TRACERx_WGS"
-# snp.file.path <- "/home/camp/watkint/working/watkint/data/yates/release/Y_BTX001/WGS//CN_het_TRACERx_WGS_no_diptest/Y_BTX001_input_snp_files.txt"
-# seg.file.path <- "/home/camp/watkint/working/watkint/data/yates/release/Y_BTX001/WGS/MSAI/BTX001_joint_segs_all_ascat_info.txt"
-# overwrite.flag <- TRUE
-# gamma.val <- 1
-# num.cores <- 12
-
-
-# patient <- "KTX167"
-# allow.dip.test.phasing.flag <- FALSE
-# output.directory.base.path <-  "/home/camp/watkint/working/watkint/data/turajlic_wgs/release/T_KTX167/WGS//CN_het_MEDICC_no_diptest/"
-# data.format.to.use <-  "MEDICC"
-# snp.file.path <- "/home/camp/watkint/working/watkint/data/turajlic_wgs/release/T_KTX167/WGS/MSAI/KTX167_joint_snps.txt"
-# seg.file.path <- "/home/camp/watkint/working/watkint/data/turajlic_wgs/release/T_KTX167/WGS/MSAI/KTX167_joint_segs_all_ascat_info.txt"
-
-#"patient"
-# patient <- "MTX005"
-# allow.dip.test.phasing.flag <- FALSE
-# output.directory.base.path <- paste0("/home/camp/watkint/working/watkint/data/martinez/release_v3/R_",patient,"/snp_array//CN_het_MEDICC_no_diptest/")
-# data.format.to.use <- "MEDICC"
-# snp.file.path <- paste0("/home/camp/watkint/working/watkint/data/martinez/release_v3/R_",patient,"/snp_array/MSAI/",patient,"_new_all_snps.txt")
-# seg.file.path <- paste0("/home/camp/watkint/working/watkint/data/martinez/release_v3/R_",patient,"/snp_array/MSAI/",patient,"_joint_segs_all_ascat_info.txt")
-# overwrite.flag <- TRUE
-# gamma.val <- 0.5
-
-
-
-# patient <- "PTX002"
-# allow.dip.test.phasing.flag <- FALSE
-# output.directory.base.path <- "/home/camp/watkint/working/watkint/data/gundem/release/G_PTX002/WGS/CN_het_TRACERx_WGS_no_diptest/"
-# data.format.to.use <- "TRACERx_WGS"
-# snp.file.path <- "/home/camp/watkint/working/watkint/data/gundem/release/G_PTX002/WGS/CN_het_TRACERx_WGS_no_diptest/G_PTX002_input_snp_files.txt"
-# seg.file.path <- "/home/camp/watkint/working/watkint/data/gundem/release/G_PTX002/WGS/MSAI/PTX002_joint_segs_all_ascat_info.txt"
-# overwrite.flag <- FALSE
-# gamma.val <- 1
-
-
-# patient  <-  "STX003"
-# allow.dip.test.phasing.flag <- FALSE
-# output.directory.base.path <- "/home/camp/watkint/working/watkint/data/sottoriva_snp/release_v3/C_STX003/snp_array//CN_het_MEDICC_no_diptest/"
-# data.format.to.use <- "MEDICC"
-# snp.file.path <- "/home/camp/watkint/working/watkint/data/sottoriva_snp/release_v3/C_STX003/snp_array/MSAI/STX003_final_all_snps.txt"
-# seg.file.path <- "/home/camp/watkint/working/watkint/data/sottoriva_snp/release_v3/C_STX003/snp_array/MSAI/STX003_joint_segs_all_ascat_info.txt"
-# overwrite.flag <- TRUE
-# gamma.val <- 0.5
-# num.cores <- 12
-
-
-# patient  <-  "STX009"
-# allow.dip.test.phasing.flag <- FALSE
-# output.directory.base.path <- "/home/camp/watkint/working/watkint/data/sottoriva_snp/release_v3/C_STX009/snp_array//CN_het_MEDICC_no_diptest/"
-# data.format.to.use <- "MEDICC"
-# snp.file.path <- "/home/camp/watkint/working/watkint/data/sottoriva_snp/release_v3/C_STX009/snp_array/MSAI/STX009_final_all_snps.txt"
-# seg.file.path <- "/home/camp/watkint/working/watkint/data/sottoriva_snp/release_v3/C_STX009/snp_array/MSAI/STX009_joint_segs_all_ascat_info.txt"
-# overwrite.flag <- FALSE
-# gamma.val <- 0.5
-
-# patient  <-  "LTX046"
-# allow.dip.test.phasing.flag <- FALSE
-# output.directory.base.path <- "/camp/project/proj-tracerx-lung/tctProjects/watkint/TRACERx100_lung_pan_can_analysis/release/B_LTX046/exome/CN_het_TRACERx_no_diptest/"
-# data.format.to.use <- "TRACERx_exome"
-# snp.file.path <- "/camp/project/proj-tracerx-lung/tctProjects/watkint/TRACERx100_lung_pan_can_analysis/release/B_LTX046/exome/CN_het_TRACERx_no_diptest/LTX046_TRACERx_input_paths_df.txt"
-# seg.file.path <- "/camp/project/proj-tracerx-lung/tctProjects/watkint/TRACERx100_lung_pan_can_analysis/release/B_LTX046/exome/MSAI/LTX046_joint_segs_all_ascat_info.txt"
-# overwrite.flag <- TRUE
-# gamma.val <- 1
-# num.cores <- 24
-
-
-# patient  <-  "LTX041"
-# allow.dip.test.phasing.flag <- FALSE
-# output.directory.base.path <- "/camp/project/proj-tracerx-lung/tctProjects/watkint/TRACERx100_lung_pan_can_analysis/release/L_LTX041/exome/CN_het_TRACERx_no_diptest/"
-# data.format.to.use <- "TRACERx_exome"
-# snp.file.path <- "/camp/project/proj-tracerx-lung/tctProjects/watkint/TRACERx100_lung_pan_can_analysis/release/L_LTX041/exome/CN_het_TRACERx_no_diptest/LTX041_TRACERx_input_paths_df.txt"
-# seg.file.path <- "/camp/project/proj-tracerx-lung/tctProjects/watkint/TRACERx100_lung_pan_can_analysis/release/L_LTX041/exome/MSAI/LTX041_joint_segs_all_ascat_info.txt"
-# overwrite.flag <- TRUE
-# gamma.val <- 1
-# num.cores <- 24
-
-
-# patient  <-  "LTX181"
-# allow.dip.test.phasing.flag <- FALSE
-# output.directory.base.path <- "/camp/project/proj-tracerx-lung/tctProjects/watkint/TRACERx100_lung_pan_can_analysis/release/M_LTX181/exome/CN_het_TRACERx_no_diptest/"
-# data.format.to.use <- "TRACERx_exome"
-# snp.file.path <- "/camp/project/proj-tracerx-lung/tctProjects/watkint/TRACERx100_lung_pan_can_analysis/release/M_LTX181/exome/CN_het_TRACERx_no_diptest/LTX181_TRACERx_input_paths_df.txt"
-# seg.file.path <- "/camp/project/proj-tracerx-lung/tctProjects/watkint/TRACERx100_lung_pan_can_analysis/release/M_LTX181/exome/MSAI/LTX181_joint_segs_all_ascat_info.txt"
-# overwrite.flag <- TRUE
-# gamma.val <- 1
-# num.cores <- 24
-
-
-# patient <- "MTX002"
-# allow.dip.test.phasing.flag <- FALSE
-# output.directory.base.path <- "/home/camp/watkint/working/watkint/data/martinez/release_v3/R_MTX002/snp_array//CN_het_MEDICC_no_diptest/"
-# data.format.to.use<- "MEDICC"
-# snp.file.path<- "/home/camp/watkint/working/watkint/data/martinez/release_v3/R_MTX002/snp_array/MSAI/MTX002_final_all_snps.txt"
-# seg.file.path<- "/home/camp/watkint/working/watkint/data/martinez/release_v3/R_MTX002/snp_array/MSAI/MTX002_joint_segs_all_ascat_info.txt"
-# overwrite.flag<-TRUE
-# gamma.val <-0.5
-# num.cores <- 12
-
-# patient <- "BTX003"
-# allow.dip.test.phasing.flag <- FALSE
-# output.directory.base.path <- "/camp/lab/swantonc/working/watkint/data/loi/release/S_BTX003/exome//CN_het_TRACERx_no_diptest/"
-# data.format.to.use <- "TRACERx_exome"
-# snp.file.path <- "/camp/lab/swantonc/working/watkint/data/loi/release/S_BTX003/exome//CN_het_TRACERx_no_diptest//BTX003_TRACERx_input_paths_df.txt"
-# seg.file.path <- "/camp/lab/swantonc/working/watkint/data/loi/release/S_BTX003/exome//MSAI/BTX003_joint_segs_all_ascat_info.txt"
-# overwrite.flag <- TRUE
-# gamma.val <- 1
-# num.cores <- 12
-
-
-# patient <- "BTX004"
-# allow.dip.test.phasing.flag <- FALSE
-# output.directory.base.path <- "/home/camp/watkint/working/watkint/data/yates/release/Y_BTX004/WGS//CN_het_TRACERx_WGS_no_diptest/"
-# data.format.to.use <- "TRACERx_WGS"
-# snp.file.path <- "/home/camp/watkint/working/watkint/data/yates/release/Y_BTX004/WGS//CN_het_TRACERx_WGS_no_diptest/Y_BTX004_input_snp_files.txt"
-# seg.file.path <- "/home/camp/watkint/working/watkint/data/yates/release/Y_BTX004/WGS/MSAI/BTX004_joint_segs_all_ascat_info.txt"
-# overwrite.flag <- TRUE
-# gamma.val <- 1
-# num.cores <- 12
-
-
-
-# patient <- "KTX128"
-# allow.dip.test.phasing.flag <- FALSE
-# output.directory.base.path <- "/camp/project/proj-tracerx-lung/tctProjects/lime/projects/PanCan/renal/turajlic_txpipeline/release/E_KTX128/exome//CN_het_TRACERx_no_diptest/"
-# data.format.to.use <- "TRACERx_exome"
-# snp.file.path <- "/camp/project/proj-tracerx-lung/tctProjects/lime/projects/PanCan/renal/turajlic_txpipeline/release/E_KTX128/exome//CN_het_TRACERx_no_diptest//KTX128_TRACERx_input_paths_df.txt"
-# seg.file.path <- "/camp/project/proj-tracerx-lung/tctProjects/lime/projects/PanCan/renal/turajlic_txpipeline/release/E_KTX128/exome//MSAI/KTX128_joint_segs_all_ascat_info.txt"
-# overwrite.flag <- TRUE
-# gamma.val <- 1
-# num.cores <- 12
-
-
-# patient <- "KTX161"
-# allow.dip.test.phasing.flag <- FALSE
-# output.directory.base.path <- "/camp/project/proj-tracerx-lung/tctProjects/lime/projects/PanCan/renal/turajlic_txpipeline/release/E_KTX161/exome//CN_het_TRACERx_no_diptest/"
-# data.format.to.use <- "TRACERx_exome"
-# snp.file.path <- "/camp/project/proj-tracerx-lung/tctProjects/lime/projects/PanCan/renal/turajlic_txpipeline/release/E_KTX161/exome//CN_het_TRACERx_no_diptest//KTX161_TRACERx_input_paths_df.txt"
-# seg.file.path <- "/camp/project/proj-tracerx-lung/tctProjects/lime/projects/PanCan/renal/turajlic_txpipeline/release/E_KTX161/exome//MSAI/KTX161_joint_segs_all_ascat_info.txt"
-# overwrite.flag <- TRUE
-# gamma.val <- 1
-# num.cores <- 12
-
-
-# patient <- "KTX139"
-# allow.dip.test.phasing.flag <- FALSE
-# output.directory.base.path <- "/camp/project/proj-tracerx-lung/tctProjects/lime/projects/PanCan/renal/turajlic_txpipeline/release/E_KTX139/exome//CN_het_TRACERx_no_diptest/"
-# data.format.to.use <- "TRACERx_exome"
-# snp.file.path <- "/camp/project/proj-tracerx-lung/tctProjects/lime/projects/PanCan/renal/turajlic_txpipeline/release/E_KTX139/exome//CN_het_TRACERx_no_diptest//KTX139_TRACERx_input_paths_df.txt"
-# seg.file.path <- "/camp/project/proj-tracerx-lung/tctProjects/lime/projects/PanCan/renal/turajlic_txpipeline/release/E_KTX139/exome//MSAI/KTX139_joint_segs_all_ascat_info.txt"
-# overwrite.flag <- FALSE
-# gamma.val <- 1
-# num.cores <- 6
-
-# patient <- "KTX107"
-# allow.dip.test.phasing.flag <- FALSE
-# output.directory.base.path <- "/camp/project/proj-tracerx-lung/tctProjects/lime/projects/PanCan/renal/turajlic_txpipeline/release/E_KTX107/exome//CN_het_TRACERx_no_diptest/"
-# data.format.to.use <- "TRACERx_exome"
-# snp.file.path <- "/camp/project/proj-tracerx-lung/tctProjects/lime/projects/PanCan/renal/turajlic_txpipeline/release/E_KTX107/exome//CN_het_TRACERx_no_diptest//KTX107_TRACERx_input_paths_df.txt"
-# seg.file.path <- "/camp/project/proj-tracerx-lung/tctProjects/lime/projects/PanCan/renal/turajlic_txpipeline/release/E_KTX107/exome//MSAI/KTX107_joint_segs_all_ascat_info.txt"
-# overwrite.flag <- TRUE
-# gamma.val <- 1
-# num.cores <- 12
-
-# patient <- "KTX098"
-# allow.dip.test.phasing.flag <- FALSE
-# output.directory.base.path <- "/camp/project/proj-tracerx-lung/tctProjects/lime/projects/PanCan/renal/turajlic_txpipeline/release/E_KTX098/exome//CN_het_TRACERx_no_diptest/"
-# data.format.to.use <- "TRACERx_exome"
-# snp.file.path <- "/camp/project/proj-tracerx-lung/tctProjects/lime/projects/PanCan/renal/turajlic_txpipeline/release/E_KTX098/exome//CN_het_TRACERx_no_diptest//KTX098_TRACERx_input_paths_df.txt"
-# seg.file.path <- "/camp/project/proj-tracerx-lung/tctProjects/lime/projects/PanCan/renal/turajlic_txpipeline/release/E_KTX098/exome//MSAI/KTX098_joint_segs_all_ascat_info.txt"
-# overwrite.flag <- TRUE
-# gamma.val <- 1
-# num.cores <- 12
-
-
-# patient <- "KTX139"
-# allow.dip.test.phasing.flag <- FALSE
-# output.directory.base.path <- "/camp/project/proj-tracerx-lung/tctProjects/lime/projects/PanCan/renal/turajlic_txpipeline/release/E_KTX139/exome//CN_het_TRACERx_no_diptest/"
-# data.format.to.use <- "TRACERx_exome"
-# snp.file.path <- "/camp/project/proj-tracerx-lung/tctProjects/lime/projects/PanCan/renal/turajlic_txpipeline/release/E_KTX139/exome//CN_het_TRACERx_no_diptest//KTX139_TRACERx_input_paths_df.txt"
-# seg.file.path <- "/camp/project/proj-tracerx-lung/tctProjects/lime/projects/PanCan/renal/turajlic_txpipeline/release/E_KTX139/exome//MSAI/KTX139_joint_segs_all_ascat_info.txt"
-# overwrite.flag <- TRUE
-# gamma.val <- 1
-# num.cores <- 12
-
-
-# patient <- "KTX107"
-# allow.dip.test.phasing.flag <- FALSE
-# output.directory.base.path <- "/camp/project/proj-tracerx-lung/tctProjects/lime/projects/PanCan/renal/turajlic_txpipeline/release/E_KTX107/exome//CN_het_TRACERx_no_diptest/"
-# data.format.to.use <- "TRACERx_exome"
-# snp.file.path <- "/camp/project/proj-tracerx-lung/tctProjects/lime/projects/PanCan/renal/turajlic_txpipeline/release/E_KTX107/exome//CN_het_TRACERx_no_diptest//KTX107_TRACERx_input_paths_df.txt"
-# seg.file.path <- "/camp/project/proj-tracerx-lung/tctProjects/lime/projects/PanCan/renal/turajlic_txpipeline/release/E_KTX107/exome//MSAI/KTX107_joint_segs_all_ascat_info.txt"
-# overwrite.flag <- TRUE
-# gamma.val <- 1
-# num.cores <- 12
-
-
-# patient <- "PTX011"
-# allow.dip.test.phasing.flag <- FALSE
-# output.directory.base.path <- "/home/camp/watkint/working/watkint/data/gundem/release/G_PTX011/WGS//CN_het_TRACERx_WGS_no_diptest/"
-# data.format.to.use <- "TRACERx_WGS"
-# snp.file.path <- "/home/camp/watkint/working/watkint/data/gundem/release/G_PTX011/WGS//CN_het_TRACERx_WGS_no_diptest/G_PTX011_input_snp_files.txt"
-# seg.file.path <- "/home/camp/watkint/working/watkint/data/gundem/release/G_PTX011/WGS/MSAI/PTX011_joint_segs_all_ascat_info.txt"
-# overwrite.flag <- TRUE
-# gamma.val <- 1
-# num.cores <- 12
-
-
-# patient <- "KTX167"
-# allow.dip.test.phasing.flag <- FALSE
-# output.directory.base.path <- "/home/camp/watkint/working/watkint/data/turajlic_wgs/release/T_KTX167/WGS//CN_het_TRACERx_no_diptest/"
-# data.format.to.use <- "TRACERx_WGS"
-# snp.file.path <- "/home/camp/watkint/working/watkint/data/turajlic_wgs/release/T_KTX167/WGS//CN_het_TRACERx_no_diptest/T_KTX167_input_snp_files.txt"
-# seg.file.path <- "/home/camp/watkint/working/watkint/data/turajlic_wgs/release/T_KTX167/WGS/MSAI/KTX167_joint_segs_all_ascat_info.txt"
-# overwrite.flag <- TRUE
-# gamma.val <- 1
-# num.cores <- 16
-
-
-# patient <- "KTX169"
-# allow.dip.test.phasing.flag <- FALSE
-# output.directory.base.path <- "/home/camp/watkint/working/watkint/data/turajlic_wgs/release/T_KTX169/WGS//CN_het_TRACERx_no_diptest/"
-# data.format.to.use <- "TRACERx_WGS"
-# snp.file.path <- "/home/camp/watkint/working/watkint/data/turajlic_wgs/release/T_KTX169/WGS//CN_het_TRACERx_no_diptest/T_KTX169_input_snp_files.txt"
-# seg.file.path <- "/home/camp/watkint/working/watkint/data/turajlic_wgs/release/T_KTX169/WGS/MSAI/KTX169_joint_segs_all_ascat_info.txt"
-# overwrite.flag <- TRUE
-# gamma.val <- 1
-
-
-# patient  <-  "LTX021"
-# allow.dip.test.phasing.flag <- FALSE
-# output.directory.base.path <- "/camp/project/proj-tracerx-lung/tctProjects/watkint/TRACERx100_lung_pan_can_analysis/release/A_LTX021/exome/CN_het_TRACERx_no_diptest/"
-# data.format.to.use <- "TRACERx_exome"
-# snp.file.path <- "/camp/project/proj-tracerx-lung/tctProjects/watkint/TRACERx100_lung_pan_can_analysis/release/A_LTX021/exome/CN_het_TRACERx_no_diptest/LTX021_TRACERx_input_paths_df.txt"
-# seg.file.path <- "/camp/project/proj-tracerx-lung/tctProjects/watkint/TRACERx100_lung_pan_can_analysis/release/A_LTX021/exome/MSAI/LTX021_joint_segs_all_ascat_info.txt"
-# overwrite.flag <- FALSE
-# gamma.val <- 1
-# num.cores <- 7
-# intersection.or.whole.arm <- "intersection"
-
-# patient  <-  "LTX021"
-# allow.dip.test.phasing.flag <- FALSE
-# output.directory.base.path <- "/camp/project/proj-tracerx-lung/tctProjects/watkint/TRACERx100_lung_pan_can_analysis/release/A_LTX021/exome/CN_het_TRACERx_no_diptest/"
-# data.format.to.use <- "TRACERx_exome"
-# snp.file.path <- "/camp/project/proj-tracerx-lung/tctProjects/watkint/TRACERx100_lung_pan_can_analysis/release/A_LTX021/exome/CN_het_TRACERx_no_diptest/LTX021_TRACERx_input_paths_df.txt"
-# seg.file.path <- "/camp/project/proj-tracerx-lung/tctProjects/watkint/TRACERx100_lung_pan_can_analysis/release/A_LTX021/exome/MSAI/LTX021_joint_segs_all_ascat_info.txt"
-# overwrite.flag <- TRUE
-# gamma.val <- 1
-# num.cores <- 12
-# # intersection.or.whole.arm <- "intersection"
-
-# patient  <-  "LTX048"
-# allow.dip.test.phasing.flag <- FALSE
-# output.directory.base.path <- "/camp/project/proj-tracerx-lung/tctProjects/watkint/TRACERx100_lung_pan_can_analysis/release/B_LTX048/exome/CN_het_TRACERx_no_diptest/"
-# data.format.to.use <- "TRACERx_exome"
-# snp.file.path <- "/camp/project/proj-tracerx-lung/tctProjects/watkint/TRACERx100_lung_pan_can_analysis/release/B_LTX048/exome/CN_het_TRACERx_no_diptest/LTX048_TRACERx_input_paths_df.txt"
-# seg.file.path <- "/camp/project/proj-tracerx-lung/tctProjects/watkint/TRACERx100_lung_pan_can_analysis/release/B_LTX048/exome/MSAI/LTX048_joint_segs_all_ascat_info.txt"
-# overwrite.flag <- TRUE
-# gamma.val <- 1
-# num.cores <- 12
-# intersection.or.whole.arm <- "intersection"
-
-
-# patient  <-  "LTX068"
-# allow.dip.test.phasing.flag <- FALSE
-# output.directory.base.path <- "/camp/project/proj-tracerx-lung/tctProjects/watkint/TRACERx100_lung_pan_can_analysis/release/L_LTX068/exome/CN_het_TRACERx_no_diptest/"
-# data.format.to.use <- "TRACERx_exome"
-# snp.file.path <- "/camp/project/proj-tracerx-lung/tctProjects/watkint/TRACERx100_lung_pan_can_analysis/release/L_LTX068/exome/CN_het_TRACERx_no_diptest/LTX068_TRACERx_input_paths_df.txt"
-# seg.file.path <- "/camp/project/proj-tracerx-lung/tctProjects/watkint/TRACERx100_lung_pan_can_analysis/release/L_LTX068/exome/MSAI/LTX068_joint_segs_all_ascat_info.txt"
-# overwrite.flag <- TRUE
-# gamma.val <- 1
-# num.cores <- 12
-# intersection.or.whole.arm <- "intersection"
-
-
-# patient  <-  "LTX064"
-# allow.dip.test.phasing.flag <- FALSE
-# output.directory.base.path <- "/camp/project/proj-tracerx-lung/tctProjects/watkint/TRACERx100_lung_pan_can_analysis/release/L_LTX064/exome/CN_het_TRACERx_no_diptest/"
-# data.format.to.use <- "TRACERx_exome"
-# snp.file.path <- "/camp/project/proj-tracerx-lung/tctProjects/watkint/TRACERx100_lung_pan_can_analysis/release/L_LTX064/exome/CN_het_TRACERx_no_diptest/LTX064_TRACERx_input_paths_df.txt"
-# seg.file.path <- "/camp/project/proj-tracerx-lung/tctProjects/watkint/TRACERx100_lung_pan_can_analysis/release/L_LTX064/exome/MSAI/LTX064_joint_segs_all_ascat_info.txt"
-# overwrite.flag <- TRUE
-# gamma.val <- 1
-# num.cores <- 12
-# intersection.or.whole.arm <- "intersection"
-
-# patient  <-  "LTX064"
-# allow.dip.test.phasing.flag <- FALSE
-# output.directory.base.path <- "/camp/project/proj-tracerx-lung/tctProjects/watkint/TRACERx100_lung_pan_can_analysis/release/L_LTX064/exome/CN_het_TRACERx_no_diptest/"
-# data.format.to.use <- "TRACERx_exome"
-# snp.file.path <- "/camp/project/proj-tracerx-lung/tctProjects/watkint/TRACERx100_lung_pan_can_analysis/release/L_LTX064/exome/CN_het_TRACERx_no_diptest/LTX064_TRACERx_input_paths_df.txt"
-# seg.file.path <- "/camp/project/proj-tracerx-lung/tctProjects/watkint/TRACERx100_lung_pan_can_analysis/release/L_LTX064/exome/MSAI/LTX064_joint_segs_all_ascat_info.txt"
-# overwrite.flag <- TRUE
-# gamma.val <- 1
-# num.cores <- 12
-# intersection.or.whole.arm <- "intersection"
-
-# patient <- "MTX006"
-# allow.dip.test.phasing.flag <- FALSE
-# output.directory.base.path <- paste0("/home/camp/watkint/working/watkint/data/martinez/release_v3/R_",patient,"/snp_array//CN_het_MEDICC_no_diptest/")
-# data.format.to.use <- "MEDICC"
-# snp.file.path <- paste0("/home/camp/watkint/working/watkint/data/martinez/release_v3/R_",patient,"/snp_array/MSAI/",patient,"_new_all_snps.txt")
-# seg.file.path <- paste0("/home/camp/watkint/working/watkint/data/martinez/release_v3/R_",patient,"/snp_array/MSAI/",patient,"_joint_segs_all_ascat_info.txt")
-# overwrite.flag <- TRUE
-# gamma.val <- 0.5
-# num.cores <- 12
-
-# patient <- "BTX002"
-# allow.dip.test.phasing.flag <- FALSE
-# output.directory.base.path <- "/camp/project/proj-tracerx-lung/tctProjects/mcgranahanLab/mourika/data/zitvogel/release_v2/Z_BTX002/exome/CN_het_TRACERx_no_diptest/"
-# data.format.to.use <- "TRACERx_exome"
-# snp.file.path <- "/camp/project/proj-tracerx-lung/tctProjects/mcgranahanLab/mourika/data/zitvogel/release_v2/Z_BTX002/exome/CN_het_TRACERx_no_diptest/BTX002_TRACERx_input_paths_df.txt"
-# seg.file.path <- "/camp/project/proj-tracerx-lung/tctProjects/mcgranahanLab/mourika/data/zitvogel/release_v2/Z_BTX002/exome/MSAI/BTX002_joint_segs_all_ascat_info.txt"
-# overwrite.flag <- TRUE
-# gamma.val <- 1
-# num.cores <- 12
-
-# patient <- "BTX007"
-# allow.dip.test.phasing.flag <- FALSE
-# output.directory.base.path <- "/camp/project/proj-tracerx-lung/tctProjects/mcgranahanLab/mourika/data/zitvogel/release_v2/Z_BTX007/exome/CN_het_TRACERx_no_diptest/"
-# data.format.to.use <- "TRACERx_exome"
-# snp.file.path <- "/camp/project/proj-tracerx-lung/tctProjects/mcgranahanLab/mourika/data/zitvogel/release_v2/Z_BTX007/exome/CN_het_TRACERx_no_diptest/BTX007_TRACERx_input_paths_df.txt"
-# seg.file.path <- "/camp/project/proj-tracerx-lung/tctProjects/mcgranahanLab/mourika/data/zitvogel/release_v2/Z_BTX007/exome/MSAI/BTX007_joint_segs_all_ascat_info.txt"
-# overwrite.flag <- TRUE
-# gamma.val <- 1
-# num.cores <- 12
-
-# patient <- "BTX008"
-# allow.dip.test.phasing.flag <- FALSE
-# output.directory.base.path <- "/camp/project/proj-tracerx-lung/tctProjects/mcgranahanLab/mourika/data/zitvogel/release_v2/Z_BTX008/exome/CN_het_TRACERx_no_diptest/"
-# data.format.to.use <- "TRACERx_exome"
-# snp.file.path <- "/camp/project/proj-tracerx-lung/tctProjects/mcgranahanLab/mourika/data/zitvogel/release_v2/Z_BTX008/exome/CN_het_TRACERx_no_diptest/BTX008_TRACERx_input_paths_df.txt"
-# seg.file.path <- "/camp/project/proj-tracerx-lung/tctProjects/mcgranahanLab/mourika/data/zitvogel/release_v2/Z_BTX008/exome/MSAI/BTX008_joint_segs_all_ascat_info.txt"
-# overwrite.flag <- TRUE
-# gamma.val <- 1
-# num.cores <- 12
-
-# patient <- "BTX004"
-# allow.dip.test.phasing.flag <- FALSE
-# output.directory.base.path <- "/home/camp/watkint/working/watkint/data/yates/release/Y_BTX004/WGS//CN_het_TRACERx_WGS_no_diptest/"
-# data.format.to.use <- "TRACERx_WGS"
-# snp.file.path <- "/home/camp/watkint/working/watkint/data/yates/release/Y_BTX004/WGS//CN_het_TRACERx_WGS_no_diptest/Y_BTX004_input_snp_files.txt"
-# seg.file.path <- "/home/camp/watkint/working/watkint/data/yates/release/Y_BTX004/WGS/MSAI/BTX004_joint_segs_all_ascat_info.txt"
-# overwrite.flag <- FALSE
-# gamma.val <- 1
-# num.cores <- 12
-
-# patient <- "BTX005"
-# allow.dip.test.phasing.flag <- FALSE
-# output.directory.base.path <- "/home/camp/watkint/working/watkint/data/yates/release/Y_BTX005/WGS//CN_het_TRACERx_WGS_no_diptest/"
-# data.format.to.use <- "TRACERx_WGS"
-# snp.file.path <- "/home/camp/watkint/working/watkint/data/yates/release/Y_BTX005/WGS//CN_het_TRACERx_WGS_no_diptest/Y_BTX005_input_snp_files.txt"
-# seg.file.path <- "/home/camp/watkint/working/watkint/data/yates/release/Y_BTX005/WGS/MSAI/BTX005_joint_segs_all_ascat_info.txt"
-# overwrite.flag <- FALSE
-# gamma.val <- 1
-# num.cores <- 12
-
-# patient <- "BTX020"
-# allow.dip.test.phasing.flag <- FALSE
-# output.directory.base.path <- "/home/camp/watkint/working/watkint/data/yates/release/Y_BTX020/WGS//CN_het_TRACERx_WGS_no_diptest/"
-# data.format.to.use <- "TRACERx_WGS"
-# snp.file.path <- "/home/camp/watkint/working/watkint/data/yates/release/Y_BTX020/WGS//CN_het_TRACERx_WGS_no_diptest/Y_BTX020_input_snp_files.txt"
-# seg.file.path <- "/home/camp/watkint/working/watkint/data/yates/release/Y_BTX020/WGS/MSAI/BTX020_joint_segs_all_ascat_info.txt"
-# overwrite.flag <- FALSE
-# gamma.val <- 1
-# num.cores <- 12
-
-# patient  <-  "STX012"
-# allow.dip.test.phasing.flag <- FALSE
-# output.directory.base.path <- "/home/camp/watkint/working/watkint/data/sottoriva_snp/release_v3/C_STX012/snp_array//CN_het_MEDICC_no_diptest/"
-# data.format.to.use <- "MEDICC"
-# snp.file.path <- "/home/camp/watkint/working/watkint/data/sottoriva_snp/release_v3/C_STX012/snp_array/MSAI/STX012_final_all_snps.txt"
-# seg.file.path <- "/home/camp/watkint/working/watkint/data/sottoriva_snp/release_v3/C_STX012/snp_array/MSAI/STX012_joint_segs_all_ascat_info.txt"
-# overwrite.flag <- FALSE
-# gamma.val <- 0.5
-# num.cores <- 7
-
-# patient  <-  "STX007"
-# allow.dip.test.phasing.flag <- FALSE
-# output.directory.base.path <- "/home/camp/watkint/working/watkint/data/sottoriva_snp/release_v3/C_STX007/snp_array//CN_het_MEDICC_no_diptest/"
-# data.format.to.use <- "MEDICC"
-# snp.file.path <- "/home/camp/watkint/working/watkint/data/sottoriva_snp/release_v3/C_STX007/snp_array/MSAI/STX007_final_all_snps.txt"
-# seg.file.path <- "/home/camp/watkint/working/watkint/data/sottoriva_snp/release_v3/C_STX007/snp_array/MSAI/STX007_joint_segs_all_ascat_info.txt"
-# overwrite.flag <- FALSE
-# gamma.val <- 0.5
-# num.cores <- 7
-
-
-# patient  <-  "STX003"
-# allow.dip.test.phasing.flag <- FALSE
-# output.directory.base.path <- "/home/camp/watkint/working/watkint/data/sottoriva_snp/release_v3/C_STX003/snp_array//CN_het_MEDICC_no_diptest/"
-# data.format.to.use <- "MEDICC"
-# snp.file.path <- "/home/camp/watkint/working/watkint/data/sottoriva_snp/release_v3/C_STX003/snp_array/MSAI/STX003_final_all_snps.txt"
-# seg.file.path <- "/home/camp/watkint/working/watkint/data/sottoriva_snp/release_v3/C_STX003/snp_array/MSAI/STX003_joint_segs_all_ascat_info.txt"
-# overwrite.flag <- TRUE
-# gamma.val <- 0.5
-# num.cores <- 12
-
-# patient  <-  "LTX165"
-# allow.dip.test.phasing.flag <- FALSE
-# output.directory.base.path <- "/camp/project/proj-tracerx-lung/tctProjects/watkint/TRACERx100_lung_pan_can_analysis/release/B_LTX165/exome/CN_het_TRACERx_no_diptest/"
-# data.format.to.use <- "TRACERx_exome"
-# snp.file.path <- "/camp/project/proj-tracerx-lung/tctProjects/watkint/TRACERx100_lung_pan_can_analysis/release/B_LTX165/exome/CN_het_TRACERx_no_diptest/LTX165_TRACERx_input_paths_df.txt"
-# seg.file.path <- "/camp/project/proj-tracerx-lung/tctProjects/watkint/TRACERx100_lung_pan_can_analysis/release/B_LTX165/exome/MSAI/LTX165_joint_segs_all_ascat_info.txt"
-# overwrite.flag <- TRUE
-# gamma.val <- 1
-# num.cores <- 12
-# intersection.or.whole.arm <- "intersection"
-
-# patient <- "BTX004"
-# allow.dip.test.phasing.flag <- FALSE
-# output.directory.base.path <- "/camp/lab/swantonc/working/watkint/data/loi/release/S_BTX004/exome//CN_het_TRACERx_no_diptest/"
-# data.format.to.use <- "TRACERx_exome"
-# snp.file.path <- "/camp/lab/swantonc/working/watkint/data/loi/release/S_BTX004/exome//CN_het_TRACERx_no_diptest//BTX004_TRACERx_input_paths_df.txt"
-# seg.file.path <- "/camp/lab/swantonc/working/watkint/data/loi/release/S_BTX004/exome//MSAI/BTX004_joint_segs_all_ascat_info.txt"
-# overwrite.flag <- TRUE
-# gamma.val <- 1
-# num.cores <- 12
-
-# patient <- "KTX139"
-# allow.dip.test.phasing.flag <- FALSE
-# output.directory.base.path <- "/camp/project/proj-tracerx-lung/tctProjects/lime/projects/PanCan/renal/turajlic_txpipeline/release/E_KTX139/exome//CN_het_TRACERx_no_diptest/"
-# data.format.to.use <- "TRACERx_exome"
-# snp.file.path <- "/camp/project/proj-tracerx-lung/tctProjects/lime/projects/PanCan/renal/turajlic_txpipeline/release/E_KTX139/exome//CN_het_TRACERx_no_diptest//KTX139_TRACERx_input_paths_df.txt"
-# seg.file.path <- "/camp/project/proj-tracerx-lung/tctProjects/lime/projects/PanCan/renal/turajlic_txpipeline/release/E_KTX139/exome//MSAI/KTX139_joint_segs_all_ascat_info.txt"
-# overwrite.flag <- TRUE
-# gamma.val <- 1
-# num.cores <- 12
-
-# patient <- "KTX161"
-# allow.dip.test.phasing.flag <- FALSE
-# output.directory.base.path <- "/camp/project/proj-tracerx-lung/tctProjects/lime/projects/PanCan/renal/turajlic_txpipeline/release/E_KTX161/exome//CN_het_TRACERx_no_diptest/"
-# data.format.to.use <- "TRACERx_exome"
-# snp.file.path <- "/camp/project/proj-tracerx-lung/tctProjects/lime/projects/PanCan/renal/turajlic_txpipeline/release/E_KTX161/exome//CN_het_TRACERx_no_diptest//KTX161_TRACERx_input_paths_df.txt"
-# seg.file.path <- "/camp/project/proj-tracerx-lung/tctProjects/lime/projects/PanCan/renal/turajlic_txpipeline/release/E_KTX161/exome//MSAI/KTX161_joint_segs_all_ascat_info.txt"
-# overwrite.flag <- TRUE
-# gamma.val <- 1
-# num.cores <- 12
-
-
-# patient <- "RLX001"
-# allow.dip.test.phasing.flag <- FALSE
-# output.directory.base.path <- "/camp/lab/swantonc/working/lime/projects/PanCan/renal/gerlinger/release/G_RLX001/exome//CN_het_TRACERx_no_diptest/"
-# data.format.to.use <- "TRACERx_exome"
-# snp.file.path <- "/camp/lab/swantonc/working/lime/projects/PanCan/renal/gerlinger/release/G_RLX001/exome//CN_het_TRACERx_no_diptest//RLX001_TRACERx_input_paths_df.txt"
-# seg.file.path <- "/camp/lab/swantonc/working/lime/projects/PanCan/renal/gerlinger/release/G_RLX001/exome//MSAI/RLX001_joint_segs_all_ascat_info.txt"
-# overwrite.flag <- TRUE
-# gamma.val <- 1
-# num.cores <- 12
-
-# patient <- "RLX002"
-# allow.dip.test.phasing.flag <- FALSE
-# output.directory.base.path <- "/camp/lab/swantonc/working/lime/projects/PanCan/renal/gerlinger/release/G_RLX002/exome//CN_het_TRACERx_no_diptest/"
-# data.format.to.use <- "TRACERx_exome"
-# snp.file.path <- "/camp/lab/swantonc/working/lime/projects/PanCan/renal/gerlinger/release/G_RLX002/exome//CN_het_TRACERx_no_diptest//RLX002_TRACERx_input_paths_df.txt"
-# seg.file.path <- "/camp/lab/swantonc/working/lime/projects/PanCan/renal/gerlinger/release/G_RLX002/exome//MSAI/RLX002_joint_segs_all_ascat_info.txt"
-# overwrite.flag <- TRUE
-# gamma.val <- 1
-# num.cores <- 12
-
-# patient <- "RLX007"
-# allow.dip.test.phasing.flag <- FALSE
-# output.directory.base.path <- "/camp/lab/swantonc/working/lime/projects/PanCan/renal/gerlinger/release/G_RLX007/exome//CN_het_TRACERx_no_diptest/"
-# data.format.to.use <- "TRACERx_exome"
-# snp.file.path <- "/camp/lab/swantonc/working/lime/projects/PanCan/renal/gerlinger/release/G_RLX007/exome//CN_het_TRACERx_no_diptest//RLX007_TRACERx_input_paths_df.txt"
-# seg.file.path <- "/camp/lab/swantonc/working/lime/projects/PanCan/renal/gerlinger/release/G_RLX007/exome//MSAI/RLX007_joint_segs_all_ascat_info.txt"
-# overwrite.flag <- TRUE
-# gamma.val <- 1
-# num.cores <- 12
-
-# patient <- "GLX048"
-# allow.dip.test.phasing.flag <- FALSE
-# output.directory.base.path <- "/camp/lab/swantonc/working/lime/projects/PanCan/glioma/suzuki/release/S_GLX048/exome/CN_het_TRACERx_no_diptest/"
-# data.format.to.use <- "TRACERx_exome"
-# snp.file.path <- "/camp/lab/swantonc/working/lime/projects/PanCan/glioma/suzuki/release/S_GLX048/exome/CN_het_TRACERx_no_diptest/GLX048_TRACERx_input_paths_df.txt"
-# seg.file.path <- "/camp/lab/swantonc/working/lime/projects/PanCan/glioma/suzuki/release/S_GLX048/exome/MSAI/GLX048_joint_segs_all_ascat_info.txt"
-# overwrite.flag <- TRUE
-# gamma.val <- 1
-# num.cores <- 12
-
-
-# patient <- "PTX006"
-# allow.dip.test.phasing.flag <- FALSE
-# output.directory.base.path <- "/home/camp/watkint/working/watkint/data/gundem/release/G_PTX006/WGS//CN_het_TRACERx_WGS_no_diptest/"
-# data.format.to.use <- "TRACERx_WGS"
-# snp.file.path <- "/home/camp/watkint/working/watkint/data/gundem/release/G_PTX006/WGS//CN_het_TRACERx_WGS_no_diptest/G_PTX006_input_snp_files.txt"
-# seg.file.path <- "/home/camp/watkint/working/watkint/data/gundem/release/G_PTX006/WGS/MSAI/PTX006_joint_segs_all_ascat_info.txt"
-# overwrite.flag <- TRUE
-# gamma.val <- 1
-# num.cores <- 12
-
-# patient <- "PTX007"
-# allow.dip.test.phasing.flag <- FALSE
-# output.directory.base.path <- "/home/camp/watkint/working/watkint/data/gundem/release/G_PTX007/WGS//CN_het_TRACERx_WGS_no_diptest/"
-# data.format.to.use <- "TRACERx_WGS"
-# snp.file.path <- "/home/camp/watkint/working/watkint/data/gundem/release/G_PTX007/WGS//CN_het_TRACERx_WGS_no_diptest/G_PTX007_input_snp_files.txt"
-# seg.file.path <- "/home/camp/watkint/working/watkint/data/gundem/release/G_PTX007/WGS/MSAI/PTX007_joint_segs_all_ascat_info.txt"
-# overwrite.flag <- FALSE
-# gamma.val <- 1
-# num.cores <- 7
-
-
-# patient <- "PTX006"
-# allow.dip.test.phasing.flag <- FALSE
-# output.directory.base.path <- "/home/camp/watkint/working/watkint/data/gundem/release/G_PTX006/WGS//CN_het_TRACERx_WGS_no_diptest/"
-# data.format.to.use <- "TRACERx_WGS"
-# snp.file.path <- "/home/camp/watkint/working/watkint/data/gundem/release/G_PTX006/WGS//CN_het_TRACERx_WGS_no_diptest/G_PTX006_input_snp_files.txt"
-# seg.file.path <- "/home/camp/watkint/working/watkint/data/gundem/release/G_PTX006/WGS/MSAI/PTX006_joint_segs_all_ascat_info.txt"
-# overwrite.flag <- TRUE
-# gamma.val <- 1
-# num.cores <- 12
-
-# patient <- "PTX004"
-# allow.dip.test.phasing.flag <- FALSE
-# output.directory.base.path <- "/home/camp/watkint/working/watkint/data/gundem/release/G_PTX004/WGS//CN_het_TRACERx_WGS_no_diptest/"
-# data.format.to.use <- "TRACERx_WGS"
-# snp.file.path <- "/home/camp/watkint/working/watkint/data/gundem/release/G_PTX004/WGS//CN_het_TRACERx_WGS_no_diptest/G_PTX004_input_snp_files.txt"
-# seg.file.path <- "/home/camp/watkint/working/watkint/data/gundem/release/G_PTX004/WGS/MSAI/PTX004_joint_segs_all_ascat_info.txt"
-# overwrite.flag <- FALSE
-# gamma.val <- 1
-# num.cores <- 7
-
-
-# patient <- "PTX008"
-# allow.dip.test.phasing.flag <- FALSE
-# output.directory.base.path <- "/home/camp/watkint/working/watkint/data/gundem/release/G_PTX008/WGS//CN_het_TRACERx_WGS_no_diptest/"
-# data.format.to.use <- "TRACERx_WGS"
-# snp.file.path <- "/home/camp/watkint/working/watkint/data/gundem/release/G_PTX008/WGS//CN_het_TRACERx_WGS_no_diptest/G_PTX008_input_snp_files.txt"
-# seg.file.path <- "/home/camp/watkint/working/watkint/data/gundem/release/G_PTX008/WGS/MSAI/PTX008_joint_segs_all_ascat_info.txt"
-# overwrite.flag <- FALSE
-# gamma.val <- 1
-# num.cores <- 7
-
-
-# patient <- "MTX005"
-# allow.dip.test.phasing.flag <- FALSE
-# output.directory.base.path <- paste0("/home/camp/watkint/working/watkint/data/martinez/release_v3/R_",patient,"/snp_array//CN_het_MEDICC_no_diptest/")
-# data.format.to.use <- "MEDICC"
-# snp.file.path <- paste0("/home/camp/watkint/working/watkint/data/martinez/release_v3/R_",patient,"/snp_array/MSAI/",patient,"_new_all_snps.txt")
-# seg.file.path <- paste0("/home/camp/watkint/working/watkint/data/martinez/release_v3/R_",patient,"/snp_array/MSAI/",patient,"_joint_segs_all_ascat_info.txt")
-# overwrite.flag <- TRUE
-# gamma.val <- 0.5
-# num.cores <- 12
-
-
-# patient <- "MTX004"
-# allow.dip.test.phasing.flag <- FALSE
-# output.directory.base.path <- paste0("/home/camp/watkint/working/watkint/data/martinez/release_v3/R_",patient,"/snp_array//CN_het_MEDICC_no_diptest/")
-# data.format.to.use <- "MEDICC"
-# snp.file.path <- paste0("/home/camp/watkint/working/watkint/data/martinez/release_v3/R_",patient,"/snp_array/MSAI/",patient,"_new_all_snps.txt")
-# seg.file.path <- paste0("/home/camp/watkint/working/watkint/data/martinez/release_v3/R_",patient,"/snp_array/MSAI/",patient,"_joint_segs_all_ascat_info.txt")
-# overwrite.flag <- FALSE
-# gamma.val <- 0.5
-# num.cores <- 8
-
-# patient <- "KTX059"
-# allow.dip.test.phasing.flag <- FALSE
-# output.directory.base.path <- "/home/camp/watkint/working/watkint/data/turajlic_wgs/release/T_KTX059/WGS//CN_het_TRACERx_no_diptest/"
-# data.format.to.use <- "TRACERx_WGS"
-# snp.file.path <- "/home/camp/watkint/working/watkint/data/turajlic_wgs/release/T_KTX059/WGS//CN_het_TRACERx_no_diptest/T_KTX059_input_snp_files.txt"
-# seg.file.path <- "/home/camp/watkint/working/watkint/data/turajlic_wgs/release/T_KTX059/WGS/MSAI/KTX059_joint_segs_all_ascat_info.txt"
-# overwrite.flag <- FALSE
-# gamma.val <- 1
-# num.cores <- 7
-
-
-
-# patient  <-  "LTX121"
-# allow.dip.test.phasing.flag <- FALSE
-# output.directory.base.path <- "/Users/watkint/Desktop/MET048_mPhase_data/CN_het_TRACERx_no_diptest/"
-# data.format.to.use <- "TRACERx_exome"
-# snp.file.path <- "/Users/watkint/Desktop/MET048_mPhase_data/A_LTX121/exome/CN_het_TRACERx_no_diptest/LTX121_TRACERx_input_paths_df.txt"
-# seg.file.path <- "/Users/watkint/Desktop/MET048_mPhase_data/A_LTX121/exome/MSAI/LTX121_joint_segs_all_ascat_info.txt"
-# overwrite.flag <- TRUE
-# gamma.val <- 1
-# num.cores <- 7
-# intersection.or.whole.arm <- "intersection"
-
-
-
-# #Best example to run as is exome and only has two samples.
-# patient  <-  "LTX121"
-# allow.dip.test.phasing.flag <- FALSE
-# output.directory.base.path <- "/camp/project/proj-tracerx-lung/tctProjects/watkint/TRACERx100_lung_pan_can_analysis/release/A_LTX121/exome/CN_het_TRACERx_no_diptest/"
-# data.format.to.use <- "TRACERx_exome"
-# snp.file.path <- "/camp/project/proj-tracerx-lung/tctProjects/watkint/TRACERx100_lung_pan_can_analysis/release/A_LTX121/exome/CN_het_TRACERx_no_diptest/LTX121_TRACERx_input_paths_df.txt"
-# seg.file.path <- "/camp/project/proj-tracerx-lung/tctProjects/watkint/TRACERx100_lung_pan_can_analysis/release/A_LTX121/exome/MSAI/LTX121_joint_segs_all_ascat_info.txt"
-# overwrite.flag <- TRUE
-# gamma.val <- 1
-# num.cores <- 4
-# intersection.or.whole.arm <- "intersection"
-
-# patient <- "BTX024"
-# allow.dip.test.phasing.flag <- FALSE
-# output.directory.base.path <- "/home/camp/watkint/working/watkint/data/yates/release/Y_BTX024/WGS//CN_het_TRACERx_WGS_no_diptest/"
-# data.format.to.use <- "TRACERx_WGS"
-# snp.file.path <- "/home/camp/watkint/working/watkint/data/yates/release/Y_BTX024/WGS//CN_het_TRACERx_WGS_no_diptest/Y_BTX024_input_snp_files.txt"
-# seg.file.path <- "/home/camp/watkint/working/watkint/data/yates/release/Y_BTX024/WGS/MSAI/BTX024_joint_segs_all_ascat_info.txt"
-# overwrite.flag <- TRUE
-# gamma.val <- 1
-# num.cores <- 6
-
-
-# patient <- "LTX021"
-# allow.dip.test.phasing.flag <- FALSE
-# output.directory.base.path <- "/camp/project/proj-tracerx-lung/tracerx/release_tx421_20190411/A_LTX021/exome/MPhase/"
-# data.format.to.use <- "TRACERx_exome"
-# snp.file.path <- "/camp/project/proj-tracerx-lung/tracerx/release_tx421_20190411/A_LTX021/exome/MPhase//LTX021_TRACERx_input_paths_df.txt"
-# seg.file.path <- "/camp/project/proj-tracerx-lung/tracerx/release_tx421_20190411/A_LTX021/exome/MPhase//LTX021_joint_segs_all_ascat_info.txt"
-# overwrite.flag <- TRUE
-# gamma.val <- 1
-# num.cores <- 1
-
-
-
-# patient <- "LTX064"
-# allow.dip.test.phasing.flag <- FALSE
-# output.directory.base.path <- "/camp/project/proj-tracerx-lung/tracerx/release_tx421_20190411/L_LTX064/exome/MPhase/"
-# data.format.to.use <- "TRACERx_exome"
-# snp.file.path <- "/camp/project/proj-tracerx-lung/tracerx/release_tx421_20190411/L_LTX064/exome/MPhase//LTX064_TRACERx_input_paths_df.txt"
-# seg.file.path <- "/camp/project/proj-tracerx-lung/tracerx/release_tx421_20190411/L_LTX064/exome/MPhase//LTX064_joint_segs_all_ascat_info.txt"
-# overwrite.flag <- TRUE
-# gamma.val <- 1
-# num.cores <- 1
-
 
 
 print("patient")
@@ -859,6 +147,7 @@ suppressWarnings(suppressMessages(library(gdata)))
 suppressWarnings(suppressMessages(library(GenomicRanges)))
 suppressWarnings(suppressMessages(library(doParallel)))
 options("stringsAsFactors" = FALSE)
+
 ###############This is past the input stage and into the analysis:
 #Set constants for all analyses here... eventually these can be command line set
 MIN_NUM_HZ_SNP_PHASING <- 5
@@ -912,23 +201,15 @@ test.parallel.list <- foreach(num = itx, .combine = c) %dopar% {
 }
 #So to test this, check the length of the list
 if (length(test.parallel.vec) != length(test.parallel.list) ) {
-
 	stop("ERROR, length of returned results of parallel test are not the same as the input... PARALLELISATION NOT WORKING")
-
 }
 for (test.value in test.parallel.vec) {
-
 	if ( ! as.character(test.value) %in% names(test.parallel.list)) {
-
 		stop("Error, test parallel value absent from returned results of parallel test... PARALLELISATION NOT WORKING")
-
 	}
 	if ( sqrt(test.value) != as.numeric(test.parallel.list[as.character(test.value)])) {
-
 		stop("Error, value returned by parallel test is not correct... PARALLELISATION NOT WORKING")
-
 	}
-
 }
 
 print("non parallelised input and results")
@@ -970,34 +251,29 @@ MSAI_BAF_LTNPD_PVAL_THRESHOLD <- 0.001#P value threshold to call MSAI
 MSAI_CPNX_PVAL_THRESHOLD <- 0.001#Legacy, can also detect MSAI from the phased copy number not ust the BAF
 PVAL_THRESH_CONVERT_GAIN_TO_AMP  <- 0.01#Legacy, but might need to be re-implemented, is an amplification significantly different to a gain in a different region?
 
-if (is.null(output.directory.base.path)) {
-
+if (is.null(output.directory.base.path))
 	stop("No output path provided, aborting...")
 
-}
-
-#so now we need to read in the MSAI data:
-if ( ! file.exists(snp.file.path)) {
-
+# so now we need to read in the MSAI data:
+if (!file.exists(snp.file.path))
 	stop("No file at the snp.file.path provided in the second argument")
 
-}
-
-if ( ! file.exists(seg.file.path)) {
-
+if (!file.exists(seg.file.path))
 	stop("No file at the seg.file.path provided in the third argument")
 
+# Load in the relevant genome file
+if (genome == "hg19") {
+  info.path <- paste0(current.dir, "ucsc_hg19_chrominfo.txt")
+  access.path <- paste0(current.dir, "access-10kb.hg19.bed")
+} else if (genome == "hg38") {
+  info.path <- paste0(current.dir, "ucsc_hg38_chrominfo.txt")
+  access.path <- paste0(current.dir, "access-10kb.hg38.bed")
+} else {
+  stop("Genome version not recognized: ", genome)
 }
-
-###Load in the relevant genome file, #todo make this an option that can be set.
-hg19.info.path <- paste0(current.dir, "ucsc_hg19_chrominfo.txt")
-hg19.info.df <- read.table(hg19.info.path, stringsAsFactors = FALSE, sep = "\t", header = TRUE)
-
-chrom.info.df <- hg19.info.df
-
-
-access.path <- paste0(current.dir, "access-10kb.hg19.bed")
-access.df <- read.table(access.path, sep="\t", header=F, stringsAsFactors=F)
+chrom.info.df <- read.table(info.path, stringsAsFactors = FALSE, sep = "\t", header = TRUE)
+# We don't need this until much later, don't try to load it now
+#access.df <- read.table(access.path, sep="\t", header=F, stringsAsFactors=F)
 
 #Paths for saving/loading objects depending on OVERWRITE_FLAG
 #Reading in data object paths
@@ -1052,7 +328,6 @@ if (OVERWRITE_FLAG == TRUE) {
 	f.joint.segs.df$uniq_id <- paste0(f.joint.segs.df$sample, "@", f.joint.segs.df$chr, ":", f.joint.segs.df$startpos, ":", f.joint.segs.df$endpos)
 
 
-
 	sample.vec <- unique(f.joint.segs.df$sample)
 	ploidy.est.vec <- f.joint.segs.df[ ! duplicated(f.joint.segs.df$sample), 'Ploidy']
 	names(ploidy.est.vec) <- unique(f.joint.segs.df$sample)
@@ -1060,32 +335,22 @@ if (OVERWRITE_FLAG == TRUE) {
 	names(purity.est.vec) <- unique(f.joint.segs.df$sample)
 
 	if (data.format.to.use == "MEDICC") {
-
-		print("data format is MEDICC, reading in sites text file...")
+		cat("data format is MEDICC, reading in sites text file...\n")
 
 		if (file.exists(input.snp.file.RDS.path)) {
-
 			snp.file.df <- readRDS(input.snp.file.RDS.path)
-
 		} else {
-
 			snp.file.df <- read.table(snp.file.path, stringsAsFactors = FALSE, sep = "\t", header = TRUE)
 			saveRDS(snp.file.df, file = input.snp.file.RDS.path)
-
 		}
 		all.samp.SNP.list <- readInMEDICCInputFormatParallel(snp.file.df = snp.file.df,
 															processed.orig.cpn.segs.df = f.joint.segs.df,
 															sample.vec = sample.vec)
-
-
 	} else if (data.format.to.use == "TRACERx_exome" | data.format.to.use == "TRACERx_snp_array") {
 
 		if (data.format.to.use == "TRACERx_exome") {
-
 			array.type <- "exome"
-
 		} else if (data.format.to.use == "TRACERx_snp_array") {
-
 			array.type <- "snp_array"
 		}
 		#So we want to read in a file that looks like this:	#patient_id sample_id ascat_bc_file_path
@@ -1093,14 +358,11 @@ if (OVERWRITE_FLAG == TRUE) {
 		print("Reading in SNP data...")
 		all.samp.SNP.list <- getSNPDataForTRACERxExomeSNPArray(pt.file.paths.df = pt.snp.file.paths.df, joint.segs.df =  f.joint.segs.df)
 
-
-
 	} else if (data.format.to.use == "TRACERx_WGS") {
 
 		array.type <- "WGS"
 		print("Reading in WGS SNP data...")
 		all.samp.SNP.list <- getSNPDataForTRACERxWGS(snp.file.path)
-
 
 	} else if (data.format.to.use == "ASCAT") {
     # Parse a bunch of rds files containing ascat.bc objects
@@ -1163,7 +425,7 @@ if (OVERWRITE_FLAG == TRUE) {
 
 	print("Introducing breakpoints at starts and ends of centromeres in original segmentation to allow calculation of arm level events in the original...")
 	new.all.samp.w.metadata.grs <- sort(all.samp.w.metadata.grs)
-	for ( chr in CHRS_TO_USE_VEC ) {
+	for (chr in CHRS_TO_USE_VEC) {
 
 		p.end.gr <- makeGRangesFromDataFrame(chrom.info.df[chrom.info.df$chrom == chr,],
 	                        keep.extra.columns=FALSE,
@@ -1232,14 +494,9 @@ if (OVERWRITE_FLAG == TRUE) {
 
 					#So now add the new segs to the dataset and sort:
 					new.all.samp.w.metadata.grs <- sort(c(new.all.samp.w.metadata.grs, new.seg.one.template, new.seg.two.template))
-
-
 				}#end for ( i in 1:length(overlapping.seg.grs) ) {
-
 			}#end if(length(overlapping.seg.grs) > 0) {
-
 		}#end 		for (new.bp.gr in bps.to.introduce.grs.list) {
-
 	}#end for ( chr in CHRS_TO_USE_VEC ) {
 
 
@@ -1251,9 +508,7 @@ if (OVERWRITE_FLAG == TRUE) {
 	names(gain.loss.name.list) <- c("neutral", "gain", "loss", "LOH")
 	p.or.q.vec <- c("p", "q")
 	for ( chr in CHRS_TO_USE_VEC ) {
-		#chr <- 21
 		chr.gr.list <- getChromosomeArmsGRangeList(chr, chrom.info.df)
-		#print(chr)
 		for ( i in 1:length(chr.gr.list) ) {
 
 			curr.chr.arm.gr <- chr.gr.list[[i]]
@@ -1324,14 +579,10 @@ if (OVERWRITE_FLAG == TRUE) {
 							all.samp.w.metadata.grs[all.samp.w.metadata.grs$uniq_id %in% samp.arm.all.uniq.ids.vec ]$arm_or_focal_event <- "focal"
 
 						}
-
 					}
 					#Next is there one segment with at least 50% of the arm in it:
-
 				}#end for (cpn.event.vec in gain.loss.name.list) {
-
 			}#end for (samp in sample.vec) {
-
 	}#end	for ( chr in CHRS_TO_USE_VEC ) {
 
 	all.samp.w.metadata.df <- as.data.frame(all.samp.w.metadata.grs)
@@ -4715,8 +3966,6 @@ pj.full.joint.segs.w.cl.sc.focal.df$within_samp_cpnB_passed <- init.sc.cpnB.vec 
 #be related to potentially repetitive regions close to the cetnromeres.
 #TODO this should actually go at the top of the script and run all the way through with this...
 
-#access.path <- "/camp/project/proj-tracerx-lung/tctProjects/pancan_multisample/reference_data/access-10kb.hg19.bed"
-access.path <- paste0(current.dir, "access-10kb.hg19.bed")
 access.df <- read.table(access.path, sep="\t", header=F, stringsAsFactors=F)
 access.df$V1 <- gsub("chr","", access.df$V1)
 access.df$V1 <- gsub("X","23", access.df$V1)
@@ -4781,7 +4030,7 @@ pj.full.joint.segs.w.cl.sc.focal.red.df <- pj.fjs.df[as.numeric(pj.fjs.df$endpos
 pj.full.joint.segs.w.cl.sc.focal.wd.sc.red.df.path <- paste(PLOT_OUTPUT_DIR, patient, "_pj_full_joint_segs_df_w_cl_sc_focal_counts_ws_sc_red.RDS", sep="")
 saveRDS(pj.full.joint.segs.w.cl.sc.focal.red.df, file = pj.full.joint.segs.w.cl.sc.focal.wd.sc.red.df.path)
 
-source(paste0(current.dir, "MEDICC_input_creation_functions.R"))
+#source(paste0(current.dir, "MEDICC_input_creation_functions.R"))
 
 #For each sample let's calculat the samples WGII
 post.mphase.wgii.list <- list()
