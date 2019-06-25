@@ -1433,7 +1433,7 @@ readInASCAT <- function(sample_table, segs, samples) {
     baf <- ascat_bc$Tumor_BAF[[1]]
     baf[!is_heterozygous] <- NA
 
-    samp_data <- data.frame(chrom = gsub("chr", "", as.character(ascat_bc$SNPpos$chr)),
+    samp_data <- data.frame(chrom = as.numeric(gsub("Y", "24", gsub("X", "23", gsub("chr", "", as.character(ascat_bc$SNPpos$chr))))),
                             pos = ascat_bc$SNPpos$pos,
                             BAF = baf,
                             logR = ascat_bc$Tumor_LogR[[1]],
@@ -1442,9 +1442,11 @@ readInASCAT <- function(sample_table, segs, samples) {
                             # think, so it shouldn't alter the CN estimation.
                             BAFsegmented = rep(NA, length(baf)),
                             #samp_data$BAFsegmented = ascat_bc$Tumor_BAF_segmented[is_heterozygous]
-                            logRsegmented = ascat_bc$Tumor_LogR_segmented)
+                            logRsegmented = as.numeric(ascat_bc$Tumor_LogR_segmented))
     all_snps[[sample]] <- samp_data
   }
+
+  print(str(all_snps))
 
   return(all_snps)
 }
