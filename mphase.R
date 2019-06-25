@@ -263,11 +263,11 @@ if (!file.exists(seg.file.path))
 
 # Load in the relevant genome file
 if (genome == "hg19") {
-  info.path <- paste0(current.dir, "ucsc_hg19_chrominfo.txt")
-  access.path <- paste0(current.dir, "access-10kb.hg19.bed")
+  info.path <- file.path(current.dir, "annot", "ucsc_hg19_chrominfo.txt")
+  access.path <- file.path(current.dir, "annot", "access-10kb.hg19.bed")
 } else if (genome == "hg38") {
-  info.path <- paste0(current.dir, "ucsc_hg38_chrominfo.txt")
-  access.path <- paste0(current.dir, "access-10kb.hg38.bed")
+  info.path <- file.path(current.dir, "annot", "ucsc_hg38_chrominfo.txt")
+  access.path <- file.path(current.dir, "annot", "access-10kb.hg38.bed")
 } else {
   stop("Genome version not recognized: ", genome)
 }
@@ -504,7 +504,6 @@ if (OVERWRITE_FLAG == TRUE) {
 	print("Calculating arm level gain, loss, \"neutral\", and LOH events in the original segmentation...")
 	all.samp.w.metadata.grs <- new.all.samp.w.metadata.grs
 	gain.loss.name.list <- list(c("neutral"), c("gain", "amp"), c("loss", "deep_loss"),  c("LOH"))
-	gain.loss.name.list
 	names(gain.loss.name.list) <- c("neutral", "gain", "loss", "LOH")
 	p.or.q.vec <- c("p", "q")
 	for ( chr in CHRS_TO_USE_VEC ) {
