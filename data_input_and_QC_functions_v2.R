@@ -1440,13 +1440,13 @@ readInASCAT <- function(sample_table, segs, samples) {
                             # FIXME: huge hack. BAFsegmented does not contain all SNPs, so we
                             # substitute the original BAFs here. This is only used for plotting I
                             # think, so it shouldn't alter the CN estimation.
-                            BAFsegmented = rep(NA, length(baf)),
+                            BAFsegmented = rep(as.numeric(NA), length(baf)),
                             #samp_data$BAFsegmented = ascat_bc$Tumor_BAF_segmented[is_heterozygous]
                             logRsegmented = as.numeric(ascat_bc$Tumor_LogR_segmented))
     all_snps[[sample]] <- samp_data
   }
 
-  print(str(all_snps))
+  str(all_snps)
 
   return(all_snps)
 }
@@ -1641,7 +1641,7 @@ cleanAndErrorCheckSNPsParallel <- function(all.samp.SNP.list, mcs.seg.to.use.df,
           colnames(samp.SNP.df)[colnames(samp.SNP.df) == "chr"] <- "chrom"
 
     }
-    print(it.min.cons.seg.df)
+    #print(it.min.cons.seg.df)
     samp.seg.logR.BAF.df <- samp.SNP.df[ samp.SNP.df$chrom == it.min.cons.seg.df[, 1]
                                        & samp.SNP.df$pos >= it.min.cons.seg.df[, 2]
                                        & samp.SNP.df$pos <= it.min.cons.seg.df[, 3], ,drop = FALSE]
@@ -1662,6 +1662,11 @@ cleanAndErrorCheckSNPsParallel <- function(all.samp.SNP.list, mcs.seg.to.use.df,
       samp.seg.logR.BAF.df <- samp.seg.logR.BAF.df[as.numeric(samp.seg.logR.BAF.df$BAF) != 2, ,drop = FALSE]
       samp.seg.logR.BAF.df <- samp.seg.logR.BAF.df[! is.na(samp.seg.logR.BAF.df$BAFsegmented), ,drop = FALSE]
       #colnames(samp.seg.logR.BAF.df)[colnames(samp.seg.logR.BAF.df) == "chr"] <- "chrom"
+
+    } else if (allow.logr.only.flag == FALSE & data.type == "ASCAT") {
+
+      samp.prob.SNPs.vec <- rownames(samp.seg.logR.BAF.df)[is.na(samp.seg.logR.BAF.df$BAF)]
+      samp.seg.logR.BAF.df <- samp.seg.logR.BAF.df[!is.na(samp.seg.logR.BAF.df$BAF), ,drop = FALSE]
 
     } else {
 

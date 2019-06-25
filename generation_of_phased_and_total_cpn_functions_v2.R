@@ -6,13 +6,13 @@
 getAllSegAllSamplePhasedRawCPNList <- function(sample.vec, ploidy.est.vec, purity.est.vec, min.cons.segs.df, all.seg.phasing.info.list, asas.both.lr.baf.lists, gamma.val = 1, min.num.hz.snp.phasing = 5) {
 
     seg.name.vec <- paste(min.cons.segs.df[ , 1], min.cons.segs.df[ , 2], min.cons.segs.df[ , 3], sep=":")
-    #Initialise all lists 
+    #Initialise all lists
     all.samples.phased.cpn.list <- list()
     for ( samp in sample.vec ) {
       all.samples.phased.cpn.list[[samp]] <- list()
       for ( seg.name in seg.name.vec ) {
         all.samples.phased.cpn.list[[samp]][[seg.name]] <- list()
-        all.samples.phased.cpn.list[[samp]][[seg.name]]$chr_vec <- NA 
+        all.samples.phased.cpn.list[[samp]][[seg.name]]$chr_vec <- NA
         all.samples.phased.cpn.list[[samp]][[seg.name]]$pos_vec <- NA
         all.samples.phased.cpn.list[[samp]][[seg.name]]$logr_vec <- NA
         all.samples.phased.cpn.list[[samp]][[seg.name]]$ph_cpnA_vec <- NA
@@ -32,7 +32,7 @@ getAllSegAllSamplePhasedRawCPNList <- function(sample.vec, ploidy.est.vec, purit
           if (nrow(samp.b.lr.baf.df) == 0) {
 
             next
-            
+
           }#end   if (nrow(samp.b.lr.baf.df) == 0) {
 
           samp.seg.cpnA.cpnB.df <- calculateSNPsRawCopyNumberAB(logr.vec = samp.b.lr.baf.df$logR,
@@ -40,7 +40,7 @@ getAllSegAllSamplePhasedRawCPNList <- function(sample.vec, ploidy.est.vec, purit
                                                             tumor.ploidy = ploidy.est.vec[samp],
                                                             tumor.purity = purity.est.vec[samp],
                                                             gamma.val = gamma.val)
-   
+
         if (nrow(samp.b.lr.baf.df) < min.num.hz.snp.phasing) {
 
           all.samples.phased.cpn.list[[samp]][[seg.name]]$chr_vec <- samp.b.lr.baf.df$chrom
@@ -63,17 +63,17 @@ getAllSegAllSamplePhasedRawCPNList <- function(sample.vec, ploidy.est.vec, purit
                phased.samp.seg.cpnA.cpnB.df[is.upper.and.cpnA.in.ref.idx.vec, 1] <- samp.seg.cpnA.cpnB.df[is.upper.and.cpnA.in.ref.idx.vec, 1]
                phased.samp.seg.cpnA.cpnB.df[is.upper.and.cpnA.in.ref.idx.vec, 2] <- samp.seg.cpnA.cpnB.df[is.upper.and.cpnA.in.ref.idx.vec, 2]
 
-           
+
           }
           #Get indices to phase cpnB
           if (length(all.seg.phasing.info.list[[seg.name]]$maj_is_cpnB_idx_vec) > 0) {
 
                is.lower.and.cpnB.in.ref.idx.vec <- all.seg.phasing.info.list[[seg.name]]$maj_is_cpnB_idx_vec
-               
+
                phased.samp.seg.cpnA.cpnB.df[is.lower.and.cpnB.in.ref.idx.vec, 1] <- samp.seg.cpnA.cpnB.df[is.lower.and.cpnB.in.ref.idx.vec, 2]
                phased.samp.seg.cpnA.cpnB.df[is.lower.and.cpnB.in.ref.idx.vec, 2] <- samp.seg.cpnA.cpnB.df[is.lower.and.cpnB.in.ref.idx.vec, 1]
-               
-          } 
+
+          }
           #Store this information in the list:
           all.samples.phased.cpn.list[[samp]][[seg.name]]$chr_vec <- samp.b.lr.baf.df$chrom
           all.samples.phased.cpn.list[[samp]][[seg.name]]$pos_vec <- samp.b.lr.baf.df$pos
@@ -153,10 +153,10 @@ getAllSegAllSamplePhasedRawCPNList <- function(sample.vec, ploidy.est.vec, purit
 
 
 
-getAllSampLogrAlonePositionsLogrAndTotalCPNDFsList <- function(sample.vec, 
-                                                              asas.SNPS.lr.and.or.baf.lists, 
-                                                              ploidy.est.vec, 
-                                                              purity.est.vec, 
+getAllSampLogrAlonePositionsLogrAndTotalCPNDFsList <- function(sample.vec,
+                                                              asas.SNPS.lr.and.or.baf.lists,
+                                                              ploidy.est.vec,
+                                                              purity.est.vec,
                                                               gamma.val,
                                                               data.format.to.use = "MEDICC") {
 
@@ -212,7 +212,7 @@ getAllSampLogrAlonePositionsLogrAndTotalCPNDFsList <- function(sample.vec,
     }
 
     all.samp.logr.df.list[[samp]] <- samp.logr.df
-    
+
   }
 
 
@@ -227,12 +227,13 @@ getAllSampLogrAlonePositionsLogrAndTotalCPNDFsList <- function(sample.vec,
 createAllSegsPhasedBAFDataFrame <- function(asas.lr.baf.lists, sample.to.phase.seg.list, min.num.hz.snp.phasing = 5) {
 
   sample.vec <- names(asas.lr.baf.lists)
- 
-  #Now we need to make sure that the asas.lr.baf.lists and sample.to.phase.seg.list 
+
+  #Now we need to make sure that the asas.lr.baf.lists and sample.to.phase.seg.list
   if (length(names(sample.to.phase.seg.list)) != length(asas.lr.baf.lists[[1]])) {
 
     print("Segments that will not have phasing attempted as were do not have the minimum number of hz positions:")
-    print(names(sample.to.phase.seg.list)[ ! names(asas.lr.baf.lists[[1]]) %in% names(sample.to.phase.seg.list)])
+    #print(names(sample.to.phase.seg.list)[ ! names(asas.lr.baf.lists[[1]]) %in% names(sample.to.phase.seg.list)])
+    print(names(sample.to.phase.seg.list)[names(sample.to.phase.seg.list) %in% names(asas.lr.baf.lists[[1]])])
     print("Continuing creation of phased BAF dataframe")
 
   }
@@ -254,7 +255,7 @@ createAllSegsPhasedBAFDataFrame <- function(asas.lr.baf.lists, sample.to.phase.s
         next;
 
       }#end if(nrow(samp.BAF.df)<5) {
-      
+
       #initialise new columns
       samp.BAF.df$samp <- samp
       samp.BAF.df$sample_phased_by_this_sample <-  sample.to.phase.seg.list[[seg.name]]$samp_chosen_to_phase_seg
@@ -263,13 +264,13 @@ createAllSegsPhasedBAFDataFrame <- function(asas.lr.baf.lists, sample.to.phase.s
 
       if (length(sample.to.phase.seg.list[[seg.name]]$maj_is_cpnA_idx_vec) > 1) {
 
-        samp.BAF.df[sample.to.phase.seg.list[[seg.name]]$maj_is_cpnA_idx_vec,]$maj_is_cpnA_logic_vec <- 1 
+        samp.BAF.df[sample.to.phase.seg.list[[seg.name]]$maj_is_cpnA_idx_vec,]$maj_is_cpnA_logic_vec <- 1
 
       }#end if (length(sample.to.phase.seg.list[[seg.name]]$maj_is_cpnA_idx_vec) > 1) {
 
       if (length(sample.to.phase.seg.list[[seg.name]]$maj_is_cpnB_idx_vec) > 1) {
 
-        samp.BAF.df[sample.to.phase.seg.list[[seg.name]]$maj_is_cpnB_idx_vec,]$maj_is_cpnB_logic_vec <- 1 
+        samp.BAF.df[sample.to.phase.seg.list[[seg.name]]$maj_is_cpnB_idx_vec,]$maj_is_cpnB_logic_vec <- 1
 
       }#end if (length(sample.to.phase.seg.list[[seg.name]]$maj_is_cpnB_idx_vec) > 1) {
 
@@ -280,7 +281,7 @@ createAllSegsPhasedBAFDataFrame <- function(asas.lr.baf.lists, sample.to.phase.s
         print("nrow(samp.BAF.df)")
         print(nrow(samp.BAF.df))
         stop("Check error in sample BAF df generation")
-        
+
       }#end if (nrow(samp.BAF.df[is.na(samp.BAF.df$maj_is_cpnA_idx_vec), ,drop=FALSE])>0)){
 
       samp.BAF.df$ph_median_segmented_BAF <- min(median(samp.BAF.df[samp.BAF.df$maj_is_cpnB_logic_vec == 1 ,]$BAF),
@@ -292,6 +293,6 @@ createAllSegsPhasedBAFDataFrame <- function(asas.lr.baf.lists, sample.to.phase.s
 
   }#end for ( i in 1:length(chr.start.end.string.vec) ) {
 
-  return(all.samp.ph.BAF.df.list) 
+  return(all.samp.ph.BAF.df.list)
 
 }#end createSegPhasedBAFTable <- function(....)

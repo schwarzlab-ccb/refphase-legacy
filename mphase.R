@@ -849,7 +849,7 @@ if (OVERWRITE_FLAG == TRUE) {
 
 	}
 
-	print(asas.SNPS.lr.and.or.baf.lists.path)
+	#print(asas.SNPS.lr.and.or.baf.lists.path)
 	saveRDS(asas.SNPS.lr.and.or.baf.lists, file = asas.SNPS.lr.and.or.baf.lists.path)
 	time.taken <- proc.time() - ptm
 	print("time.taken")
@@ -897,7 +897,7 @@ if (OVERWRITE_FLAG == TRUE) {
 
 #TODO move this up
 #Let's come up with the original wgii score pre MPhase based on the segmentation:
-source(paste0(current.dir, "MEDICC_input_creation_functions.R"))
+#source(paste0(current.dir, "MEDICC_input_creation_functions.R"))
 
 sample.vec <- names(asas.SNPs.w.both.lr.baf.snp.lists)
 sample.pre.Mphase.wgii.list <- list()
@@ -916,9 +916,13 @@ for (samp in sample.vec) {
 
 }#end for (samp in sample.vec) {
 
+cat("All wGII\n")
+print(str(sample.pre.Mphase.wgii.list))
 
 #Based on the input and how many BAF values there are we need to set the subclonality thresholds
 total.num.of.hz.sites.per.sample <- sum(sapply(asas.SNPs.w.both.lr.baf.snp.lists[[1]], nrow))
+cat("total.num.of.hz.sites.per.sample\n")
+print(total.num.of.hz.sites.per.sample)
 print("Setting the pval thresholds for calling subclonality depending on the number of heterozygous sites assayed:")
 
 if(total.num.of.hz.sites.per.sample < 100000) {
@@ -965,7 +969,7 @@ if (OVERWRITE_FLAG == TRUE) {
 	                                            dip.test.p.val.threshold = PVAL_DIPTEST_AI_THRESH,
 	                                            comb.wilcox.snp.sep.p.val.threshold = PVAL_COMB_WILCOX_PH_THRESH,
 	                                            allow.dip.test.without.ASCAT.to.phase = ALLOW_DIPTEST_ALONE_PH_FLAG
-	                	                            )
+	                	                          )
 	#print("Getting phasing to apply to all samples using getCombinedBAFDipTestPhasingParallel...")
 	#all.seg.phasing.info.list <- getCombinedBAFDipTestPhasingParallel(asas.lr.baf.lists = asas.SNPs.w.both.lr.baf.snp.lists,
 	#                                            seg.name.vec = seg.name.vec,
