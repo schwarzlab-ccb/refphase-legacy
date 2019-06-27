@@ -4,17 +4,17 @@ library(optparse)
 library(digest)
 
 option_list <- list(
-    make_option(c("--patient"), default="",
+    make_option(c("--patient"), default="CB1002",
                 help="Patient id"),
-    make_option(c("--dip-test"), default=TRUE,
+    make_option(c("--dip-test"), default=FALSE,
                 help="Use dip test (default=TRUE)"),
-    make_option(c("--output-dir"), default="output",
+    make_option(c("--output-dir"), default="../output/CB1002/mphase",
                 help="Output directory"),
-    make_option(c("--input-format"), default="MEDICC",
+    make_option(c("--input-format"), default="ASCAT",
                 help="Input data format (default=MEDICC)"),
-    make_option(c("--snp-data"), default="",
+    make_option(c("--snp-data"), default="../input/nb-schulte//CB1002_input_paths_df.txt",
                 help="SNP data"),
-    make_option(c("--seg-data"), default="",
+    make_option(c("--seg-data"), default="../input/nb-schulte//CB1002.segmentation",
                 help="Segmentation data output from ASCAT"),
     make_option(c("--overwrite"), default=TRUE,
                 help="Overwrite output (default=TRUE)"),
@@ -24,7 +24,7 @@ option_list <- list(
                 help="CPU cores (default=1)"),
     make_option(c("--segment-type"), default="intersection",
                 help="Segment type, intersection or whole_arm (default=1)"),
-    make_option(c("--genome"), default="hg19",
+    make_option(c("--genome"), default="hg38",
                 help="Human genome version (default=hg19, also supports hg38)"),
     make_option(c("--seed"), default=2134234,
                 help="Random seed")
@@ -35,9 +35,7 @@ set.seed(conf$seed)
 
 args = commandArgs(trailingOnly=TRUE)
 print("config")
-#print(args)
 cat(paste(names(conf), conf, collapse="\n"))
-#print(conf)
 
 patient <- conf$patient
 #At the moment MPhase will only try to call MSAI and new copy number in areas of the genome identified as allelically imbalanced
@@ -117,14 +115,10 @@ print(num.cores)
 
 
 ###Source relevant scripts, best to do this at the top to check for errors...
-if( is.null(current.dir) ) {
-
+if (is.null(current.dir)) {
 	current.dir <- ""
-
 } else {
-
 	current.dir <- paste0(current.dir, "/")
-
 }
 source(paste0(current.dir, "utility_MPhase_functions.R"))
 source(paste0(current.dir, "minimum_consistent_segmentation_functions.R"))
@@ -182,57 +176,57 @@ if ( ! file.exists(PLOT_OUTPUT_DIR) ) {
 NUM_CORES <- as.numeric(num.cores)
 
 registerDoParallel(cores = NUM_CORES)
-print(foreach::getDoParWorkers())
-print(getDoParName())
-print(getDoParVersion())
-
-#Test the parallelisation as sometimes on some nodes parallel jobs file.
-print("Testing parallelisation....")
-test.parallel.vec <- sample(100:1200, NUM_CORES)
-itx <- iter(test.parallel.vec)
-test.parallel.list <- foreach(num = itx, .combine = c) %dopar% {
-
-
-	test.sqrt <- sqrt(num)
-	returnable.list <- list(test.sqrt)
-	names(returnable.list) <- as.character(num)
-	returnable.list
-
-}
-#So to test this, check the length of the list
-if (length(test.parallel.vec) != length(test.parallel.list) ) {
-	stop("ERROR, length of returned results of parallel test are not the same as the input... PARALLELISATION NOT WORKING")
-}
-for (test.value in test.parallel.vec) {
-	if ( ! as.character(test.value) %in% names(test.parallel.list)) {
-		stop("Error, test parallel value absent from returned results of parallel test... PARALLELISATION NOT WORKING")
-	}
-	if ( sqrt(test.value) != as.numeric(test.parallel.list[as.character(test.value)])) {
-		stop("Error, value returned by parallel test is not correct... PARALLELISATION NOT WORKING")
-	}
-}
-
-print("non parallelised input and results")
-series.test.vec <- sqrt(test.parallel.vec)
-names(series.test.vec) <- test.parallel.vec
-print(series.test.vec)
-print("parallelised results:")
-print(unlist(test.parallel.list))
+# print(foreach::getDoParWorkers())
+# print(getDoParName())
+# print(getDoParVersion())
+#
+# #Test the parallelisation as sometimes on some nodes parallel jobs file.
+# print("Testing parallelisation....")
+# test.parallel.vec <- sample(100:1200, NUM_CORES)
+# itx <- iter(test.parallel.vec)
+# test.parallel.list <- foreach(num = itx, .combine = c) %dopar% {
+#
+#
+# 	test.sqrt <- sqrt(num)
+# 	returnable.list <- list(test.sqrt)
+# 	names(returnable.list) <- as.character(num)
+# 	returnable.list
+#
+# }
+# #So to test this, check the length of the list
+# if (length(test.parallel.vec) != length(test.parallel.list) ) {
+# 	stop("ERROR, length of returned results of parallel test are not the same as the input... PARALLELISATION NOT WORKING")
+# }
+# for (test.value in test.parallel.vec) {
+# 	if ( ! as.character(test.value) %in% names(test.parallel.list)) {
+# 		stop("Error, test parallel value absent from returned results of parallel test... PARALLELISATION NOT WORKING")
+# 	}
+# 	if ( sqrt(test.value) != as.numeric(test.parallel.list[as.character(test.value)])) {
+# 		stop("Error, value returned by parallel test is not correct... PARALLELISATION NOT WORKING")
+# 	}
+# }
+#
+# print("non parallelised input and results")
+# series.test.vec <- sqrt(test.parallel.vec)
+# names(series.test.vec) <- test.parallel.vec
+# print(series.test.vec)
+# print("parallelised results:")
+# print(unlist(test.parallel.list))
 
 #TODO why is is this variable being reassigned here....
-intersection.or.whole.arm <- "intersection"
+#intersection.or.whole.arm <- "intersection"
 
 
 
 INTERSECTION_OR_ARM <- intersection.or.whole.arm
 GAMMA_VAL <- as.numeric(gamma.val)
 MAX_CPN_FOR_SUBCLONALITY <- 10
-MIN_CCF_TO_CONSIDER <- 0.2 #This the median raw CCF different to the integer +/- this value.
-MIN_CPN_TO_CONSIDER <- 0.2 #This the median raw cpn different to the integer +/- this value.
-MIN_NUM_CHRS <- 2#This is the minimum no of chromosomes used for comparisons to other other chromosomes when calling subclonal events
+MIN_CCF_TO_CONSIDER <- 0.2  # This the median raw CCF different to the integer +/- this value.
+MIN_CPN_TO_CONSIDER <- 0.2  # This the median raw cpn different to the integer +/- this value.
+MIN_NUM_CHRS <- 2  # This is the minimum no of chromosomes used for comparisons to other other chromosomes when calling subclonal events
 PVAL_THRESH_VS_MIN_CCF <- 0.001
 
-PVAL_THRESH_VS_OTH_CHRS_SAME_CPN <- 0.01#T test p value threshold for trying to call subclonal copy numnber...
+PVAL_THRESH_VS_OTH_CHRS_SAME_CPN <- 0.01  # T test p value threshold for trying to call subclonal copy numnber...
 GAIN_LOGR_THRESH <- log2(2.5 / 2)
 LOSS_LOGR_THRESH <- log2(1.5 / 2)
 AMP_LOGR_THRESH <- log2(4 / 2)
@@ -282,7 +276,7 @@ all.samp.SNP.list.path <- paste0(PLOT_OUTPUT_DIR, patient, "_all_samp_SNP_list.R
 asas.SNPS.lr.and.or.baf.lists.path <- paste0(PLOT_OUTPUT_DIR, patient, "_asas_SNPS_lr_and_or_baf_lists_lists.RDS")
 asas.SNPs.w.both.lr.baf.snp.lists.path <- paste0(PLOT_OUTPUT_DIR, patient, "_asas_SNPs_w_both_lr_baf_snp_lists.RDS")
 min.cons.segs.df.write.path <- paste0(PLOT_OUTPUT_DIR, patient, "_min_cons_segs_df.txt")
-sorted.all.bp.all.samps.segs.anno.df.path <- paste0(PLOT_OUTPUT_DIR, patient, "_sorted_all_bp_all_samps_segs_anno.df.txt")
+sorted.all.bp.all.samps.segs.anno.df.path <- paste0(PLOT_OUTPUT_DIR, patient, "_sorted_all_bp_all_samps_segs_anno.df.RDS")
 min.cons.segs.df.path <- paste0(PLOT_OUTPUT_DIR, patient, "_min_cons_segs_df.RDS")
 processed.orig.cpn.segs.df.path <- paste0(PLOT_OUTPUT_DIR, patient, "_processed_orig_cpn_segs_df.RDS")
 
@@ -302,6 +296,7 @@ all.seg.clonal.in.all.samps.list.path <- paste0(PLOT_OUTPUT_DIR, patient, "_all_
 all.seg.greater.than.two.diff.list.path <- paste0(PLOT_OUTPUT_DIR, patient, "_all_seg_greater_than_two_diff_list.RDS")
 
 print("Finished generating paths...")
+
 #Load in the data:
 #Note that the functions to create the single dataframes that it accepts are in the data_input_and_QC_functions.R
 if (OVERWRITE_FLAG == TRUE) {
@@ -373,6 +368,16 @@ if (OVERWRITE_FLAG == TRUE) {
     all.samp.SNP.list <- readInASCAT(snp.file.paths.df,
                                      f.joint.segs.df,
                                      sample.vec)
+
+    # # Temporarily remove everything except a few chromosomes
+    # #test_chrs <- c("chr1", "chr2")
+    # test_chrs <- c(1, 2)
+    # all.samp.SNP.list <- lapply(all.samp.SNP.list, function(x) { str(x); return(x[x$chrom %in% test_chrs,]) })
+    # f.joint.segs.df <- f.joint.segs.df[f.joint.segs.df$chr %in% test_chrs,]
+
+    # cat("Subset of chromosomes 1 and 2 only.\n")
+    # str(all.samp.SNP.list)
+    # str(f.joint.segs.df)
 
 	} else {
 
@@ -501,7 +506,7 @@ if (OVERWRITE_FLAG == TRUE) {
 
 
 	#So actually defining the segments that are lost or gained makes sense here..
-	print("Calculating arm level gain, loss, \"neutral\", and LOH events in the original segmentation...")
+	print("Calculating arm level gain, loss, neutral, and LOH events in the original segmentation...")
 	all.samp.w.metadata.grs <- new.all.samp.w.metadata.grs
 	gain.loss.name.list <- list(c("neutral"), c("gain", "amp"), c("loss", "deep_loss"),  c("LOH"))
 	names(gain.loss.name.list) <- c("neutral", "gain", "loss", "LOH")
@@ -959,19 +964,7 @@ if (OVERWRITE_FLAG == TRUE) {
 
 	print("Getting phasing to apply to all samples...")
 	source(paste0(current.dir, "consensus_phasing_from_multiple_samples_functions_v2.R"))
-	all.seg.phasing.info.list <- getCombinedBAFDipTestPhasing(asas.lr.baf.lists = asas.SNPs.w.both.lr.baf.snp.lists,
-	                                            seg.name.vec = seg.name.vec,
-	                                            ploidy.est.vec = ploidy.est.vec,
-	                                            purity.est.vec = purity.est.vec,
-	                                            gamma.val = GAMMA_VAL,
-	                                            min.num.hz.snp.phasing = MIN_NUM_HZ_SNP_PHASING,
-	                                            min.prop.snp.sep.threshold = MIN_PROP_SNP_SEP_THRESH,
-	                                            dip.test.p.val.threshold = PVAL_DIPTEST_AI_THRESH,
-	                                            comb.wilcox.snp.sep.p.val.threshold = PVAL_COMB_WILCOX_PH_THRESH,
-	                                            allow.dip.test.without.ASCAT.to.phase = ALLOW_DIPTEST_ALONE_PH_FLAG
-	                	                          )
-	#print("Getting phasing to apply to all samples using getCombinedBAFDipTestPhasingParallel...")
-	#all.seg.phasing.info.list <- getCombinedBAFDipTestPhasingParallel(asas.lr.baf.lists = asas.SNPs.w.both.lr.baf.snp.lists,
+	#all.seg.phasing.info.list <- getCombinedBAFDipTestPhasing(asas.lr.baf.lists = asas.SNPs.w.both.lr.baf.snp.lists,
 	#                                            seg.name.vec = seg.name.vec,
 	#                                            ploidy.est.vec = ploidy.est.vec,
 	#                                            purity.est.vec = purity.est.vec,
@@ -981,7 +974,19 @@ if (OVERWRITE_FLAG == TRUE) {
 	#                                            dip.test.p.val.threshold = PVAL_DIPTEST_AI_THRESH,
 	#                                            comb.wilcox.snp.sep.p.val.threshold = PVAL_COMB_WILCOX_PH_THRESH,
 	#                                            allow.dip.test.without.ASCAT.to.phase = ALLOW_DIPTEST_ALONE_PH_FLAG
-	#                                            )
+	#                	                          )
+	print("Getting phasing to apply to all samples using getCombinedBAFDipTestPhasingParallel...")
+	all.seg.phasing.info.list <- getCombinedBAFDipTestPhasingParallel(asas.lr.baf.lists = asas.SNPs.w.both.lr.baf.snp.lists,
+	                                            seg.name.vec = seg.name.vec,
+	                                            ploidy.est.vec = ploidy.est.vec,
+	                                            purity.est.vec = purity.est.vec,
+	                                            gamma.val = GAMMA_VAL,
+	                                            min.num.hz.snp.phasing = MIN_NUM_HZ_SNP_PHASING,
+	                                            min.prop.snp.sep.threshold = MIN_PROP_SNP_SEP_THRESH,
+	                                            dip.test.p.val.threshold = PVAL_DIPTEST_AI_THRESH,
+	                                            comb.wilcox.snp.sep.p.val.threshold = PVAL_COMB_WILCOX_PH_THRESH,
+	                                            allow.dip.test.without.ASCAT.to.phase = ALLOW_DIPTEST_ALONE_PH_FLAG
+	                                            )
 
 	saveRDS(all.seg.phasing.info.list, file = all.seg.phasing.info.list.path)
 
@@ -1479,7 +1484,6 @@ if (OVERWRITE_INIT_MCS_ADD_INFO_FLAG == TRUE) {
 
 }#end  else if (OVERWRITE_INIT_MCS_ADD_INFO_FLAG == FALSE) {
 
-
 if (PLOTTING_FLAG == TRUE) {
 
 	####Plot all genome wide plots
@@ -1517,6 +1521,11 @@ if (PLOTTING_FLAG == TRUE) {
 
 }
 
+# We need a .tsv version of this data for interoperability with python
+write.table(full.joint.segs.df, file=file.path(PLOT_OUTPUT_DIR, "full_joint_segs.tsv"), row.names=FALSE)
+cat("MPhase comparison with snpphase: Finished for now. Got the <patient>_full_joint_segs_df.RDS object.\n")
+quit(save = "no", status = 0, runLast = FALSE)
+
 ###Additional calling that needs adding:
 #wgii
 #ploidy
@@ -1551,7 +1560,7 @@ if (OVERWRITE_ARM_INFO_FOR_JOIN_INIT_MCS_FLAG == TRUE) {
 
 			samp <- samp.arm.df$sample
 			chr.arm <- samp.arm.df$arm
-			print(chr.arm)
+			#print(chr.arm)
 			#So now we are within a chromosome arm we want to make a seg.name.vec that matches only the chromosome
 			samp.chr.arm.segs.df <- full.joint.segs.df[full.joint.segs.df$chr_arm %in% chr.arm
 							                         & full.joint.segs.df$sample %in% samp, ]
@@ -1572,7 +1581,7 @@ if (OVERWRITE_ARM_INFO_FOR_JOIN_INIT_MCS_FLAG == TRUE) {
 						stringsAsFactors=FALSE)
 			#Note that if there are no SNPs within a segment then it won't be recorded in this dataframe.
 			for (seg.name in samp.chr.arm.seg.name.vec) {
-				print(seg.name)
+				#print(seg.name)
 				#Add the logr values
 				orig.seg.lr.and.or.baf.df <- asas.SNPS.lr.and.or.baf.lists[[samp]][[seg.name]]
 				if(nrow(orig.seg.lr.and.or.baf.df) > 0) {
@@ -1712,6 +1721,9 @@ if (OVERWRITE_ARM_INFO_FOR_JOIN_INIT_MCS_FLAG == TRUE) {
 
 }
 
+########################################################################
+# Join segments
+########################################################################
 
 if (OVERWRITE_JOIN_INIT_MCS_FLAG == TRUE) {
 
@@ -1745,17 +1757,16 @@ if (OVERWRITE_JOIN_INIT_MCS_FLAG == TRUE) {
 	#source("/home/camp/watkint/working/watkint/scripts/multiregioncopynum/new_seg_joining_functions.R")
 	source(paste0(current.dir, "new_seg_joining_functions.R"))
 
-	joined.samp.arm.iterable.df <- expand.grid(sample.vec, chr.arms.present.vec, stringsAsFactors=FALSE)
-	colnames(joined.samp.arm.iterable.df) <- c("sample", "arm")
+	joined.samp.arm.iterable.df <- expand.grid(sample=sample.vec, arm=chr.arms.present.vec, stringsAsFactors=FALSE)
 	joined.samp.arm.iterable.df <- joined.samp.arm.iterable.df[with(joined.samp.arm.iterable.df, order(sample, arm)), ]
 	joined.samp.arm.itx <- iter(joined.samp.arm.iterable.df, by="row")
-  cat("Savign object and starting foreach: joined.samp.arms.list\n")
-  saveRDS(joined.samp.arm.iterable.df, file = "joined_samp_arm_iterable_df.rds")
+  #cat("Savign object and starting foreach: joined.samp.arms.list\n")
+  #saveRDS(joined.samp.arm.iterable.df, file = "joined_samp_arm_iterable_df.rds")
   joined.samp.arms.list <- list()
 
   for (i in seq_len(nrow(joined.samp.arm.iterable.df))) {
     joined.samp.arm.df <- joined.samp.arm.iterable.df[i,]
-    print(joined.samp.arm.df)
+    #print(joined.samp.arm.df)
 	#joined.samp.arms.list <- foreach(joined.samp.arm.df = joined.samp.arm.itx, .export=ls(envir=globalenv()), .combine = c) %dopar% {
 
       require("GenomicRanges")
@@ -1875,7 +1886,7 @@ if (OVERWRITE_JOIN_INIT_MCS_FLAG == TRUE) {
 			cpnB.no.blank.df <- cpnB.joined.segs.df
 
       #write.csv(head(cpnA.joined.segs.df), file="head-cpnA.joined.segs.df.csv")
-      print(head(cpnA.joined.segs.df))
+      #print(head(cpnA.joined.segs.df))
 			cpnA.joined.segs.grs <- makeGRangesFromDataFrame(cpnA.joined.segs.df,
 					                         		keep.extra.columns=TRUE,
 					                         		ignore.strand=TRUE,
@@ -1887,7 +1898,7 @@ if (OVERWRITE_JOIN_INIT_MCS_FLAG == TRUE) {
 			#Checking for -1 as some of segments that have >= MIN_PH_CPN still lack ph cpn estimates, need to check this further. TODO
 			only.ph.cpnA.joined.segs.grs <- cpnA.joined.segs.grs[cpnA.joined.segs.grs$num_ph_cpn >= MIN_PH_CPN & cpnA.joined.segs.grs$int_ph_cpnA != -1 ]
       #write.csv(head(cpnB.joined.segs.df), file="head-cpnB.joined.segs.df.csv")
-      print(head(cpnB.joined.segs.df))
+      #print(head(cpnB.joined.segs.df))
 			cpnB.joined.segs.grs <- makeGRangesFromDataFrame(cpnB.joined.segs.df,
 					                         		keep.extra.columns=TRUE,
 					                         		ignore.strand=TRUE,
@@ -1917,7 +1928,7 @@ if (OVERWRITE_JOIN_INIT_MCS_FLAG == TRUE) {
 						#So now we want to find out which of the neighboring segments it's closest to in both dfs.
 						#Make Query Grange:
             #write.csv(head(cpnX.joined.segs.df[k,]), file="head-cpnX.joined.segs.df.csv")
-            print(head(cpnX.joined.segs.df[k,]))
+            #print(head(cpnX.joined.segs.df[k,]))
 
 						query.seg.gr <- makeGRangesFromDataFrame(cpnX.joined.segs.df[k,],
 						                         		keep.extra.columns=TRUE,
@@ -1952,6 +1963,7 @@ if (OVERWRITE_JOIN_INIT_MCS_FLAG == TRUE) {
 						cpnB.tot.cpn.diff.vec <- abs(adj.ph.cpnB.grs$median_tot_cpn - query.seg.gr$median_tot_cpn)
 						cpnB.val <- adj.ph.cpnB.grs[which(cpnB.tot.cpn.diff.vec == min(cpnB.tot.cpn.diff.vec))]$int_ph_cpnB
 						#now we want the total rounded to
+            cat("i=", i, "\tj=", j, "\tk=", k, "\tcpnA.val=", cpnA.val, "\tcpnB.val=", cpnB.val, "\n")
 						query.seg.int.tot.cpn <- round(query.seg.gr$median_tot_cpn)
 						if (query.seg.int.tot.cpn < 0) {
 
@@ -2253,6 +2265,11 @@ if (OVERWRITE_JOIN_INIT_MCS_FLAG == TRUE) {
 
 }
 
+########################################################################
+# Generate some copy number plots
+#
+# <patient>_logr_BAF_raw_cpn_and_segments.png
+########################################################################
 
 if (PLOTTING_FLAG == TRUE) {
 
@@ -2274,24 +2291,17 @@ if (PLOTTING_FLAG == TRUE) {
 	colnames(plottable.mphase.samp.cpnA.cpnB.df) <- plottable.col.name.vec
 
 	print("Plotting before and after joining copy number profiles for each sample....")
+
 	png(file = paste(PLOT_OUTPUT_DIR, patient, "_mphase_mcs_cpn_across_genome", ".png", sep=""), width = 1200, height = 1400)
-
 	plotCPNSegDFAccrossGenome(segs.df = plottable.mphase.mcs.segs.df, sample.vec = sample.vec, cpn.cols =c("int_ph_cpnA","int_ph_cpnB"), color.vec = c("green", "black"))
-
 	dev.off()
 
 	png(file = paste(PLOT_OUTPUT_DIR, patient, "_orig_ASCAT_across_genome", ".png", sep=""), width = 1200, height = 1400)
-
 	plotCPNSegDFAccrossGenome(segs.df = plottable.orig.joint.segs.df, sample.vec = sample.vec, cpn.cols =c("int_ph_cpnA","int_ph_cpnB"), color.vec = c("green", "black"))
-
 	dev.off()
 
-
 	png(file = paste(PLOT_OUTPUT_DIR, patient, "_mphase_joined_across_genome", ".png", sep=""), width = 1200, height = 1400)
-
 	plotCPNSegDFAccrossGenome(segs.df = plottable.mphase.samp.cpnA.cpnB.df, sample.vec = sample.vec, cpn.cols =c("int_ph_cpnA","int_ph_cpnB"), color.vec = c("green", "black"))
-
-
 	dev.off()
 
 	print("Plotting sample by sample logr, BAF, phased cpn, and cpn segmentation pre and post joining...")
@@ -2640,6 +2650,15 @@ if(exists("samp.arms")) { rm(samp.arms) }
 gc()
 
 
+
+########################################################################
+# From Tom:
+# there are output files that contain the letters “pj”
+# these are from essentially a second run through of the algorithm
+# that runs it after the original segments produced by ascat are phased and then rejoined using the phasing info and run through the whole algorithm again
+# so there are actually two files in the output that are named in exactly the same way
+# for now just use the LTX121_full_joint_segs_df.RDS
+########################################################################
 
 #So now we need to calculate whether any of these are gains or losses, we can do this in the same way as in the original MPhase or just apply the function as we did:
 print("Generating new paths:")
@@ -4188,6 +4207,9 @@ post.MPhase.MCS.MEDICC.FASTA.files.list <- makeMEDICCInputListsFromSegmentationD
 post.MPhase.MCS.MEDICC.FASTA.files.list.path <- paste0(PLOT_OUTPUT_DIR, patient, "_post_MPhase_MCS_MEDICC_FASTA_file_list.RDS")
 saveRDS(post.MPhase.MCS.MEDICC.FASTA.files.list, file = post.MPhase.MCS.MEDICC.FASTA.files.list.path)
 
+########################################################################
+# Only figures are output from here. No saved data files (RDS).
+########################################################################
 
 #Plot the BAFs again for the final thing
 png(file = paste(PLOT_OUTPUT_DIR, patient, "_BAF_phased", ".png", sep=""), width = 1200, height = 1400)
@@ -4301,132 +4323,5 @@ for (samp in sample.vec) {
 
 }
 
-
-#mphase.complete.file.path <- paste(PLOT_OUTPUT_DIR, patient, ".MPhase.complete", sep="")
-#system("touch mphase.complete.file.path")
-
-
-
-
-
-
-# #Plot the region comparison across genome plots, will need their own directories:
-# old.vs.new.raw.cpn.dir <- paste(PLOT_OUTPUT_DIR, "old_raw_cpn_vs_MPhase_raw_cpn/", sep="")
-# if( ! file.exists(old.vs.new.raw.cpn.dir)) {
-
-# 	dir.create(old.vs.new.raw.cpn.dir)
-
-# }#end if( ! file.exists(by.chrom.CCF.plot.dir)) {
-
-# print("Plotting comparison of old vs new MPhase raw cpn calls..")
-# plotOldNewComparisonOfAllCPN(sample.vec, full.joint.segs.df, plot.output.dir = old.vs.new.raw.cpn.dir)
-
-# pairwise.raw.cpn.dir <- paste(PLOT_OUTPUT_DIR, "pairwise_raw_cpn_comparisons/", sep = "")
-# if( ! file.exists(pairwise.raw.cpn.dir)) {
-
-# 	dir.create(pairwise.raw.cpn.dir)
-
-# }#end if( ! file.exists(by.chrom.CCF.plot.dir)) {
-
-# print("Plotting pairwise sample comparison between MPhase raw cpn calls across the whole genome...")
-# plotAllSamplePairwiseComparisonSegmentCPN(sample.vec, full.joint.segs.df, plot.output.dir = pairwise.raw.cpn.dir)
-
-
-
-# #Plot by chromosome plots:
-
-# uniq.chrs <- unique(full.joint.segs.w.phasing.df$chr)
-# by.chrom.CCF.plot.dir <- paste(PLOT_OUTPUT_DIR, "CCF_by_chrom/", sep = "")
-# if( ! file.exists(by.chrom.CCF.plot.dir)) {
-
-# 	dir.create(by.chrom.CCF.plot.dir)
-
-# }#end if( ! file.exists(by.chrom.CCF.plot.dir)) {
-# print("Plotting by chromosome CCF estimates for cpnA and cpnB using CCF subclonality thresholds...")
-# png(file = paste(by.chrom.CCF.plot.dir, "/", patient, "_CCF_w_CCF_thresh_cpnA_", "%02d", ".png", sep = ""), width = 1200, height = 1400)
-# for ( chrom in uniq.chrs ) {
-
-# 	plotAllSampleCCFsAcrossGenome(asas.ph.raw.cpn.lists = asas.ph.raw.cpn.lists,
-#                               full.joint.segs.df = full.joint.segs.w.phasing.df[full.joint.segs.w.phasing.df$chr == chrom,] ,
-#                               sample.vec = sample.vec,
-#                               all.seg.CCF.vals.list = all.seg.CCF.list,
-#                               cpnX = "cpnA",
-#                               use.cpn.or.ccf.thresh = "CCF")
-
-
-# }
-# dev.off()
-
-# png(file = paste(by.chrom.CCF.plot.dir, "/", patient, "_CCF_w_CCF_thresh_cpnB_", "%02d", ".png", sep = ""), width = 1200, height = 1400)
-# for ( chrom in uniq.chrs ) {
-
-# 	plotAllSampleCCFsAcrossGenome(asas.ph.raw.cpn.lists = asas.ph.raw.cpn.lists,
-#                               full.joint.segs.df = full.joint.segs.w.phasing.df[full.joint.segs.w.phasing.df$chr == chrom,] ,
-#                               sample.vec = sample.vec,
-#                               all.seg.CCF.vals.list = all.seg.CCF.list,
-#                               cpnX = "cpnB",
-#                               use.cpn.or.ccf.thresh = "CCF")
-
-
-# }
-# dev.off()
-
-# print("Plotting by chromosome CCF estimates for cpnA and cpnB using cpn subclonality thresholds...")
-# png(file = paste(by.chrom.CCF.plot.dir, "/", patient, "_CCF_w_cpn_thresh_cpnA_","%02d", ".png", sep = ""), width = 1200, height = 1400)
-# for ( chrom in uniq.chrs ) {
-
-# 	plotAllSampleCCFsAcrossGenome(asas.ph.raw.cpn.lists = asas.ph.raw.cpn.lists,
-#                               full.joint.segs.df = full.joint.segs.w.phasing.df[full.joint.segs.w.phasing.df$chr == chrom,] ,
-#                               sample.vec = sample.vec,
-#                               all.seg.CCF.vals.list = all.seg.CCF.list,
-#                               cpnX = "cpnA",
-#                               use.cpn.or.ccf.thresh = "CPN")
-
-
-# }
-# dev.off()
-
-
-
-# png(file = paste(by.chrom.CCF.plot.dir, "/", patient, "_CCF_w_cpn_thresh_cpnB_", "%02d", ".png", sep = ""), width = 1200, height = 1400)
-# for ( chrom in uniq.chrs ) {
-
-# 	plotAllSampleCCFsAcrossGenome(asas.ph.raw.cpn.lists = asas.ph.raw.cpn.lists,
-#                               full.joint.segs.df = full.joint.segs.w.phasing.df[full.joint.segs.w.phasing.df$chr == chrom,] ,
-#                               sample.vec = sample.vec,
-#                               all.seg.CCF.vals.list = all.seg.CCF.list,
-#                               cpnX = "cpnB",
-#                               use.cpn.or.ccf.thresh = "CPN")
-
-
-# }
-# dev.off()
-
-# by.chrom.BAF.plot.dir <- paste(PLOT_OUTPUT_DIR, "BAF_by_chrom/", sep="")
-# if( ! file.exists(by.chrom.BAF.plot.dir)) {
-
-# 	dir.create(by.chrom.BAF.plot.dir)
-
-# }#end if( ! file.exists(by.chrom.CCF.plot.dir)) {
-
-# #Now let's plot baf
-# print("Plotting by chromosome phased BAF...")
-# png(file = paste(by.chrom.BAF.plot.dir, "/", patient, "_BAF_phased_", "%02d", ".png", sep=""), width = 1200, height = 1400)
-# for ( chrom in uniq.chrs ) {
-
-# 	chr.pt.ph.BAF.df.list <- patient.phased.BAF.df.list
-
-# 	for ( samp in sample.vec ) {
-
-# 		chr.pt.ph.BAF.df.list[[samp]] <- chr.pt.ph.BAF.df.list[[samp]][chr.pt.ph.BAF.df.list[[samp]]$chrom == chrom,]
-
-# 	}#end for ( samp in sample.vec ) {
-
-# 	plotAllSampleBAFsAcrossGenome(sample.vec, chr.pt.ph.BAF.df.list, cpnA.allele.color = '#de2d2699', cpnB.allele.color= '#3182bd99')
-
-
-# }#end for ( chrom in uniq.chrs ) {
-# dev.off()
-
-# #testFinalOutputDataframe(full.joint.segs.df)
+cat("Finished running mphase.\n")
 
