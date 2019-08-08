@@ -457,36 +457,36 @@ getSNPDataForTRACERxWGS <- function(snp.file.path) {
 
 
 
-##
-##Params:
-##
-##Returns:
-##
-errorCheckAndAddPloidyAdjRawCPNToSegDF <- function(pt.id, orig.cpn.segs.df){
-
-  #TODO add checks that that:
-  #all samples have the same number of chromosomes
-  #There is more than one sample
-  #minor is never larger than major cn
-  #end value seg end postion is always greater than start
-  #chromosomes and segments are sorted correctly
-  #No NA values
-  #Purity no greater than 1, flag if it is.
-  #Check if there are snps in all segements
-
-  orig.cpn.segs.df <- orig.cpn.segs.df[orig.cpn.segs.df$patient==pt.id,,drop=FALSE]
-
-  samples <- unique(orig.cpn.segs.df$sample)
-
-  orig.cpn.segs.df$tot_raw_cpn <- as.numeric(orig.cpn.segs.df$nAraw) + as.numeric(orig.cpn.segs.df$nBraw)
-  orig.cpn.segs.df$min_raw_cpn <- apply(cbind(orig.cpn.segs.df$nAraw, orig.cpn.segs.df$nBraw), 1, min)
-  orig.cpn.segs.df$max_raw_cpn <- apply(cbind(orig.cpn.segs.df$nAraw, orig.cpn.segs.df$nBraw), 1, max)
-  orig.cpn.segs.df$cpn_to_use <- orig.cpn.segs.df$tot_raw_cpn
-
-  orig.cpn.segs.df$ploidy_adj_tot_cpn <- log2(as.numeric(orig.cpn.segs.df$tot_raw_cpn) / as.numeric(orig.cpn.segs.df$Ploidy))
-
-  return(orig.cpn.segs.df)
-}
+# ##
+# ##Params:
+# ##
+# ##Returns:
+# ##
+# errorCheckAndAddPloidyAdjRawCPNToSegDF <- function(pt.id, orig.cpn.segs.df){
+#
+#   #TODO add checks that that:
+#   #all samples have the same number of chromosomes
+#   #There is more than one sample
+#   #minor is never larger than major cn
+#   #end value seg end postion is always greater than start
+#   #chromosomes and segments are sorted correctly
+#   #No NA values
+#   #Purity no greater than 1, flag if it is.
+#   #Check if there are snps in all segements
+#
+#   orig.cpn.segs.df <- orig.cpn.segs.df[orig.cpn.segs.df$patient==pt.id,,drop=FALSE]
+#
+#   samples <- unique(orig.cpn.segs.df$sample)
+#
+#   orig.cpn.segs.df$tot_raw_cpn <- as.numeric(orig.cpn.segs.df$nAraw) + as.numeric(orig.cpn.segs.df$nBraw)
+#   orig.cpn.segs.df$min_raw_cpn <- apply(cbind(orig.cpn.segs.df$nAraw, orig.cpn.segs.df$nBraw), 1, min)
+#   orig.cpn.segs.df$max_raw_cpn <- apply(cbind(orig.cpn.segs.df$nAraw, orig.cpn.segs.df$nBraw), 1, max)
+#   orig.cpn.segs.df$cpn_to_use <- orig.cpn.segs.df$tot_raw_cpn
+#
+#   orig.cpn.segs.df$ploidy_adj_tot_cpn <- log2(as.numeric(orig.cpn.segs.df$tot_raw_cpn) / as.numeric(orig.cpn.segs.df$Ploidy))
+#
+#   return(orig.cpn.segs.df)
+# }
 
 
 
@@ -1394,6 +1394,8 @@ getOverlapGRanges <- function(query, subject, output="gr", ...) {
 
 # }#end cleanAndErrorCheckSNPsParallel <- function(all.samp.SNP.list, min.cons.seg.df,
 
+
+
 # Read in a set of ascat.bc files and create the requisite all.samp.SNP.list
 #
 # > x <- readRDS("LTX121_all_samp_SNP_list.RDS")
@@ -1406,13 +1408,6 @@ getOverlapGRanges <- function(query, subject, output="gr", ...) {
 #   ..$ logR         : num [1:938946] -0.049 -0.161 -0.161 -0.542 -0.46 -0.46 -0.46 -0.166 -0.047 -0.013 ...
 #   ..$ BAFsegmented : num [1:938946] 0.231 0.231 0.231 0.231 0.231 ...
 #   ..$ logRsegmented: num [1:938946] -0.327 -0.327 -0.327 -0.327 -0.327 ...
-#  $ A_LTX121_SU_T1-R2:'data.frame':      938946 obs. of  6 variables:
-#   ..$ chrom        : num [1:938946] 1 1 1 1 1 1 1 1 1 1 ...
-#   ..$ pos          : int [1:938946] 762273 762496 762497 777237 777318 777335 777361 777456 783071 783147 ...
-#   ..$ BAF          : num [1:938946] NA NA NA NA NA NA NA NA NA NA ...
-#   ..$ logR         : num [1:938946] 0.061 -0.052 -0.052 -0.214 -0.068 -0.068 -0.068 -0.073 -0.054 -0.05 ...
-#   ..$ BAFsegmented : num [1:938946] 0.333 0.333 0.333 0.333 0.333 ...
-#   ..$ logRsegmented: num [1:938946] -0.22 -0.22 -0.22 -0.22 -0.22 ...
 #
 readInASCAT <- function(sample_table, segs, samples) {
   all_snps <- list()
@@ -1446,7 +1441,48 @@ readInASCAT <- function(sample_table, segs, samples) {
     all_snps[[sample]] <- samp_data
   }
 
-  str(all_snps)
+  all_snps <- ascat_set_bafsegmented(segs, all_snps)
+
+  return(all_snps)
+}
+
+
+# Since the ASCAT data files I have don't include a BAFsegmented value, I
+# calculate this from scratch. There is one special value:
+#
+# if ASCAT calls the region as balanced (e.g. 1-1 or 2-2 allele-specific copy numbers)
+# -> force BAFsegmented to be 0.5
+#
+# this is used in the decision of which sample to use as a phasing reference,
+# and whether a segment should be phased at all (it won't be if all samples
+# have ASCAT calling the region balanced)
+ascat_set_bafsegmented <- function(segs, all_snps) {
+  sample_names <- names(all_snps)
+  for (samp_idx in seq_along(all_snps)) {
+    samp_segs <- segs[segs$sample == sample_names[[samp_idx]],]
+    for (seg_idx in seq_len(nrow(samp_segs))) {
+
+      seg <- samp_segs[seg_idx,]
+      samp_data <- all_snps[[samp_idx]]
+
+      # Segments include both the start and end positions
+      seg_data_idx <- (samp_data$chrom == seg$chr &
+                       samp_data$pos >= seg$startpos &
+                       samp_data$pos <= seg$endpos)
+
+      # If ASCAT doesn't call allelic imbalance, then we force BAFsegmented to
+      # 0.5 to indicate this. Otherwise, we use the mean BAF as the BAF for the
+      # segment
+      #
+      # Also deal with segments with NA copy number (comes from sequenza)
+      if (is.na(seg$nMajor) | is.na(seg$nMinor) | seg$nMajor == seg$nMinor) {
+        all_snps[[samp_idx]][seg_data_idx, "BAFsegmented"] <- 0.5
+      } else {
+        mean_baf <- 0.5 - mean(abs(samp_data[seg_data_idx, "BAF"] - 0.5), na.rm = TRUE)
+        all_snps[[samp_idx]][seg_data_idx, "BAFsegmented"] <- mean_baf
+      }
+    }
+  }
 
   return(all_snps)
 }

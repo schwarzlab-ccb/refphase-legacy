@@ -126,7 +126,7 @@ source(paste0(current.dir, "data_input_and_QC_functions_v2.R"))
 source(paste0(current.dir, "consensus_phasing_from_multiple_samples_functions_v2.R"))
 source(paste0(current.dir, "generation_of_phased_and_total_cpn_functions_v2.R"))
 source(paste0(current.dir, "MSAI_detection_functions.R"))
-source(paste0(current.dir, "pairwise_cpn_comparison_and_heterogeneity_functions.R"))#Legacy code, not really used anymore as of 11/09/2018
+#source(paste0(current.dir, "pairwise_cpn_comparison_and_heterogeneity_functions.R"))#Legacy code, not really used anymore as of 11/09/2018
 source(paste0(current.dir, "cancer_cell_fraction_calculation_functions_v2.R"))
 source(paste0(current.dir, "final_output_segmentation_file_generation_functions_v3.R"))
 source(paste0(current.dir, "new_seg_joining_functions.R"))
@@ -175,7 +175,7 @@ if ( ! file.exists(PLOT_OUTPUT_DIR) ) {
 }
 NUM_CORES <- as.numeric(num.cores)
 
-output_dir <- file.path(PLOT_OUTPUT_DIR, patient)
+output_dir <- PLOT_OUTPUT_DIR
 if (!dir.exists(output_dir))
   dir.create(output_dir, recursive = TRUE)
 
