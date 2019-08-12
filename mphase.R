@@ -1528,6 +1528,25 @@ if (PLOTTING_FLAG == TRUE) {
 # We need a .tsv version of this data for interoperability with python
 write.table(full.joint.segs.df, file=file.path(PLOT_OUTPUT_DIR, "full_joint_segs.tsv"), row.names=FALSE, sep="\t")
 cat("MPhase comparison with snpphase: Finished for now. Got the <patient>_full_joint_segs_df.RDS object.\n")
+
+# post.MPhase.MCS.MEDICC.FASTA.files.list <- makeMEDICCInputListsFromSegmentationDF(segs.to.make.MEDICC.input.df = pj.fjs.df[ ( ! is.na(pj.fjs.df$n.het)) & pj.fjs.df$n.het >= 5 ,],
+#post.MPhase.MCS.MEDICC.FASTA.files.list <- makeMEDICCInputListsFromSegmentationDF(segs.to.make.MEDICC.input.df = all.samp.mcs.joined.cpnA.cpnB.df,
+post.MPhase.MCS.MEDICC.FASTA.files.list <- makeMEDICCInputListsFromSegmentationDF(segs.to.make.MEDICC.input.df = full.joint.segs.df,
+										sample.vec = sample.vec,
+										chrs.to.use.vec = CHRS_TO_USE_VEC,
+										chr.col = "chrom",
+										start.col = "startpos",
+										end.col = "endpos",
+										cpnA.col = "ph_int_cpnA",
+										cpnB.col = "ph_int_cpnB"
+										)
+post.MPhase.MCS.MEDICC.FASTA.files.list.path <- paste0(PLOT_OUTPUT_DIR, patient, "_post_MPhase_MCS_MEDICC_FASTA_file_list.RDS")
+#post.MPhase.MEDICC.FASTA.files.list
+saveRDS(post.MPhase.MCS.MEDICC.FASTA.files.list, file = post.MPhase.MCS.MEDICC.FASTA.files.list.path)
+
+createMEDICCInputFiles(post.MPhase.MCS.MEDICC.FASTA.files.list, sample.vec, file.path(PLOT_OUTPUT_DIR, "medicc_input"))
+
+
 #quit(save = "no", status = 0, runLast = FALSE)
 #
 # ###Additional calling that needs adding:

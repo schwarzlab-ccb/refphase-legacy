@@ -48,6 +48,56 @@ makeMEDICCInputListsFromSegmentationDF <- function(segs.to.make.MEDICC.input.df,
 }#End makeMEDICCInputListsFromSegmentationDF
 
 
+# Create input files in the exact format that MEDICC expects them
+# Includes:
+# _desc.txt file:
+# chr_1 CB1001_chr1_A.fasta CB1001_chr1_B.fasta
+# chr_2 CB1001_chr2_A.fasta CB1001_chr2_B.fasta
+# chr_3 CB1001_chr3_A.fasta CB1001_chr3_B.fasta
+# chr_4 CB1001_chr4_A.fasta CB1001_chr4_B.fasta
+# chr_5 CB1001_chr5_A.fasta CB1001_chr5_B.fasta
+# chr_6 CB1001_chr6_A.fasta CB1001_chr6_B.fasta
+#
+# and a .fasta file for each haplotype: (e.g. CB1001_chr1_A.fasta)
+# >diploid
+# 1111
+# >CB1001-11-D01-X1
+# 2111
+# >CB1001-16-D01-X1
+# 2211
+# >CB1001-15-D01-X1
+# 2211
+# >CB1001-17-D01-X1
+# 2211
+# >CB1001-18-D01-X1
+# 2211
+createMEDICCInputFiles <- function(medicc_fasta, samples, output_dir) {
+  if (!dir.exists(output_dir))
+    dir.create(output_dir, showWarnings = FALSE, recursive = TRUE)
+
+  # Create the desc.txt file
+  desc_file <- file.path(output_dir, "desc.txt")
+  for (chromosome in medicc_fasta) {
+    chrom <- paste0("chr", chromosome$chrom)
+    fasta_file_a <- file.path(output_dir, paste0(chrom, "_A.fasta"))
+    fasta_file_b <- file.path(output_dir, paste0(chrom, "_B.fasta"))
+    cat(chrom, fasta_file_a, fasta_file_b, "\n", file=desc_file, append=TRUE)
+
+    cat(chromosome[["diploid"]]$samp, "\n", file=fasta_file_a, append = TRUE)
+    cat(chromosome[["diploid"]]$cpnA, "\n", file=fasta_file_a, append = TRUE)
+    cat(chromosome[["diploid"]]$samp, "\n", file=fasta_file_b, append = TRUE)
+    cat(chromosome[["diploid"]]$cpnB, "\n", file=fasta_file_b, append = TRUE)
+
+    for (sample in samples) {
+      cat(chromosome[[sample]]$samp, "\n", file=fasta_file_a, append = TRUE)
+      cat(chromosome[[sample]]$cpnA_string, "\n", file=fasta_file_a, append = TRUE)
+      cat(chromosome[[sample]]$samp, "\n", file=fasta_file_b, append = TRUE)
+      cat(chromosome[[sample]]$cpnB_string, "\n", file=fasta_file_b, append = TRUE)
+    }
+  }
+}
+
+
 
 #Calculates the WGII, GII, FLOH and FLOH scores based on the integer copy number calls fed into it, must take a dataframe of with column names:
 # c("sample","chrom", "startpos", "endpos", "n.het", "cnTotal", "nMajor","nMinor", "Ploidy", "ACF", "nAraw", "nBraw")

@@ -20,7 +20,7 @@ set.seed(args$seed)
 
 plot_track_logr <- function(data_sample, segs_sample) {
   par(mar = c(1, 5, 1, 0.1), xaxs = "i")
-  plot(data_sample$pos, data_sample$logR, ylab = "logR", xaxt = "n", col = adjustcolor("grey", 0.6), pch = 20)
+  plot(data_sample$pos, data_sample$logR, ylab = "logR", xaxt = "n", col = adjustcolor("darkgrey", 0.2), pch = 20)
   #lines(x = data_sample$pos, y = data_sample$logRsegmented, col=ifelse(is.na(data_sample$logRsegmented), "white", "black"))
   segments(x0 = segs_sample$startpos, y0 = segs_sample$median_non_hz_logr, x1 = segs_sample$endpos, col = "black")
   abline(v = segs_sample$startpos, lty = 2, col = "black")
@@ -67,6 +67,9 @@ plot_sample_info <- function(sample, ploidy, cellularity) {
        cex = 1.3, col = "black", srt = 90)
 }
 
+if (!dir.exists(conf$output_dir))
+  dir.create(conf$output_dir, recursive = TRUE, showWarnings = FALSE)
+
 # Read in all the data we need to plot
 baf_logr <- readRDS(file.path(conf$input_dir, paste0(conf$patient_id, "_phased_BAF_df_list.RDS")))
 segs <- readRDS(file.path(conf$input_dir, paste0(conf$patient_id, "_full_joint_segs_df.RDS")))
@@ -75,55 +78,79 @@ str(baf_logr)
 str(segs)
 segs$seg_center <- segs$startpos + (segs$endpos - segs$startpos) / 2
 
-samples <- names(baf_logr)
-output_plot <- file.path(conf$output_dir, "whole_genome.pdf")
-pdf(output_plot, width=10, height=15)
-par(cex = 0.7)
+# Convert chromosomal positions to absolute positions for plotting the whole genome
+chrom_ends <- cumsum(by(segs$endpos, segs$chr, max))
+chrom_starts <- c(0, chrom_ends[-length(chrom_ends)])
+names(chrom_starts) <- names(chrom_ends)
+segs$chrom_startpos <- chrom_starts[segs$chr]
+
 
 num_subfigures <- 2  # BAF and logR subfigures only
-chrom_to_plot <- 9
+#chrom_to_plot <- 1
+#chrom_to_plot <- NA  # NA == whole genome
 
 # Split the output figure into one row per sample
 #split.screen(c(length(samples) * num_subfigures, 1))
-split.screen(c(length(samples), 1))
+samples <- names(baf_logr)
+#dir.create(conf$output_dir, "by-chromosome")
 
-for (sample_idx in seq_along(samples)) {
-  sample <- samples[[sample_idx]]
-  data_sample <- baf_logr[[sample_idx]]
-  segs_sample <- segs[segs$sample == sample,]
+for (chrom_to_plot in c(NA, names(chrom_starts))) {
+  output_plot <- file.path(conf$output_dir, paste0(ifelse(is.na(chrom_to_plot), "whole-genome", chrom_to_plot), ".png"))
+  #pdf(output_plot, width = 10, height = 15)
+  if (is.na(chrom_to_plot)) {
+    png(output_plot, width = 2000, height = length(samples) * 400)
+  } else {
+    png(output_plot, width = 1000, height = length(samples) * 200)
+  }
+  par(cex = 0.7)
 
-  # Split the plotting area vertically (sample name + info on left, plots on right)
-  screen(sample_idx)
-  #screen_idxs <- split.screen(matrix(c(0, 0.1, 1, 1, 0.1, 1, 1, 1), ncol = 4, byrow = TRUE))
-  split_coords <- matrix(c(0, 0.1, 0, 1, 0.1, 1, 0, 1), ncol = 4, byrow = TRUE)
-  screen_idxs <- split.screen(split_coords)
+  split.screen(c(length(samples), 1))
 
-  screen(screen_idxs[[1]])
-  plot_sample_info(sample, segs_sample$Ploidy[[1]], segs_sample$ACF[[1]])
+  for (sample_idx in seq_along(samples)) {
+    sample <- samples[[sample_idx]]
+    data_sample <- baf_logr[[sample_idx]]
+    segs_sample <- segs[segs$sample == sample, ]
 
-  screen(screen_idxs[[2]])
-  subfigure_idx <- split.screen(c(num_subfigures, 1))
+    # Split the plotting area vertically (sample name + info on left, plots on right)
+    screen(sample_idx)
+    #screen_idxs <- split.screen(matrix(c(0, 0.1, 1, 1, 0.1, 1, 1, 1), ncol = 4, byrow = TRUE))
+    split_coords <- matrix(c(0, 0.1, 0, 1, 0.1, 1, 0, 1), ncol = 4, byrow = TRUE)
+    screen_idxs <- split.screen(split_coords)
 
-  # Remove the many NA regions
-  segs_sample <- segs_sample[!is.na(segs_sample$cnTotal),]
+    screen(screen_idxs[[1]])
+    plot_sample_info(sample, segs_sample$Ploidy[[1]], segs_sample$ACF[[1]])
 
-  # Just plot one chromosome for now
-  data_sample <- data_sample[data_sample$chrom == chrom_to_plot, ]
-  segs_sample <- segs_sample[segs_sample$chr == chrom_to_plot, ]
+    screen(screen_idxs[[2]])
+    subfigure_idx <- split.screen(c(num_subfigures, 1))
 
-  # Further split this plot into separate plots for logR, BAF and llratio(not necessary with mphase?)
-  print(table(data_sample$sample_phased_by_this_sample))
+    # Remove the many NA regions
+    segs_sample <- segs_sample[!is.na(segs_sample$cnTotal), ]
 
-  # logR track
-  screen(subfigure_idx[[1]])
-  plot_track_logr(data_sample, segs_sample)
+    # Just plot one chromosome for now
+    if (is.na(chrom_to_plot)) {
+      data_sample$pos <- data_sample$pos + chrom_starts[data_sample$chrom]
+      segs_sample$startpos <- segs_sample$startpos + segs_sample$chrom_startpos
+      segs_sample$endpos <- segs_sample$endpos + segs_sample$chrom_startpos
+      segs_sample$seg_center <- segs_sample$seg_center + segs_sample$chrom_startpos
+    } else {
+      data_sample <- data_sample[data_sample$chrom == chrom_to_plot, ]
+      segs_sample <- segs_sample[segs_sample$chr == chrom_to_plot, ]
+    }
 
-  # BAF track
-  screen(subfigure_idx[[2]])
-  plot_track_baf(data_sample, segs_sample)
+    # Further split this plot into separate plots for logR, BAF and llratio(not necessary with mphase?)
+    #print(table(data_sample$sample_phased_by_this_sample))
 
+    # logR track
+    screen(subfigure_idx[[1]])
+    plot_track_logr(data_sample, segs_sample)
+
+    # BAF track
+    screen(subfigure_idx[[2]])
+    plot_track_baf(data_sample, segs_sample)
+
+  }
+
+  close.screen(all = TRUE)
+  dev.off()
 }
-
-close.screen(all = TRUE)
-dev.off()
 
