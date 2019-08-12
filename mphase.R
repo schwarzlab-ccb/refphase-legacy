@@ -10,6 +10,8 @@ option_list <- list(
                 help="Use dip test (default=TRUE)"),
     make_option(c("--output-dir"), default="../output/CB1002/mphase",
                 help="Output directory"),
+    make_option(c("--medicc-output-dir"), default="../output/CB1002/mphase",
+                help="Output directory"),
     make_option(c("--input-format"), default="ASCAT",
                 help="Input data format (default=MEDICC)"),
     make_option(c("--snp-data"), default="../input/nb-schulte//CB1002_input_paths_df.txt",
@@ -1529,9 +1531,12 @@ if (PLOTTING_FLAG == TRUE) {
 write.table(full.joint.segs.df, file=file.path(PLOT_OUTPUT_DIR, "full_joint_segs.tsv"), row.names=FALSE, sep="\t")
 cat("MPhase comparison with snpphase: Finished for now. Got the <patient>_full_joint_segs_df.RDS object.\n")
 
+
+# Hack! Hope this works...
+full.joint.segs.nona <- full.joint.segs.df[!is.na(full.joint.segs.df$ph_int_cpnA),]
 # post.MPhase.MCS.MEDICC.FASTA.files.list <- makeMEDICCInputListsFromSegmentationDF(segs.to.make.MEDICC.input.df = pj.fjs.df[ ( ! is.na(pj.fjs.df$n.het)) & pj.fjs.df$n.het >= 5 ,],
 #post.MPhase.MCS.MEDICC.FASTA.files.list <- makeMEDICCInputListsFromSegmentationDF(segs.to.make.MEDICC.input.df = all.samp.mcs.joined.cpnA.cpnB.df,
-post.MPhase.MCS.MEDICC.FASTA.files.list <- makeMEDICCInputListsFromSegmentationDF(segs.to.make.MEDICC.input.df = full.joint.segs.df,
+post.MPhase.MCS.MEDICC.FASTA.files.list <- makeMEDICCInputListsFromSegmentationDF(segs.to.make.MEDICC.input.df = full.joint.segs.nona,
 										sample.vec = sample.vec,
 										chrs.to.use.vec = CHRS_TO_USE_VEC,
 										chr.col = "chrom",
@@ -1544,7 +1549,7 @@ post.MPhase.MCS.MEDICC.FASTA.files.list.path <- paste0(PLOT_OUTPUT_DIR, patient,
 #post.MPhase.MEDICC.FASTA.files.list
 saveRDS(post.MPhase.MCS.MEDICC.FASTA.files.list, file = post.MPhase.MCS.MEDICC.FASTA.files.list.path)
 
-createMEDICCInputFiles(post.MPhase.MCS.MEDICC.FASTA.files.list, sample.vec, file.path(PLOT_OUTPUT_DIR, "medicc_input"))
+createMEDICCInputFiles(post.MPhase.MCS.MEDICC.FASTA.files.list, sample.vec, conf$medicc_output_dir)
 
 
 #quit(save = "no", status = 0, runLast = FALSE)

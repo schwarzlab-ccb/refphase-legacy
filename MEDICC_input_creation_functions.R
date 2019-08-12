@@ -72,6 +72,8 @@ makeMEDICCInputListsFromSegmentationDF <- function(segs.to.make.MEDICC.input.df,
 # >CB1001-18-D01-X1
 # 2211
 createMEDICCInputFiles <- function(medicc_fasta, samples, output_dir) {
+  message("Saving MEDICC input files.")
+
   if (!dir.exists(output_dir))
     dir.create(output_dir, showWarnings = FALSE, recursive = TRUE)
 
@@ -81,7 +83,10 @@ createMEDICCInputFiles <- function(medicc_fasta, samples, output_dir) {
     chrom <- paste0("chr", chromosome$chrom)
     fasta_file_a <- file.path(output_dir, paste0(chrom, "_A.fasta"))
     fasta_file_b <- file.path(output_dir, paste0(chrom, "_B.fasta"))
-    cat(chrom, fasta_file_a, fasta_file_b, "\n", file=desc_file, append=TRUE)
+    # We don't need full paths to the input .fasta files, they are assumed to
+    # be in the same dir as the desc.txt file itself
+    #cat(chrom, fasta_file_a, fasta_file_b, "\n", file=desc_file, append=TRUE)
+    cat(chrom, paste0(chrom, "_A.fasta"), paste0(chrom, "_B.fasta"), "\n", file=desc_file, append=TRUE)
 
     cat(chromosome[["diploid"]]$samp, "\n", file=fasta_file_a, append = TRUE)
     cat(chromosome[["diploid"]]$cpnA, "\n", file=fasta_file_a, append = TRUE)
