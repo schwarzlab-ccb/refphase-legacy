@@ -1,0 +1,139 @@
+
+cn_text <- function(x, y, labels, cex = 1.5, col = "black") {
+  text(x = x, y = y, labels = labels, cex = cex * 1.1, font = 2, col = "white")
+  text(x = x, y = y, labels = labels, cex = cex, col = col)
+}
+
+plot_track_logr <- function(data_sample, segs_sample) {
+  #par(mar = c(1, 5, 1, 0.1), xaxs = "i")
+  par(mar = c(2, 5, 1, 1))
+  plot(data_sample$pos, data_sample$logR, ylab = "logR", xaxt = "n", col = adjustcolor("darkgrey", 0.2), pch = 20, ylim = c(-2, 2))
+  #lines(x = data_sample$pos, y = data_sample$logRsegmented, col=ifelse(is.na(data_sample$logRsegmented), "white", "black"))
+  segments(x0 = segs_sample$startpos, y0 = segs_sample$median_non_hz_logr, x1 = segs_sample$endpos, col = "black")
+  abline(v = unique(c(segs_sample$startpos, segs_sample$endpos)), lty = 2, col = "black")
+
+  # MPhase copy numbers
+  total_cn <- as.character(segs_sample$cnTotal)
+
+  # Original copy numbers, when they have been changed by MPhase
+  changed_cn <- segs_sample$nMinor_change | segs_sample$nMajor_change
+  changed_cn[is.na(changed_cn)] <- FALSE
+  if (sum(changed_cn, na.rm = TRUE) > 0) {
+    message("Found some adjusted copy numbers!")
+    total_cn[changed_cn] <- paste0(total_cn[changed_cn], " (", segs_sample$orig_cnTotal[changed_cn], ")")
+  }
+  cn_text(x = segs_sample$seg_center, y = 1.5, labels = total_cn)
+}
+
+plot_track_baf <- function(data_sample, segs_sample, msai) {
+  par(mar = c(2, 5, 1, 1))
+  #par(mar = c(2, 5, 0.1, 0.1), xaxs = "i")
+  phasing_col <- ifelse(data_sample$maj_is_cpnB_logic_vec == 1, "blue", "orange")
+  #phasing_col <- ifelse(data_sample$, "blue", "yellow")
+  phasing_col[data_sample$sample_phased_by_this_sample == "none_no_allelic_imbalance_called"] <- "grey"
+  phasing_col <- adjustcolor(phasing_col, 0.6)
+  plot(data_sample$pos, data_sample$BAF, ylab = "BAF", col = phasing_col, ylim = c(0, 1), pch = 20)
+  #lines(x = data_sample$pos, y = data_sample$BAFsegmented, col="black")
+
+  # Mean segments
+  mean_col <- ifelse(segs_sample$within_samp_cl_AI_present, "black", NA)
+  segments(x0 = segs_sample$startpos, y0 = segs_sample$mean_BAF + 0.5, x1 = segs_sample$endpos, col = mean_col)
+  segments(x0 = segs_sample$startpos, y0 = -1 * segs_sample$mean_BAF + 0.5, x1 = segs_sample$endpos, col = mean_col)
+
+  # Segment boundaries
+  abline(v = unique(c(segs_sample$startpos, segs_sample$endpos)), lty = 2, col = "black")
+
+  # MPhase copy numbers
+  major_cn <- as.character(segs_sample$nMajor)
+  minor_cn <- as.character(segs_sample$nMinor)
+
+  # Original copy numbers, when they have been changed by MPhase
+  changed_cn <- segs_sample$nMinor_change | segs_sample$nMajor_change
+  changed_cn[is.na(changed_cn)] <- FALSE
+  if (sum(changed_cn, na.rm = TRUE) > 0) {
+    message("Found some adjusted copy numbers!")
+    major_cn[changed_cn] <- paste0(major_cn[changed_cn], " (", segs_sample$orig_nMajor[changed_cn], ")")
+    minor_cn[changed_cn] <- paste0(minor_cn[changed_cn], " (", segs_sample$orig_nMinor[changed_cn], ")")
+  }
+  cn_text(x = segs_sample$seg_center, y = 0.9, labels = major_cn)
+  cn_text(x = segs_sample$seg_center, y = 0.1, labels = minor_cn)
+
+  cn_text(x = segs_sample$seg_center, y = 0.5, labels = ifelse(segs_sample$MSAI, "msai", ""), col = "darkgreen")
+  ## Indicate MSAI events
+  #seg_names <- paste(segs_sample$chr, segs_sample$startpos, segs_sample$endpos, sep=":")
+  #msai_segs <- msai[seg_names]
+  #msai_segs <- msai_segs[sapply(msai_segs, function(x) { "MSAI_by_sample_df" %in% names(x) })]
+  #msai_segs <- msai_segs[sapply(msai_segs, function(x) { "MSAI_by_sample_df" %in% names(x) })]
+  #msai_seg <- msai[
+}
+
+# --------------------------------------------------------------------------
+# Whole genome versions of the tracks
+
+plot_track_logr_whole_genome <- function(data_sample, segs_sample, chrom_info) {
+  par(mar = c(1, 5, 1, 0.1), xaxs = "i")
+  plot(data_sample$pos, data_sample$logR, ylab = "logR", xaxt = "n", col = adjustcolor("darkgrey", 0.2), pch = ".", ylim = c(-2, 2))
+  #lines(x = data_sample$pos, y = data_sample$logRsegmented, col=ifelse(is.na(data_sample$logRsegmented), "white", "black"))
+  segments(x0 = segs_sample$startpos, y0 = segs_sample$median_non_hz_logr, x1 = segs_sample$endpos, col = "black")
+  abline(v = chrom_info$start, lty = 2, col = "black")
+  cn_text(x = chrom_info$center, y = 1, labels = chrom_info$label, cex=1.0)
+  #cn_text(x = segs_sample$seg_center, y = 1, labels = segs_sample$cnTotal)
+
+  # Changed copy numbers
+  ##changed_cn <- segs_sample$nMinor_change | segs_sample$nMajor_change
+  #changed_cn[is.na(changed_cn)] <- FALSE
+  #if (sum(changed_cn, na.rm = TRUE) > 0) {
+  #  message("Found some adjusted copy numbers!")
+  #  cn_text(x = segs_sample$seg_center[changed_cn], y = -1, labels = segs_sample$orig_cnTotal[changed_cn])
+  #}
+}
+
+plot_track_baf_whole_genome <- function(data_sample, segs_sample, chrom_info) {
+  par(mar = c(2, 5, 0.1, 0.1), xaxs = "i")
+  phasing_col <- ifelse(data_sample$maj_is_cpnB_logic_vec == 1, "blue", "orange")
+  #phasing_col <- ifelse(data_sample$, "blue", "yellow")
+  phasing_col[data_sample$sample_phased_by_this_sample == "none_no_allelic_imbalance_called"] <- "grey"
+  phasing_col <- adjustcolor(phasing_col, 0.6)
+  plot(data_sample$pos, data_sample$BAF, ylab = "BAF", col = phasing_col, ylim = c(0, 1), pch = ".")
+  #lines(x = data_sample$pos, y = data_sample$BAFsegmented, col="black")
+
+  # Mean segments
+  mean_col <- ifelse(segs_sample$within_samp_cl_AI_present, "black", NA)
+  segments(x0 = segs_sample$startpos, y0 = segs_sample$mean_BAF + 0.5, x1 = segs_sample$endpos, col = mean_col)
+  segments(x0 = segs_sample$startpos, y0 = -1 * segs_sample$mean_BAF + 0.5, x1 = segs_sample$endpos, col = mean_col)
+
+  # Chromosome boundaries
+  abline(v = chrom_info$start, lty = 2, col = "black")
+
+#  # Original copy numbers
+#  cn_text(x = segs_sample$seg_center, y = 0.9, labels = segs_sample$nMajor)
+#  cn_text(x = segs_sample$seg_center, y = 0.1, labels = segs_sample$nMinor)
+#
+#  # Changed copy numbers
+#  changed_cn <- segs_sample$nMinor_change | segs_sample$nMajor_change
+#  changed_cn[is.na(changed_cn)] <- FALSE
+#  if (sum(changed_cn, na.rm = TRUE) > 0) {
+#    message("Found some adjusted copy numbers!")
+#    cn_text(x = segs_sample$seg_center[changed_cn], y = 0.7, labels = segs_sample$orig_nMajor[changed_cn])
+#    cn_text(x = segs_sample$seg_center[changed_cn], y = 0.3, labels = segs_sample$orig_nMinor[changed_cn])
+#  }
+}
+
+# --------------------------------------------------------------------------
+
+plot_sample_info <- function(sample, ploidy, cellularity) {
+  par(mar = c(0,0,0,0))
+  plot(c(0, 1), c(0, 1), ann = F, bty = 'n', type = 'n', xaxt = 'n', yaxt = 'n')
+
+  text(x = 0.5, y = 0.5, adj = 0.5,
+       labels = paste0(sample, "\n", "cellularity:", round(cellularity, 2), "  ploidy:", round(ploidy, 2)),
+       cex = 1.3, col = "black", srt = 90)
+}
+
+plot_chromosome_header <- function(sample, chromosome, cex = 1.5) {
+  par(mar = c(0,0,0,0))
+  plot(c(0, 1), c(0, 1), ann = F, bty = 'n', type = 'n', xaxt = 'n', yaxt = 'n')
+
+  text(x = 0.5, y = 0.5, adj = 0.5, labels = paste0(sample, ": ", chromosome),
+       cex = cex, col = "black")
+}
