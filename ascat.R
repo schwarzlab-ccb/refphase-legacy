@@ -43,17 +43,17 @@ if(read.from.disk){
   Germline_BAF = NULL
 
   if(!is.null(Germline_LogR_file)) {
-  	if(read.from.disk){
+    if(read.from.disk){
     # read in SNP array data files
-  	 print.noquote("Reading Germline LogR data...")
+     print.noquote("Reading Germline LogR data...")
      Germline_LogR <- read.table(Germline_LogR_file, header=T, row.names=1, comment.char="", sep = "\t", check.names=F)
      print.noquote("Reading Germline BAF data...")
      Germline_BAF <- read.table(Germline_BAF_file, header=T, row.names=1, comment.char="", sep = "\t", check.names=F)
-	}
-	if(!read.from.disk){
-	  Germline_LogR <- Germline_LogR_file
-	  Germline_BAF <- Germline_BAF_file
-	}
+  }
+  if(!read.from.disk){
+    Germline_LogR <- Germline_LogR_file
+    Germline_BAF <- Germline_BAF_file
+  }
 
 
     #infinite values are a problem - change those
@@ -206,8 +206,8 @@ ascat.GCcorrect = function(ASCATobj, GCcontentfile = NULL, read.from.disk =FALSE
     print.noquote("Error: no GC content file given!")
   }
   else {
-  	if(read.from.disk){GC_newlist<-read.table(file=GCcontentfile,header=TRUE,as.is=TRUE)}
-  	if(!read.from.disk){GC_newlist <- GCcontentfile}
+    if(read.from.disk){GC_newlist<-read.table(file=GCcontentfile,header=TRUE,as.is=TRUE)}
+    if(!read.from.disk){GC_newlist <- GCcontentfile}
     colnames(GC_newlist)[c(1,2)] = c("Chr","Position")
     GC_newlist$Chr<-as.character(GC_newlist$Chr)
     GC_newlist$Position<-as.numeric(as.character(GC_newlist$Position))
@@ -342,14 +342,14 @@ ascat.aspcf = function(ASCATobj, selectsamples = 1:length(ASCATobj$samples), asc
           #this has a problem with NAs
           lrwins = vector(mode="numeric",length=length(lr))
           lrwins[is.na(lr)] = NA
-	  lrwins[!is.na(lr)] = madWins(lr[!is.na(lr)],2.5,25)$ywin
+    lrwins[!is.na(lr)] = madWins(lr[!is.na(lr)],2.5,25)$ywin
           baf = tbsam[ASCATobj$chr[[chrke]]]
           homo = homosam[ASCATobj$chr[[chrke]]]
           Select_het <- !homo & !is.na(homo) & !is.na(baf) & !is.na(lr)
           bafsel = baf[Select_het]
           # winsorize BAF as well (as a safeguard)
-	  bafselwinsmirrored = madWins(ifelse(bafsel>0.5,bafsel,1-bafsel),2.5,25)$ywin
-	  bafselwins = ifelse(bafsel>0.5,bafselwinsmirrored,1-bafselwinsmirrored)
+    bafselwinsmirrored = madWins(ifelse(bafsel>0.5,bafsel,1-bafsel),2.5,25)$ywin
+    bafselwins = ifelse(bafsel>0.5,bafselwinsmirrored,1-bafselwinsmirrored)
           indices = which(Select_het)
           logRaveraged = NULL;
           if(length(indices)!=0) {
@@ -931,10 +931,20 @@ create_distance_matrix = function(segments, gamma) {
 # gamma: technology parameter, compaction of Log R profiles (expected decrease in case of deletion in diploid sample, 100 % aberrant cells; 1 in ideal case, 0.55 of Illumina 109K arrays)
 runASCAT = function(lrr, baf, lrrsegmented, bafsegmented, gender, SNPpos, chromosomes, chrnames, sexchromosomes, failedqualitycheck = F, 
                     distancepng = NA, copynumberprofilespng = NA, nonroundedprofilepng = NA, aberrationreliabilitypng = NA, gamma = 0.55,
-		    rho_manual = NA, psi_manual = NA) {
+        rho_manual = NA, psi_manual = NA) {
   ch = chromosomes
   chrs = chrnames
   b = bafsegmented
+    print("length(bafsegmented)")
+  print(length(bafsegmented))
+  print("length(baf)")
+  print(length(baf))
+  print(str(bafsegmented, max=1))
+  raw_b = baf[as.numeric(attributes(bafsegmented)$names)]
+  raw_b <- ifelse(raw_b>0.5,raw_b,1-raw_b)
+  raw_b <- 1-raw_b
+  print("length(raw_b)")
+  print(length(raw_b))
   r = lrrsegmented[names(bafsegmented)]
 
   library(RColorBrewer)
@@ -949,7 +959,7 @@ runASCAT = function(lrr, baf, lrrsegmented, bafsegmented, gender, SNPpos, chromo
   d = create_distance_matrix(s, gamma) # Write out to get manual psi/rho ### NJB
   sampleid <-  sub(".aberrationreliability.png$",'', aberrationreliabilitypng) ### Get sample ID
   save(d, file=paste(sampleid,'distance_matrix.RData',sep='.')) ## Saving distance matrix for future optimization of rhp & psi 
-	
+  
 
 
   if (!is.na(distancepng)) {
@@ -980,7 +990,7 @@ runASCAT = function(lrr, baf, lrrsegmented, bafsegmented, gender, SNPpos, chromo
 
   MINPLOIDY = 1.5
   MAXPLOIDY = 5.5
-  MINRHO = 0.10 ## NJB: Changed this to 0.15 from 0.2, 2015-02-11. Got several ok samples that could go lower from TRACERx ### Changed again to 0.10, 2015-05-05
+  #MINRHO = 0.05 ## TBKW: set in XPhase this is set in  Changed this to 0.15 from 0.2, 2015-02-11. Got several ok samples that could go lower from TRACERx ### Changed again to 0.10, 2015-05-05
   MINGOODNESSOFFIT = 80
   MINPERCZERO = 0.02
   MINPERCZEROABB = 0.1
@@ -994,21 +1004,21 @@ runASCAT = function(lrr, baf, lrrsegmented, bafsegmented, gender, SNPpos, chromo
 
   if(!failedqualitycheck && is.na(rho_manual)) {
 
-	###NJB edit 2015-05-05, Saving alternative solutions
-	inv.d <- 1/d
-	alt.ploidy <- cbind(as.numeric(rownames(inv.d)),apply(inv.d,1,max))
-	alt.cellularity <- cbind(as.numeric(colnames(inv.d)),apply(inv.d,2,max))
-	alt.p.indx <- which(diff(sign(diff(alt.ploidy[,2]))) == -2) + 1
-	alt.c.indx <- apply(inv.d[rownames(alt.ploidy[alt.p.indx,,drop=F]),,drop=F],1,function(x){ which(x == max(x))})
-	if(length(ascat.runAscat) > 0){
-		alt.sol <- cbind(alt.ploidy[alt.p.indx,1,drop=F], alt.cellularity[alt.c.indx,,drop=F])
-		colnames(alt.sol) <- c('Ploidy', 'Cellularity', 'Goodness_of_fit')
-		alt.sol <- alt.sol[order(alt.sol[,3],decreasing=T),,drop=F]
-		rownames(alt.sol) <- 1:nrow(alt.sol)
-		alt.sol[,3] <- (1-((1/alt.sol[,3])/TheoretMaxdist)) * 100
-		write.table(alt.sol, file=paste(sampleid, 'alternative_solutions.txt',sep='.'), quote=F,row.names=F,sep='\t')
-	}
-	#### end edit
+  ###NJB edit 2015-05-05, Saving alternative solutions
+  inv.d <- 1/d
+  alt.ploidy <- cbind(as.numeric(rownames(inv.d)),apply(inv.d,1,max))
+  alt.cellularity <- cbind(as.numeric(colnames(inv.d)),apply(inv.d,2,max))
+  alt.p.indx <- which(diff(sign(diff(alt.ploidy[,2]))) == -2) + 1
+  alt.c.indx <- apply(inv.d[rownames(alt.ploidy[alt.p.indx,,drop=F]),,drop=F],1,function(x){ which(x == max(x))})
+  if(length(ascat.runAscat) > 0){
+    alt.sol <- cbind(alt.ploidy[alt.p.indx,1,drop=F], alt.cellularity[alt.c.indx,,drop=F])
+    colnames(alt.sol) <- c('Ploidy', 'Cellularity', 'Goodness_of_fit')
+    alt.sol <- alt.sol[order(alt.sol[,3],decreasing=T),,drop=F]
+    rownames(alt.sol) <- 1:nrow(alt.sol)
+    alt.sol[,3] <- (1-((1/alt.sol[,3])/TheoretMaxdist)) * 100
+    write.table(alt.sol, file=paste(sampleid, 'alternative_solutions.txt',sep='.'), quote=F,row.names=F,sep='\t')
+  }
+  #### end edit
 
     # first, try with all filters
     for (i in 4:(dim(d)[1]-3)) {
@@ -1172,6 +1182,7 @@ runASCAT = function(lrr, baf, lrrsegmented, bafsegmented, gender, SNPpos, chromo
     optima[[1]] = c(m,rho,psi,ploidy,goodnessOfFit)
     localmin[1] = m
 
+
   }
 
 
@@ -1235,6 +1246,33 @@ runASCAT = function(lrr, baf, lrrsegmented, bafsegmented, gender, SNPpos, chromo
                     (rho-1+b*2^(r/gamma)*((1-rho)*2+rho*psi))/rho,
                     ifelse(nullprobes,0,
                            ifelse(b<0.5,0,(rho-1+((1-rho)*2+rho*psi)*2^(r/gamma))/rho)))
+    #TBKW edit...
+    print("length(raw_b)")
+    print(length(raw_b))
+    print("length(b)")
+    print(length(b))
+    nArawfull = ifelse(diploidprobes,
+                    (rho-1-(raw_b-1)*2^(r/gamma)*((1-rho)*2+rho*psi))/rho,
+                    ifelse(nullprobes,0,
+                           ifelse(raw_b<0.5,(rho-1+((1-rho)*2+rho*psi)*2^(r/gamma))/rho,0)))
+    nBrawfull = ifelse(diploidprobes,
+                    (rho-1+raw_b*2^(r/gamma)*((1-rho)*2+rho*psi))/rho,
+                    ifelse(nullprobes,0,
+                           ifelse(raw_b<0.5,0,(rho-1+((1-rho)*2+rho*psi)*2^(r/gamma))/rho)))
+
+
+
+    #TBKW edit... 
+    save(nA, file=paste0(sampleid, '.nA.Rdata'))
+    save(nB, file=paste0(sampleid, '.nB.Rdata'))
+    #TBKW edit... 
+    save(nArawfull, file=paste0(sampleid, '.nArawfull.Rdata'))
+    save(nBrawfull, file=paste0(sampleid, '.nBrawfull.Rdata'))
+    #TBKW edit... 
+    save(nBfull, file=paste0(sampleid, '.nBfull.Rdata'))
+    save(nAfull, file=paste0(sampleid, '.nAfull.Rdata'))
+
+
     nA = pmax(round(nAfull),0)
     nB = pmax(round(nBfull),0)
 
@@ -1561,8 +1599,8 @@ fastAspcf <- function(logR, allB, kmin, gamma){
   frst <- breakpts[1:length(breakpts)-1] + 1
   last <- breakpts[2:length(breakpts)]
   nseg <- length(frst)
-  	
-	yhat1 <- rep(NA,N)
+    
+  yhat1 <- rep(NA,N)
   yhat2 <- rep(NA,N)
 
   for(i in 1:nseg){ 
@@ -1591,125 +1629,125 @@ fastAspcf <- function(logR, allB, kmin, gamma){
 
 aspcfpart <- function(logRpart, allBflip, a, b, d, sd1, sd2, N, kmin, gamma){
 
-	from <- max(c(1,a))
+  from <- max(c(1,a))
   usefrom <- max(c(1,a+d))
   useto <- min(c(N,b-d))
   
   N <- length(logRpart)
-	y1 <- logRpart	
-	y2 <- allBflip
-	
-	#Check that vectors are long enough to run algorithm:
-	if(N < 2*kmin){
-	 breakpts <- 0
+  y1 <- logRpart  
+  y2 <- allBflip
+  
+  #Check that vectors are long enough to run algorithm:
+  if(N < 2*kmin){
+   breakpts <- 0
    return(list(breakpts=breakpts))  
-	}
+  }
  
-	# Find initSum, initKvad, initAve for segment y[1..kmin]
-	initSum1 <- sum(y1[1:kmin])
-	initKvad1 <- sum(y1[1:kmin]^2)
-	initAve1 <- initSum1/kmin     
-	initSum2 <- sum(y2[1:kmin])
-	initKvad2 <- sum(y2[1:kmin]^2)
-	initAve2 <- initSum2/kmin
+  # Find initSum, initKvad, initAve for segment y[1..kmin]
+  initSum1 <- sum(y1[1:kmin])
+  initKvad1 <- sum(y1[1:kmin]^2)
+  initAve1 <- initSum1/kmin     
+  initSum2 <- sum(y2[1:kmin])
+  initKvad2 <- sum(y2[1:kmin]^2)
+  initAve2 <- initSum2/kmin
 
-	# Define vector of best costs
-	bestCost <- rep(0,N)
-	cost1 <- (initKvad1 - initSum1*initAve1)/sd1^2
-	cost2 <- (initKvad2 - initSum2*initAve2)/sd2^2
-	bestCost[kmin] <- cost1 + cost2
+  # Define vector of best costs
+  bestCost <- rep(0,N)
+  cost1 <- (initKvad1 - initSum1*initAve1)/sd1^2
+  cost2 <- (initKvad2 - initSum2*initAve2)/sd2^2
+  bestCost[kmin] <- cost1 + cost2
 
-	# Define vector of best splits
-	bestSplit <- rep(0,N)
-		
-	# Define vector of best averages
-	bestAver1 <- rep(0,N)
-	bestAver2 <- rep(0,N)
-	bestAver1[kmin] <- initAve1
-	bestAver2[kmin] <- initAve2
+  # Define vector of best splits
+  bestSplit <- rep(0,N)
+    
+  # Define vector of best averages
+  bestAver1 <- rep(0,N)
+  bestAver2 <- rep(0,N)
+  bestAver1[kmin] <- initAve1
+  bestAver2[kmin] <- initAve2
 
-	
-	#Initialize
-	Sum1 <- rep(0,N)
+  
+  #Initialize
+  Sum1 <- rep(0,N)
   Sum2 <- rep(0,N)
-	Kvad1 <- rep(0,N)
+  Kvad1 <- rep(0,N)
   Kvad2 <- rep(0,N)
   Aver1 <- rep(0,N)
   Aver2 <- rep(0,N)
   Cost <- rep(0,N)
   
   # We have to treat the region y(1..2*kmin-1) separately, as it
-	# cannot be split into two full segments
+  # cannot be split into two full segments
   kminP1 <- kmin+1
   for (k in (kminP1):(2*kmin-1)) {
-		Sum1[kminP1:k] <- Sum1[kminP1:k]+y1[k]
-		Aver1[kminP1:k] <- Sum1[kminP1:k]/((k-kmin):1)
-		Kvad1[kminP1:k] <- Kvad1[kminP1:k]+y1[k]^2
-		Sum2[kminP1:k] <- Sum2[kminP1:k]+y2[k]
-		Aver2[kminP1:k] <- Sum2[kminP1:k]/((k-kmin):1)
-		Kvad2[kminP1:k] <- Kvad2[kminP1:k]+y2[k]^2
-		
-		
-		bestAver1[k] <- (initSum1+Sum1[kminP1])/k
-		bestAver2[k] <- (initSum2+Sum2[kminP1])/k
+    Sum1[kminP1:k] <- Sum1[kminP1:k]+y1[k]
+    Aver1[kminP1:k] <- Sum1[kminP1:k]/((k-kmin):1)
+    Kvad1[kminP1:k] <- Kvad1[kminP1:k]+y1[k]^2
+    Sum2[kminP1:k] <- Sum2[kminP1:k]+y2[k]
+    Aver2[kminP1:k] <- Sum2[kminP1:k]/((k-kmin):1)
+    Kvad2[kminP1:k] <- Kvad2[kminP1:k]+y2[k]^2
+    
+    
+    bestAver1[k] <- (initSum1+Sum1[kminP1])/k
+    bestAver2[k] <- (initSum2+Sum2[kminP1])/k
     cost1 <- ((initKvad1+Kvad1[kminP1])-k*bestAver1[k]^2)/sd1^2
     cost2 <- ((initKvad2+Kvad2[kminP1])-k*bestAver2[k]^2)/sd2^2
   
     bestCost[k] <- cost1 + cost2
-	  
- 	}
+    
+  }
   
 
   for (n in (2*kmin):N) {
-		
-   		nMkminP1=n-kmin+1
-   		
-   		Sum1[kminP1:n] <- Sum1[kminP1:n]+ y1[n]
-   		Aver1[kminP1:n] <- Sum1[kminP1:n]/((n-kmin):1)
-   		Kvad1[kminP1:n] <- Kvad1[kminP1:n]+ (y1[n])^2
-   		                          
-   		cost1 <- (Kvad1[kminP1:nMkminP1]-Sum1[kminP1:nMkminP1]*Aver1[kminP1:nMkminP1])/sd1^2
-   		
+    
+      nMkminP1=n-kmin+1
+      
+      Sum1[kminP1:n] <- Sum1[kminP1:n]+ y1[n]
+      Aver1[kminP1:n] <- Sum1[kminP1:n]/((n-kmin):1)
+      Kvad1[kminP1:n] <- Kvad1[kminP1:n]+ (y1[n])^2
+                                
+      cost1 <- (Kvad1[kminP1:nMkminP1]-Sum1[kminP1:nMkminP1]*Aver1[kminP1:nMkminP1])/sd1^2
+      
       Sum2[kminP1:n] <- Sum2[kminP1:n]+ y2[n]
-   		Aver2[kminP1:n] <- Sum2[kminP1:n]/((n-kmin):1)
-   		Kvad2[kminP1:n] <- Kvad2[kminP1:n]+ (y2[n])^2
-   		cost2 <- (Kvad2[kminP1:nMkminP1]-Sum2[kminP1:nMkminP1]*Aver2[kminP1:nMkminP1])/sd2^2
-   		
+      Aver2[kminP1:n] <- Sum2[kminP1:n]/((n-kmin):1)
+      Kvad2[kminP1:n] <- Kvad2[kminP1:n]+ (y2[n])^2
+      cost2 <- (Kvad2[kminP1:nMkminP1]-Sum2[kminP1:nMkminP1]*Aver2[kminP1:nMkminP1])/sd2^2
+      
       Cost[kminP1:nMkminP1] <- bestCost[kmin:(n-kmin)] + cost1 + cost2
       
       Pos <- which.min(Cost[kminP1:nMkminP1])+kmin
-   		cost <- Cost[Pos] + gamma
-   		
-   		aver1 <- Aver1[Pos]
-   		aver2 <- Aver2[Pos]
-   		totAver1 <- (Sum1[kminP1]+initSum1)/n
-   		totCost1 <- ((Kvad1[kminP1]+initKvad1) - n*totAver1*totAver1)/sd1^2
+      cost <- Cost[Pos] + gamma
+      
+      aver1 <- Aver1[Pos]
+      aver2 <- Aver2[Pos]
+      totAver1 <- (Sum1[kminP1]+initSum1)/n
+      totCost1 <- ((Kvad1[kminP1]+initKvad1) - n*totAver1*totAver1)/sd1^2
       totAver2 <- (Sum2[kminP1]+initSum2)/n
       totCost2 <- ((Kvad2[kminP1]+initKvad2) - n*totAver2*totAver2)/sd2^2
       totCost <- totCost1 + totCost2
-   		
+      
       if (totCost < cost) {
-       		Pos <- 1
+          Pos <- 1
           cost <- totCost
           aver1 <- totAver1
           aver2 <- totAver2
-   		}
-   		bestCost[n] <- cost
-   		bestAver1[n] <- aver1
-   		bestAver2[n] <- aver2
-   		bestSplit[n] <- Pos-1
- 	
-	  
+      }
+      bestCost[n] <- cost
+      bestAver1[n] <- aver1
+      bestAver2[n] <- aver2
+      bestSplit[n] <- Pos-1
+  
+    
    }#endfor
- 	
+  
 
-	# Trace back
-	n <- N
-	breakpts <- n
-	while(n > 0){
-	  breakpts <- c(bestSplit[n], breakpts)
-		n <- bestSplit[n]
-	}#endwhile
+  # Trace back
+  n <- N
+  breakpts <- n
+  while(n > 0){
+    breakpts <- c(bestSplit[n], breakpts)
+    n <- bestSplit[n]
+  }#endwhile
 
   breakpts <- breakpts + from -1
   breakpts <- breakpts[breakpts>=usefrom & breakpts<=useto] 
@@ -1725,17 +1763,17 @@ aspcfpart <- function(logRpart, allBflip, a, b, d, sd1, sd2, N, kmin, gamma){
 
 div <- function(a, b, c){
 
-	if(nargs() < 3){
-	 	c <- 0
-	 }#endif
+  if(nargs() < 3){
+    c <- 0
+   }#endif
  
-	if(b > 0){
-		v <-  a/b
-	}else{
+  if(b > 0){
+    v <-  a/b
+  }else{
     v <- c
-	}#endif
+  }#endif
  
-	 return(v)
+   return(v)
 }#endfunction
 
 
@@ -1764,7 +1802,7 @@ getMad <- function(x,k=25){
   dif <- x-runMedian
   SD <- mad(dif)
  
-	return(SD)
+  return(SD)
 }
 
 
@@ -1773,77 +1811,77 @@ getMad <- function(x,k=25){
 
 exactPcf <- function(y, kmin, gamma) {
 ## Implementaion of exact PCF by Potts-filtering
-	## x: input array of (log2) copy numbers
-	## kmin: Mininal length of plateaus
-	## gamma: penalty for each discontinuity
-  	N <- length(y)
-  	yhat <- rep(0,N);
-  	if (N < 2*kmin) {
-    		yhat <- rep(mean(y),N)
-    		return(yhat)
-  	}
-  	initSum <- sum(y[1:kmin])
-  	initKvad <- sum(y[1:kmin]^2)
-  	initAve <- initSum/kmin;
-  	bestCost <- rep(0,N)
-  	bestCost[kmin] <- initKvad - initSum*initAve
-  	bestSplit <- rep(0,N)
-  	bestAver <- rep(0,N)
-  	bestAver[kmin] <- initAve
-  	Sum <- rep(0,N)
-  	Kvad <- rep(0,N)
-  	Aver <- rep(0,N)
-  	Cost <- rep(0,N)
-  	kminP1=kmin+1
-  	for (k in (kminP1):(2*kmin-1)) {
-    		Sum[kminP1:k]<-Sum[kminP1:k]+y[k]
-    		Aver[kminP1:k] <- Sum[kminP1:k]/((k-kmin):1)
-    		Kvad[kminP1:k] <- Kvad[kminP1:k]+y[k]^2
-    		bestAver[k] <- (initSum+Sum[kminP1])/k
-    		bestCost[k] <- (initKvad+Kvad[kminP1])-k*bestAver[k]^2
-  	}
-  	for (n in (2*kmin):N) {
-   		yn <- y[n]
-   		yn2 <- yn^2
-   		Sum[kminP1:n] <- Sum[kminP1:n]+yn
-   		Aver[kminP1:n] <- Sum[kminP1:n]/((n-kmin):1)
-   		Kvad[kminP1:n] <- Kvad[kminP1:n]+yn2
-   		nMkminP1=n-kmin+1
-   		Cost[kminP1:nMkminP1] <- bestCost[kmin:(n-kmin)]+Kvad[kminP1:nMkminP1]-Sum[kminP1:nMkminP1]*Aver[kminP1:nMkminP1]+gamma
-   		Pos <- which.min(Cost[kminP1:nMkminP1])+kmin
-   		cost <- Cost[Pos]
-   		aver <- Aver[Pos]
-   		totAver <- (Sum[kminP1]+initSum)/n
-   		totCost <- (Kvad[kminP1]+initKvad) - n*totAver*totAver
-   		if (totCost < cost) {
-       		Pos <- 1
+  ## x: input array of (log2) copy numbers
+  ## kmin: Mininal length of plateaus
+  ## gamma: penalty for each discontinuity
+    N <- length(y)
+    yhat <- rep(0,N);
+    if (N < 2*kmin) {
+        yhat <- rep(mean(y),N)
+        return(yhat)
+    }
+    initSum <- sum(y[1:kmin])
+    initKvad <- sum(y[1:kmin]^2)
+    initAve <- initSum/kmin;
+    bestCost <- rep(0,N)
+    bestCost[kmin] <- initKvad - initSum*initAve
+    bestSplit <- rep(0,N)
+    bestAver <- rep(0,N)
+    bestAver[kmin] <- initAve
+    Sum <- rep(0,N)
+    Kvad <- rep(0,N)
+    Aver <- rep(0,N)
+    Cost <- rep(0,N)
+    kminP1=kmin+1
+    for (k in (kminP1):(2*kmin-1)) {
+        Sum[kminP1:k]<-Sum[kminP1:k]+y[k]
+        Aver[kminP1:k] <- Sum[kminP1:k]/((k-kmin):1)
+        Kvad[kminP1:k] <- Kvad[kminP1:k]+y[k]^2
+        bestAver[k] <- (initSum+Sum[kminP1])/k
+        bestCost[k] <- (initKvad+Kvad[kminP1])-k*bestAver[k]^2
+    }
+    for (n in (2*kmin):N) {
+      yn <- y[n]
+      yn2 <- yn^2
+      Sum[kminP1:n] <- Sum[kminP1:n]+yn
+      Aver[kminP1:n] <- Sum[kminP1:n]/((n-kmin):1)
+      Kvad[kminP1:n] <- Kvad[kminP1:n]+yn2
+      nMkminP1=n-kmin+1
+      Cost[kminP1:nMkminP1] <- bestCost[kmin:(n-kmin)]+Kvad[kminP1:nMkminP1]-Sum[kminP1:nMkminP1]*Aver[kminP1:nMkminP1]+gamma
+      Pos <- which.min(Cost[kminP1:nMkminP1])+kmin
+      cost <- Cost[Pos]
+      aver <- Aver[Pos]
+      totAver <- (Sum[kminP1]+initSum)/n
+      totCost <- (Kvad[kminP1]+initKvad) - n*totAver*totAver
+      if (totCost < cost) {
+          Pos <- 1
           cost <- totCost
           aver <- totAver
-   		}
-   		bestCost[n] <- cost
-   		bestAver[n] <- aver
-   		bestSplit[n] <- Pos-1
- 	}
- 	n <- N
- 	while (n > 0) {
-   		yhat[(bestSplit[n]+1):n] <- bestAver[n]
-   		n <- bestSplit[n]
- 	}
- 	return(yhat)
+      }
+      bestCost[n] <- cost
+      bestAver[n] <- aver
+      bestSplit[n] <- Pos-1
+  }
+  n <- N
+  while (n > 0) {
+      yhat[(bestSplit[n]+1):n] <- bestAver[n]
+      n <- bestSplit[n]
+  }
+  return(yhat)
 }
 
 
 #Perform MAD winsorization:
 madWins <- function(x,tau,k){
-	xhat <- medianFilter(x,k)
-	d <- x-xhat
-	SD <- mad(d)
-	z <- tau*SD
-	xwin <- xhat + psi(d, z)
-	outliers <- rep(0, length(x))
+  xhat <- medianFilter(x,k)
+  d <- x-xhat
+  SD <- mad(d)
+  z <- tau*SD
+  xwin <- xhat + psi(d, z)
+  outliers <- rep(0, length(x))
   outliers[x > xwin] <- 1
   outliers[x < xwin] <- -1
-	return(list(ywin=xwin,sdev=SD,outliers=outliers))
+  return(list(ywin=xwin,sdev=SD,outliers=outliers))
 }
 
 

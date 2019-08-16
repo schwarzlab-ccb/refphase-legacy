@@ -33,7 +33,7 @@ option_list <- list(
     )
 conf <- parse_args(OptionParser(option_list = option_list), convert_hyphens_to_underscores = TRUE)
 conf$id <- substr(digest(conf), 1, 8)
-set.seed(conf$seed)
+set.seed(conf$seed)#Why is a seed required? I'm not sure anything non-deterministic should be occurring
 
 args = commandArgs(trailingOnly=TRUE)
 print("config")
@@ -128,12 +128,13 @@ source(paste0(current.dir, "data_input_and_QC_functions_v2.R"))
 source(paste0(current.dir, "consensus_phasing_from_multiple_samples_functions_v2.R"))
 source(paste0(current.dir, "generation_of_phased_and_total_cpn_functions_v2.R"))
 source(paste0(current.dir, "MSAI_detection_functions.R"))
-#source(paste0(current.dir, "pairwise_cpn_comparison_and_heterogeneity_functions.R"))#Legacy code, not really used anymore as of 11/09/2018
 source(paste0(current.dir, "cancer_cell_fraction_calculation_functions_v2.R"))
 source(paste0(current.dir, "final_output_segmentation_file_generation_functions_v3.R"))
 source(paste0(current.dir, "new_seg_joining_functions.R"))
 source(paste0(current.dir, "cpn_heterogeneity_plotting_functions_v2.R"))
 source(paste0(current.dir, "MEDICC_input_creation_functions.R"))
+source(paste0(current.dir, "ascat.R"))
+
 
 #####Get relevant libraries:
 #Todo check this is the only required library.
@@ -149,24 +150,19 @@ options("stringsAsFactors" = FALSE)
 MIN_NUM_HZ_SNP_PHASING <- 5
 #PLOT_OUTPUT_DIR <- NULL
 OVERWRITE_FLAG <- as.logical(overwrite.flag)
-
 PLOTTING_FLAG <- TRUE
-
 #Pre joining overwrite flag
 OVERWRITE_FLAG <- TRUE#Load in the pre-joining results and don't regenerate them if FALSE.
-
 #POST JOINING FLAGS to run sections of code
 JOINED_SEGS_ERROR_CHECKING_FLAG <- FALSE
 OVERWRITE_INIT_MCS_ADD_INFO_FLAG <- TRUE#Using joined segs on second run throughof MPhase
 OVERWRITE_ARM_INFO_FOR_JOIN_INIT_MCS_FLAG <- TRUE
 OVERWRITE_JOIN_INIT_MCS_FLAG <- TRUE
-
 OVERWRITE_JOINED_CCF_CALC_FLAG <- TRUE
 OVERWRITE_JOINED_MCS_ADD_INFO_FLAG <- TRUE
 CALCULATE_JOINED_ARM_FOCAL_FLAG <- TRUE
 CALCULATE_FOCAL_EVENT_CLONALITY_FLAG <- TRUE
 GENERATE_GISTIC_INPUT_FLAG <- FALSE
-
 
 PLOT_OUTPUT_DIR <- paste(output.directory.base.path, "/", sep="")
 if ( ! file.exists(PLOT_OUTPUT_DIR) ) {
@@ -374,6 +370,12 @@ if (OVERWRITE_FLAG == TRUE) {
     all.samp.SNP.list <- readInASCAT(snp.file.paths.df,
                                      f.joint.segs.df,
                                      sample.vec)
+    #TBKW edit, I'm assuming that these ascat objects will also contain the germline values and am pulling 
+    #them out for this "xphase" version that requires the germline BAFs to compare the allelic imbalance in each tumour
+    #region segment vs the equivalent segment in the germline.
+
+    #In the end we're probably going to 
+    #want to read in the germline 
 
     # # Temporarily remove everything except a few chromosomes
     # #test_chrs <- c("chr1", "chr2")
@@ -874,9 +876,6 @@ if (OVERWRITE_FLAG == TRUE) {
 	}
 
 	#######So here is where we should check if there are any segments that should be
-
-	asas.SNPS.lr.and.or.baf.lists
-
 	#save:
 	print("Saving snps files....")
 	print(asas.SNPS.lr.and.or.baf.lists.path)
@@ -1095,6 +1094,581 @@ if (OVERWRITE_FLAG == TRUE) {
 
 	pre.MPhase.MEDICC.FASTA.file.list.path <- paste0(PLOT_OUTPUT_DIR, patient, "_pre_MPhase_MEDICC_FASTA_file_list.RDS")
 	saveRDS(pre.MPhase.MEDICC.FASTA.file.list, file = pre.MPhase.MEDICC.FASTA.file.list.path)
+
+
+
+	#So this is where want to replace the rest of mphase more or less..
+	#TBKW NEW WORK:
+
+	source(paste0(current.dir, "ascat.R"))
+	#Helper functions to load in the data
+	#Returns a vector of the paths to the ASCAT QC directory of a patient whose analysis directory
+	#structure follows the TRACERx convention. 
+	makePatientASCATQCDirPath <- function(full.patient.vec, release.path=TX_421_DIR) {
+
+		#So the function will take the directory as a path
+		ascat.pt.dir <- paste(release.path, full.patient.vec, "exome", "ASCAT_QC", sep="/")
+		return(ascat.pt.dir)
+
+	}#End makeASCATDirPath
+	#Returns a dataframe indicating whether the paths of the heterozygous SNP files in each ASCAT QC
+	#directory of a patient following TRACERx directory structure convecntion exist
+	getPatientSNPsBAFLogRPathDF <- function(full.patient.vec, release.path = TX_421_DIR) {
+
+		ascat.qc.dir.path.vec <- makePatientASCATQCDirPath(full.patient.vec, release.path)
+
+		gl.snps.path.vec <- paste(ascat.qc.dir.path.vec, "/", substring(full.patient.vec, 3), "_depth20_ALL_snps.txt", sep = "")
+
+		check.df <- data.frame(full_patient = full.patient.vec,
+				short_patient = substring(full.patient.vec, 3),
+			   snp_file_exists = sapply(gl.snps.path.vec, file.exists),
+			   snp_file_path = gl.snps.path.vec,
+			   stringsAsFactors = FALSE)
+
+		#So now let's remove the hospital id and load the rest of the data in 
+		return(check.df)
+
+	}#end getPatientSNPsBAFLogRPath <- function(full.patient.vec, release.path = TX_421_DIR) {
+
+	#So now we have chromosome arms on everything...
+
+
+	# function to read in SNP array data
+	# input: filenames of tumor LogR, tumor BAF, germline LogR and germline BAF data
+	# germline data files can be NULL - in that case these are not read in
+	# output: a data structure containing:
+	# 1. Tumor_LogR data matrix
+	# 2. Tumor_BAF data matrix
+	# 3. Tumor_LogR_segmented: placeholder, NULL
+	# 4. Tumor_BAF_segmented: placeholder, NULL
+	# 5. Germline_LogR data matrix
+	# 6. Germline_BAF data matrix
+	# 7. SNPpos: position of all SNPs
+	# 8. ch: a list containing vectors with the indices for each chromosome (e.g. Tumor_LogR[ch[[13]],] will output the Tumor_LogR data of chromosome 13
+	# 9. chr: a list containing vectors with the indices for each distinct part that can be segmented separately (e.g. chromosome arm, stretch of DNA between gaps in the array design)
+	# 10. gender: a vector of gender for each cases ("XX" or "XY"). Default = NULL: all female ("XX")
+
+	ascat.loadData = function(Tumor_LogR_file, Tumor_BAF_file, Germline_LogR_file = NULL, Germline_BAF_file = NULL, chrs = c(1:22,"X","Y"), gender = NULL, sexchromosomes = c("X","Y"), read.from.disk=FALSE) {
+	snp.file.check.df <- getPatientSNPsBAFLogRPathDF(full.patient.vec = full.patient, release.path =  TX_421_DIR)
+	gl.and.all.reg.snp.file.df <- read.table(snp.file.check.df$snp_file_path, sep="\t", header=TRUE, stringsAsFactors=FALSE) 
+	# > head(gl.and.all.reg.snp.file.df)
+	#   chrom    pos ref alt U_LTX508_BS_GL_tot U_LTX508_BS_GL_var U_LTX508_BS_GL_BAF U_LTX508_BS_GL_LogR U_LTX508_SU_T1.R1_tot U_LTX508_SU_T1.R1_var U_LTX508_SU_T1.R1_BAF U_LTX508_SU_T1.R1_LogR
+	# 1     1 762273   G   A                566                565           1.010881                   0                   384                   384              1.012648                 -0.360
+	# 2     1 762496   G   G                 NA                 NA                 NA                  NA                    NA                    NA                    NA                 -0.604
+	# 3     1 762497   G   G                 NA                 NA                 NA                  NA                    NA                    NA                    NA                 -0.604
+	# 4     1 777237   C   C                 NA                 NA                 NA                  NA                    NA                    NA                    NA                 -0.112
+	# 5     1 777318   C   C                 NA                 NA                 NA                  NA                    NA                    NA                    NA                 -0.108
+	# 6     1 777335   A   A                 NA                 NA                 NA                  NA                    NA                    NA                    NA                 -0.108
+	#   U_LTX508_SU_T1.R2_tot U_LTX508_SU_T1.R2_var U_LTX508_SU_T1.R2_BAF U_LTX508_SU_T1.R2_LogR
+	# 1                   448                   446              1.008184                 -0.288
+	# 2                    NA                    NA                    NA                 -0.486
+	# 3                    NA                    NA                    NA                 -0.486
+	# 4                    NA                    NA                    NA                 -0.016
+	# 5                    NA                    NA                    NA                  0.034
+	# 6                    NA                    NA                    NA                  0.034
+	#So determine which SNPs are hz:
+	snp.file.df <- gl.and.all.reg.snp.file.df
+	snp.file.df$snp_pos <- paste0(snp.file.df$chrom, "_", snp.file.df$pos)
+	snp.file.df$snp_idx <- 1:nrow(snp.file.df)
+	#get germline column
+	gl.col.name <- grep("_GL_BAF", colnames(snp.file.df), value=TRUE)
+	logr.only.snp.df <- snp.file.df[is.na(snp.file.df[,gl.col.name]),]
+	actual.snp.file.df <- snp.file.df[! is.na(snp.file.df[, gl.col.name]),]
+	gl.homo.snp.df <- actual.snp.file.df[as.numeric(actual.snp.file.df[,gl.col.name]) > 0.7 | as.numeric(actual.snp.file.df[,gl.col.name]) < 0.3 ,]
+	gl.hz.snp.df <- actual.snp.file.df[as.numeric(actual.snp.file.df[,gl.col.name]) <= 0.7 &  as.numeric(actual.snp.file.df[,gl.col.name]) >= 0.3,]
+	gl.hz.snp.df$hz_snp_idx <- 1:nrow(gl.hz.snp.df)
+	anno.seg.df$start_pos <- paste0(anno.seg.df$Chromosome, "_", anno.seg.df$Start_Position)
+	anno.seg.df$start_is_hz <- anno.seg.df$start_pos %in% gl.hz.snp.df$snp_pos
+	anno.seg.df$start_is_homo <- anno.seg.df$start_pos %in% gl.homo.snp.df$snp_pos
+	anno.seg.df$start_is_logr <- anno.seg.df$start_pos %in% logr.only.snp.df$snp_pos
+	anno.seg.df$end_pos <- paste0(anno.seg.df$Chromosome, "_", anno.seg.df$End_Position)
+	anno.seg.df$end_is_hz <- anno.seg.df$end_pos %in% gl.hz.snp.df$snp_pos
+	anno.seg.df$end_is_homo <- anno.seg.df$end_pos %in% gl.homo.snp.df$snp_pos
+	anno.seg.df$end_is_logr <- anno.seg.df$end_pos %in% logr.only.snp.df$snp_pos
+	#make a quick summary column
+	anno.seg.df$start_is_pos <- anno.seg.df$start_is_hz | anno.seg.df$start_is_homo | anno.seg.df$start_is_logr
+	anno.seg.df$end_is_pos <- anno.seg.df$end_is_hz | anno.seg.df$end_is_homo | anno.seg.df$end_is_logr
+	anno.seg.df$start_snp_idx <- NA
+	anno.seg.df$end_snp_idx <- NA
+	anno.seg.df[anno.seg.df$start_is_pos %in% TRUE ,]$start_snp_idx <- snp.file.df[match(anno.seg.df[anno.seg.df$start_is_pos %in% TRUE ,]$start_pos, snp.file.df$snp_pos),]$snp_idx
+	anno.seg.df[anno.seg.df$end_is_pos %in% TRUE ,]$end_snp_idx <- snp.file.df[match(anno.seg.df[anno.seg.df$end_is_pos %in% TRUE ,]$end_pos, snp.file.df$snp_pos),]$snp_idx
+	#potential column names of use: in_intersection in_disjoin_only in_arm_setdiff
+	#For no now let's only take those those segments that are in the intersection
+	int.anno.seg.df <- anno.seg.df[anno.seg.df$in_intersection%in%TRUE & anno.seg.df$full_sample %in% sample.vec[1],]
+	#And now the set diff:
+	#So we need to write a function that finds the nearest SNP that is
+	#A in the same chromosome arm
+	#B not already the the start or end of another segment
+	#C Not within another segment...
+	#So let's to it for missing starts...
+	snp.file.df$arm <- NA
+	for (ch in c(unique(int.anno.seg.df$chrom))) {
+		#get start and end of p
+		p.start <- chrom.info.df[chrom.info.df$chrom %in% ch,]$p_start
+		p.end <- chrom.info.df[chrom.info.df$chrom %in% ch,]$p_end
+		q.start <- chrom.info.df[chrom.info.df$chrom %in% ch,]$q_start
+		q.end <- chrom.info.df[chrom.info.df$chrom %in% ch,]$q_end
+
+		#head(snp.file.df)
+
+		#gsample$Continent <- with(gsample, ifelse(MAKE=='HOLDEN', 'AUS', Continent))
+		if(nrow(snp.file.df[snp.file.df$chrom %in% ch & snp.file.df$pos >= p.start & snp.file.df$pos <= p.end,]) > 0) {
+
+			snp.file.df[snp.file.df$chrom %in% ch & snp.file.df$pos >= p.start & snp.file.df$pos <= p.end,]$arm<- paste0(ch, "p") 
+
+		}
+
+		if(nrow(snp.file.df[snp.file.df$chrom %in% ch & snp.file.df$pos >= q.start & snp.file.df$pos <= q.end,]) > 0) {
+
+			snp.file.df[snp.file.df$chrom %in% ch & snp.file.df$pos >= q.start & snp.file.df$pos <= q.end,]$arm<- paste0(ch, "q")
+
+		}
+
+	}#end for (chr in unique(int.anno.seg.df$chrom)) {
+
+	#Remove any of the SNPs that are already starting or ending segments...x	
+	all.snp.grs <- makeGRangesFromDataFrame(snp.file.df[ ! snp.file.df$snp_pos %in% int.anno.seg.df$start_pos & ! snp.file.df$snp_pos %in% int.anno.seg.df$end_pos,],
+			                         keep.extra.columns=FALSE,
+			                         ignore.strand=FALSE,
+			                         seqinfo=NULL,
+			                         seqnames.field=c("chrom"),
+			                         start.field=c("pos"),
+			                         end.field=c("pos"),
+			                         strand.field="strand",
+			                         starts.in.df.are.0based=FALSE)
+
+	#Get indices of SNPs with missing start or end idxs
+	all.int.grs <- makeGRangesFromDataFrame(int.anno.seg.df,
+			                         keep.extra.columns=FALSE,
+			                         ignore.strand=FALSE,
+			                         seqinfo=NULL,
+			                         seqnames.field=c("Chromosome"),
+			                         start.field=c("Start_Position"),
+			                         end.field=c("End_Position"),
+			                         strand.field="strand",
+			                         starts.in.df.are.0based=FALSE)
+	#Let's just add the arm classifcatinos to all the snps
+
+	lacking.snp.idx.vec <- which(int.anno.seg.df$start_is_pos %in% FALSE | int.anno.seg.df$end_is_pos %in% FALSE)
+	int.anno.seg.df$nearest_preceding_snp <- NA
+	int.anno.seg.df$nearest_following_snp <- NA 
+	for (i in 1:length(all.int.grs)) {
+
+		#Check the seqnames part as SNPs really need to be in the same need to be in the same chromosome arm...?
+		if( ! i %in% lacking.snp.idx.vec) {
+
+			next
+
+		}
+
+		curr.arm <- int.anno.seg.df[i,]$chr_arm
+
+
+		if (! is.na(precede(all.int.grs[i], all.snp.grs)) && snp.file.df[precede(all.int.grs[i], all.snp.grs),]$arm %in% curr.arm) {
+
+			int.anno.seg.df[i,]$nearest_preceding_snp <- start(all.snp.grs[precede(all.int.grs[i], all.snp.grs)])
+
+		}
+
+		if (! is.na(follow(all.int.grs[i], all.snp.grs)) && snp.file.df[follow(all.int.grs[i], all.snp.grs),]$arm %in% curr.arm) {
+
+			int.anno.seg.df[i,]$nearest_following_snp <- start(all.snp.grs[follow(all.int.grs[i], all.snp.grs)])
+
+		}
+
+		#Any remaining examples are going to be the first or only 
+		if(is.na(int.anno.seg.df[i,]$nearest_following_snp) & is.na(int.anno.seg.df[i,]$nearest_preceding_snp)) {
+
+			print(int.anno.seg.df[i,c("Start_Position", "End_Position", "start_snp_idx", "end_snp_idx", "nearest_preceding_snp", "nearest_following_snp")])
+			int.anno.seg.df[i,]$nearest_following_snp <- start(all.snp.grs[nearest(all.int.grs[i], all.snp.grs)])
+			int.anno.seg.df[i,]$nearest_preceding_snp <- start(all.snp.grs[nearest(all.int.grs[i], all.snp.grs)])
+
+			print(precede(all.int.grs[i], all.snp.grs))
+			print(follow(all.int.grs[i], all.snp.grs))
+
+			print(int.anno.seg.df[int.anno.seg.df$chr_arm %in% curr.arm, c("Start_Position", "End_Position", "start_snp_idx", "end_snp_idx", "nearest_preceding_snp", "nearest_following_snp")])
+
+
+		}
+		# prec.chr <- seqnames(all.snp.grs[precede(all.int.grs[i], all.snp.grs)])
+		# foll.chr <- seqnames(all.snp.grs[follow(all.int.grs[i], all.snp.grs)])
+
+	}#end for (i in 1:length(all.int.grs)) {
+
+	int.anno.seg.df[is.na(int.anno.seg.df$start_snp_idx) | is.na(int.anno.seg.df$end_snp_idx), c("Start_Position", "End_Position", "start_snp_idx", "end_snp_idx", "nearest_preceding_snp", "nearest_following_snp") ]
+	int.anno.seg.df[int.anno.seg.df$chrom %in% 10, c("Start_Position", "End_Position", "start_snp_idx", "end_snp_idx", "nearest_preceding_snp", "nearest_following_snp")]
+	int.anno.seg.df[int.anno.seg.df$start_is_pos %in% FALSE, ]$Start_Position <- int.anno.seg.df[int.anno.seg.df$start_is_pos %in% FALSE, ]$nearest_following_snp
+	int.anno.seg.df[is.na(int.anno.seg.df$Start_Position), ]$Start_Position <- int.anno.seg.df[is.na(int.anno.seg.df$Start_Position), ]$nearest_preceding_snp
+	int.anno.seg.df[int.anno.seg.df$end_is_pos %in% FALSE, ]$End_Position <- int.anno.seg.df[int.anno.seg.df$end_is_pos %in% FALSE, ]$nearest_preceding_snp
+	int.anno.seg.df[is.na(int.anno.seg.df$End_Position), ]$End_Position <- int.anno.seg.df[is.na(int.anno.seg.df$End_Position), ]$nearest_following_snp
+	int.anno.seg.df[is.na(int.anno.seg.df$Start_Position), c("Start_Position", "End_Position", "start_snp_idx", "end_snp_idx")]#"nearest_preceding_snp", "nearest_following_snp"
+	int.anno.seg.df[int.anno.seg.df$chrom %in% 10, c("Start_Position", "End_Position", "start_snp_idx", "end_snp_idx", "nearest_preceding_snp", "nearest_following_snp")]
+	#make the assumption that there is no
+	f.int.anno.seg.df <- int.anno.seg.df
+
+	for (i in 2:nrow(f.int.anno.seg.df)) {
+
+		if(f.int.anno.seg.df[ (i - 1),]$chr_arm == f.int.anno.seg.df[i,]$chr_arm) {
+
+			if(f.int.anno.seg.df[ (i - 1),]$End_Position > f.int.anno.seg.df[i, ]$Start_Position) {
+
+				print(f.int.anno.seg.df[(i-1):i, 1:10])
+
+				preceding.end.pos <- f.int.anno.seg.df[ (i - 1),]$End_Position
+				f.int.anno.seg.df[ (i - 1),]$End_Position <- f.int.anno.seg.df[i, ]$Start_Position
+				f.int.anno.seg.df[i, ]$Start_Position <- preceding.end.pos
+
+			}#end if(f.int.anno.seg.df[ (i - 1),]$End_Position > f.int.anno.seg.df[i, ]$Start_Position) {
+
+		}#end if(f.int.anno.seg.df[ (i - 1),]$chr_arm == f.int.anno.seg.df[i,]$chr_arm) {
+
+	}#end for (i in 2:nrow(f.int.anno.seg.df)) {
+
+	f.int.anno.seg.df$start_pos <- paste0(f.int.anno.seg.df$Chromosome, "_", f.int.anno.seg.df$Start_Position)
+	f.int.anno.seg.df$start_is_hz <- f.int.anno.seg.df$start_pos %in% gl.hz.snp.df$snp_pos
+	f.int.anno.seg.df$start_is_homo <- f.int.anno.seg.df$start_pos %in% gl.homo.snp.df$snp_pos
+	f.int.anno.seg.df$start_is_logr <- f.int.anno.seg.df$start_pos %in% logr.only.snp.df$snp_pos
+	f.int.anno.seg.df$end_pos <- paste0(f.int.anno.seg.df$Chromosome, "_", f.int.anno.seg.df$End_Position)
+	f.int.anno.seg.df$end_is_hz <- f.int.anno.seg.df$end_pos %in% gl.hz.snp.df$snp_pos
+	f.int.anno.seg.df$end_is_homo <- f.int.anno.seg.df$end_pos %in% gl.homo.snp.df$snp_pos
+	f.int.anno.seg.df$end_is_logr <- f.int.anno.seg.df$end_pos %in% logr.only.snp.df$snp_pos
+
+	#make a quick summary column
+	f.int.anno.seg.df$start_is_pos <- f.int.anno.seg.df$start_is_hz | f.int.anno.seg.df$start_is_homo | f.int.anno.seg.df$start_is_logr
+	f.int.anno.seg.df$end_is_pos <- f.int.anno.seg.df$end_is_hz | f.int.anno.seg.df$end_is_homo | f.int.anno.seg.df$end_is_logr
+	f.int.anno.seg.df[is.na(f.int.anno.seg.df$start_snp_idx) | is.na(f.int.anno.seg.df$end_snp_idx), c("Start_Position", "End_Position", "start_snp_idx", "end_snp_idx", "nearest_preceding_snp", "nearest_following_snp") ]
+	f.int.anno.seg.df[f.int.anno.seg.df$start_is_pos %in% TRUE ,]$start_snp_idx <- snp.file.df[match(f.int.anno.seg.df[f.int.anno.seg.df$start_is_pos %in% TRUE ,]$start_pos, snp.file.df$snp_pos),]$snp_idx
+	f.int.anno.seg.df[f.int.anno.seg.df$end_is_pos %in% TRUE ,]$end_snp_idx <- snp.file.df[match(f.int.anno.seg.df[f.int.anno.seg.df$end_is_pos %in% TRUE ,]$end_pos, snp.file.df$snp_pos),]$snp_idx
+	#So now let's assign these new snps to be the starts and ends..
+
+	f.int.anno.seg.df[is.na(f.int.anno.seg.df$start_snp_idx) | is.na(f.int.anno.seg.df$end_snp_idx), c("Start_Position", "End_Position", "start_snp_idx", "end_snp_idx", "nearest_preceding_snp", "nearest_following_snp") ]
+
+	#The other option is to rewrite the joint segmentation so that it works on the basis
+	f.int.anno.seg.df[is.na(f.int.anno.seg.df$start_snp_idx) | is.na(f.int.anno.seg.df$end_snp_idx), c("Start_Position", "End_Position", "start_snp_idx", "end_snp_idx", "nearest_preceding_snp", "nearest_following_snp") ]
+	#So for the case of A_LTX121 the intersection has segments that only end on SNPs...
+	int.dj.anno.seg.df <- anno.seg.df[anno.seg.df$in_intersection | anno.seg.df$in_disjoin_only,]
+
+
+	#load in the phased baf:
+	phased.baf.df.list <- readRDS(phased.baf.path)
+	# > str(phased.baf.df.list, max=1)
+	# List of 2
+	#  $ A_LTX121_SU_T1-R1:'data.frame':	33190 obs. of  11 variables:
+	#  $ A_LTX121_SU_T1-R2:'data.frame':	33190 obs. of  11 variables:
+	#  'data.frame':	33190 obs. of  11 variables:
+	#   $ chrom                       : num  1 1 1 1 1 1 1 1 1 1 ...
+	#   $ pos                         : int  871020 879317 880390 881627 892460 894573 896064 897730 902108 906272 ...
+	#   $ BAF                         : num  0.257 0.248 0.2 0.866 0.143 ...
+	#   $ logR                        : num  -0.23 -0.311 -0.349 -0.175 -0.564 -0.299 -0.295 -0.422 -0.274 -0.644 ...
+	#   $ BAFsegmented                : num  0.231 0.231 0.231 0.231 0.231 ...
+	#   $ logRsegmented               : num  -0.327 -0.327 -0.327 -0.327 -0.327 ...
+	#   $ samp                        : chr  "A_LTX121_SU_T1-R1" "A_LTX121_SU_T1-R1" "A_LTX121_SU_T1-R1" "A_LTX121_SU_T1-R1" ...
+	#   $ sample_phased_by_this_sample: chr  "A_LTX121_SU_T1-R1" "A_LTX121_SU_T1-R1" "A_LTX121_SU_T1-R1" "A_LTX121_SU_T1-R1" ...
+	#   $ maj_is_cpnA_logic_vec       : num  0 0 0 1 0 1 0 0 0 1 ...
+	#   $ maj_is_cpnB_logic_vec       : num  1 1 1 0 1 0 1 1 1 0 ...
+	#   $ ph_median_segmented_BAF     : num  0.207 0.207 0.207 0.207 0.207 ...
+
+
+	#Segmentation:
+	#So we're going to need the indices of the BAF snps, only needs to be done once.
+	phased.baf.info.df <- phased.baf.df.list[[1]]
+	phased.baf.info.df$snp_pos <- paste0(phased.baf.info.df$chrom, "_", phased.baf.info.df $pos)
+	#Now we need to know their idx in the original data frame
+	phased.baf.info.df$snp_idx <- snp.file.df[match(phased.baf.info.df$snp_pos, snp.file.df$snp_pos),]$snp_idx
+
+	all.samp.j.seg.df <- f.int.anno.seg.df
+
+	#Note there could be an issue here if not every segment contains a BAF point...
+	#But, if we're using hte intersection this should be fine.
+
+	for (samp in sample.vec) {
+		print(samp)
+
+		if (purity.est.vec[samp]  < 0.15) {
+
+			MINRHO <- 0.04#This is normally set within the ASCAT script but here I'm modifying based on the input...
+
+		} else {
+
+			MINRHO <- 0.10
+		}
+
+		load(pt.snp.file.paths.df[pt.snp.file.paths.df$sample %in% samp,]$samp_ascat_bc_path)
+		#So let's get the phased BAF:
+		samp.pha.baf.df <- phased.baf.df.list[[samp]]
+		print("here1")
+		#So we're going to need the indices of the BAF snps...
+		samp.pha.baf.df$snp_pos <- phased.baf.info.df$snp_pos
+		samp.pha.baf.df$snp_idx <- phased.baf.info.df$snp_idx
+
+		#So now we need the segments that refer to this sample (as these are joint segments
+		#these should all be same for each sample regardless.)
+		samp.seg.df <- all.samp.j.seg.df#[all.samp.j.seg.df$full_sample %in% samp,]#No need for everything to be reset as we have one set of joint segmentation.
+		print("here2")
+
+		#Let's do the LogR
+		tum.logr.vec <- ascat.bc[["Tumor_LogR"]][,1]
+		tum.logr.segmented.vec <- ascat.bc[["Tumor_LogR_segmented"]][,1]
+
+		for (i in 1:nrow(samp.seg.df)){
+		  
+		  tum.logr.segmented.vec[samp.seg.df[i,]$start_snp_idx:samp.seg.df[i,]$end_snp_idx] <- mean(tum.logr.vec[samp.seg.df[i,]$start_snp_idx:samp.seg.df[i,]$end_snp_idx])
+		  
+		}#end for (i in 1:nrow(rle.baf.pcf.df)){
+
+		print("here3")
+		#Let's do the BAF recalculation
+		tum.baf.vec <- ascat.bc[["Tumor_BAF"]][,1]
+		tum.baf.segmented.vec <- ascat.bc[["Tumor_BAF_segmented"]][[1]][,1]
+		#So now this is a little more complicated as the BAF segmented is only in the SNPs
+		#Would be nice to make the compaison with the germline here as well. We have the data so could...
+		for (i in 1:nrow(samp.seg.df)){ 
+
+		  print(samp.seg.df[i,])
+		  #So first get the indices of the BAF indices within the segment
+		  seg.hz.snp.df <- gl.hz.snp.df[gl.hz.snp.df$snp_idx <= samp.seg.df[i,]$end_snp_idx & gl.hz.snp.df$snp_idx >= samp.seg.df[i,]$start_snp_idx,]
+
+		  if( nrow(seg.hz.snp.df) == 0) {
+
+		  	next
+
+		  }
+
+		  #Get indices of hz SNPs that are present ... so we need some form of mapping here to the smaller
+		  #These data contain all samples from this patient:
+		  seg.min.hz.snp.idx<- seg.hz.snp.df[1,]$hz_snp_idx
+		  seg.max.hz.snp.idx<- seg.hz.snp.df[nrow(seg.hz.snp.df),]$hz_snp_idx
+		  #Let's get the germline baf data specfically so that we can perform a crude correction
+		  gl.col.name <- grep("_GL_BAF", colnames(seg.hz.snp.df))
+		  gl.seg.hz.snp.df <- seg.hz.snp.df[, c(1, 2, gl.col.name)]
+		  colnames(gl.seg.hz.snp.df)[3] <- "BAF"
+		  #Sample specific!
+		  #So let's get the SNPs that are within the phased baf df
+		  seg.ph.hz.snp.df <- samp.pha.baf.df[samp.pha.baf.df$snp_idx <= samp.seg.df[i,]$end_snp_idx & samp.pha.baf.df$snp_idx >= samp.seg.df[i,]$start_snp_idx,]
+
+		  if(nrow(seg.ph.hz.snp.df) != nrow(gl.seg.hz.snp.df)) {
+
+
+		  	print("Number of phased SNPs is different to the actual number hz snps present in seg, perhaps to few to phase by MPhase?")
+		  	print("nrow(seg.ph.hz.snp.df)")
+		  	print(nrow(seg.ph.hz.snp.df) )
+
+		  	print("nrow(gl.seg.hz.snp.df)")
+		  	print(nrow(gl.seg.hz.snp.df))
+		  	next
+		  }
+		  #GL specific
+		  gl.seg.hz.snp.df <- cbind(gl.seg.hz.snp.df, seg.ph.hz.snp.df[, c("maj_is_cpnA_logic_vec", "maj_is_cpnB_logic_vec", "snp_pos", "snp_idx")])
+		  if(nrow(seg.hz.snp.df) == 0 | nrow(seg.ph.hz.snp.df) == 0){
+
+		  	print("No heterozygous SNPs present within segment.")
+		  	print(samp.seg.df[i,])
+
+		  }
+		  if (nrow(seg.hz.snp.df) != nrow(seg.ph.hz.snp.df)) {
+
+		  	print("Differing numbers of hz snps in the original hz snp df and the phased. Not sure why?")
+		  	print(samp.seg.df[i,])
+
+		  }
+		  #Ok so...
+		  #Let's get the phasing and calculate difference for the sample and the germline
+		  #We're assuming that these are in the same order at this point:
+		  #germline segmentation value:
+		  #Get groups of indices...
+		  haplotype.A.snp.pos.vec <- seg.ph.hz.snp.df[seg.ph.hz.snp.df$maj_is_cpnA_logic_vec %in% 1,]$snp_pos
+		  m.hap.A.BAF <- suppressWarnings(mean(seg.ph.hz.snp.df[seg.ph.hz.snp.df$snp_pos %in% haplotype.A.snp.pos.vec,]$BAF, na.rm=TRUE))
+		  haplotype.B.snp.pos.vec <- seg.ph.hz.snp.df[seg.ph.hz.snp.df$maj_is_cpnA_logic_vec %in% 0,]$snp_pos
+		  m.hap.B.BAF <- suppressWarnings(mean(seg.ph.hz.snp.df[seg.ph.hz.snp.df$snp_pos %in% haplotype.B.snp.pos.vec,]$BAF, na.rm=TRUE))
+
+		  #Now let's do the same for the germline data.. this actually isn't necessary..
+		  gl.m.hap.A.BAF <- suppressWarnings(mean(gl.seg.hz.snp.df[gl.seg.hz.snp.df$snp_pos %in% haplotype.A.snp.pos.vec,]$BAF, na.rm=TRUE)) - 0.5
+		  gl.m.hap.B.BAF <- suppressWarnings(mean(gl.seg.hz.snp.df[gl.seg.hz.snp.df$snp_pos %in% haplotype.B.snp.pos.vec,]$BAF, na.rm=TRUE)) - 0.5
+
+		  #So we'll actually work out the gl correction factor here?
+
+		  #Let's get the equivalent germline snps 
+		  #Default should be to make the BAF segmented 0.5 if we don't have any info w/regards to hz snps
+		  seg.md.ph.BAF.vec<-c()
+		  if(! is.na(m.hap.A.BAF) && m.hap.A.BAF > 0.5) {
+			#mirror
+			seg.md.ph.BAF.vec <- c(seg.md.ph.BAF.vec, abs(seg.ph.hz.snp.df[seg.ph.hz.snp.df$snp_pos %in% haplotype.A.snp.pos.vec,]$BAF - 1) - gl.m.hap.A.BAF)
+			##We could attempt to add in a germline correction here...
+
+		  } else if (! is.na(m.hap.A.BAF) && m.hap.A.BAF < 0.5) {
+
+		  	seg.md.ph.BAF.vec <- c(seg.md.ph.BAF.vec, seg.ph.hz.snp.df[seg.ph.hz.snp.df$snp_pos %in% haplotype.A.snp.pos.vec,]$BAF - gl.m.hap.A.BAF)
+		  	##We could attempt to add in a germline correction here...
+
+		  }
+
+		  if(! is.na(m.hap.B.BAF) && m.hap.B.BAF > 0.5) {
+		  	#mirror
+		  	seg.md.ph.BAF.vec <- c(seg.md.ph.BAF.vec, abs(seg.ph.hz.snp.df[seg.ph.hz.snp.df$snp_pos %in% haplotype.B.snp.pos.vec,]$BAF - 1) - gl.m.hap.B.BAF)
+		  	##We could attempt to add in a germline correction here...
+
+		  } else if (! is.na(m.hap.B.BAF) && m.hap.B.BAF < 0.5) {
+
+		    seg.md.ph.BAF.vec <- c(seg.md.ph.BAF.vec, seg.ph.hz.snp.df[seg.ph.hz.snp.df$snp_pos %in% haplotype.B.snp.pos.vec,]$BAF - gl.m.hap.B.BAF)
+		    ##We could attempt to add in a germline correction here...
+
+		  }
+		  #Format
+		  if(length(seg.md.ph.BAF.vec) > 0) {
+
+		  	seg.BAF.segmented.val <- rep(mean(seg.md.ph.BAF.vec, na.rm=TRUE), length(seg.min.hz.snp.idx:seg.max.hz.snp.idx))
+
+		  } else {
+
+		  	seg.BAF.segmented.val <- rep(0.5, length(seg.min.hz.snp.idx:seg.max.hz.snp.idx)) 
+
+		  }
+
+		  #Now let's update the segmented baf values with the correct indices in the vector
+		  #So to do this we need to check the actual
+		  tum.baf.segmented.vec[seg.min.hz.snp.idx:seg.max.hz.snp.idx] <- seg.BAF.segmented.val
+
+		  #Now we could edit this to compare to the germline and work out whether we should actually call this as separate....
+
+		}#end 	for (i in 1:nrow(samp.seg.df)){ 
+
+		#First let's do the free runs:
+		ascat.bc[["Tumor_LogR_segmented"]][,1] <- tum.logr.segmented.vec
+		ascat.bc[["Tumor_BAF_segmented"]][[1]][,1] <- tum.baf.segmented.vec
+		#Do the ASCAT steps!
+		print("Doing the free run ASCAT steps....")
+
+
+		setwd(free.run.dir)
+
+		ascat.plotSegmentedData(ascat.bc)
+
+		ascat.output = ascat.runAscat(ascat.bc,gamma=1)#, rho_manual = rho_solution, psi_manual = psi_solution)
+
+		save(ascat.bc, file=paste(samp, 'ascat.bc.RData',sep='.'))
+		save(ascat.output, file=paste(samp, 'ascat.output.RData',sep='.'))
+		#We need to work out where the MSAI is and flip it as well...
+		#Calculate number of heterozygous positions per segment
+		tmp <- ascat.output$segments_raw
+		n.het <- 0
+		#Identify heterozygous positions based on germline
+		# narm <- !is.na(normal.baf_logr[,3])
+		# baf_class <- Mclust(normal.baf_logr[narm,3],G=3)$classification
+		# hetname <- names(sort(abs(0.5-tapply(normal.baf_logr[narm,3], baf_class, mean)),decreasing=F))[1]
+		# baf_class <- rep(NA, length(normal.baf_logr[,3]))
+		# baf_class[narm] <- c(0,1)[match(baf_class[narm] == hetname,c('FALSE','TRUE'))]
+		# tumor.baf_logr <- cbind(tumor.baf_logr,baf_class)
+
+		
+		# for(j in 1:nrow(tmp)){
+		# 	#cat(j)
+		# 	a <- tumor.baf_logr[tumor.baf_logr[,1] %in% tmp[j,2],,drop=F]
+		# 	a <- a[a[,2] >= tmp[j,3] & a[,2] <= tmp[j,4],,drop=F]
+		# 	#n.het is really n.probes...
+		# 	n.het <- c(n.het,nrow(a))
+		# }
+		acf <- ascat.output$aberrantcellfraction
+		ploidy <- ascat.output$ploidy
+		
+		tmp <- cbind(tmp[,c(1:4)], n.het, tmp[,5] + tmp[,6], tmp[,5:6], rep(ploidy, nrow(tmp)), rep(acf, nrow(tmp)),tmp[,7],tmp[,8])
+		colnames(tmp)[c(6,9:12)] <- c('cnTotal', 'Ploidy', 'ACF', 'nAraw','nBraw')
+		chr <- sub('chr','', tmp[,2])
+		chr[chr %in% c('x','X')] <- 23
+		chr[chr %in% c('y', 'Y')] <- 24
+		tmp[,2] <- as.numeric(chr)
+
+		#add a column defining gain and losslength
+		callState <- rep('neutral', nrow(tmp))
+		callState[log2((tmp[,'nAraw']+tmp[,'nBraw'])/tmp[,'Ploidy']) >= log2(2.5/2)] <- 'Gain'
+		callState[log2((tmp[,'nAraw']+tmp[,'nBraw'])/tmp[,'Ploidy']) <= log2(1.5/2)] <- 'Loss'
+		callState[(tmp[,'nAraw']+tmp[,'nBraw']) >= ((2*tmp[,'Ploidy'])+1)] <- 'Amp'
+		callState[(tmp[,'nAraw']+tmp[,'nBraw']) <= 0.5] <- 'Del'
+
+		tmp <- cbind(tmp,callState)
+		seg <- tmp
+		save(seg, file=paste(samp,'ascat.seg.RData',sep='.'))
+
+
+		rm(ascat.output)
+		rm(seg)
+
+		#OK so now let's do the fixed solution run?
+
+		setwd(qc.choice.dir)
+
+		samp.ploidy <- ploidy.est.vec[samp]
+		samp.purity <- purity.est.vec[samp]
+
+
+		ascat.plotSegmentedData(ascat.bc)
+
+		ascat.output = ascat.runAscat(ascat.bc,gamma=1, rho_manual = samp.purity, psi_manual = samp.ploidy)
+
+		save(ascat.bc, file=paste(samp, 'ascat.bc.RData',sep='.'))
+		save(ascat.output, file=paste(samp, 'ascat.output.RData',sep='.'))
+		#We need to work out where the MSAI is and flip it as well...
+		#Calculate number of heterozygous positions per segment
+		tmp <- ascat.output$segments_raw
+		n.het <- 0
+		# #Identify heterozygous positions based on germline
+		# narm <- !is.na(normal.baf_logr[,3])
+		# baf_class <- Mclust(normal.baf_logr[narm,3],G=3)$classification
+		# hetname <- names(sort(abs(0.5-tapply(normal.baf_logr[narm,3], baf_class, mean)),decreasing=F))[1]
+		# baf_class <- rep(NA, length(normal.baf_logr[,3]))
+		# baf_class[narm] <- c(0,1)[match(baf_class[narm] == hetname,c('FALSE','TRUE'))]
+		# tumor.baf_logr <- cbind(tumor.baf_logr,baf_class)
+
+		
+		# for(j in 1:nrow(tmp)){
+		# 	#cat(j)
+		# 	a <- tumor.baf_logr[tumor.baf_logr[,1] %in% tmp[j,2],,drop=F]
+		# 	a <- a[a[,2] >= tmp[j,3] & a[,2] <= tmp[j,4],,drop=F]
+		# 	#n.het is really n.probes...
+		# 	n.het <- c(n.het,nrow(a))
+		# }
+		acf <- ascat.output$aberrantcellfraction
+		ploidy <- ascat.output$ploidy
+		
+		tmp <- cbind(tmp[,c(1:4)], n.het, tmp[,5] + tmp[,6], tmp[,5:6], rep(ploidy, nrow(tmp)), rep(acf, nrow(tmp)),tmp[,7],tmp[,8])
+		colnames(tmp)[c(6,9:12)] <- c('cnTotal', 'Ploidy', 'ACF', 'nAraw','nBraw')
+		chr <- sub('chr','', tmp[,2])
+		chr[chr %in% c('x','X')] <- 23
+		chr[chr %in% c('y', 'Y')] <- 24
+		tmp[,2] <- as.numeric(chr)
+
+		#add a column defining gain and losslength
+		callState <- rep('neutral', nrow(tmp))
+		callState[log2((tmp[,'nAraw']+tmp[,'nBraw'])/tmp[,'Ploidy']) >= log2(2.5/2)] <- 'Gain'
+		callState[log2((tmp[,'nAraw']+tmp[,'nBraw'])/tmp[,'Ploidy']) <= log2(1.5/2)] <- 'Loss'
+		callState[(tmp[,'nAraw']+tmp[,'nBraw']) >= ((2*tmp[,'Ploidy'])+1)] <- 'Amp'
+		callState[(tmp[,'nAraw']+tmp[,'nBraw']) <= 0.5] <- 'Del'
+
+		tmp <- cbind(tmp,callState)
+		seg <- tmp
+		save(seg, file=paste(samp,'ascat.seg.RData',sep='.'))
+
+
+
+		rm(ascat.output)
+		rm(seg)
+
+		#So now we want to generate all the other solutions that are produced in this free run:
+
+
+		#Now we want to run the original solution that's in the sample:
+
+
+		print("Next sample....")
+	}#for (samp in sample.vec) {
+
+	#1)So now we need to do the flipping of any MSAI events
+	#2)Get the raw cpn values
+	#3)Work out what's going on in terms of intersection etc
+
+
+
+
+	####END TBKW NEW WORK
 
 
 	#Todo add another method of detecting MSAI using only the BAF and a paired T test.
