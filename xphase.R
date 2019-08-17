@@ -3,58 +3,85 @@
 library(optparse)
 library(digest)
 
-option_list <- list(
-    make_option(c("--patient"), default="CB1002",
-                help="Patient id"),
-    make_option(c("--dip-test"), default=FALSE,
-                help="Use dip test (default=TRUE)"),
-    make_option(c("--output-dir"), default="../output/CB1002/mphase",
-                help="Output directory"),
-    make_option(c("--medicc-output-dir"), default="../output/CB1002/mphase",
-                help="Output directory"),
-    make_option(c("--input-format"), default="ASCAT",
-                help="Input data format (default=MEDICC)"),
-    make_option(c("--snp-data"), default="../input/nb-schulte//CB1002_input_paths_df.txt",
-                help="SNP data"),
-    make_option(c("--seg-data"), default="../input/nb-schulte//CB1002.segmentation",
-                help="Segmentation data output from ASCAT"),
-    make_option(c("--overwrite"), default=TRUE,
-                help="Overwrite output (default=TRUE)"),
-    make_option(c("--gamma"), default=1.0,
-                help="Gamma (for seq=1, for arrays~=0.5 (default=1.0)"),
-    make_option(c("-j", "--cores"), default=1,
-                help="CPU cores (default=1)"),
-    make_option(c("--segment-type"), default="intersection",
-                help="Segment type, intersection or whole_arm (default=1)"),
-    make_option(c("--genome"), default="hg38",
-                help="Human genome version (default=hg19, also supports hg38)"),
-    make_option(c("--seed"), default=2134234,
-                help="Random seed")
-    )
-conf <- parse_args(OptionParser(option_list = option_list), convert_hyphens_to_underscores = TRUE)
-conf$id <- substr(digest(conf), 1, 8)
-set.seed(conf$seed)#Why is a seed required? I'm not sure anything non-deterministic should be occurring
+# option_list <- list(
+#     make_option(c("--patient"), default="CB1002",
+#                 help="Patient id"),
+#     make_option(c("--dip-test"), default=FALSE,
+#                 help="Use dip test (default=TRUE)"),
+#     make_option(c("--output-dir"), default="../output/CB1002/mphase",
+#                 help="Output directory"),
+#     make_option(c("--medicc-output-dir"), default="../output/CB1002/mphase",
+#                 help="Output directory"),
+#     make_option(c("--input-format"), default="ASCAT",
+#                 help="Input data format (default=MEDICC)"),
+#     make_option(c("--snp-data"), default="../input/nb-schulte//CB1002_input_paths_df.txt",
+#                 help="SNP data"),
+#     make_option(c("--seg-data"), default="../input/nb-schulte//CB1002.segmentation",
+#                 help="Segmentation data output from ASCAT"),
+#     make_option(c("--overwrite"), default=TRUE,
+#                 help="Overwrite output (default=TRUE)"),
+#     make_option(c("--gamma"), default=1.0,
+#                 help="Gamma (for seq=1, for arrays~=0.5 (default=1.0)"),
+#     make_option(c("-j", "--cores"), default=1,
+#                 help="CPU cores (default=1)"),
+#     make_option(c("--segment-type"), default="intersection",
+#                 help="Segment type, intersection or whole_arm (default=1)"),
+#     make_option(c("--genome"), default="hg38",
+#                 help="Human genome version (default=hg19, also supports hg38)"),
+#     make_option(c("--seed"), default=2134234,
+#                 help="Random seed")
+#     )
+# conf <- parse_args(OptionParser(option_list = option_list), convert_hyphens_to_underscores = TRUE)
+# conf$id <- substr(digest(conf), 1, 8)
+# set.seed(conf$seed)#Why is a seed required? I'm not sure anything non-deterministic should be occurring
 
-args = commandArgs(trailingOnly=TRUE)
-print("config")
-cat(paste(names(conf), conf, collapse="\n"))
+# args = commandArgs(trailingOnly=TRUE)
+# print("config")
+# cat(paste(names(conf), conf, collapse="\n"))
 
-patient <- conf$patient
-#At the moment MPhase will only try to call MSAI and new copy number in areas of the genome identified as allelically imbalanced
-#Enable this flag to try and find more allelic imbalance but this will probably break.
-allow.dip.test.phasing.flag <- as.logical(conf$dip_test)
-output.directory.base.path <- conf$output_dir
-data.format.to.use <- conf$input_format #Default for this is MEDICC, but can specify TRACERx_exome, TRACERx_snp_array or TRACERx_WGS
-#all.samp.snp.list.path <- conf$cached_data #Points towards the snp files, of whatever format they are given that should be used based on data.format to use.
-snp.file.path <- conf$snp_data #Points towards the snp files, of whatever format they are given that should be used based on data.format to use.
-seg.file.path <- conf$seg_data #Pintts towards the seg files, of whatever format they should be determined byh the data.format.to.use flag.
-overwrite.flag  <- conf$overwrite
-gamma.val <- conf$gamma #for sequencing it's 1 and SNP array it's 0.4/0.5 but this is platform specific see ASCAT help pages.
-num.cores <- conf$cores #number of cores for the do parallel package functions
-intersection.or.whole.arm <- conf$segment_type #Can either be intersection or whole_arm, do we take the only intersection of segments from each sample
-genome <- conf$genome  # hg19 or hg38
-#or do attempt to fill in the gaps between every segment in each sample so that the entire genome is covered (so output from any sample can run in GISTIC
-#as all will cover the same genomic area)
+# patient <- conf$patient
+# #At the moment MPhase will only try to call MSAI and new copy number in areas of the genome identified as allelically imbalanced
+# #Enable this flag to try and find more allelic imbalance but this will probably break.
+# allow.dip.test.phasing.flag <- as.logical(conf$dip_test)
+# output.directory.base.path <- conf$output_dir
+# data.format.to.use <- conf$input_format #Default for this is MEDICC, but can specify TRACERx_exome, TRACERx_snp_array or TRACERx_WGS
+# #all.samp.snp.list.path <- conf$cached_data #Points towards the snp files, of whatever format they are given that should be used based on data.format to use.
+# snp.file.path <- conf$snp_data #Points towards the snp files, of whatever format they are given that should be used based on data.format to use.
+# seg.file.path <- conf$seg_data #Pintts towards the seg files, of whatever format they should be determined byh the data.format.to.use flag.
+# overwrite.flag  <- conf$overwrite
+# gamma.val <- conf$gamma #for sequencing it's 1 and SNP array it's 0.4/0.5 but this is platform specific see ASCAT help pages.
+# num.cores <- conf$cores #number of cores for the do parallel package functions
+# intersection.or.whole.arm <- conf$segment_type #Can either be intersection or whole_arm, do we take the only intersection of segments from each sample
+# genome <- conf$genome  # hg19 or hg38
+# #or do attempt to fill in the gaps between every segment in each sample so that the entire genome is covered (so output from any sample can run in GISTIC
+# #as all will cover the same genomic area)
+
+#TBKW edit...
+#full.patient <- args[1]
+full.patient<- "A_LTX121"
+seg.file.path <- "/camp/project/proj-tracerx-lung/tracerx/release_tx421_20190411/A_LTX121/exome/MPhase/LTX121_joint_segs_all_ascat_info.txt" #Points towards the seg files, of whatever format they should be determined byh the data.format.to.use flag.
+snp.file.path <- "/camp/project/proj-tracerx-lung/tracerx/release_tx421_20190411/A_LTX121/exome/MPhase/LTX121_TRACERx_input_paths_df.txt"
+patient <- substring(full.patient, 3, 8)
+intersection.or.whole.arm <- "intersection"
+genome <- "hg19"
+allow.dip.test.phasing.flag <- FALSE
+data.format.to.use <- "ASCAT"
+overwrite.flag <- TRUE
+gamma.val <- 1
+num.cores <- 1
+output.directory.base.path <- paste0("/camp/project/proj-tracerx-lung/tctProjects/watkint/tx421_copy_number_qc/xphase_runs/", full.patient, "/")
+system(paste0("mkdir ", output.directory.base.path))
+#Right we need a free run folder:
+free.run.dir <- paste0(output.directory.base.path, "free_run/")
+qc.choice.dir <- paste0(output.directory.base.path, "run_qc_choice/")
+rescue.run.dir <- paste0(output.directory.base.path, "rescue_runs/")
+system(paste0("mkdir ", free.run.dir))
+system(paste0("mkdir ", qc.choice.dir))
+system(paste0("mkdir ", rescue.run.dir))
+
+
+
+
 options(stringsAsFactors = FALSE)
 
 #function taken from https://github.com/molgenis/molgenis-pipelines/wiki/How-to-source-another_file.R-from-within-your-R-script
@@ -363,19 +390,31 @@ if (OVERWRITE_FLAG == TRUE) {
 
 	} else if (data.format.to.use == "ASCAT") {
     # Parse a bunch of rds files containing ascat.bc objects
-    snp.file.paths.df <- read.delim(snp.file.path,
+    pt.snp.file.paths.df <- read.delim(snp.file.path,
                               stringsAsFactors = FALSE,
                               header = TRUE,
                               row.names = "sample")
-    all.samp.SNP.list <- readInASCAT(snp.file.paths.df,
-                                     f.joint.segs.df,
-                                     sample.vec)
+    all.samp.SNP.list <- readInASCAT(sample_table = pt.snp.file.paths.df,
+                                     segs = f.joint.segs.df,
+                                     samples = sample.vec)
     #TBKW edit, I'm assuming that these ascat objects will also contain the germline values and am pulling 
     #them out for this "xphase" version that requires the germline BAFs to compare the allelic imbalance in each tumour
-    #region segment vs the equivalent segment in the germline.
+    #region segment vs the equivalent segment in the germline. This comparison is done to try and counter the effect
+    #of noise and "reference bias" that might result in false allelic imbalance. The correction that is performed to avert this
+    #is primitive as of 16/08/2019 and will require rewriting as well as testing. It should be noted the presence of 
+    #bias observed by allelic imbalance is from separate work I've performed and eye-balling the data, it needs to be 
+    #shown in the data...
 
-    #In the end we're probably going to 
-    #want to read in the germline 
+    #Making the assumption here that all regions that were analysed had 
+    gl.snp.df <- readInGermlineFromASCAT(ascat_bc_rds_path = pt.snp.file.paths.df[1,]$samp_ascat_bc_path)
+
+    # chrom    pos ref alt A_LTX121_BS_GL_tot A_LTX121_BS_GL_var A_LTX121_BS_GL_BAF A_LTX121_BS_GL_LogR A_LTX121_SU_T1.R1_tot A_LTX121_SU_T1.R1_var 
+    # A_LTX121_SU_T1.R1_BAF A_LTX121_SU_T1.R1_LogR A_LTX121_SU_T1.R2_tot A_LTX121_SU_T1.R2_var A_LTX121_SU_T1.R2_BAF A_LTX121_SU_T1.R2_LogR  snp_pos snp_idx
+
+    #gl.homo.snp.df <- actual.snp.file.df[as.numeric(actual.snp.file.df[,gl.col.name]) > 0.7 | as.numeric(actual.snp.file.df[,gl.col.name]) < 0.3 ,]
+
+
+    
 
     # # Temporarily remove everything except a few chromosomes
     # #test_chrs <- c("chr1", "chr2")
@@ -813,6 +852,9 @@ if (OVERWRITE_FLAG == TRUE) {
 	}#end 	for ( chr in CHRS_TO_USE_VEC ) {
 	sorted.all.bp.all.samps.segs.anno.df$chr_arm <- all.samp.all.bp.anno.grs$chr_arm
 	#So now we have chromosome arms on everything...
+	#TBKW edit for xphase version
+	anno.seg.df <- sorted.all.bp.all.samps.segs.anno.df
+
 
 	# sorted.all.bp.all.samps.segs.anno.df.path <- paste0(PLOT_OUTPUT_DIR, patient, "_sorted_all_bp_all_samps_segs_anno_df.RDS")
 	# saveRDS(sorted.all.bp.all.samps.segs.anno.df, file = sorted.all.bp.all.samps.segs.anno.df.path)
@@ -1099,83 +1141,22 @@ if (OVERWRITE_FLAG == TRUE) {
 
 	#So this is where want to replace the rest of mphase more or less..
 	#TBKW NEW WORK:
-
+	print("Starting new TBKW edit...")
 	source(paste0(current.dir, "ascat.R"))
-	#Helper functions to load in the data
-	#Returns a vector of the paths to the ASCAT QC directory of a patient whose analysis directory
-	#structure follows the TRACERx convention. 
-	makePatientASCATQCDirPath <- function(full.patient.vec, release.path=TX_421_DIR) {
-
-		#So the function will take the directory as a path
-		ascat.pt.dir <- paste(release.path, full.patient.vec, "exome", "ASCAT_QC", sep="/")
-		return(ascat.pt.dir)
-
-	}#End makeASCATDirPath
-	#Returns a dataframe indicating whether the paths of the heterozygous SNP files in each ASCAT QC
-	#directory of a patient following TRACERx directory structure convecntion exist
-	getPatientSNPsBAFLogRPathDF <- function(full.patient.vec, release.path = TX_421_DIR) {
-
-		ascat.qc.dir.path.vec <- makePatientASCATQCDirPath(full.patient.vec, release.path)
-
-		gl.snps.path.vec <- paste(ascat.qc.dir.path.vec, "/", substring(full.patient.vec, 3), "_depth20_ALL_snps.txt", sep = "")
-
-		check.df <- data.frame(full_patient = full.patient.vec,
-				short_patient = substring(full.patient.vec, 3),
-			   snp_file_exists = sapply(gl.snps.path.vec, file.exists),
-			   snp_file_path = gl.snps.path.vec,
-			   stringsAsFactors = FALSE)
-
-		#So now let's remove the hospital id and load the rest of the data in 
-		return(check.df)
-
-	}#end getPatientSNPsBAFLogRPath <- function(full.patient.vec, release.path = TX_421_DIR) {
-
-	#So now we have chromosome arms on everything...
-
-
-	# function to read in SNP array data
-	# input: filenames of tumor LogR, tumor BAF, germline LogR and germline BAF data
-	# germline data files can be NULL - in that case these are not read in
-	# output: a data structure containing:
-	# 1. Tumor_LogR data matrix
-	# 2. Tumor_BAF data matrix
-	# 3. Tumor_LogR_segmented: placeholder, NULL
-	# 4. Tumor_BAF_segmented: placeholder, NULL
-	# 5. Germline_LogR data matrix
-	# 6. Germline_BAF data matrix
-	# 7. SNPpos: position of all SNPs
-	# 8. ch: a list containing vectors with the indices for each chromosome (e.g. Tumor_LogR[ch[[13]],] will output the Tumor_LogR data of chromosome 13
-	# 9. chr: a list containing vectors with the indices for each distinct part that can be segmented separately (e.g. chromosome arm, stretch of DNA between gaps in the array design)
-	# 10. gender: a vector of gender for each cases ("XX" or "XY"). Default = NULL: all female ("XX")
-
-	ascat.loadData = function(Tumor_LogR_file, Tumor_BAF_file, Germline_LogR_file = NULL, Germline_BAF_file = NULL, chrs = c(1:22,"X","Y"), gender = NULL, sexchromosomes = c("X","Y"), read.from.disk=FALSE) {
-	snp.file.check.df <- getPatientSNPsBAFLogRPathDF(full.patient.vec = full.patient, release.path =  TX_421_DIR)
-	gl.and.all.reg.snp.file.df <- read.table(snp.file.check.df$snp_file_path, sep="\t", header=TRUE, stringsAsFactors=FALSE) 
-	# > head(gl.and.all.reg.snp.file.df)
-	#   chrom    pos ref alt U_LTX508_BS_GL_tot U_LTX508_BS_GL_var U_LTX508_BS_GL_BAF U_LTX508_BS_GL_LogR U_LTX508_SU_T1.R1_tot U_LTX508_SU_T1.R1_var U_LTX508_SU_T1.R1_BAF U_LTX508_SU_T1.R1_LogR
-	# 1     1 762273   G   A                566                565           1.010881                   0                   384                   384              1.012648                 -0.360
-	# 2     1 762496   G   G                 NA                 NA                 NA                  NA                    NA                    NA                    NA                 -0.604
-	# 3     1 762497   G   G                 NA                 NA                 NA                  NA                    NA                    NA                    NA                 -0.604
-	# 4     1 777237   C   C                 NA                 NA                 NA                  NA                    NA                    NA                    NA                 -0.112
-	# 5     1 777318   C   C                 NA                 NA                 NA                  NA                    NA                    NA                    NA                 -0.108
-	# 6     1 777335   A   A                 NA                 NA                 NA                  NA                    NA                    NA                    NA                 -0.108
-	#   U_LTX508_SU_T1.R2_tot U_LTX508_SU_T1.R2_var U_LTX508_SU_T1.R2_BAF U_LTX508_SU_T1.R2_LogR
-	# 1                   448                   446              1.008184                 -0.288
-	# 2                    NA                    NA                    NA                 -0.486
-	# 3                    NA                    NA                    NA                 -0.486
-	# 4                    NA                    NA                    NA                 -0.016
-	# 5                    NA                    NA                    NA                  0.034
-	# 6                    NA                    NA                    NA                  0.034
 	#So determine which SNPs are hz:
-	snp.file.df <- gl.and.all.reg.snp.file.df
+	snp.file.df <- gl.snp.df
 	snp.file.df$snp_pos <- paste0(snp.file.df$chrom, "_", snp.file.df$pos)
 	snp.file.df$snp_idx <- 1:nrow(snp.file.df)
 	#get germline column
-	gl.col.name <- grep("_GL_BAF", colnames(snp.file.df), value=TRUE)
+	gl.col.name <- "BAF"#grep("_GL_BAF", colnames(snp.file.df), value=TRUE)
 	logr.only.snp.df <- snp.file.df[is.na(snp.file.df[,gl.col.name]),]
 	actual.snp.file.df <- snp.file.df[! is.na(snp.file.df[, gl.col.name]),]
-	gl.homo.snp.df <- actual.snp.file.df[as.numeric(actual.snp.file.df[,gl.col.name]) > 0.7 | as.numeric(actual.snp.file.df[,gl.col.name]) < 0.3 ,]
-	gl.hz.snp.df <- actual.snp.file.df[as.numeric(actual.snp.file.df[,gl.col.name]) <= 0.7 &  as.numeric(actual.snp.file.df[,gl.col.name]) >= 0.3,]
+	print("nrow(gl.snp.df)")
+	print(nrow(gl.snp.df))
+	print("nrow(actual.snp.file.df)")
+	print(nrow(actual.snp.file.df))
+	gl.homo.snp.df <- actual.snp.file.df[! is.na(actual.snp.file.df[,gl.col.name]) & (as.numeric(actual.snp.file.df[,gl.col.name]) > 0.7 | as.numeric(actual.snp.file.df[,gl.col.name]) < 0.3) ,]
+	gl.hz.snp.df <- actual.snp.file.df[! is.na(actual.snp.file.df[,gl.col.name]) & (as.numeric(actual.snp.file.df[,gl.col.name]) <= 0.7 &  as.numeric(actual.snp.file.df[,gl.col.name]) >= 0.3),]
 	gl.hz.snp.df$hz_snp_idx <- 1:nrow(gl.hz.snp.df)
 	anno.seg.df$start_pos <- paste0(anno.seg.df$Chromosome, "_", anno.seg.df$Start_Position)
 	anno.seg.df$start_is_hz <- anno.seg.df$start_pos %in% gl.hz.snp.df$snp_pos
@@ -1195,12 +1176,8 @@ if (OVERWRITE_FLAG == TRUE) {
 	#potential column names of use: in_intersection in_disjoin_only in_arm_setdiff
 	#For no now let's only take those those segments that are in the intersection
 	int.anno.seg.df <- anno.seg.df[anno.seg.df$in_intersection%in%TRUE & anno.seg.df$full_sample %in% sample.vec[1],]
-	#And now the set diff:
-	#So we need to write a function that finds the nearest SNP that is
-	#A in the same chromosome arm
-	#B not already the the start or end of another segment
-	#C Not within another segment...
-	#So let's to it for missing starts...
+
+	#Let's just add the arm classificaitons to all the snp positions
 	snp.file.df$arm <- NA
 	for (ch in c(unique(int.anno.seg.df$chrom))) {
 		#get start and end of p
@@ -1226,7 +1203,11 @@ if (OVERWRITE_FLAG == TRUE) {
 
 	}#end for (chr in unique(int.anno.seg.df$chrom)) {
 
-	#Remove any of the SNPs that are already starting or ending segments...x	
+	#So we need to write a function that finds the nearest SNP that is
+	#1) in the same chromosome arm
+	#2) not already the the start or end of another segment
+	#3) Not within another segment...
+	#Remove any of the SNPs that are already starting or ending segments...	
 	all.snp.grs <- makeGRangesFromDataFrame(snp.file.df[ ! snp.file.df$snp_pos %in% int.anno.seg.df$start_pos & ! snp.file.df$snp_pos %in% int.anno.seg.df$end_pos,],
 			                         keep.extra.columns=FALSE,
 			                         ignore.strand=FALSE,
@@ -1247,22 +1228,25 @@ if (OVERWRITE_FLAG == TRUE) {
 			                         end.field=c("End_Position"),
 			                         strand.field="strand",
 			                         starts.in.df.are.0based=FALSE)
-	#Let's just add the arm classifcatinos to all the snps
-
+	#
 	lacking.snp.idx.vec <- which(int.anno.seg.df$start_is_pos %in% FALSE | int.anno.seg.df$end_is_pos %in% FALSE)
+
 	int.anno.seg.df$nearest_preceding_snp <- NA
 	int.anno.seg.df$nearest_following_snp <- NA 
+	print("	for (i in 1:length(all.int.grs)) {")
+	print("length(all.int.grs)")
+	print(length(all.int.grs))
 	for (i in 1:length(all.int.grs)) {
-
 		#Check the seqnames part as SNPs really need to be in the same need to be in the same chromosome arm...?
 		if( ! i %in% lacking.snp.idx.vec) {
 
 			next
 
 		}
+		print("lacking snp idx:")
+		print(i)
 
 		curr.arm <- int.anno.seg.df[i,]$chr_arm
-
 
 		if (! is.na(precede(all.int.grs[i], all.snp.grs)) && snp.file.df[precede(all.int.grs[i], all.snp.grs),]$arm %in% curr.arm) {
 
@@ -1289,23 +1273,19 @@ if (OVERWRITE_FLAG == TRUE) {
 			print(int.anno.seg.df[int.anno.seg.df$chr_arm %in% curr.arm, c("Start_Position", "End_Position", "start_snp_idx", "end_snp_idx", "nearest_preceding_snp", "nearest_following_snp")])
 
 
-		}
-		# prec.chr <- seqnames(all.snp.grs[precede(all.int.grs[i], all.snp.grs)])
-		# foll.chr <- seqnames(all.snp.grs[follow(all.int.grs[i], all.snp.grs)])
+		}#end if(is.na(int.anno.seg.df[i,]$nearest_following_snp) & is.na(int.anno.seg.df[i,]$nearest_preceding_snp)) {
+
 
 	}#end for (i in 1:length(all.int.grs)) {
 
 	int.anno.seg.df[is.na(int.anno.seg.df$start_snp_idx) | is.na(int.anno.seg.df$end_snp_idx), c("Start_Position", "End_Position", "start_snp_idx", "end_snp_idx", "nearest_preceding_snp", "nearest_following_snp") ]
-	int.anno.seg.df[int.anno.seg.df$chrom %in% 10, c("Start_Position", "End_Position", "start_snp_idx", "end_snp_idx", "nearest_preceding_snp", "nearest_following_snp")]
 	int.anno.seg.df[int.anno.seg.df$start_is_pos %in% FALSE, ]$Start_Position <- int.anno.seg.df[int.anno.seg.df$start_is_pos %in% FALSE, ]$nearest_following_snp
 	int.anno.seg.df[is.na(int.anno.seg.df$Start_Position), ]$Start_Position <- int.anno.seg.df[is.na(int.anno.seg.df$Start_Position), ]$nearest_preceding_snp
 	int.anno.seg.df[int.anno.seg.df$end_is_pos %in% FALSE, ]$End_Position <- int.anno.seg.df[int.anno.seg.df$end_is_pos %in% FALSE, ]$nearest_preceding_snp
 	int.anno.seg.df[is.na(int.anno.seg.df$End_Position), ]$End_Position <- int.anno.seg.df[is.na(int.anno.seg.df$End_Position), ]$nearest_following_snp
-	int.anno.seg.df[is.na(int.anno.seg.df$Start_Position), c("Start_Position", "End_Position", "start_snp_idx", "end_snp_idx")]#"nearest_preceding_snp", "nearest_following_snp"
-	int.anno.seg.df[int.anno.seg.df$chrom %in% 10, c("Start_Position", "End_Position", "start_snp_idx", "end_snp_idx", "nearest_preceding_snp", "nearest_following_snp")]
-	#make the assumption that there is no
-	f.int.anno.seg.df <- int.anno.seg.df
 
+	f.int.anno.seg.df <- int.anno.seg.df
+	print("for (i in 2:nrow(f.int.anno.seg.df)) {")
 	for (i in 2:nrow(f.int.anno.seg.df)) {
 
 		if(f.int.anno.seg.df[ (i - 1),]$chr_arm == f.int.anno.seg.df[i,]$chr_arm) {
@@ -1336,66 +1316,37 @@ if (OVERWRITE_FLAG == TRUE) {
 	#make a quick summary column
 	f.int.anno.seg.df$start_is_pos <- f.int.anno.seg.df$start_is_hz | f.int.anno.seg.df$start_is_homo | f.int.anno.seg.df$start_is_logr
 	f.int.anno.seg.df$end_is_pos <- f.int.anno.seg.df$end_is_hz | f.int.anno.seg.df$end_is_homo | f.int.anno.seg.df$end_is_logr
-	f.int.anno.seg.df[is.na(f.int.anno.seg.df$start_snp_idx) | is.na(f.int.anno.seg.df$end_snp_idx), c("Start_Position", "End_Position", "start_snp_idx", "end_snp_idx", "nearest_preceding_snp", "nearest_following_snp") ]
+	#So now let's assign these new snps to be the starts and ends...
 	f.int.anno.seg.df[f.int.anno.seg.df$start_is_pos %in% TRUE ,]$start_snp_idx <- snp.file.df[match(f.int.anno.seg.df[f.int.anno.seg.df$start_is_pos %in% TRUE ,]$start_pos, snp.file.df$snp_pos),]$snp_idx
 	f.int.anno.seg.df[f.int.anno.seg.df$end_is_pos %in% TRUE ,]$end_snp_idx <- snp.file.df[match(f.int.anno.seg.df[f.int.anno.seg.df$end_is_pos %in% TRUE ,]$end_pos, snp.file.df$snp_pos),]$snp_idx
-	#So now let's assign these new snps to be the starts and ends..
 
-	f.int.anno.seg.df[is.na(f.int.anno.seg.df$start_snp_idx) | is.na(f.int.anno.seg.df$end_snp_idx), c("Start_Position", "End_Position", "start_snp_idx", "end_snp_idx", "nearest_preceding_snp", "nearest_following_snp") ]
-
-	#The other option is to rewrite the joint segmentation so that it works on the basis
-	f.int.anno.seg.df[is.na(f.int.anno.seg.df$start_snp_idx) | is.na(f.int.anno.seg.df$end_snp_idx), c("Start_Position", "End_Position", "start_snp_idx", "end_snp_idx", "nearest_preceding_snp", "nearest_following_snp") ]
-	#So for the case of A_LTX121 the intersection has segments that only end on SNPs...
-	int.dj.anno.seg.df <- anno.seg.df[anno.seg.df$in_intersection | anno.seg.df$in_disjoin_only,]
-
-
-	#load in the phased baf:
-	phased.baf.df.list <- readRDS(phased.baf.path)
-	# > str(phased.baf.df.list, max=1)
-	# List of 2
-	#  $ A_LTX121_SU_T1-R1:'data.frame':	33190 obs. of  11 variables:
-	#  $ A_LTX121_SU_T1-R2:'data.frame':	33190 obs. of  11 variables:
-	#  'data.frame':	33190 obs. of  11 variables:
-	#   $ chrom                       : num  1 1 1 1 1 1 1 1 1 1 ...
-	#   $ pos                         : int  871020 879317 880390 881627 892460 894573 896064 897730 902108 906272 ...
-	#   $ BAF                         : num  0.257 0.248 0.2 0.866 0.143 ...
-	#   $ logR                        : num  -0.23 -0.311 -0.349 -0.175 -0.564 -0.299 -0.295 -0.422 -0.274 -0.644 ...
-	#   $ BAFsegmented                : num  0.231 0.231 0.231 0.231 0.231 ...
-	#   $ logRsegmented               : num  -0.327 -0.327 -0.327 -0.327 -0.327 ...
-	#   $ samp                        : chr  "A_LTX121_SU_T1-R1" "A_LTX121_SU_T1-R1" "A_LTX121_SU_T1-R1" "A_LTX121_SU_T1-R1" ...
-	#   $ sample_phased_by_this_sample: chr  "A_LTX121_SU_T1-R1" "A_LTX121_SU_T1-R1" "A_LTX121_SU_T1-R1" "A_LTX121_SU_T1-R1" ...
-	#   $ maj_is_cpnA_logic_vec       : num  0 0 0 1 0 1 0 0 0 1 ...
-	#   $ maj_is_cpnB_logic_vec       : num  1 1 1 0 1 0 1 1 1 0 ...
-	#   $ ph_median_segmented_BAF     : num  0.207 0.207 0.207 0.207 0.207 ...
-
-
-	#Segmentation:
-	#So we're going to need the indices of the BAF snps, only needs to be done once.
-	phased.baf.info.df <- phased.baf.df.list[[1]]
+	#So we're going to need the indices of the BAF snps, only needs to be done once as will be the same for all samples
+	phased.baf.info.df <- patient.phased.BAF.df.list[[1]]
 	phased.baf.info.df$snp_pos <- paste0(phased.baf.info.df$chrom, "_", phased.baf.info.df $pos)
 	#Now we need to know their idx in the original data frame
 	phased.baf.info.df$snp_idx <- snp.file.df[match(phased.baf.info.df$snp_pos, snp.file.df$snp_pos),]$snp_idx
-
+	#The variable was renamed here to allow debugging but is just continues.
 	all.samp.j.seg.df <- f.int.anno.seg.df
 
 	#Note there could be an issue here if not every segment contains a BAF point...
-	#But, if we're using hte intersection this should be fine.
+	#But, if we're using hte intersection this should be fine? Not sure on this point.
+	#However it doesn't really matter as ASCAT makes sure every segment whether or not it had any baf point has an allele-specific value.
+	print("	for (samp in sample.vec) { run ASCAT...")
+
+	#So now there are several things we want to do here depending on the options passed to the tool
+	#1) Using the phasing information obtained from all samples, allow a free run allowing ASCAT to call whatever purity and ploidy of all samples included
+	#in the run it feels is most appropriate. This will potentially provide new and improved solutions that might be better than what was fed into mphase
+	#particularly if the segmentation of the input did not make use of multi-region phasing data.
+	#2)   
 
 	for (samp in sample.vec) {
 		print(samp)
 
-		if (purity.est.vec[samp]  < 0.15) {
+		#load(pt.snp.file.paths.df[pt.snp.file.paths.df$sample %in% samp,]$samp_ascat_bc_path) 
+		load(pt.snp.file.paths.df[samp,]$samp_ascat_bc_path)
 
-			MINRHO <- 0.04#This is normally set within the ASCAT script but here I'm modifying based on the input...
-
-		} else {
-
-			MINRHO <- 0.10
-		}
-
-		load(pt.snp.file.paths.df[pt.snp.file.paths.df$sample %in% samp,]$samp_ascat_bc_path)
 		#So let's get the phased BAF:
-		samp.pha.baf.df <- phased.baf.df.list[[samp]]
+		samp.pha.baf.df <- patient.phased.BAF.df.list[[samp]]
 		print("here1")
 		#So we're going to need the indices of the BAF snps...
 		samp.pha.baf.df$snp_pos <- phased.baf.info.df$snp_pos
@@ -1439,7 +1390,7 @@ if (OVERWRITE_FLAG == TRUE) {
 		  seg.min.hz.snp.idx<- seg.hz.snp.df[1,]$hz_snp_idx
 		  seg.max.hz.snp.idx<- seg.hz.snp.df[nrow(seg.hz.snp.df),]$hz_snp_idx
 		  #Let's get the germline baf data specfically so that we can perform a crude correction
-		  gl.col.name <- grep("_GL_BAF", colnames(seg.hz.snp.df))
+		  gl.col.name <- grep("BAF", colnames(seg.hz.snp.df))
 		  gl.seg.hz.snp.df <- seg.hz.snp.df[, c(1, 2, gl.col.name)]
 		  colnames(gl.seg.hz.snp.df)[3] <- "BAF"
 		  #Sample specific!
@@ -1537,6 +1488,18 @@ if (OVERWRITE_FLAG == TRUE) {
 		ascat.bc[["Tumor_BAF_segmented"]][[1]][,1] <- tum.baf.segmented.vec
 		#Do the ASCAT steps!
 		print("Doing the free run ASCAT steps....")
+
+
+
+
+		if (purity.est.vec[samp]  < 0.15) {
+
+			MINRHO <- 0.04#This is normally set within the ASCAT script but here I'm modifying based on the input...
+
+		} else {
+
+			MINRHO <- 0.10#These should probably be constants set at the to of the script.
+		}
 
 
 		setwd(free.run.dir)
