@@ -448,6 +448,7 @@ if (OVERWRITE_FLAG == TRUE) {
 	#So we need the centromere postions for each arm:
 	#Add in p_end and q_start
 
+#So here is where the joint segmentation stuff begins:
 
 	all.samp.grs <- makeGRangesFromDataFrame(f.joint.segs.df,
 			                         keep.extra.columns=FALSE,
@@ -852,6 +853,10 @@ if (OVERWRITE_FLAG == TRUE) {
 	}#end 	for ( chr in CHRS_TO_USE_VEC ) {
 	sorted.all.bp.all.samps.segs.anno.df$chr_arm <- all.samp.all.bp.anno.grs$chr_arm
 	#So now we have chromosome arms on everything...
+
+
+
+	
 	#TBKW edit for xphase version
 	anno.seg.df <- sorted.all.bp.all.samps.segs.anno.df
 
@@ -1174,8 +1179,11 @@ if (OVERWRITE_FLAG == TRUE) {
 	anno.seg.df[anno.seg.df$start_is_pos %in% TRUE ,]$start_snp_idx <- snp.file.df[match(anno.seg.df[anno.seg.df$start_is_pos %in% TRUE ,]$start_pos, snp.file.df$snp_pos),]$snp_idx
 	anno.seg.df[anno.seg.df$end_is_pos %in% TRUE ,]$end_snp_idx <- snp.file.df[match(anno.seg.df[anno.seg.df$end_is_pos %in% TRUE ,]$end_pos, snp.file.df$snp_pos),]$snp_idx
 	#potential column names of use: in_intersection in_disjoin_only in_arm_setdiff
-	#For no now let's only take those those segments that are in the intersection
-	int.anno.seg.df <- anno.seg.df[anno.seg.df$in_intersection%in%TRUE & anno.seg.df$full_sample %in% sample.vec[1],]
+	# #For no now let's only take those those segments that are in the intersection
+	# int.anno.seg.df <- anno.seg.df[anno.seg.df$in_intersection%in%TRUE & anno.seg.df$full_sample %in% sample.vec[1],]
+
+	#Let's try adding in the disjoin...
+	int.anno.seg.df <- anno.seg.df[anno.seg.df$in_intersection%in%TRUE | anno.seg.df$in_disjoin_only%in%TRUE & anno.seg.df$full_sample %in% sample.vec[1],]
 
 	#Let's just add the arm classificaitons to all the snp positions
 	snp.file.df$arm <- NA
@@ -1219,6 +1227,7 @@ if (OVERWRITE_FLAG == TRUE) {
 			                         starts.in.df.are.0based=FALSE)
 
 	#Get indices of SNPs with missing start or end idxs
+	int.anno.seg.df$strand <- "*"
 	all.int.grs <- makeGRangesFromDataFrame(int.anno.seg.df,
 			                         keep.extra.columns=FALSE,
 			                         ignore.strand=FALSE,
@@ -1337,26 +1346,36 @@ if (OVERWRITE_FLAG == TRUE) {
 	#1) Using the phasing information obtained from all samples, allow a free run allowing ASCAT to call whatever purity and ploidy of all samples included
 	#in the run it feels is most appropriate. This will potentially provide new and improved solutions that might be better than what was fed into mphase
 	#particularly if the segmentation of the input did not make use of multi-region phasing data.
-	#2)   
+	#2)  
 
 	for (samp in sample.vec) {
 		print(samp)
 
-		#load(pt.snp.file.paths.df[pt.snp.file.paths.df$sample %in% samp,]$samp_ascat_bc_path) 
+		#load(pt.snp.file.paths.df[pt.snp.file.paths.df$sample %in% samp,]$samp_ascat_bc_path)
+		#Here we load in the file path of the relevant samples ascat.bc object. For compatibility with Matt's code
+		#This should accept the ascat.bc files in eithe RDS or RData format.
 		load(pt.snp.file.paths.df[samp,]$samp_ascat_bc_path)
+
+		if(grepl("RData", pt.snp.file.paths.df[samp,]$samp_ascat_bc_path)) {
+
+		  print("ascat.bc object in RData file, loading...")
+		  load(pt.snp.file.paths.df[samp,]$samp_ascat_bc_path)
+		  #This will have loaded the ascat.bc object in
+
+		} else {
+
+		  ascat.bc <- readRDS(pt.snp.file.paths.df[samp,]$samp_ascat_bc_path)
+
+		}
 
 		#So let's get the phased BAF:
 		samp.pha.baf.df <- patient.phased.BAF.df.list[[samp]]
-		print("here1")
 		#So we're going to need the indices of the BAF snps...
 		samp.pha.baf.df$snp_pos <- phased.baf.info.df$snp_pos
 		samp.pha.baf.df$snp_idx <- phased.baf.info.df$snp_idx
-
 		#So now we need the segments that refer to this sample (as these are joint segments
 		#these should all be same for each sample regardless.)
 		samp.seg.df <- all.samp.j.seg.df#[all.samp.j.seg.df$full_sample %in% samp,]#No need for everything to be reset as we have one set of joint segmentation.
-		print("here2")
-
 		#Let's do the LogR
 		tum.logr.vec <- ascat.bc[["Tumor_LogR"]][,1]
 		tum.logr.segmented.vec <- ascat.bc[["Tumor_LogR_segmented"]][,1]
@@ -1366,8 +1385,6 @@ if (OVERWRITE_FLAG == TRUE) {
 		  tum.logr.segmented.vec[samp.seg.df[i,]$start_snp_idx:samp.seg.df[i,]$end_snp_idx] <- mean(tum.logr.vec[samp.seg.df[i,]$start_snp_idx:samp.seg.df[i,]$end_snp_idx])
 		  
 		}#end for (i in 1:nrow(rle.baf.pcf.df)){
-
-		print("here3")
 		#Let's do the BAF recalculation
 		tum.baf.vec <- ascat.bc[["Tumor_BAF"]][,1]
 		tum.baf.segmented.vec <- ascat.bc[["Tumor_BAF_segmented"]][[1]][,1]
@@ -1378,13 +1395,11 @@ if (OVERWRITE_FLAG == TRUE) {
 		  print(samp.seg.df[i,])
 		  #So first get the indices of the BAF indices within the segment
 		  seg.hz.snp.df <- gl.hz.snp.df[gl.hz.snp.df$snp_idx <= samp.seg.df[i,]$end_snp_idx & gl.hz.snp.df$snp_idx >= samp.seg.df[i,]$start_snp_idx,]
-
 		  if( nrow(seg.hz.snp.df) == 0) {
 
 		  	next
 
-		  }
-
+		  }#end if( nrow(seg.hz.snp.df) == 0) {
 		  #Get indices of hz SNPs that are present ... so we need some form of mapping here to the smaller
 		  #These data contain all samples from this patient:
 		  seg.min.hz.snp.idx<- seg.hz.snp.df[1,]$hz_snp_idx
@@ -1399,7 +1414,6 @@ if (OVERWRITE_FLAG == TRUE) {
 
 		  if(nrow(seg.ph.hz.snp.df) != nrow(gl.seg.hz.snp.df)) {
 
-
 		  	print("Number of phased SNPs is different to the actual number hz snps present in seg, perhaps to few to phase by MPhase?")
 		  	print("nrow(seg.ph.hz.snp.df)")
 		  	print(nrow(seg.ph.hz.snp.df) )
@@ -1407,7 +1421,7 @@ if (OVERWRITE_FLAG == TRUE) {
 		  	print("nrow(gl.seg.hz.snp.df)")
 		  	print(nrow(gl.seg.hz.snp.df))
 		  	next
-		  }
+		  }#end if(nrow(seg.ph.hz.snp.df) != nrow(gl.seg.hz.snp.df)) {
 		  #GL specific
 		  gl.seg.hz.snp.df <- cbind(gl.seg.hz.snp.df, seg.ph.hz.snp.df[, c("maj_is_cpnA_logic_vec", "maj_is_cpnB_logic_vec", "snp_pos", "snp_idx")])
 		  if(nrow(seg.hz.snp.df) == 0 | nrow(seg.ph.hz.snp.df) == 0){
@@ -1486,11 +1500,16 @@ if (OVERWRITE_FLAG == TRUE) {
 		#First let's do the free runs:
 		ascat.bc[["Tumor_LogR_segmented"]][,1] <- tum.logr.segmented.vec
 		ascat.bc[["Tumor_BAF_segmented"]][[1]][,1] <- tum.baf.segmented.vec
+
+		#End of section generating the spoofed ascat.bc object that utilises the phasing information. This should be made into a function.
+
+
+
 		#Do the ASCAT steps!
+
+		#TODO there may be issues when no soution that passes ASCAT's goodness of fit thresholds.
+		#This will prevent any output in the runs that don't have a specified purity and ploidy. 
 		print("Doing the free run ASCAT steps....")
-
-
-
 
 		if (purity.est.vec[samp]  < 0.15) {
 
@@ -1501,35 +1520,14 @@ if (OVERWRITE_FLAG == TRUE) {
 			MINRHO <- 0.10#These should probably be constants set at the to of the script.
 		}
 
-
 		setwd(free.run.dir)
-
 		ascat.plotSegmentedData(ascat.bc)
-
 		ascat.output = ascat.runAscat(ascat.bc,gamma=1)#, rho_manual = rho_solution, psi_manual = psi_solution)
-
 		save(ascat.bc, file=paste(samp, 'ascat.bc.RData',sep='.'))
 		save(ascat.output, file=paste(samp, 'ascat.output.RData',sep='.'))
-		#We need to work out where the MSAI is and flip it as well...
 		#Calculate number of heterozygous positions per segment
 		tmp <- ascat.output$segments_raw
-		n.het <- 0
-		#Identify heterozygous positions based on germline
-		# narm <- !is.na(normal.baf_logr[,3])
-		# baf_class <- Mclust(normal.baf_logr[narm,3],G=3)$classification
-		# hetname <- names(sort(abs(0.5-tapply(normal.baf_logr[narm,3], baf_class, mean)),decreasing=F))[1]
-		# baf_class <- rep(NA, length(normal.baf_logr[,3]))
-		# baf_class[narm] <- c(0,1)[match(baf_class[narm] == hetname,c('FALSE','TRUE'))]
-		# tumor.baf_logr <- cbind(tumor.baf_logr,baf_class)
-
-		
-		# for(j in 1:nrow(tmp)){
-		# 	#cat(j)
-		# 	a <- tumor.baf_logr[tumor.baf_logr[,1] %in% tmp[j,2],,drop=F]
-		# 	a <- a[a[,2] >= tmp[j,3] & a[,2] <= tmp[j,4],,drop=F]
-		# 	#n.het is really n.probes...
-		# 	n.het <- c(n.het,nrow(a))
-		# }
+		n.het <- 0#FIXME should really ad
 		acf <- ascat.output$aberrantcellfraction
 		ploidy <- ascat.output$ploidy
 		
@@ -1539,7 +1537,6 @@ if (OVERWRITE_FLAG == TRUE) {
 		chr[chr %in% c('x','X')] <- 23
 		chr[chr %in% c('y', 'Y')] <- 24
 		tmp[,2] <- as.numeric(chr)
-
 		#add a column defining gain and losslength
 		callState <- rep('neutral', nrow(tmp))
 		callState[log2((tmp[,'nAraw']+tmp[,'nBraw'])/tmp[,'Ploidy']) >= log2(2.5/2)] <- 'Gain'
@@ -1551,44 +1548,28 @@ if (OVERWRITE_FLAG == TRUE) {
 		seg <- tmp
 		save(seg, file=paste(samp,'ascat.seg.RData',sep='.'))
 
-
 		rm(ascat.output)
 		rm(seg)
 
-		#OK so now let's do the fixed solution run?
+		#So what we want to do here is to generate all of the solutions that ASCAT proposed using the phased data... 
+		#TODO - pull out the code that saves the solutions
+		#and get a loop that reruns ASCAT using all of them, each in its own directory.
 
+
+		#OK so now let's do the fixed solution run... 
 		setwd(qc.choice.dir)
-
 		samp.ploidy <- ploidy.est.vec[samp]
 		samp.purity <- purity.est.vec[samp]
 
 
 		ascat.plotSegmentedData(ascat.bc)
-
 		ascat.output = ascat.runAscat(ascat.bc,gamma=1, rho_manual = samp.purity, psi_manual = samp.ploidy)
-
 		save(ascat.bc, file=paste(samp, 'ascat.bc.RData',sep='.'))
 		save(ascat.output, file=paste(samp, 'ascat.output.RData',sep='.'))
 		#We need to work out where the MSAI is and flip it as well...
 		#Calculate number of heterozygous positions per segment
 		tmp <- ascat.output$segments_raw
-		n.het <- 0
-		# #Identify heterozygous positions based on germline
-		# narm <- !is.na(normal.baf_logr[,3])
-		# baf_class <- Mclust(normal.baf_logr[narm,3],G=3)$classification
-		# hetname <- names(sort(abs(0.5-tapply(normal.baf_logr[narm,3], baf_class, mean)),decreasing=F))[1]
-		# baf_class <- rep(NA, length(normal.baf_logr[,3]))
-		# baf_class[narm] <- c(0,1)[match(baf_class[narm] == hetname,c('FALSE','TRUE'))]
-		# tumor.baf_logr <- cbind(tumor.baf_logr,baf_class)
-
-		
-		# for(j in 1:nrow(tmp)){
-		# 	#cat(j)
-		# 	a <- tumor.baf_logr[tumor.baf_logr[,1] %in% tmp[j,2],,drop=F]
-		# 	a <- a[a[,2] >= tmp[j,3] & a[,2] <= tmp[j,4],,drop=F]
-		# 	#n.het is really n.probes...
-		# 	n.het <- c(n.het,nrow(a))
-		# }
+		n.het <- 0#FIXME probably want to add these in.
 		acf <- ascat.output$aberrantcellfraction
 		ploidy <- ascat.output$ploidy
 		
@@ -1608,25 +1589,55 @@ if (OVERWRITE_FLAG == TRUE) {
 
 		tmp <- cbind(tmp,callState)
 		seg <- tmp
+		samp.ascat.segs.df <- seg
 		save(seg, file=paste(samp,'ascat.seg.RData',sep='.'))
-
-
-
-		rm(ascat.output)
-		rm(seg)
-
-		#So now we want to generate all the other solutions that are produced in this free run:
-
-
-		#Now we want to run the original solution that's in the sample:
-
+		#rm(ascat.output)
+		#rm(seg)
 
 		print("Next sample....")
 	}#for (samp in sample.vec) {
 
-	#1)So now we need to do the flipping of any MSAI events
+	#1)So now we need to do the flipping of any MSAI events that were present:
+	#To do this we need to work out which ASCAT segments overlap with the Mphase segments that were input to ASCAT.
+	#We can do this by getting the overlaps of the smaller intersection/disjoin mphase segments with the ASCAT data. 
+	
+
+	STOp
+	#was outputted by ASCAT
+	#Then we can replace the ASCAT segments with these smaller unjoined ones from the mphase output
+	#Flip their values of A and B
+	#This will then be a set of compatible segments for the rest of mpahse
+	#This will have to happen for all the MSAI segs...
+	samp.ascat.seg.grs <- makeGRangesFromDataFrame(samp.ascat.segs.df,
+	                        keep.extra.columns=FALSE,
+	                        ignore.strand=TRUE,
+	                        seqinfo=NULL,
+	                        seqnames.field=c("chr"),
+	                        start.field=c("startpos"),
+	                        end.field=c("endpos"),
+	                        strand.field="strand",
+	                        starts.in.df.are.0based=FALSE)
+	#
+	all.samp.overlap.grs <- getOverlapGRanges(curr.all.bp.chr.gr, all.samp.w.metadata.grs)
+	all.seg.MSAI.by.BAF.ltnpd.present.list
+	#Let's try adding in the disjoin...
+	int.anno.seg.df <- anno.seg.df[anno.seg.df$in_intersection%in%TRUE | anno.seg.df$in_disjoin_only%in%TRUE & anno.seg.df$full_sample %in% sample.vec[1],]
+
+	#So basically now all we need to do is repeat the exact same process that's already happened?
+	#Basically redo all the seg joint segmentation finding and pass everything through to the next stage? 
+	#Why not?
+	#So let's refactor the earlier parts of the code into a function. Then apply it.
+	int.anno.seg.df
+
+
+
+	#Now we want to take this new ASCAT segmentation, purity and ploidy estimate and raw values and 
+	#Any raw values less than zero we need to s
+	#So, we also want to get the cpn A and B values from the internals of ASCAT
+
 	#2)Get the raw cpn values
 	#3)Work out what's going on in terms of intersection etc
+
 
 
 
@@ -1652,7 +1663,8 @@ if (OVERWRITE_FLAG == TRUE) {
 	saveRDS(all.samp.non.hz.logr.and.tot.cpn.df.list, file = all.samp.non.hz.logr.and.tot.cpn.df.list.path)
 
 
-
+	#TBKW edit, so this is where we want to update the raw copy number to reflect what
+	#ASCAT has outputted
 	#Add this the unphaseable stuff too maybe? Not necessary.
 	print("Applying phasing to all samples to get phased raw cpn...")
 	asas.ph.raw.cpn.lists <- getAllSegAllSamplePhasedRawCPNList(sample.vec = sample.vec,
