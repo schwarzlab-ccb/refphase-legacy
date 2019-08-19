@@ -694,6 +694,9 @@ ascat.runAscat = function(ASCATobj, gamma = 0.55, rho_manual = NA, psi_manual = 
     seg_raw[,6]=as.numeric(seg_raw[,6])
     seg_raw[,7]=as.numeric(seg_raw[,7])
     seg_raw[,8]=as.numeric(seg_raw[,8])
+    #TBKW edit
+    nArawfull=res[[arraynr]]$nArawfull
+    nBrawfull=res[[arraynr]]$nBrawfull
 
   }
   else {
@@ -707,10 +710,18 @@ ascat.runAscat = function(ASCATobj, gamma = 0.55, rho_manual = NA, psi_manual = 
     naarrays = NULL
     seg = NULL
     seg_raw = NULL
-  }
+    #TBKWedit
+    nArawfull=NULL
+    nBrawfull=NULL
 
-  return(list(nA = n1, nB = n2, aberrantcellfraction = tp, ploidy = ploidy, psi = psi, goodnessOfFit = goodnessOfFit,
-              failedarrays = fa, nonaberrantarrays = naarrays, segments = seg, segments_raw = seg_raw))
+  }
+  #TBKWedit
+  print("Returning from ASCAT test:")
+return(list(nA = n1, nB = n2, aberrantcellfraction = tp, ploidy = ploidy, psi = psi, goodnessOfFit = goodnessOfFit,
+            failedarrays = fa, nonaberrantarrays = naarrays, segments = seg, segments_raw = seg_raw, nArawfull = nArawfull, nBrawfull = nBrawfull))
+
+  # return(list(nA = n1, nB = n2, aberrantcellfraction = tp, ploidy = ploidy, psi = psi, goodnessOfFit = goodnessOfFit,
+  #             failedarrays = fa, nonaberrantarrays = naarrays, segments = seg, segments_raw = seg_raw))
 }
 
 
@@ -1522,8 +1533,12 @@ runASCAT = function(lrr, baf, lrrsegmented, bafsegmented, gender, SNPpos, chromo
       dev.off()
     }
 
+    # return(list(rho = rho_opt1, psi = psi_opt1, goodnessOfFit = goodnessOfFit_opt1, nonaberrant = nonaberrant,
+    #             nA = n1all, nB = n2all, seg = seg, seg_raw = seg_raw))
+    #TBKW edit
+    print("Returning from ASCAT test:")
     return(list(rho = rho_opt1, psi = psi_opt1, goodnessOfFit = goodnessOfFit_opt1, nonaberrant = nonaberrant,
-                nA = n1all, nB = n2all, seg = seg, seg_raw = seg_raw))
+                nA = n1all, nB = n2all, seg = seg, seg_raw = seg_raw, nArawfull = data.frame(nArawfull=nArawfull,stringsAsFactors=FALSE), nBrawfull = data.frame(nBrawfull=nBrawfull,stringsAsFactors=FALSE)))
 
   }
 

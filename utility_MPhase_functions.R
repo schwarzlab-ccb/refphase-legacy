@@ -1,5 +1,20 @@
 
 
+##OVERLOADING FUNCTION FOR NOW... 
+#Refactor to pass sample.ph.hz.ascat.df.list as a variable
+##Params:
+##
+##Returns:
+##
+getPhasedASCATRawCopyNumberAB <- function(ref.ss.lr.baf.df, sample, sample.ph.hz.ascat.df.list = PH_ALL_SAMP_ASCAT_RAW_CPN_DF_LIST) {
+  print("called getPhasedASCATRawCopyNumberAB")
+  #     chrom    pos      BAF       logR BAFsegmented logRsegmented
+  # 41      1 871020 0.256944 -0.2700826    0.2308897    -0.3350534
+  ph.raw.cpn.df <- PH_ALL_SAMP_ASCAT_RAW_CPN_DF_LIST[[sample]]
+  return(ph.raw.cpn.df[ph.raw.cpn.df$snp_pos %in% paste0(ref.ss.lr.baf.df$chrom, "_", ref.ss.lr.baf.df$pos), c("ph_ascat_nAraw","ph_ascat_nBraw")])
+
+}#end calculateSNPCopyNumberAB <- function(
+
 ##
 ##Params:
 ##

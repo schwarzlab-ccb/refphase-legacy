@@ -80,6 +80,9 @@ system(paste0("mkdir ", qc.choice.dir))
 system(paste0("mkdir ", rescue.run.dir))
 
 
+###GLOBAL FLAG that alters the behaviour of some hacked functions so that they work with MPhase and XPhase
+USING_XPHASE <- FALSE 
+
 
 
 options(stringsAsFactors = FALSE)
@@ -330,33 +333,19 @@ print("Finished generating paths...")
 #Note that the functions to create the single dataframes that it accepts are in the data_input_and_QC_functions.R
 if (OVERWRITE_FLAG == TRUE) {
 
-	f.joint.segs.df <- read.table(seg.file.path, stringsAsFactors = FALSE, sep = "\t", header = TRUE)
+	init.f.joint.segs.df <- read.table(seg.file.path, stringsAsFactors = FALSE, sep = "\t", header = TRUE)
 
 	#Legacy, but I wanted to add in the thresholds for gain/loss etc as they were called in the TRACER NEJM 2017 paper
 	#Might be useful... it is aved as part of f.joint.segs.df
-	f.joint.segs.df$sample <- gsub("\\.", "-", gsub("_LogR", "", f.joint.segs.df$sample))
-	f.joint.segs.df$callState <- NULL
-	f.joint.segs.df$patient <- patient
-	f.joint.segs.df$sample_name <- paste(patient,sapply(f.joint.segs.df$sample, function(x) strsplit(x, split = "-")[[1]][2]), sep = ":")
-	cpn.call.state.vec <- rep("neutral", nrow(f.joint.segs.df))
-	tot.raw.cpn.vec <- f.joint.segs.df$nAraw + f.joint.segs.df$nBraw
-	log.tot.raw.over.ploidy.cpn.vec <- log2(tot.raw.cpn.vec / f.joint.segs.df$Ploidy)
-	cpn.call.state.vec[log.tot.raw.over.ploidy.cpn.vec >= log2(2.5 / 2)] <- "gain"
-	cpn.call.state.vec[log.tot.raw.over.ploidy.cpn.vec <= log2(1.5 / 2)] <- "loss"
-	cpn.call.state.vec[tot.raw.cpn.vec >= ((2 * f.joint.segs.df$Ploidy) + 1)] <- "amp"
-	cpn.call.state.vec[tot.raw.cpn.vec <= 0.5] <- "deep_loss"
-	f.joint.segs.df$cpn_call <- cpn.call.state.vec
-	f.joint.segs.df$arm_or_focal_event <- "none"
-	f.joint.segs.df$arm_event_present <- "none"
-	f.joint.segs.df$within_chr_arm <- "not_in_arm"
-	f.joint.segs.df$uniq_id <- paste0(f.joint.segs.df$sample, "@", f.joint.segs.df$chr, ":", f.joint.segs.df$startpos, ":", f.joint.segs.df$endpos)
-
+	f.joint.segs.df <- reformatInitialSegmentationInput(f.joint.segs.df = init.f.joint.segs.df)
 
 	sample.vec <- unique(f.joint.segs.df$sample)
 	ploidy.est.vec <- f.joint.segs.df[ ! duplicated(f.joint.segs.df$sample), 'Ploidy']
 	names(ploidy.est.vec) <- unique(f.joint.segs.df$sample)
 	purity.est.vec <- f.joint.segs.df[ ! duplicated(f.joint.segs.df$sample), 'ACF']
 	names(purity.est.vec) <- unique(f.joint.segs.df$sample)
+
+
 
 	if (data.format.to.use == "MEDICC") {
 		cat("data format is MEDICC, reading in sites text file...\n")
@@ -370,24 +359,6 @@ if (OVERWRITE_FLAG == TRUE) {
 		all.samp.SNP.list <- readInMEDICCInputFormatParallel(snp.file.df = snp.file.df,
 															processed.orig.cpn.segs.df = f.joint.segs.df,
 															sample.vec = sample.vec)
-	} else if (data.format.to.use == "TRACERx_exome" | data.format.to.use == "TRACERx_snp_array") {
-
-		if (data.format.to.use == "TRACERx_exome") {
-			array.type <- "exome"
-		} else if (data.format.to.use == "TRACERx_snp_array") {
-			array.type <- "snp_array"
-		}
-		#So we want to read in a file that looks like this:	#patient_id sample_id ascat_bc_file_path
-		pt.snp.file.paths.df <- read.table(snp.file.path, stringsAsFactors = FALSE, sep = "\t", header = TRUE)
-		print("Reading in SNP data...")
-		all.samp.SNP.list <- getSNPDataForTRACERxExomeSNPArray(pt.file.paths.df = pt.snp.file.paths.df, joint.segs.df =  f.joint.segs.df)
-
-	} else if (data.format.to.use == "TRACERx_WGS") {
-
-		array.type <- "WGS"
-		print("Reading in WGS SNP data...")
-		all.samp.SNP.list <- getSNPDataForTRACERxWGS(snp.file.path)
-
 	} else if (data.format.to.use == "ASCAT") {
     # Parse a bunch of rds files containing ascat.bc objects
     pt.snp.file.paths.df <- read.delim(snp.file.path,
@@ -407,14 +378,6 @@ if (OVERWRITE_FLAG == TRUE) {
 
     #Making the assumption here that all regions that were analysed had 
     gl.snp.df <- readInGermlineFromASCAT(ascat_bc_rds_path = pt.snp.file.paths.df[1,]$samp_ascat_bc_path)
-
-    # chrom    pos ref alt A_LTX121_BS_GL_tot A_LTX121_BS_GL_var A_LTX121_BS_GL_BAF A_LTX121_BS_GL_LogR A_LTX121_SU_T1.R1_tot A_LTX121_SU_T1.R1_var 
-    # A_LTX121_SU_T1.R1_BAF A_LTX121_SU_T1.R1_LogR A_LTX121_SU_T1.R2_tot A_LTX121_SU_T1.R2_var A_LTX121_SU_T1.R2_BAF A_LTX121_SU_T1.R2_LogR  snp_pos snp_idx
-
-    #gl.homo.snp.df <- actual.snp.file.df[as.numeric(actual.snp.file.df[,gl.col.name]) > 0.7 | as.numeric(actual.snp.file.df[,gl.col.name]) < 0.3 ,]
-
-
-    
 
     # # Temporarily remove everything except a few chromosomes
     # #test_chrs <- c("chr1", "chr2")
@@ -448,432 +411,22 @@ if (OVERWRITE_FLAG == TRUE) {
 	#So we need the centromere postions for each arm:
 	#Add in p_end and q_start
 
-#So here is where the joint segmentation stuff begins:
-
-	all.samp.grs <- makeGRangesFromDataFrame(f.joint.segs.df,
-			                         keep.extra.columns=FALSE,
-			                         ignore.strand=FALSE,
-			                         seqinfo=NULL,
-			                         seqnames.field=c("seqnames", "seqname",
-			                                          "chromosome", "chrom",
-			                                          "chr", "chromosome_name",
-			                                          "seqid"),
-			                         start.field=c("Start_Position","start", "startpos"),
-			                         end.field=c("End_Position", "end", "stop", "endpos"),
-			                         strand.field="strand",
-			                         starts.in.df.are.0based=FALSE)
-
-	all.samp.w.metadata.grs <- makeGRangesFromDataFrame(f.joint.segs.df,
-	                        keep.extra.columns=TRUE,
-	                        ignore.strand=FALSE,
-	                        seqinfo=NULL,
-	                        seqnames.field=c("seqnames", "seqname",
-	                                         "chromosome", "chrom",
-	                                         "chr", "chromosome_name",
-	                                         "seqid"),
-	                        start.field=c("Start_Position","start","startpos"),
-	                        end.field=c("End_Position", "end", "stop", "endpos"),
-	                        strand.field="strand",
-	                        starts.in.df.are.0based=FALSE)
-
-	print("Introducing breakpoints at starts and ends of centromeres in original segmentation to allow calculation of arm level events in the original...")
-	new.all.samp.w.metadata.grs <- sort(all.samp.w.metadata.grs)
-	for (chr in CHRS_TO_USE_VEC) {
-
-		p.end.gr <- makeGRangesFromDataFrame(chrom.info.df[chrom.info.df$chrom == chr,],
-	                        keep.extra.columns=FALSE,
-	                        ignore.strand=FALSE,
-	                        seqinfo=NULL,
-	                        seqnames.field=c("chrom"),
-	                        start.field=c("p_end"),
-	                        end.field=c("p_end"),
-	                        strand.field="strand",
-	                        starts.in.df.are.0based=FALSE)
-		#print(p.end.gr)
-		q.start.gr <- makeGRangesFromDataFrame(chrom.info.df[chrom.info.df$chrom == chr,],
-		                        keep.extra.columns=FALSE,
-		                        ignore.strand=FALSE,
-		                        seqinfo=NULL,
-		                        seqnames.field=c("chrom"),
-		                        start.field=c("q_start"),
-		                        end.field=c("q_start"),
-		                        strand.field="strand",
-		                        starts.in.df.are.0based=FALSE)
-		#print(q.start.gr)
-
-		bps.to.introduce.grs.list <- list(p.end.gr, q.start.gr)
-		for (new.bp.gr in bps.to.introduce.grs.list) {
-
-			#DEBUG
-			#new.bp.gr <- bps.to.introduce.grs.list[[i]]
-
-			overlapping.seg.grs <- getOverlapGRanges(new.bp.gr, new.all.samp.w.metadata.grs)
-			#So go through each one, split into two,add to the dataset, remove the original, sort
-			if(length(overlapping.seg.grs) > 0) {
-
-				for ( i in 1:length(overlapping.seg.grs) ) {
-
-					new.seg.one.template <- new.all.samp.w.metadata.grs[overlapping.seg.grs[i]$subject_hit_idx]
-					new.seg.one.start <- overlapping.seg.grs[i]$subject_start
-					new.seg.one.end <- start(new.bp.gr)
-
-					start(new.seg.one.template) <- new.seg.one.start
-					end(new.seg.one.template) <- new.seg.one.end
-					new.seg.one.template$uniq_id <- paste0(new.seg.one.template$sample,
-															"@",
-															as.character(seqnames(new.seg.one.template)),
-															":",
-															start(new.seg.one.template),
-															":",
-															end(new.seg.one.template))
-
-					new.seg.two.template <- new.all.samp.w.metadata.grs[overlapping.seg.grs[i]$subject_hit_idx]
-					new.seg.two.start  <- start(new.bp.gr) + 1
-					new.seg.two.end <- overlapping.seg.grs[i]$subject_end
-
-					start(new.seg.two.template) <- new.seg.two.start
-					end(new.seg.two.template) <- new.seg.two.end
-					new.seg.two.template$uniq_id <- paste0(new.seg.two.template$sample,
-															"@",
-															as.character(seqnames(new.seg.two.template)),
-															":",
-															start(new.seg.two.template),
-															":",
-															end(new.seg.two.template))
-					#Remove the original, so get the subject idx
-					all.orig.idx.vec <- 1:length(new.all.samp.w.metadata.grs)
-					idx.of.orig.segment <- overlapping.seg.grs[i]$subject_hit_idx
-					new.all.samp.w.metadata.grs <- new.all.samp.w.metadata.grs[ ! all.orig.idx.vec %in% idx.of.orig.segment ]
-
-					#So now add the new segs to the dataset and sort:
-					new.all.samp.w.metadata.grs <- sort(c(new.all.samp.w.metadata.grs, new.seg.one.template, new.seg.two.template))
-				}#end for ( i in 1:length(overlapping.seg.grs) ) {
-			}#end if(length(overlapping.seg.grs) > 0) {
-		}#end 		for (new.bp.gr in bps.to.introduce.grs.list) {
-	}#end for ( chr in CHRS_TO_USE_VEC ) {
-
-
-	#So actually defining the segments that are lost or gained makes sense here..
-	print("Calculating arm level gain, loss, neutral, and LOH events in the original segmentation...")
-	all.samp.w.metadata.grs <- new.all.samp.w.metadata.grs
-	gain.loss.name.list <- list(c("neutral"), c("gain", "amp"), c("loss", "deep_loss"),  c("LOH"))
-	names(gain.loss.name.list) <- c("neutral", "gain", "loss", "LOH")
-	p.or.q.vec <- c("p", "q")
-	for ( chr in CHRS_TO_USE_VEC ) {
-		chr.gr.list <- getChromosomeArmsGRangeList(chr, chrom.info.df)
-		for ( i in 1:length(chr.gr.list) ) {
-
-			curr.chr.arm.gr <- chr.gr.list[[i]]
-			all.samp.overlap.grs <- getOverlapGRanges(curr.chr.arm.gr, all.samp.w.metadata.grs)
-
-			for (samp in sample.vec) {
-
-				arm.level.events.present <- list()
-				for (j in 1:length(gain.loss.name.list)) {
-					cpn.event.vec <- gain.loss.name.list[[j]]
-					#cpn.event.vec <- c("loss", "deep_loss")
-					#First does the total area of the event add up to 80% of an arm:
-					if ( ! names(gain.loss.name.list)[j] %in% "LOH") {
-						samp.gain.amp.grs <- all.samp.overlap.grs[ all.samp.overlap.grs$cpn_call %in% cpn.event.vec &
-															   all.samp.overlap.grs$sample == samp
-																]
-
-						samp.all.cpn.grs <- all.samp.overlap.grs[ all.samp.overlap.grs$sample == samp ]
-
-					} else {
-
-						samp.gain.amp.grs <- all.samp.overlap.grs[ all.samp.overlap.grs$nMinor == 0 &
-																   all.samp.overlap.grs$sample == samp
-																	]
-
-					}
-
-					samp.arm.all.uniq.ids.vec <- samp.all.cpn.grs$uniq_id
-					if( length(all.samp.w.metadata.grs[all.samp.w.metadata.grs$uniq_id %in% samp.arm.all.uniq.ids.vec]) == 0) {
-
-						next
-
-					}
-
-					all.samp.w.metadata.grs[all.samp.w.metadata.grs$uniq_id %in% samp.arm.all.uniq.ids.vec]$within_chr_arm <- paste0(chr, p.or.q.vec[i])
-					if (sum(as.numeric(samp.gain.amp.grs$overlap_prop_query))/100 >= 0.74 & sum(samp.gain.amp.grs[ samp.gain.amp.grs$overlap_prop_query >= 0.2 ]$overlap_prop_query)/100 >= 0.5){
-
-							#So all segments in the arm should be annotated as being in an arm level event:
-							#All the larger segments
-							arm.level.events.present[[names(gain.loss.name.list)[j]]] <- list()
-							#So now
-
-							arm.level.events.present[[names(gain.loss.name.list)[j]]]$arm_event_uniq_ids <- samp.gain.amp.grs[ samp.gain.amp.grs$overlap_prop_query >= 0.2 & samp.gain.amp.grs$cpn_call %in% cpn.event.vec ]$uniq_id
-							arm.level.events.present[[names(gain.loss.name.list)[j]]]$focal_event_uniq_ids <- samp.all.cpn.grs[ (samp.all.cpn.grs$overlap_prop_query < 0.2 & samp.all.cpn.grs$cpn_call %in% cpn.event.vec)
-																	  | (! (samp.all.cpn.grs$cpn_call %in% cpn.event.vec)) ]$uniq_id
-							#so anything that isn't an arm and was gained will be focal
-						}
-
-					}
-					if (length(arm.level.events.present) >= 1) {
-
-						if (names(arm.level.events.present)[1] != "LOH") {
-
-							all.samp.w.metadata.grs[all.samp.w.metadata.grs$uniq_id %in% arm.level.events.present[[1]]$arm_event_uniq_ids ]$arm_or_focal_event  <- "arm"
-							if (length(arm.level.events.present[[1]]$focal_event_uniq_ids) > 0) {
-
-								all.samp.w.metadata.grs[all.samp.w.metadata.grs$uniq_id %in% arm.level.events.present[[1]]$focal_event_uniq_ids  ]$arm_or_focal_event  <- "focal"
-
-							}
-
-						}
-						all.samp.w.metadata.grs[all.samp.w.metadata.grs$uniq_id %in% samp.arm.all.uniq.ids.vec ]$arm_event_present <- paste(names(arm.level.events.present), collapse="_")
-
-					} else {
-
-						if (length(all.samp.w.metadata.grs[all.samp.w.metadata.grs$uniq_id %in% samp.arm.all.uniq.ids.vec ]) > 0) {
-
-							all.samp.w.metadata.grs[all.samp.w.metadata.grs$uniq_id %in% samp.arm.all.uniq.ids.vec ]$arm_or_focal_event <- "focal"
-
-						}
-					}
-					#Next is there one segment with at least 50% of the arm in it:
-				}#end for (cpn.event.vec in gain.loss.name.list) {
-			}#end for (samp in sample.vec) {
-	}#end	for ( chr in CHRS_TO_USE_VEC ) {
-
-	all.samp.w.metadata.df <- as.data.frame(all.samp.w.metadata.grs)
-	all.samp.w.metadata.df <- all.samp.w.metadata.df[with(all.samp.w.metadata.df, order(sample, seqnames, start)), ]
-	#print(all.samp.w.metadata.df)
-	#Let's generate the minimum consistent segmentation now:
-
-	all.samp.w.metadata.conv.df <- all.samp.w.metadata.df[, grep("strand|width", colnames(all.samp.w.metadata.df), value = TRUE, invert=TRUE)]
-	colnames(all.samp.w.metadata.conv.df)[colnames(all.samp.w.metadata.conv.df)=="seqnames"] <- "chr"
-	colnames(all.samp.w.metadata.conv.df)[colnames(all.samp.w.metadata.conv.df)=="start"] <- "startpos"
-	colnames(all.samp.w.metadata.conv.df)[colnames(all.samp.w.metadata.conv.df)=="end"] <- "endpos"
-	#Reorder
-	correct.order.cols <- c( "sample","chr","startpos","endpos","n.het","cnTotal","nMajor","nMinor","Ploidy","ACF","nAraw","nBraw","patient","sample_name","cpn_call","arm_or_focal_event","arm_event_present","within_chr_arm","uniq_id")
-	f.joint.segs.df.new <- all.samp.w.metadata.conv.df[, correct.order.cols]
-
-	print("Getting proportion of chromosome arms in selected genome covered by segments from each (and all) samples:")
-	overlaps.between.samples.df <- compareOverlapsBetweenSamples(sample.vec, f.joint.segs.df, chrom.info.df, chrs.to.use.vec= CHRS_TO_USE_VEC)
-	print(overlaps.between.samples.df)
-	#So the question is here are we going to allow single base bair segments?
-	print("Calculating intersections by GRanges...")
-	intersection.grs.list <- getAllPatientSamplesAndIntersectionGRangesList(sample.vec, f.joint.segs.df)
-	intersection.grs <- intersection.grs.list[["overall_intersection"]]
-	non.ones.all.samp.intersection.grs <- removeSingleBasePairSegmentsFromIntersectionGranges(intersection.grs)
-
-	#disjoin gets rid of all metadata
-	print("Calculating disjoint set by GRanges...")
-	dj.all.samp.grs <- disjoin(all.samp.grs)
-	print("Removing segments that are smaller by minimum width by merging with the closest segment...")#Todo revisit this potentially
-	non.ones.dj.all.samp.grs <- removeSingleBasePairSegmentsFromIntersectionGranges(dj.all.samp.grs)
-
-
-	#Now we need to make sure that every bp of the relevant genome's non-acrocentric chromosome arms has a
-	#corresponding segment, dummy or otherwise
-	print("Creating set of segments that cover all bp in the non-acrocentric selected chromosomes' arms of the selected genome...")
-	all.bp.chr.grs <- NULL
-	for ( chr in CHRS_TO_USE_VEC ) {
-		print(chr)
-		curr.chr.grs <- non.ones.dj.all.samp.grs[seqnames(non.ones.dj.all.samp.grs) == chr]
-		#This is done to stop intersect merging segments that start and end right after each other:
-		alternating.idx.vec <- (seq(1, length(curr.chr.grs)) %% 2) + 1#plus one to match 1-based indexing
-		plus.minus.vec <- c("+", "-")
-		strand(curr.chr.grs) <- plus.minus.vec[alternating.idx.vec]
-		chr.gr.list <- getChromosomeArmsGRangeList(chr, chrom.info.df)
-		#So do this for the chromosome p and q arms (if p arm is present)
-		for ( i in 1:length(chr.gr.list) ) {
-
-			curr.chr.arm.gr <- chr.gr.list[[i]]
-			curr.chr.arm.gr.plus <- curr.chr.arm.gr
-			curr.chr.arm.gr.minus <- curr.chr.arm.gr
-			strand(curr.chr.arm.gr.plus) <- "+"
-			strand(curr.chr.arm.gr.minus) <- "-"
-			curr.chr.arm.gr.strands <- c(curr.chr.arm.gr.plus, curr.chr.arm.gr.minus)
-			#intersect taking into account strand to prevent merging of adjacent segments:
-			overlapping.grs <- intersect(curr.chr.grs, curr.chr.arm.gr.strands, ignore.strand = FALSE)
-			#Reset starand as it isn't used for antyhing else
-			strand(overlapping.grs) <- "*"
-			#No need to take into account strand as there is no way two segments would be merged by the setdiff operation.
-			non.overlapping.grs <- setdiff(curr.chr.arm.gr, curr.chr.grs, ignore.strand = TRUE)
-			sorted.all.bp.arm.grs <- sort(c(overlapping.grs, non.overlapping.grs))
-
-			if ( is.null(all.bp.chr.grs) ) {
-
-				all.bp.chr.grs <- sorted.all.bp.arm.grs
-
-			} else {
-
-				all.bp.chr.grs <- c(all.bp.chr.grs, sorted.all.bp.arm.grs)
-			}
-		}
-	}
-
-
-	print("Mapping the segments covering all bp of all arms back to input segments where appropriate....")
-	ptm <- proc.time()
-	itx <- iter(as.data.frame(all.bp.chr.grs), by="row")
-	results <- foreach(curr.all.bp.chr.df = itx, .combine = c) %dopar% {
-
-	 # for (i in 1:length(all.bp.chr.grs)) {
-
-	 # 	curr.all.bp.chr.df <- all.bp.chr.grs[i]
-		require(GenomicRanges)
-		curr.all.bp.chr.gr <- makeGRangesFromDataFrame(curr.all.bp.chr.df,
-		                        keep.extra.columns=TRUE,
-		                        ignore.strand=FALSE,
-		                        seqinfo=NULL,
-		                        seqnames.field=c("seqnames", "seqname",
-		                                         "chromosome", "chrom",
-		                                         "chr", "chromosome_name",
-		                                         "seqid"),
-		                        start.field=c("Start_Position","start","startpos"),
-		                        end.field=c("End_Position", "end", "stop", "endpos"),
-		                        strand.field="strand",
-		                        starts.in.df.are.0based=FALSE)
-
-		this.seg.name <- paste0(as.character(seqnames(curr.all.bp.chr.gr)), ":", start(curr.all.bp.chr.gr), ":", end(curr.all.bp.chr.gr))
-		this.seg.samp.seg.names.vec <- paste(sample.vec, ":", this.seg.name, sep="")
-		info.cols.vec <- c("overlap_w_n_samps","num_segs_maps_to_in_samp" ,"in_intersection", "in_disjoin_only", "in_arm_setdiff")
-
-		all.samp.this.seg.bp.df <- data.frame(matrix(FALSE, length(sample.vec), length(info.cols.vec),
-		                        dimnames = list(this.seg.samp.seg.names.vec, info.cols.vec)),
-		                        stringsAsFactors = FALSE,
-		                        check.names = FALSE)
-
-		names(this.seg.samp.seg.names.vec) <- sample.vec
-		all.samp.overlap.grs <- getOverlapGRanges(curr.all.bp.chr.gr, all.samp.w.metadata.grs)
-
-		if (length(all.samp.overlap.grs) > 0) {
-
-			all.samp.overlap.df <- as.data.frame(all.samp.overlap.grs, row.names = NULL)[0,][1:length(sample.vec),]
-			rownames(all.samp.overlap.df) <- this.seg.samp.seg.names.vec
-
-			matching.grs.sample.vec <- unique(all.samp.overlap.grs$sample)
-			non.matching.sample.vec <- sample.vec[ ! sample.vec %in% matching.grs.sample.vec]
-			all.samp.this.seg.bp.df[, "overlap_w_n_samps"] <- length(matching.grs.sample.vec)
-
-		} else {
-
-			all.samp.overlap.df <- as.data.frame(all.samp.overlap.grs)[1,]
-			matching.grs.sample.vec <- c()
-			non.matching.sample.vec <- sample.vec
-		}
-
-		if (all(sample.vec %in% matching.grs.sample.vec)) {
-
-			all.samp.this.seg.bp.df[, "in_intersection"] <- TRUE
-
-		} else if ( any(sample.vec %in% matching.grs.sample.vec) ) {#So now this means there's at least one segment missing
-
-			all.samp.this.seg.bp.df[, "in_disjoin_only"] <- TRUE
-
-		} else {
-
-			all.samp.this.seg.bp.df[, "in_arm_setdiff"] <- TRUE
-
-		}
-
-		for ( match.samp in matching.grs.sample.vec ) {
-
-			match.samp.overlap.grs <- all.samp.overlap.grs[all.samp.overlap.grs$sample == match.samp]
-			all.samp.this.seg.bp.df[this.seg.samp.seg.names.vec[match.samp], "num_segs_maps_to_in_samp"] <- length(match.samp.overlap.grs)
-			max.samp.overlap.gr <- match.samp.overlap.grs[ match.samp.overlap.grs$overlap_prop_query == max(match.samp.overlap.grs$overlap_prop_query) ]
-			all.samp.overlap.df[this.seg.samp.seg.names.vec[match.samp],] <- as.data.frame(max.samp.overlap.gr, row.names=NULL)[1,]
-
-		}
-
-		if(length(non.matching.sample.vec) > 0) {
-
-			all.samp.this.seg.bp.df[this.seg.samp.seg.names.vec[non.matching.sample.vec], "num_segs_maps_to_in_samp"] <- 0
-
-		}
-
-
-		#Creare a test dataframe
-		return(list(cbind(all.samp.this.seg.bp.df, all.samp.overlap.df)))
-
-	}
-	#stopCluster(cl)
-	time.passed <- proc.time() - ptm
-	print("time.passed")
-	print(time.passed)
-
-	all.bp.all.samps.segs.df <- do.call(rbind, results)
-
-	full_sample <- sapply(rownames(all.bp.all.samps.segs.df), function(x) strsplit(x, split = ":")[[1]][1])
-	Chromosome <- as.numeric(sapply(rownames(all.bp.all.samps.segs.df), function(x) strsplit(x, split = ":")[[1]][2]))
-	Start_Position <- as.numeric(sapply(rownames(all.bp.all.samps.segs.df), function(x) strsplit(x, split = ":")[[1]][3]))
-	End_Position <- as.numeric(sapply(rownames(all.bp.all.samps.segs.df), function(x) strsplit(x, split = ":")[[1]][4]))
-
-	#Let's make a pretend set of copy number columns that we can apply to the
-
-	all.bp.all.samps.segs.anno.df <- cbind(Chromosome, Start_Position, End_Position, full_sample, all.bp.all.samps.segs.df)
-	sorted.all.bp.all.samps.segs.anno.df <- all.bp.all.samps.segs.anno.df[with(all.bp.all.samps.segs.anno.df, order(full_sample, Chromosome, Start_Position)), ]
-	sorted.all.bp.all.samps.segs.anno.df[1:50, 1:9]
-
-
-
-	###Add the chromosoem arms to the segments to make later joininbg etc much easier...
-	print("Adding chromosome arm annotation to all segments original and new...")
-	all.samp.all.bp.anno.grs <- makeGRangesFromDataFrame(sorted.all.bp.all.samps.segs.anno.df[,1:4],
-	                        keep.extra.columns=TRUE,
-	                        ignore.strand=FALSE,
-	                        seqinfo=NULL,
-	                        seqnames.field=c("Chromosome"),
-	                        start.field=c("Start_Position"),
-	                        end.field=c("End_Position"),
-	                        strand.field="*",
-	                        starts.in.df.are.0based=FALSE)
-	all.samp.all.bp.anno.grs$chr_arm <- "none"
-
-	for ( chr in CHRS_TO_USE_VEC ) {
-
-		chr.gr.list <- getChromosomeArmsGRangeList(chr, chrom.info.df)
-		#print(chr)
-		if (length(chr.gr.list) == 2 ) {
-
-			p.or.q.vec <- c("p", "q")
-
-		} else if (length(chr.gr.list) == 1 ) {
-
-			p.or.q.vec <- c("q")
-
-		} else {
-
-			stop("Error, no matching arms")
-
-		}
-
-		for ( i in 1:length(chr.gr.list) ) {
-
-			curr.chr.arm.gr <- chr.gr.list[[i]]
-			all.samp.overlap.grs <- getOverlapGRanges(all.samp.all.bp.anno.grs, curr.chr.arm.gr)
-			all.samp.all.bp.anno.grs[ all.samp.overlap.grs$query_hit_idx ]$chr_arm <- paste0(chr, p.or.q.vec[i])
-
-		}#end for ( i in 1:length(chr.gr.list) ) {
-
-	}#end 	for ( chr in CHRS_TO_USE_VEC ) {
-	sorted.all.bp.all.samps.segs.anno.df$chr_arm <- all.samp.all.bp.anno.grs$chr_arm
-	#So now we have chromosome arms on everything...
-
-
-
-	
+	#TBKW  20190818 edit so here is where the joint segmentation stuff has been dumped into a function to allow multiple
+	#calls. Absolutely needs refactoring. 
+	sorted.all.bp.all.samps.segs.anno.df <- createFullyAnnotatedJointSegmentation(f.joint.segs.df = f.joint.segs.df)
 	#TBKW edit for xphase version
 	anno.seg.df <- sorted.all.bp.all.samps.segs.anno.df
-
-
 	# sorted.all.bp.all.samps.segs.anno.df.path <- paste0(PLOT_OUTPUT_DIR, patient, "_sorted_all_bp_all_samps_segs_anno_df.RDS")
 	# saveRDS(sorted.all.bp.all.samps.segs.anno.df, file = sorted.all.bp.all.samps.segs.anno.df.path)
 	#Now we want to save this annotated version:
-
 	cpn.chr.start.end.df <- sorted.all.bp.all.samps.segs.anno.df[sorted.all.bp.all.samps.segs.anno.df$full_sample==sorted.all.bp.all.samps.segs.anno.df[1,]$full_sample,1:3]
 	mock.cpn.matrix <- matrix(data=0, nrow=nrow(cpn.chr.start.end.df), ncol = length(sample.vec))
 	colnames(mock.cpn.matrix) <- sample.vec
 	min.cons.segs.df <- cbind(cpn.chr.start.end.df, mock.cpn.matrix)
+	#end of 201908TBKW edit all this code 
+
 
 	#Minimum consistent segmentation is finished! Let's get the SNPs and their LogR and BAF values amd assign to segments.
-
-
-
 	#All SNPs in these lists must have both a logr and baf value: all sample all seg logr baf lists is asas.lr.baf
 	ptm <- proc.time()
 	print("cleanAndErrorCheckSNPsParallel first")
@@ -1057,96 +610,9 @@ if (OVERWRITE_FLAG == TRUE) {
 	saveRDS(patient.phased.BAF.df.list, file = patient.phased.BAF.df.list.path)
 
 
-	#Detect MSAI in the original BAF before it is processed alongside logr to get the Raw allele specifc cpn to be used in the rest of the analysis.
-	print("Performing LTNPD MSAI detection on the BAF...")
-	all.seg.MSAI.by.BAF.ltnpd.present.list <- getAllSegsMSAIDetectionFromBAFListLTNPD(seg.name.vec = seg.name.vec,
-																				  sample.vec  = sample.vec,
-																				  asas.SNPS.lr.and.or.baf.lists = asas.SNPS.lr.and.or.baf.lists,
-																				  all.seg.phasing.info.list = all.seg.phasing.info.list,
-																				  MSAI.BAF.LTPND.pval.thresh = MSAI_BAF_LTNPD_PVAL_THRESHOLD)
-	saveRDS(all.seg.MSAI.by.BAF.ltnpd.present.list, file = all.seg.MSAI.by.BAF.ltnpd.present.list.path)
-
-
-	if (PLOTTING_FLAG == TRUE) {
-
-		png(file = paste(PLOT_OUTPUT_DIR, patient, "_MSAI_detection_BAF_phased", ".png", sep=""), width = 1200, height = 1400)
-
-		print("Plotting phased BAF across the genome...")
-		plotAllSampleBAFsAndMSAIAcrossGenome(sample.vec, all.seg.MSAI.by.BAF.ltnpd.present.list, patient.phased.BAF.df.list, cpnA.allele.color = '#de2d2699', cpnB.allele.color= '#3182bd99')
-
-		dev.off()
-
-	} else if (PLOTTING_FLAG == FALSE) {
-
-		print("Not plotting phased BAF as flag is FALSE")
-
-	}
-
-	print("Applying LTNPD MSAI detection to the original segments...")
-	#So now we have the original ASCAT segmentation and we want to make the MEDICC input from it
-	#So now we want to flip segments where MSAI has been detected and they were separated in the original data:
-	intersection.orig.mcs.df  <- sorted.all.bp.all.samps.segs.anno.df[sorted.all.bp.all.samps.segs.anno.df$in_intersection==TRUE,]
-	intersection.seg.name.vec <- paste0(intersection.orig.mcs.df$Chromosome,
-												":",
-												intersection.orig.mcs.df$Start_Position,
-												":",
-												intersection.orig.mcs.df$End_Position)
-	orig.intersection.mcs.w.MSAI.df <- intersection.orig.mcs.df
-	unq.intersection.seg.name.vec <- unique(intersection.seg.name.vec)
-	for (seg.name in unq.intersection.seg.name.vec) {
-
-		#"5:24593514:36986185" MSAI in A_LTX121
-		all.samp.matching.seg.vec <- paste0(sample.vec, "@", seg.name)
-
-		#print(all.seg.MSAI.by.BAF.ltnpd.present.list[[seg.name]])
-
-		if (all.seg.MSAI.by.BAF.ltnpd.present.list[[seg.name]]$MSAI_detection_feasible %in% TRUE) {
-
-			#print("here")
-			seg.MPhase.MSAI.df <- all.seg.MSAI.by.BAF.ltnpd.present.list[[seg.name]]$all_samps_BAF_and_ltnpd_df
-			#print(seg.MPhase.MSAI.df)
-			seg.MPhase.MSAI.ASCAT.df <- cbind(seg.MPhase.MSAI.df, intersection.orig.mcs.df[paste0(sample.vec, ":", seg.name),])
-			seg.MPhase.MSAI.ASCAT.df$samp_seg_name <- paste0(sample.vec, ":", seg.name)
-			seg.MPhase.MSAI.ASCAT.df$balanced  <- seg.MPhase.MSAI.ASCAT.df$nMinor == seg.MPhase.MSAI.ASCAT.df$nMajor
-			AI.seg.MPhase.MSAI.ASCAT.df <- seg.MPhase.MSAI.ASCAT.df[seg.MPhase.MSAI.ASCAT.df$balanced == FALSE,]
-
-			#Need to check MSAI is ocurring in the original segmentation allelic imbalance calls
-			if ( FALSE %in% AI.seg.MPhase.MSAI.ASCAT.df$MSAI_pval_passed_thresh & TRUE %in% AI.seg.MPhase.MSAI.ASCAT.df$MSAI_pval_passed_thresh ) {
-
-				switched.samp.seg.names.vec <- AI.seg.MPhase.MSAI.ASCAT.df[AI.seg.MPhase.MSAI.ASCAT.df$MSAI_pval_passed_thresh == TRUE & AI.seg.MPhase.MSAI.ASCAT.df$poss_dominant_allele == "cpnB" ,]$samp_seg_name
-				old.nMinor.vec <- orig.intersection.mcs.w.MSAI.df[switched.samp.seg.names.vec,]$nMinor
-				orig.intersection.mcs.w.MSAI.df[switched.samp.seg.names.vec,]$nMinor <- intersection.orig.mcs.df[switched.samp.seg.names.vec,]$nMajor
-				orig.intersection.mcs.w.MSAI.df[switched.samp.seg.names.vec,]$nMajor <- old.nMinor.vec
-
-			}#end if ( FALSE %in% AI.seg.MPhase.MSAI.ASCAT.df$balanced & TRUE %in% AI.seg.MPhase.MSAI.ASCAT.df$balanced ) {
-
-		}#end if (all.seg.MSAI.by.BAF.ltnpd.present.list[[seg.name]]$MSAI_detection_feasible %in% TRUE) {
-
-	}#end for (seg.name in intersection.seg.name.vec) {
-	print(orig.intersection.mcs.w.MSAI.df[orig.intersection.mcs.w.MSAI.df$nMinor > orig.intersection.mcs.w.MSAI.df$nMajor,])
-
-	orig.intersection.mcs.w.MSAI.df.path <- paste0(PLOT_OUTPUT_DIR, patient, "_orig_intersection_mcs_w_MSAI_df.RDS")
-	saveRDS(orig.intersection.mcs.w.MSAI.df, file = orig.intersection.mcs.w.MSAI.df.path)
-
-
-	pre.MPhase.MEDICC.FASTA.file.list <- makeMEDICCInputListsFromSegmentationDF(segs.to.make.MEDICC.input.df = orig.intersection.mcs.w.MSAI.df,
-											sample.vec = sample.vec,
-											chrs.to.use.vec = CHRS_TO_USE_VEC,
-											chr.col = "Chromosome",
-											start.col = "Start_Position",
-											end.col = "End_Position",
-											cpnA.col = "nMajor",
-											cpnB.col = "nMinor"
-											)
-
-	pre.MPhase.MEDICC.FASTA.file.list.path <- paste0(PLOT_OUTPUT_DIR, patient, "_pre_MPhase_MEDICC_FASTA_file_list.RDS")
-	saveRDS(pre.MPhase.MEDICC.FASTA.file.list, file = pre.MPhase.MEDICC.FASTA.file.list.path)
-
-
-
 	#So this is where want to replace the rest of mphase more or less..
 	#TBKW NEW WORK:
-	print("Starting new TBKW edit...")
+	print("Starting new TBKW edit... begun on 16/08/2019 to recall copy number using phasing.")
 	source(paste0(current.dir, "ascat.R"))
 	#So determine which SNPs are hz:
 	snp.file.df <- gl.snp.df
@@ -1347,10 +813,11 @@ if (OVERWRITE_FLAG == TRUE) {
 	#in the run it feels is most appropriate. This will potentially provide new and improved solutions that might be better than what was fed into mphase
 	#particularly if the segmentation of the input did not make use of multi-region phasing data.
 	#2)  
-
+	#Initiate list for segmentation
+	ph.ascat.output.list <- list()
+	ph.ascat.segs.df.list <- list()
 	for (samp in sample.vec) {
 		print(samp)
-
 		#load(pt.snp.file.paths.df[pt.snp.file.paths.df$sample %in% samp,]$samp_ascat_bc_path)
 		#Here we load in the file path of the relevant samples ascat.bc object. For compatibility with Matt's code
 		#This should accept the ascat.bc files in eithe RDS or RData format.
@@ -1503,53 +970,49 @@ if (OVERWRITE_FLAG == TRUE) {
 
 		#End of section generating the spoofed ascat.bc object that utilises the phasing information. This should be made into a function.
 
+		# #TODO there may be issues when no soution that passes ASCAT's goodness of fit thresholds.
+		# #This will prevent any output in the runs that don't have a specified purity and ploidy. 
+		# print("Doing the free run ASCAT steps....")
 
+		# if (purity.est.vec[samp]  < 0.15) {
 
-		#Do the ASCAT steps!
+		# 	MINRHO <- 0.04#This is normally set within the ASCAT script but here I'm modifying based on the input...
 
-		#TODO there may be issues when no soution that passes ASCAT's goodness of fit thresholds.
-		#This will prevent any output in the runs that don't have a specified purity and ploidy. 
-		print("Doing the free run ASCAT steps....")
+		# } else {
 
-		if (purity.est.vec[samp]  < 0.15) {
+		# 	MINRHO <- 0.10#These should probably be constants set at the to of the script.
+		# }
 
-			MINRHO <- 0.04#This is normally set within the ASCAT script but here I'm modifying based on the input...
-
-		} else {
-
-			MINRHO <- 0.10#These should probably be constants set at the to of the script.
-		}
-
-		setwd(free.run.dir)
-		ascat.plotSegmentedData(ascat.bc)
-		ascat.output = ascat.runAscat(ascat.bc,gamma=1)#, rho_manual = rho_solution, psi_manual = psi_solution)
-		save(ascat.bc, file=paste(samp, 'ascat.bc.RData',sep='.'))
-		save(ascat.output, file=paste(samp, 'ascat.output.RData',sep='.'))
-		#Calculate number of heterozygous positions per segment
-		tmp <- ascat.output$segments_raw
-		n.het <- 0#FIXME should really ad
-		acf <- ascat.output$aberrantcellfraction
-		ploidy <- ascat.output$ploidy
+		# setwd(free.run.dir)
+		# ascat.plotSegmentedData(ascat.bc)
+		# ascat.output = ascat.runAscat(ascat.bc,gamma=1)#, rho_manual = rho_solution, psi_manual = psi_solution)
+		# save(ascat.bc, file=paste(samp, 'ascat.bc.RData',sep='.'))
+		# save(ascat.output, file=paste(samp, 'ascat.output.RData',sep='.'))
+		# #Calculate number of heterozygous positions per segment
+		# tmp <- ascat.output$segments_raw
+		# n.het <- 0#FIXME should really ad
+		# acf <- ascat.output$aberrantcellfraction
+		# ploidy <- ascat.output$ploidy
 		
-		tmp <- cbind(tmp[,c(1:4)], n.het, tmp[,5] + tmp[,6], tmp[,5:6], rep(ploidy, nrow(tmp)), rep(acf, nrow(tmp)),tmp[,7],tmp[,8])
-		colnames(tmp)[c(6,9:12)] <- c('cnTotal', 'Ploidy', 'ACF', 'nAraw','nBraw')
-		chr <- sub('chr','', tmp[,2])
-		chr[chr %in% c('x','X')] <- 23
-		chr[chr %in% c('y', 'Y')] <- 24
-		tmp[,2] <- as.numeric(chr)
-		#add a column defining gain and losslength
-		callState <- rep('neutral', nrow(tmp))
-		callState[log2((tmp[,'nAraw']+tmp[,'nBraw'])/tmp[,'Ploidy']) >= log2(2.5/2)] <- 'Gain'
-		callState[log2((tmp[,'nAraw']+tmp[,'nBraw'])/tmp[,'Ploidy']) <= log2(1.5/2)] <- 'Loss'
-		callState[(tmp[,'nAraw']+tmp[,'nBraw']) >= ((2*tmp[,'Ploidy'])+1)] <- 'Amp'
-		callState[(tmp[,'nAraw']+tmp[,'nBraw']) <= 0.5] <- 'Del'
+		# tmp <- cbind(tmp[,c(1:4)], n.het, tmp[,5] + tmp[,6], tmp[,5:6], rep(ploidy, nrow(tmp)), rep(acf, nrow(tmp)),tmp[,7],tmp[,8])
+		# colnames(tmp)[c(6,9:12)] <- c('cnTotal', 'Ploidy', 'ACF', 'nAraw','nBraw')
+		# chr <- sub('chr','', tmp[,2])
+		# chr[chr %in% c('x','X')] <- 23
+		# chr[chr %in% c('y', 'Y')] <- 24
+		# tmp[,2] <- as.numeric(chr)
+		# #add a column defining gain and losslength
+		# callState <- rep('neutral', nrow(tmp))
+		# callState[log2((tmp[,'nAraw']+tmp[,'nBraw'])/tmp[,'Ploidy']) >= log2(2.5/2)] <- 'Gain'
+		# callState[log2((tmp[,'nAraw']+tmp[,'nBraw'])/tmp[,'Ploidy']) <= log2(1.5/2)] <- 'Loss'
+		# callState[(tmp[,'nAraw']+tmp[,'nBraw']) >= ((2*tmp[,'Ploidy'])+1)] <- 'Amp'
+		# callState[(tmp[,'nAraw']+tmp[,'nBraw']) <= 0.5] <- 'Del'
 
-		tmp <- cbind(tmp,callState)
-		seg <- tmp
-		save(seg, file=paste(samp,'ascat.seg.RData',sep='.'))
+		# tmp <- cbind(tmp,callState)
+		# seg <- tmp
+		# save(seg, file=paste(samp,'ascat.seg.RData',sep='.'))
 
-		rm(ascat.output)
-		rm(seg)
+		# rm(ascat.output)
+		# rm(seg)
 
 		#So what we want to do here is to generate all of the solutions that ASCAT proposed using the phased data... 
 		#TODO - pull out the code that saves the solutions
@@ -1564,6 +1027,7 @@ if (OVERWRITE_FLAG == TRUE) {
 
 		ascat.plotSegmentedData(ascat.bc)
 		ascat.output = ascat.runAscat(ascat.bc,gamma=1, rho_manual = samp.purity, psi_manual = samp.ploidy)
+		ph.ascat.output.list[[samp]] <- ascat.output
 		save(ascat.bc, file=paste(samp, 'ascat.bc.RData',sep='.'))
 		save(ascat.output, file=paste(samp, 'ascat.output.RData',sep='.'))
 		#We need to work out where the MSAI is and flip it as well...
@@ -1587,9 +1051,10 @@ if (OVERWRITE_FLAG == TRUE) {
 		callState[(tmp[,'nAraw']+tmp[,'nBraw']) >= ((2*tmp[,'Ploidy'])+1)] <- 'Amp'
 		callState[(tmp[,'nAraw']+tmp[,'nBraw']) <= 0.5] <- 'Del'
 
-		tmp <- cbind(tmp,callState)
-		seg <- tmp
-		samp.ascat.segs.df <- seg
+		samp.ph.ascat.segs.df <- cbind(tmp,callState)
+		ph.ascat.segs.df.list[[samp]] <- samp.ph.ascat.segs.df
+		#This ren
+		seg <- samp.ph.ascat.segs.df
 		save(seg, file=paste(samp,'ascat.seg.RData',sep='.'))
 		#rm(ascat.output)
 		#rm(seg)
@@ -1597,52 +1062,344 @@ if (OVERWRITE_FLAG == TRUE) {
 		print("Next sample....")
 	}#for (samp in sample.vec) {
 
+}#end if (OVERWRITE_FLAG == TRUE) {
+
+
+if (OVERWRITE_FLAG == TRUE) {
+	
+	#So now we're going to construct a list of dataframes that for every heterozygous SNP has
+	#chrom
+	#pos
+	#BAF
+	#LogR
+	#ph_ascat_nAraw_w_minus
+	#ph_ascat_nBraw_w_minus
+	#ph_ascat_nAraw
+	#ph_ascat_nBraw
+	#for for each single sample separately:
+	#This set of raw cpn will be queried by the phasing functions.
+	#I'm now in tow minds as to whether ascat needs to output total copy number...
+	#This list is being used as a global innappropriately at the moment FIXME!
+	USING_XPHASE <- TRUE 
+	PH_ALL_SAMP_ASCAT_RAW_CPN_DF_LIST <- list()
+	for (samp in sample.vec) {
+
+		load(pt.snp.file.paths.df[samp,]$samp_ascat_bc_path)
+		if(grepl("RData", pt.snp.file.paths.df[samp,]$samp_ascat_bc_path)) {
+
+		  print("ascat.bc object in RData file, loading...")
+		  load(pt.snp.file.paths.df[samp,]$samp_ascat_bc_path)
+		  #This will have loaded the ascat.bc object in
+
+		} else {
+
+		  ascat.bc <- readRDS(pt.snp.file.paths.df[samp,]$samp_ascat_bc_path)
+
+		}
+		normal_baf <- ascat.bc$Germline_BAF[[1]]
+		is_homozygous <- normal_baf < 0.3 | normal_baf > 0.7
+		is_heterozygous <- !(is.na(normal_baf) | is_homozygous)
+		cat("# of heterozygous SNPs:", sum(is_heterozygous), "\n")
+
+		# Get hz SNPs
+		baf <- ascat.bc$Germline_BAF[[1]]
+		baf[!is_heterozygous] <- NA
+
+		chr.vec <- as.numeric(gsub("Y", "24", gsub("X", "23", gsub("chr", "", as.character(ascat.bc$SNPpos$chr)))))
+		ph.ascat.nAraw.w.minus.vec <- ph.ascat.output.list[[samp]]$nArawfull$nArawfull
+		ph.ascat.nBraw.w.minus.vec <- ph.ascat.output.list[[samp]]$nBrawfull$nBrawfull
+		ph.ascat.nAraw <- ph.ascat.nAraw.w.minus.vec
+		ph.ascat.nAraw[ph.ascat.nAraw < 0] <- 0
+		ph.ascat.nBraw <- ph.ascat.nBraw.w.minus.vec
+		ph.ascat.nBraw[ph.ascat.nBraw < 0] <- 0
+		#Because the plotting requires flipped values make the phasing
+		#and MSAI visible...
+		new.ph.ascat.nAraw <- ph.ascat.nAraw
+		new.ph.ascat.nBraw <- ph.ascat.nBraw
+		new.ph.ascat.nAraw.w.minus.vec <- ph.ascat.nAraw.w.minus.vec
+		new.ph.ascat.nBraw.w.minus.vec <- ph.ascat.nBraw.w.minus.vec
+		# replace.idx.vec <- 1:length(ph.ascat.nAraw) %% 2 == 0
+		# new.ph.ascat.nAraw[replace.idx.vec] <- ph.ascat.nBraw[replace.idx.vec]
+		# new.ph.ascat.nBraw[replace.idx.vec] <- ph.ascat.nAraw[replace.idx.vec]
+		# new.ph.ascat.nAraw.w.minus.vec[replace.idx.vec] <- ph.ascat.nBraw.w.minus.vec[replace.idx.vec]
+		# new.ph.ascat.nBraw.w.minus.vec[replace.idx.vec] <- ph.ascat.nAraw.w.minus.vec[replace.idx.vec]
+
+		PH_ALL_SAMP_ASCAT_RAW_CPN_DF_LIST[[samp]] <- data.frame(
+			chr = chr.vec[is_heterozygous],
+			pos = ascat.bc$SNPpos$pos[is_heterozygous],
+			snp_pos = paste0(chr.vec[is_heterozygous], "_",ascat.bc$SNPpos$pos[is_heterozygous]),
+			germline_BAF = ascat.bc$Germline_BAF$BAF[is_heterozygous],
+			BAF = ascat.bc$Tumor_BAF$BAF[is_heterozygous],
+			LogR = ascat.bc$Tumor_LogR[[1]][is_heterozygous],
+			ph_ascat_nAraw_w_minus = new.ph.ascat.nAraw.w.minus.vec,
+			ph_ascat_nBraw_w_minus = new.ph.ascat.nBraw.w.minus.vec,
+			ph_ascat_nAraw = new.ph.ascat.nAraw,
+			ph_ascat_nBraw = new.ph.ascat.nBraw,
+			stringsAsFactors = FALSE)
+
+	}#end for (samp in sample.vec) {
+
+
+
+
+	#Paths for phased versions of data:
+	ph.asas.SNPS.lr.and.or.baf.lists.path <- paste0(PLOT_OUTPUT_DIR, patient, "_ph_asas_SNPS_lr_and_or_baf_lists_lists.RDS")
+	ph.asas.SNPs.w.both.lr.baf.snp.lists.path <- paste0(PLOT_OUTPUT_DIR, patient, "_ph_asas_SNPs_w_both_lr_baf_snp_lists.RDS")
+	ph.min.cons.segs.df.write.path <- paste0(PLOT_OUTPUT_DIR, patient, "_ph_min_cons_segs_df.txt")
+	ph.sorted.all.bp.all.samps.segs.anno.df.path <- paste0(PLOT_OUTPUT_DIR, patient, "_ph_sorted_all_bp_all_samps_segs_anno.df.RDS")
+	ph.min.cons.segs.df.path <- paste0(PLOT_OUTPUT_DIR, patient, "_ph_min_cons_segs_df.RDS")
+	ph.processed.orig.cpn.segs.df.path <- paste0(PLOT_OUTPUT_DIR, patient, "_ph_processed_orig_cpn_segs_df.RDS")
+	ph.ploidy.est.vec.path <- paste0(PLOT_OUTPUT_DIR, patient, "_ph_ploidy_est_vec.RDS")
+	ph.purity.est.vec.path <- paste0(PLOT_OUTPUT_DIR, patient, "_ph_purity_est_vec.RDS")
+	#TODO add save these files when generated.
+
+
+	#New df contain phased ASCAT segmentation for all samples. 
+	ph.init.f.joint.segs.df <- do.call(rbind, ph.ascat.segs.df.list)
+	ph.f.joint.segs.df <- reformatInitialSegmentationInput(f.joint.segs.df = ph.init.f.joint.segs.df)
+	ph.sorted.all.bp.all.samps.segs.anno.df <- createFullyAnnotatedJointSegmentation(f.joint.segs.df = ph.f.joint.segs.df)
+
+	#we need to update the purity and ploidy for each sample:
+	ph.purity.est.vec <- c()
+	ph.ploidy.est.vec <- c()
+	for (samp in sample.vec) {
+
+		ph.purity.est.vec <- c(ph.purity.est.vec, ph.f.joint.segs.df[ph.f.joint.segs.df$sample %in%samp,]$ACF)
+		ph.ploidy.est.vec <- c(ph.ploidy.est.vec, ph.f.joint.segs.df[ph.f.joint.segs.df$sample %in%samp,]$Ploidy)
+
+	}#end for (samp in sample.vec) {
+	names(ph.purity.est.vec) <- sample.vec
+	names(ph.ploidy.est.vec) <- sample.vec
+
+	ph.cpn.chr.start.end.df <- ph.sorted.all.bp.all.samps.segs.anno.df[ph.sorted.all.bp.all.samps.segs.anno.df$full_sample==ph.sorted.all.bp.all.samps.segs.anno.df[1,]$full_sample,1:3]
+	ph.mock.cpn.matrix <- matrix(data=0, nrow=nrow(ph.cpn.chr.start.end.df), ncol = length(sample.vec))
+	colnames(ph.mock.cpn.matrix) <- sample.vec
+	ph.min.cons.segs.df <- cbind(ph.cpn.chr.start.end.df, ph.mock.cpn.matrix)
+
+	ph.seg.name.vec <- paste(ph.min.cons.segs.df[, 1], ph.min.cons.segs.df[, 2], ph.min.cons.segs.df[, 3], sep = ":")
+
+	ptm <- proc.time()
+	print("Phased cleanAndErrorCheckSNPsParallel first")
+	#source(paste0(current.dir, "data_input_and_QC_functions_v2.R"))
+	ph.asas.SNPs.w.both.lr.baf.snp.lists <- cleanAndErrorCheckSNPsParallel(all.samp.SNP.list,
+																		mcs.seg.to.use.df =ph.min.cons.segs.df,
+																		allow.logr.only.flag = FALSE,
+																		data.type = data.format.to.use)
+	print(str(ph.asas.SNPs.w.both.lr.baf.snp.lists))
+	if (length(unique(sapply(ph.asas.SNPs.w.both.lr.baf.snp.lists, length))) != 1) {
+
+		stop("Not all segments are present in all samples' snp assignations, likely something has gone wrong, is the parallelisation working correctly?")
+
+	}
+	print(ph.asas.SNPs.w.both.lr.baf.snp.lists.path)
+	saveRDS(ph.asas.SNPs.w.both.lr.baf.snp.lists, file = ph.asas.SNPs.w.both.lr.baf.snp.lists.path)
+	time.taken <- proc.time() - ptm
+	print("time.taken")
+	print(time.taken)
+	##
+	#SNPs that only have LogR are permitted in these lists, but it also contains all the SNPs with both BAF and LogR
+	ptm <- proc.time()
+	print("Phased cleanAndErrorCheckSNPsParallel second")
+
+	ph.asas.SNPS.lr.and.or.baf.lists <- cleanAndErrorCheckSNPsParallel(all.samp.SNP.list,
+																	mcs.seg.to.use.df =ph.min.cons.segs.df,
+																	allow.logr.only.flag = TRUE,
+																	data.type = data.format.to.use)
+
+	if (length(unique(sapply(ph.asas.SNPS.lr.and.or.baf.lists, length))) != 1) {
+
+		stop("Not all segments are present in all samples' snp assignations, likely something has gone wrong, is the parallelisation working correctly?")
+
+	}
+
+	print(ph.asas.SNPS.lr.and.or.baf.lists.path)
+	saveRDS(ph.asas.SNPS.lr.and.or.baf.lists, file = ph.asas.SNPS.lr.and.or.baf.lists.path)
+	time.taken <- proc.time() - ptm
+	print("time.taken")
+	print(time.taken)
+
+	if ( length(ph.asas.SNPS.lr.and.or.baf.lists) <= 1 ) {
+
+		print(str(ph.asas.SNPS.lr.and.or.baf.lists.path, max = 1))
+		stop("Only one or fewer samples present after reading in data.")
+
+	}
+
+
+
+	print("Getting phasing to apply to all samples using getCombinedBAFDipTestPhasingParallel...")
+	ph.all.seg.phasing.info.list <- getCombinedBAFDipTestPhasingParallel(asas.lr.baf.lists = ph.asas.SNPs.w.both.lr.baf.snp.lists,
+	                                            seg.name.vec = ph.seg.name.vec,
+	                                            ploidy.est.vec = ph.ploidy.est.vec,
+	                                            purity.est.vec = ph.purity.est.vec,
+	                                            gamma.val = GAMMA_VAL,
+	                                            min.num.hz.snp.phasing = MIN_NUM_HZ_SNP_PHASING,
+	                                            min.prop.snp.sep.threshold = MIN_PROP_SNP_SEP_THRESH,
+	                                            dip.test.p.val.threshold = PVAL_DIPTEST_AI_THRESH,
+	                                            comb.wilcox.snp.sep.p.val.threshold = PVAL_COMB_WILCOX_PH_THRESH,
+	                                            allow.dip.test.without.ASCAT.to.phase = ALLOW_DIPTEST_ALONE_PH_FLAG
+	                                            )
+
+	#saveRDS(ph.all.seg.phasing.info.list, file = ph.all.seg.phasing.info.list.path)
+
+	#Todo unsure of what to do with the baf logr lists which have positions that only have logr here, at the moment exclude them but how
+	#does that affect later run
+	print("Generating phased BAF dataframes...")
+	ph.patient.phased.BAF.df.list <- createAllSegsPhasedBAFDataFrame(asas.lr.baf.lists = ph.asas.SNPs.w.both.lr.baf.snp.lists,
+                                                         sample.to.phase.seg.list = ph.all.seg.phasing.info.list,
+                                                         min.num.hz.snp.phasing = MIN_NUM_HZ_SNP_PHASING
+                                                         )
+
+	
+}#end if (OVERWRITE_FLAG == TRUE) {
+
+#So now we havve generated all input information based on the updated phased ASCAT run, let's reset the
+#vairable names to allow the subclonality code to continue to work:
+unph.f.joint.segs.df <- f.joint.segs.df
+f.joint.segs.df <- ph.f.joint.segs.df
+
+unph.sorted.all.bp.all.samps.segs.anno.df <- sorted.all.bp.all.samps.segs.anno.df
+sorted.all.bp.all.samps.segs.anno.df <- ph.sorted.all.bp.all.samps.segs.anno.df
+
+unph.purity.est.vec <- purity.est.vec
+purity.est.vec <- ph.purity.est.vec
+
+unph.ploidy.est.vec <- ploidy.est.vec
+ploidy.est.vec <- ph.ploidy.est.vec
+
+unph.min.cons.segs.df <- min.cons.segs.df
+min.cons.segs.df <- ph.min.cons.segs.df
+
+unph.seg.name.vec <- seg.name.vec
+seg.name.vec <- ph.seg.name.vec
+
+unph.asas.SNPs.w.both.lr.baf.snp.lists <- asas.SNPs.w.both.lr.baf.snp.lists
+asas.SNPs.w.both.lr.baf.snp.lists <- ph.asas.SNPs.w.both.lr.baf.snp.lists
+
+unph.asas.SNPS.lr.and.or.baf.lists <- asas.SNPS.lr.and.or.baf.lists
+asas.SNPS.lr.and.or.baf.lists <- phasas.SNPS.lr.and.or.baf.lists
+
+unph.all.seg.MSAI.by.BAF.ltnpd.present.list <- all.seg.MSAI.by.BAF.ltnpd.present.list
+all.seg.MSAI.by.BAF.ltnpd.present.list <- ph.all.seg.MSAI.by.BAF.ltnpd.present.list
+
+if (OVERWRITE_FLAG == TRUE) {
+
+	#Detect MSAI in the original BAF before it is processed alongside logr to get the Raw allele specifc cpn to be used in the rest of the analysis.
+	print("Performing LTNPD MSAI detection on the BAF...")
+	all.seg.MSAI.by.BAF.ltnpd.present.list <- getAllSegsMSAIDetectionFromBAFListLTNPD(seg.name.vec = seg.name.vec,
+																				  sample.vec  = sample.vec,
+																				  asas.SNPS.lr.and.or.baf.lists = asas.SNPS.lr.and.or.baf.lists,
+																				  all.seg.phasing.info.list = all.seg.phasing.info.list,
+																				  MSAI.BAF.LTPND.pval.thresh = MSAI_BAF_LTNPD_PVAL_THRESHOLD)
+	#saveRDS(ph.all.seg.MSAI.by.BAF.ltnpd.present.list, file = ph.all.seg.MSAI.by.BAF.ltnpd.present.list.path)
+
+	STOP
+
+	if (PLOTTING_FLAG == TRUE) {
+
+		png(file = paste(PLOT_OUTPUT_DIR, patient, "_MSAI_detection_BAF_phased", ".png", sep=""), width = 1200, height = 1400)
+
+		print("Plotting phased BAF across the genome...")
+		plotAllSampleBAFsAndMSAIAcrossGenome(sample.vec, all.seg.MSAI.by.BAF.ltnpd.present.list, patient.phased.BAF.df.list, cpnA.allele.color = '#de2d2699', cpnB.allele.color= '#3182bd99')
+
+		dev.off()
+
+	} else if (PLOTTING_FLAG == FALSE) {
+
+		print("Not plotting phased BAF as flag is FALSE")
+
+	}
+
+	print("Applying LTNPD MSAI detection to the original segments...")
+	#So now we have the original ASCAT segmentation and we want to make the MEDICC input from it
+	#So now we want to flip segments where MSAI has been detected and they were separated in the original data:
+	intersection.orig.mcs.df  <- sorted.all.bp.all.samps.segs.anno.df[sorted.all.bp.all.samps.segs.anno.df$in_intersection==TRUE,]
+	intersection.seg.name.vec <- paste0(intersection.orig.mcs.df$Chromosome,
+												":",
+												intersection.orig.mcs.df$Start_Position,
+												":",
+												intersection.orig.mcs.df$End_Position)
+	orig.intersection.mcs.w.MSAI.df <- intersection.orig.mcs.df
+	unq.intersection.seg.name.vec <- unique(intersection.seg.name.vec)
+	for (seg.name in unq.intersection.seg.name.vec) {
+
+		#"5:24593514:36986185" MSAI in A_LTX121
+		all.samp.matching.seg.vec <- paste0(sample.vec, "@", seg.name)
+
+		#print(all.seg.MSAI.by.BAF.ltnpd.present.list[[seg.name]])
+
+		if (all.seg.MSAI.by.BAF.ltnpd.present.list[[seg.name]]$MSAI_detection_feasible %in% TRUE) {
+
+			#print("here")
+			seg.MPhase.MSAI.df <- all.seg.MSAI.by.BAF.ltnpd.present.list[[seg.name]]$all_samps_BAF_and_ltnpd_df
+			#print(seg.MPhase.MSAI.df)
+			seg.MPhase.MSAI.ASCAT.df <- cbind(seg.MPhase.MSAI.df, intersection.orig.mcs.df[paste0(sample.vec, ":", seg.name),])
+			seg.MPhase.MSAI.ASCAT.df$samp_seg_name <- paste0(sample.vec, ":", seg.name)
+			seg.MPhase.MSAI.ASCAT.df$balanced  <- seg.MPhase.MSAI.ASCAT.df$nMinor == seg.MPhase.MSAI.ASCAT.df$nMajor
+			AI.seg.MPhase.MSAI.ASCAT.df <- seg.MPhase.MSAI.ASCAT.df[seg.MPhase.MSAI.ASCAT.df$balanced == FALSE,]
+
+			#Need to check MSAI is ocurring in the original segmentation allelic imbalance calls
+			if ( FALSE %in% AI.seg.MPhase.MSAI.ASCAT.df$MSAI_pval_passed_thresh & TRUE %in% AI.seg.MPhase.MSAI.ASCAT.df$MSAI_pval_passed_thresh ) {
+
+				switched.samp.seg.names.vec <- AI.seg.MPhase.MSAI.ASCAT.df[AI.seg.MPhase.MSAI.ASCAT.df$MSAI_pval_passed_thresh == TRUE & AI.seg.MPhase.MSAI.ASCAT.df$poss_dominant_allele == "cpnB" ,]$samp_seg_name
+				old.nMinor.vec <- orig.intersection.mcs.w.MSAI.df[switched.samp.seg.names.vec,]$nMinor
+				orig.intersection.mcs.w.MSAI.df[switched.samp.seg.names.vec,]$nMinor <- intersection.orig.mcs.df[switched.samp.seg.names.vec,]$nMajor
+				orig.intersection.mcs.w.MSAI.df[switched.samp.seg.names.vec,]$nMajor <- old.nMinor.vec
+
+			}#end if ( FALSE %in% AI.seg.MPhase.MSAI.ASCAT.df$balanced & TRUE %in% AI.seg.MPhase.MSAI.ASCAT.df$balanced ) {
+
+		}#end if (all.seg.MSAI.by.BAF.ltnpd.present.list[[seg.name]]$MSAI_detection_feasible %in% TRUE) {
+
+	}#end for (seg.name in intersection.seg.name.vec) {
+	print(orig.intersection.mcs.w.MSAI.df[orig.intersection.mcs.w.MSAI.df$nMinor > orig.intersection.mcs.w.MSAI.df$nMajor,])
+
+	orig.intersection.mcs.w.MSAI.df.path <- paste0(PLOT_OUTPUT_DIR, patient, "_orig_intersection_mcs_w_MSAI_df.RDS")
+	saveRDS(orig.intersection.mcs.w.MSAI.df, file = orig.intersection.mcs.w.MSAI.df.path)
+
+
+	pre.MPhase.MEDICC.FASTA.file.list <- makeMEDICCInputListsFromSegmentationDF(segs.to.make.MEDICC.input.df = orig.intersection.mcs.w.MSAI.df,
+											sample.vec = sample.vec,
+											chrs.to.use.vec = CHRS_TO_USE_VEC,
+											chr.col = "Chromosome",
+											start.col = "Start_Position",
+											end.col = "End_Position",
+											cpnA.col = "nMajor",
+											cpnB.col = "nMinor"
+											)
+
+	pre.MPhase.MEDICC.FASTA.file.list.path <- paste0(PLOT_OUTPUT_DIR, patient, "_pre_MPhase_MEDICC_FASTA_file_list.RDS")
+	saveRDS(pre.MPhase.MEDICC.FASTA.file.list, file = pre.MPhase.MEDICC.FASTA.file.list.path)
+
+
+
+
 	#1)So now we need to do the flipping of any MSAI events that were present:
 	#To do this we need to work out which ASCAT segments overlap with the Mphase segments that were input to ASCAT.
 	#We can do this by getting the overlaps of the smaller intersection/disjoin mphase segments with the ASCAT data. 
 	
 
-	STOp
+	#So actually what we're going to do he 
+
+
 	#was outputted by ASCAT
 	#Then we can replace the ASCAT segments with these smaller unjoined ones from the mphase output
 	#Flip their values of A and B
 	#This will then be a set of compatible segments for the rest of mpahse
 	#This will have to happen for all the MSAI segs...
-	samp.ascat.seg.grs <- makeGRangesFromDataFrame(samp.ascat.segs.df,
-	                        keep.extra.columns=FALSE,
-	                        ignore.strand=TRUE,
-	                        seqinfo=NULL,
-	                        seqnames.field=c("chr"),
-	                        start.field=c("startpos"),
-	                        end.field=c("endpos"),
-	                        strand.field="strand",
-	                        starts.in.df.are.0based=FALSE)
-	#
-	all.samp.overlap.grs <- getOverlapGRanges(curr.all.bp.chr.gr, all.samp.w.metadata.grs)
-	all.seg.MSAI.by.BAF.ltnpd.present.list
+	# samp.ascat.seg.grs <- makeGRangesFromDataFrame(samp.ascat.segs.df,
+	#                         keep.extra.columns=FALSE,
+	#                         ignore.strand=TRUE,
+	#                         seqinfo=NULL,
+	#                         seqnames.field=c("chr"),
+	#                         start.field=c("startpos"),
+	#                         end.field=c("endpos"),
+	#                         strand.field="strand",
+	#                         starts.in.df.are.0based=FALSE)
+	# #
+	# all.samp.overlap.grs <- getOverlapGRanges(curr.all.bp.chr.gr, all.samp.w.metadata.grs)
+	#all.seg.MSAI.by.BAF.ltnpd.present.list
 	#Let's try adding in the disjoin...
-	int.anno.seg.df <- anno.seg.df[anno.seg.df$in_intersection%in%TRUE | anno.seg.df$in_disjoin_only%in%TRUE & anno.seg.df$full_sample %in% sample.vec[1],]
-
-	#So basically now all we need to do is repeat the exact same process that's already happened?
-	#Basically redo all the seg joint segmentation finding and pass everything through to the next stage? 
-	#Why not?
-	#So let's refactor the earlier parts of the code into a function. Then apply it.
-	int.anno.seg.df
-
-
-
-	#Now we want to take this new ASCAT segmentation, purity and ploidy estimate and raw values and 
-	#Any raw values less than zero we need to s
-	#So, we also want to get the cpn A and B values from the internals of ASCAT
-
-	#2)Get the raw cpn values
-	#3)Work out what's going on in terms of intersection etc
-
-
-
-
-
-	####END TBKW NEW WORK
+	#int.anno.seg.df <- anno.seg.df[anno.seg.df$in_intersection%in%TRUE | anno.seg.df$in_disjoin_only%in%TRUE & anno.seg.df$full_sample %in% sample.vec[1],]
 
 
 	#Todo add another method of detecting MSAI using only the BAF and a paired T test.
@@ -1654,7 +1411,7 @@ if (OVERWRITE_FLAG == TRUE) {
 
 	print("Generating datapoints with LogR total cpn dataframes...")
 	#This is where the SNP filtering occurs. We can fix this by adding by passing an option of which data type is being analysed...
-	all.samp.non.hz.logr.and.tot.cpn.df.list <- getAllSampLogrAlonePositionsLogrAndTotalCPNDFsList(sample.vec = sample.vec,
+	.all.samp.non.hz.logr.and.tot.cpn.df.list <- getAllSampLogrAlonePositionsLogrAndTotalCPNDFsList(sample.vec = sample.vec,
 																				asas.SNPS.lr.and.or.baf.lists = asas.SNPS.lr.and.or.baf.lists,
 																				ploidy.est.vec = ploidy.est.vec,
 																				purity.est.vec = purity.est.vec,

@@ -57,6 +57,10 @@ genome <- conf$genome  # hg19 or hg38
 #as all will cover the same genomic area)
 options(stringsAsFactors = FALSE)
 
+#TBKW edit
+###GLOBAL FLAG that alters the behaviour of some hacked functions so that they work with MPhase and XPhase
+USING_XPHASE <- FALSE 
+
 #function taken from https://github.com/molgenis/molgenis-pipelines/wiki/How-to-source-another_file.R-from-within-your-R-script
 LocationOfThisScript  <-  function() { # Function LocationOfThisScript returns the location of this .R script (may be needed to source other files in same dir)
 	this.file = NULL

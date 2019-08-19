@@ -261,6 +261,17 @@ createAllSegsPhasedBAFDataFrame <- function(asas.lr.baf.lists, sample.to.phase.s
       samp.BAF.df$sample_phased_by_this_sample <-  sample.to.phase.seg.list[[seg.name]]$samp_chosen_to_phase_seg
       samp.BAF.df$maj_is_cpnA_logic_vec <- 0
       samp.BAF.df$maj_is_cpnB_logic_vec <- 0
+      samp.BAF.df$BAF_upper_in_ref <- 0
+
+      if ( ! sample.to.phase.seg.list[[seg.name]]$samp_chosen_to_phase_seg %in% "none_no_allelic_imbalance_called") {
+
+        samp.BAF.df$BAF_upper_in_ref <- as.numeric(asas.lr.baf.lists[[sample.to.phase.seg.list[[seg.name]]$samp_chosen_to_phase_seg]][[seg.name]]$BAF) > 0.5
+
+      } else {
+
+        samp.BAF.df$BAF_upper_in_ref <- as.numeric(1:nrow(samp.BAF.df)%%2)
+
+      }
 
       if (length(sample.to.phase.seg.list[[seg.name]]$maj_is_cpnA_idx_vec) > 1) {
 
