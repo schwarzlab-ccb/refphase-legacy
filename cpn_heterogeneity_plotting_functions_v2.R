@@ -1771,7 +1771,7 @@ plotAllSampleBAFsAndMSAIAcrossGenome <- function(sample.vec, all.seg.MSAI.by.BAF
     samp.BAF.df.to.plot <- getCumulativeChromLengthsForPlottingDF(samp.BAF.df, chroms.length.vec, chr.vec)
     samp.BAF.df <- samp.BAF.df.to.plot
 
-    if (USE_XPHASE == FALSE) {
+    if (USING_XPHASE == FALSE) {
 
       samp.BAF.df$color_to_plot <- ifelse(samp.BAF.df$maj_is_cpnA_logic_vec == 1, cpnA.allele.color, cpnB.allele.color)
 

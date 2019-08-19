@@ -35,11 +35,25 @@ getAllSegAllSamplePhasedRawCPNList <- function(sample.vec, ploidy.est.vec, purit
 
           }#end   if (nrow(samp.b.lr.baf.df) == 0) {
 
-          samp.seg.cpnA.cpnB.df <- calculateSNPsRawCopyNumberAB(logr.vec = samp.b.lr.baf.df$logR,
-                                                            baf.vec = samp.b.lr.baf.df$BAF,
-                                                            tumor.ploidy = ploidy.est.vec[samp],
-                                                            tumor.purity = purity.est.vec[samp],
-                                                            gamma.val = gamma.val)
+
+          if (USING_XPHASE == FALSE) {
+
+            samp.seg.cpnA.cpnB.df <- calculateSNPsRawCopyNumberAB(logr.vec = samp.b.lr.baf.df$logR,
+                                                              baf.vec = samp.b.lr.baf.df$BAF,
+                                                              tumor.ploidy = ploidy.est.vec[samp],
+                                                              tumor.purity = purity.est.vec[samp],
+                                                              gamma.val = gamma.val)
+
+
+          }else {
+
+          ##
+          samp.seg.cpnA.cpnB.df <- getPhasedASCATRawCopyNumberAB(ref.ss.lr.baf.df = samp.b.lr.baf.df,
+                                                              sample = samp,
+                                                              sample.ph.hz.ascat.df.list = PH_ALL_SAMP_ASCAT_RAW_CPN_DF_LIST)
+
+          }
+
 
         if (nrow(samp.b.lr.baf.df) < min.num.hz.snp.phasing) {
 

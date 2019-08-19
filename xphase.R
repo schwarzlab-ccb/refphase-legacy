@@ -650,7 +650,6 @@ if (OVERWRITE_FLAG == TRUE) {
 
 	#Let's try adding in the disjoin...
 	int.anno.seg.df <- anno.seg.df[anno.seg.df$in_intersection%in%TRUE | anno.seg.df$in_disjoin_only%in%TRUE & anno.seg.df$full_sample %in% sample.vec[1],]
-
 	#Let's just add the arm classificaitons to all the snp positions
 	snp.file.df$arm <- NA
 	for (ch in c(unique(int.anno.seg.df$chrom))) {
@@ -705,7 +704,9 @@ if (OVERWRITE_FLAG == TRUE) {
 			                         starts.in.df.are.0based=FALSE)
 	#
 	lacking.snp.idx.vec <- which(int.anno.seg.df$start_is_pos %in% FALSE | int.anno.seg.df$end_is_pos %in% FALSE)
-
+	#FIXME, potential improvement that could be written in would be to, once a SNP is being used
+	#remove it from the pool of potential snps to be used as a potenial start and end. However, this might not
+	#matter to much.
 	int.anno.seg.df$nearest_preceding_snp <- NA
 	int.anno.seg.df$nearest_following_snp <- NA 
 	print("	for (i in 1:length(all.int.grs)) {")
@@ -1164,8 +1165,8 @@ if (OVERWRITE_FLAG == TRUE) {
 	ph.ploidy.est.vec <- c()
 	for (samp in sample.vec) {
 
-		ph.purity.est.vec <- c(ph.purity.est.vec, ph.f.joint.segs.df[ph.f.joint.segs.df$sample %in%samp,]$ACF)
-		ph.ploidy.est.vec <- c(ph.ploidy.est.vec, ph.f.joint.segs.df[ph.f.joint.segs.df$sample %in%samp,]$Ploidy)
+		ph.purity.est.vec <- c(ph.purity.est.vec, unique(ph.f.joint.segs.df[ph.f.joint.segs.df$sample %in%samp,]$ACF))
+		ph.ploidy.est.vec <- c(ph.ploidy.est.vec, unique(ph.f.joint.segs.df[ph.f.joint.segs.df$sample %in%samp,]$Ploidy))
 
 	}#end for (samp in sample.vec) {
 	names(ph.purity.est.vec) <- sample.vec
@@ -1277,10 +1278,11 @@ unph.asas.SNPs.w.both.lr.baf.snp.lists <- asas.SNPs.w.both.lr.baf.snp.lists
 asas.SNPs.w.both.lr.baf.snp.lists <- ph.asas.SNPs.w.both.lr.baf.snp.lists
 
 unph.asas.SNPS.lr.and.or.baf.lists <- asas.SNPS.lr.and.or.baf.lists
-asas.SNPS.lr.and.or.baf.lists <- phasas.SNPS.lr.and.or.baf.lists
+asas.SNPS.lr.and.or.baf.lists <- ph.asas.SNPS.lr.and.or.baf.lists
 
-unph.all.seg.MSAI.by.BAF.ltnpd.present.list <- all.seg.MSAI.by.BAF.ltnpd.present.list
-all.seg.MSAI.by.BAF.ltnpd.present.list <- ph.all.seg.MSAI.by.BAF.ltnpd.present.list
+unph.ph.patient.phased.BAF.df.list <- patient.phased.BAF.df.list
+patient.phased.BAF.df.list <- ph.patient.phased.BAF.df.list
+
 
 if (OVERWRITE_FLAG == TRUE) {
 
@@ -1293,15 +1295,17 @@ if (OVERWRITE_FLAG == TRUE) {
 																				  MSAI.BAF.LTPND.pval.thresh = MSAI_BAF_LTNPD_PVAL_THRESHOLD)
 	#saveRDS(ph.all.seg.MSAI.by.BAF.ltnpd.present.list, file = ph.all.seg.MSAI.by.BAF.ltnpd.present.list.path)
 
-	STOP
 
 	if (PLOTTING_FLAG == TRUE) {
 
 		png(file = paste(PLOT_OUTPUT_DIR, patient, "_MSAI_detection_BAF_phased", ".png", sep=""), width = 1200, height = 1400)
 
 		print("Plotting phased BAF across the genome...")
-		plotAllSampleBAFsAndMSAIAcrossGenome(sample.vec, all.seg.MSAI.by.BAF.ltnpd.present.list, patient.phased.BAF.df.list, cpnA.allele.color = '#de2d2699', cpnB.allele.color= '#3182bd99')
-
+		plotAllSampleBAFsAndMSAIAcrossGenome(sample.vec = sample.vec,
+											all.seg.MSAI.by.BAF.ltnpd.present.list = all.seg.MSAI.by.BAF.ltnpd.present.list,
+											patient.phased.BAF.df.list = patient.phased.BAF.df.list,
+											cpnA.allele.color = '#de2d2699',
+											cpnB.allele.color= '#3182bd99')
 		dev.off()
 
 	} else if (PLOTTING_FLAG == FALSE) {
@@ -1313,6 +1317,7 @@ if (OVERWRITE_FLAG == TRUE) {
 	print("Applying LTNPD MSAI detection to the original segments...")
 	#So now we have the original ASCAT segmentation and we want to make the MEDICC input from it
 	#So now we want to flip segments where MSAI has been detected and they were separated in the original data:
+	#So we also want to flip the raw values:
 	intersection.orig.mcs.df  <- sorted.all.bp.all.samps.segs.anno.df[sorted.all.bp.all.samps.segs.anno.df$in_intersection==TRUE,]
 	intersection.seg.name.vec <- paste0(intersection.orig.mcs.df$Chromosome,
 												":",
@@ -1339,10 +1344,13 @@ if (OVERWRITE_FLAG == TRUE) {
 			AI.seg.MPhase.MSAI.ASCAT.df <- seg.MPhase.MSAI.ASCAT.df[seg.MPhase.MSAI.ASCAT.df$balanced == FALSE,]
 
 			#Need to check MSAI is ocurring in the original segmentation allelic imbalance calls
+			#Why checking both of these... FIXME...
 			if ( FALSE %in% AI.seg.MPhase.MSAI.ASCAT.df$MSAI_pval_passed_thresh & TRUE %in% AI.seg.MPhase.MSAI.ASCAT.df$MSAI_pval_passed_thresh ) {
 
 				switched.samp.seg.names.vec <- AI.seg.MPhase.MSAI.ASCAT.df[AI.seg.MPhase.MSAI.ASCAT.df$MSAI_pval_passed_thresh == TRUE & AI.seg.MPhase.MSAI.ASCAT.df$poss_dominant_allele == "cpnB" ,]$samp_seg_name
 				old.nMinor.vec <- orig.intersection.mcs.w.MSAI.df[switched.samp.seg.names.vec,]$nMinor
+				#old.nBraw.vec <- orig.intersection.mcs.w.MSAI.df[switched.samp.seg.names.vec,]$nBraw
+				#orig.intersection.mcs.w.MSAI.df[switched.samp.seg.names.vec,]$nBraw <-  intersection.orig.mcs.df[switched.samp.seg.names.vec,]$nAraw
 				orig.intersection.mcs.w.MSAI.df[switched.samp.seg.names.vec,]$nMinor <- intersection.orig.mcs.df[switched.samp.seg.names.vec,]$nMajor
 				orig.intersection.mcs.w.MSAI.df[switched.samp.seg.names.vec,]$nMajor <- old.nMinor.vec
 
@@ -1371,37 +1379,6 @@ if (OVERWRITE_FLAG == TRUE) {
 	saveRDS(pre.MPhase.MEDICC.FASTA.file.list, file = pre.MPhase.MEDICC.FASTA.file.list.path)
 
 
-
-
-	#1)So now we need to do the flipping of any MSAI events that were present:
-	#To do this we need to work out which ASCAT segments overlap with the Mphase segments that were input to ASCAT.
-	#We can do this by getting the overlaps of the smaller intersection/disjoin mphase segments with the ASCAT data. 
-	
-
-	#So actually what we're going to do he 
-
-
-	#was outputted by ASCAT
-	#Then we can replace the ASCAT segments with these smaller unjoined ones from the mphase output
-	#Flip their values of A and B
-	#This will then be a set of compatible segments for the rest of mpahse
-	#This will have to happen for all the MSAI segs...
-	# samp.ascat.seg.grs <- makeGRangesFromDataFrame(samp.ascat.segs.df,
-	#                         keep.extra.columns=FALSE,
-	#                         ignore.strand=TRUE,
-	#                         seqinfo=NULL,
-	#                         seqnames.field=c("chr"),
-	#                         start.field=c("startpos"),
-	#                         end.field=c("endpos"),
-	#                         strand.field="strand",
-	#                         starts.in.df.are.0based=FALSE)
-	# #
-	# all.samp.overlap.grs <- getOverlapGRanges(curr.all.bp.chr.gr, all.samp.w.metadata.grs)
-	#all.seg.MSAI.by.BAF.ltnpd.present.list
-	#Let's try adding in the disjoin...
-	#int.anno.seg.df <- anno.seg.df[anno.seg.df$in_intersection%in%TRUE | anno.seg.df$in_disjoin_only%in%TRUE & anno.seg.df$full_sample %in% sample.vec[1],]
-
-
 	#Todo add another method of detecting MSAI using only the BAF and a paired T test.
 	# all.seg.MSAI.by.BAF.ltnpd.present.list <- getAllSegsMirroredSubclonalAllelicImbalanceDetectionFromBAFList(seg.name.vec = seg.name.vec,
 	# 																										   sample.vec  = sample.vec,
@@ -1411,7 +1388,7 @@ if (OVERWRITE_FLAG == TRUE) {
 
 	print("Generating datapoints with LogR total cpn dataframes...")
 	#This is where the SNP filtering occurs. We can fix this by adding by passing an option of which data type is being analysed...
-	.all.samp.non.hz.logr.and.tot.cpn.df.list <- getAllSampLogrAlonePositionsLogrAndTotalCPNDFsList(sample.vec = sample.vec,
+	all.samp.non.hz.logr.and.tot.cpn.df.list <- getAllSampLogrAlonePositionsLogrAndTotalCPNDFsList(sample.vec = sample.vec,
 																				asas.SNPS.lr.and.or.baf.lists = asas.SNPS.lr.and.or.baf.lists,
 																				ploidy.est.vec = ploidy.est.vec,
 																				purity.est.vec = purity.est.vec,
@@ -1576,7 +1553,7 @@ if (OVERWRITE_FLAG == TRUE) {
 	    all.seg.greater.than.two.diff.list[[cpnX]][[seg.name]] <- is.there.cpnX.difference.greater.than.two.flag
 	    all.seg.CCF.diff.from.exp.list[[cpnX]][[seg.name]] <- seg.cpnX.diff.from.exp.list
 
-	  }#for (seg.name %in% seg.name.vec
+	  }#for (seg.name in seg.name.vec
 
 	}#end for (cpnX in c("cpnA", "cpnB")) {
 
@@ -1790,7 +1767,6 @@ if (OVERWRITE_INIT_MCS_ADD_INFO_FLAG == TRUE) {
 
 } else if (OVERWRITE_INIT_MCS_ADD_INFO_FLAG == FALSE) {
 
-
 	full.joint.segs.df.path <- paste0(PLOT_OUTPUT_DIR, patient, "_full_joint_segs_df.RDS")
 	full.joint.segs.df <- readRDS(file = full.joint.segs.df.path)
 
@@ -1859,7 +1835,10 @@ createMEDICCInputFiles(post.MPhase.MCS.MEDICC.FASTA.files.list, sample.vec, conf
 
 
 #quit(save = "no", status = 0, runLast = FALSE)
-#
+
+
+#So there are various things that can be improved.
+
 # ###Additional calling that needs adding:
 # #wgii
 # #ploidy
