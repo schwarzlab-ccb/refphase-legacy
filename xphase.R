@@ -3,74 +3,100 @@
 library(optparse)
 library(digest)
 
-# option_list <- list(
-#     make_option(c("--patient"), default="CB1002",
-#                 help="Patient id"),
-#     make_option(c("--dip-test"), default=FALSE,
-#                 help="Use dip test (default=TRUE)"),
-#     make_option(c("--output-dir"), default="../output/CB1002/mphase",
-#                 help="Output directory"),
-#     make_option(c("--medicc-output-dir"), default="../output/CB1002/mphase",
-#                 help="Output directory"),
-#     make_option(c("--input-format"), default="ASCAT",
-#                 help="Input data format (default=MEDICC)"),
-#     make_option(c("--snp-data"), default="../input/nb-schulte//CB1002_input_paths_df.txt",
-#                 help="SNP data"),
-#     make_option(c("--seg-data"), default="../input/nb-schulte//CB1002.segmentation",
-#                 help="Segmentation data output from ASCAT"),
-#     make_option(c("--overwrite"), default=TRUE,
-#                 help="Overwrite output (default=TRUE)"),
-#     make_option(c("--gamma"), default=1.0,
-#                 help="Gamma (for seq=1, for arrays~=0.5 (default=1.0)"),
-#     make_option(c("-j", "--cores"), default=1,
-#                 help="CPU cores (default=1)"),
-#     make_option(c("--segment-type"), default="intersection",
-#                 help="Segment type, intersection or whole_arm (default=1)"),
-#     make_option(c("--genome"), default="hg38",
-#                 help="Human genome version (default=hg19, also supports hg38)"),
-#     make_option(c("--seed"), default=2134234,
-#                 help="Random seed")
-#     )
-# conf <- parse_args(OptionParser(option_list = option_list), convert_hyphens_to_underscores = TRUE)
-# conf$id <- substr(digest(conf), 1, 8)
-# set.seed(conf$seed)#Why is a seed required? I'm not sure anything non-deterministic should be occurring
 
-# args = commandArgs(trailingOnly=TRUE)
-# print("config")
-# cat(paste(names(conf), conf, collapse="\n"))
 
-# patient <- conf$patient
-# #At the moment MPhase will only try to call MSAI and new copy number in areas of the genome identified as allelically imbalanced
-# #Enable this flag to try and find more allelic imbalance but this will probably break.
-# allow.dip.test.phasing.flag <- as.logical(conf$dip_test)
-# output.directory.base.path <- conf$output_dir
-# data.format.to.use <- conf$input_format #Default for this is MEDICC, but can specify TRACERx_exome, TRACERx_snp_array or TRACERx_WGS
-# #all.samp.snp.list.path <- conf$cached_data #Points towards the snp files, of whatever format they are given that should be used based on data.format to use.
-# snp.file.path <- conf$snp_data #Points towards the snp files, of whatever format they are given that should be used based on data.format to use.
-# seg.file.path <- conf$seg_data #Pintts towards the seg files, of whatever format they should be determined byh the data.format.to.use flag.
-# overwrite.flag  <- conf$overwrite
-# gamma.val <- conf$gamma #for sequencing it's 1 and SNP array it's 0.4/0.5 but this is platform specific see ASCAT help pages.
-# num.cores <- conf$cores #number of cores for the do parallel package functions
-# intersection.or.whole.arm <- conf$segment_type #Can either be intersection or whole_arm, do we take the only intersection of segments from each sample
-# genome <- conf$genome  # hg19 or hg38
-# #or do attempt to fill in the gaps between every segment in each sample so that the entire genome is covered (so output from any sample can run in GISTIC
-# #as all will cover the same genomic area)
+option_list <- list(
+    make_option(c("--patient"), default="CB1002",
+                help="Patient id"),
+    make_option(c("--dip-test"), default=FALSE,
+                help="Use dip test (default=TRUE)"),
+    make_option(c("--output-dir"), default="../output/CB1002/mphase",
+                help="Output directory"),
+    make_option(c("--medicc-output-dir"), default="../output/CB1002/mphase",
+                help="Output directory"),
+    make_option(c("--input-format"), default="ASCAT",
+                help="Input data format (default=MEDICC)"),
+    make_option(c("--snp-data"), default="../input/nb-schulte//CB1002_input_paths_df.txt",
+                help="SNP data"),
+    make_option(c("--seg-data"), default="../input/nb-schulte//CB1002.segmentation",
+                help="Segmentation data output from ASCAT"),
+    make_option(c("--overwrite"), default=TRUE,
+                help="Overwrite output (default=TRUE)"),
+    make_option(c("--gamma"), default=1.0,
+                help="Gamma (for seq=1, for arrays~=0.5 (default=1.0)"),
+    make_option(c("-j", "--cores"), default=1,
+                help="CPU cores (default=1)"),
+    make_option(c("--segment-type"), default="intersection",
+                help="Segment type, intersection or whole_arm (default=1)"),
+    make_option(c("--genome"), default="hg38",
+                help="Human genome version (default=hg19, also supports hg38)"),
+    make_option(c("--seed"), default=2134234,
+                help="Random seed")
+    )
+
+#conf <- parse_args(OptionParser(option_list = option_list, convert_hyphens_to_underscores = TRUE))
+print(packageVersion("optparse"))
+#Hack to get it working on TRACERx 
+if(packageVersion("optparse") != "1.3.2") {
+
+	conf <- parse_args(OptionParser(option_list = option_list), convert_hyphens_to_underscores = TRUE)
+
+} else {
+
+	conf <- parse_args(OptionParser(option_list = option_list))
+	names(conf) <- gsub("\\-", "_", names(conf))
+}
+conf$id <- substr(digest(conf), 1, 8)
+set.seed(conf$seed)#Why is a seed required? I'm not sure anything non-deterministic should be occurring
+
+args = commandArgs(trailingOnly=TRUE)
+print("config")
+print(args)
+cat(paste(names(conf), conf, collapse="\n"))
+
+
+print("Extracting from conf")
+patient <- conf$patient
+print("patient")
+print(patient)
+#At the moment MPhase will only try to call MSAI and new copy number in areas of the genome identified as allelically imbalanced
+#Enable this flag to try and find more allelic imbalance but this will probably break.
+allow.dip.test.phasing.flag <- as.logical(conf$dip_test)
+print("allow.dip.test.phasing.flag")
+print(allow.dip.test.phasing.flag)
+output.directory.base.path <- conf$output_dir
+print("output.directory.base.path")
+print(output.directory.base.path)
+data.format.to.use <- conf$input_format #Default for this is MEDICC, but can specify TRACERx_exome, TRACERx_snp_array or TRACERx_WGS
+print("data.format.to.use")
+print(data.format.to.use)
+
+#all.samp.snp.list.path <- conf$cached_data #Points towards the snp files, of whatever format they are given that should be used based on data.format to use.
+snp.file.path <- conf$snp_data #Points towards the snp files, of whatever format they are given that should be used based on data.format to use.
+seg.file.path <- conf$seg_data #Pintts towards the seg files, of whatever format they should be determined byh the data.format.to.use flag.
+overwrite.flag  <- conf$overwrite
+gamma.val <- conf$gamma #for sequencing it's 1 and SNP array it's 0.4/0.5 but this is platform specific see ASCAT help pages.
+num.cores <- conf$cores #number of cores for the do parallel package functions
+intersection.or.whole.arm <- conf$segment_type #Can either be intersection or whole_arm, do we take the only intersection of segments from each sample
+genome <- conf$genome  # hg19 or hg38
+#or do attempt to fill in the gaps between every segment in each sample so that the entire genome is covered (so output from any sample can run in GISTIC
+#as all will cover the same genomic area)
 
 #TBKW edit...
 #full.patient <- args[1]
-full.patient<- "A_LTX121"
-seg.file.path <- "/camp/project/proj-tracerx-lung/tracerx/release_tx421_20190411/A_LTX121/exome/MPhase/LTX121_joint_segs_all_ascat_info.txt" #Points towards the seg files, of whatever format they should be determined byh the data.format.to.use flag.
-snp.file.path <- "/camp/project/proj-tracerx-lung/tracerx/release_tx421_20190411/A_LTX121/exome/MPhase/LTX121_TRACERx_input_paths_df.txt"
-patient <- substring(full.patient, 3, 8)
-intersection.or.whole.arm <- "intersection"
-genome <- "hg19"
-allow.dip.test.phasing.flag <- FALSE
-data.format.to.use <- "ASCAT"
-overwrite.flag <- TRUE
-gamma.val <- 1
-num.cores <- 1
-output.directory.base.path <- paste0("/camp/project/proj-tracerx-lung/tctProjects/watkint/tx421_copy_number_qc/xphase_runs/", full.patient, "/")
-system(paste0("mkdir ", output.directory.base.path))
+# full.patient<- "A_LTX121"
+# seg.file.path <- "/camp/project/proj-tracerx-lung/tracerx/release_tx421_20190411/A_LTX121/exome/MPhase/LTX121_joint_segs_all_ascat_info.txt" #Points towards the seg files, of whatever format they should be determined byh the data.format.to.use flag.
+# snp.file.path <- "/camp/project/proj-tracerx-lung/tracerx/release_tx421_20190411/A_LTX121/exome/MPhase/LTX121_TRACERx_input_paths_df.txt"
+# patient <- substring(full.patient, 3, 8)
+# intersection.or.whole.arm <- "intersection"
+# genome <- "hg19"
+# allow.dip.test.phasing.flag <- FALSE
+# data.format.to.use <- "ASCAT"
+# overwrite.flag <- TRUE
+# gamma.val <- 1
+# num.cores <- 1
+# output.directory.base.path <- paste0("/camp/project/proj-tracerx-lung/tctProjects/watkint/tx421_copy_number_qc/xphase_runs/", full.patient, "/")
+# system(paste0("mkdir ", output.directory.base.path))
 #Right we need a free run folder:
 free.run.dir <- paste0(output.directory.base.path, "free_run/")
 qc.choice.dir <- paste0(output.directory.base.path, "run_qc_choice/")
@@ -377,7 +403,10 @@ if (OVERWRITE_FLAG == TRUE) {
     #shown in the data...
 
     #Making the assumption here that all regions that were analysed had 
-    gl.snp.df <- readInGermlineFromASCAT(ascat_bc_rds_path = pt.snp.file.paths.df[1,]$samp_ascat_bc_path)
+    gl.snp.df <- readInGermlineFromASCAT(ascat_bc_rds_path = pt.snp.file.paths.df[1,]$samp_ascat_bc_path,
+    									snp_pos_vec = paste0(all.samp.SNP.list[[1]]$chrom
+    														,"_"
+    														,all.samp.SNP.list[[1]]$pos))
 
     # # Temporarily remove everything except a few chromosomes
     # #test_chrs <- c("chr1", "chr2")
@@ -609,13 +638,22 @@ if (OVERWRITE_FLAG == TRUE) {
 	}
 	saveRDS(patient.phased.BAF.df.list, file = patient.phased.BAF.df.list.path)
 
+	#Now we have the phasing, we want to check whether, using it, we think that there is sufficient separation
+	#of the bands of allelic balance to consider a segment "allelically imbalanced"
+	#If not set the bafsegmented to 0.5 
+	#So we may want to reintroduce the log truncated normal stuff here...
+	
 
-	#So this is where want to replace the rest of mphase more or less..
+
+	#So this is where want to create a phased ascat.bc object:
 	#TBKW NEW WORK:
 	print("Starting new TBKW edit... begun on 16/08/2019 to recall copy number using phasing.")
 	source(paste0(current.dir, "ascat.R"))
 	#So determine which SNPs are hz:
 	snp.file.df <- gl.snp.df
+
+
+
 	snp.file.df$snp_pos <- paste0(snp.file.df$chrom, "_", snp.file.df$pos)
 	snp.file.df$snp_idx <- 1:nrow(snp.file.df)
 	#get germline column
@@ -918,6 +956,7 @@ if (OVERWRITE_FLAG == TRUE) {
 		  gl.m.hap.A.BAF <- suppressWarnings(mean(gl.seg.hz.snp.df[gl.seg.hz.snp.df$snp_pos %in% haplotype.A.snp.pos.vec,]$BAF, na.rm=TRUE)) - 0.5
 		  gl.m.hap.B.BAF <- suppressWarnings(mean(gl.seg.hz.snp.df[gl.seg.hz.snp.df$snp_pos %in% haplotype.B.snp.pos.vec,]$BAF, na.rm=TRUE)) - 0.5
 
+		  #So we actually
 		  #So we'll actually work out the gl correction factor here?
 
 		  #Let's get the equivalent germline snps 

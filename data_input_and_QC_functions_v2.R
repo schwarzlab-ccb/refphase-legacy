@@ -1449,13 +1449,41 @@ readInASCAT <- function(sample_table, segs, samples) {
                             # think, so it shouldn't alter the CN estimation.
                             BAFsegmented = rep(as.numeric(NA), length(baf)),
                             #samp_data$BAFsegmented = ascat_bc$Tumor_BAF_segmented[is_heterozygous]
-                            logRsegmented = as.numeric(ascat_bc$Tumor_LogR_segmented))
+                            logRsegmented = as.numeric(ascat_bc$Tumor_LogR_segmented),
+                            snp_pos = paste0(as.numeric(gsub("Y", "24", gsub("X", "23", gsub("chr", "", as.character(ascat_bc$SNPpos$chr)))))
+                                      ,"_"
+                                      ,ascat_bc$SNPpos$pos),
+                            stringsAsFactors = FALSE)
+
     all_snps[[sample]] <- samp_data
-  }
+
+  }#end  for (sample in samples) {
+
+
+
+  #So, in TRACERx we have the issue that ASCAT, when run with exactly the same input ascat occasionally does not seem to have
+  #all the same positions. So, in order to get xphase to run I have to make sure that the same snps/positions are kept for all
+  #samples. Given the way M/XPhase works (finding the nearest SNP to a breakpoint) this should be fine even if we get rid of
+  #some positions that are the start or end indices of samples' segments.
 
   all_snps <- ascat_set_bafsegmented(segs, all_snps)
+  #Get snp positions that are common to all data frames
+  snp.pos.vec <- paste0(all_snps[[1]]$chrom, "_", all_snps[[1]]$pos)
+  for (sample in samples[2:length(samples)]) {
+
+    snp.pos.vec <- snp.pos.vec[snp.pos.vec %in%  all_snps[[sample]]$snp_pos]
+
+  }#for (samp in samples) {
+
+  for (sample in samples) {
+
+    all_snps[[sample]] <- all_snps[[sample]][ all_snps[[sample]]$snp_pos %in% snp.pos.vec, ]
+    all_snps[[sample]]$snp_pos <- NULL
+
+  }#for (samp in samples) {
 
   return(all_snps)
+
 }
 
 
@@ -1473,7 +1501,7 @@ readInASCAT <- function(sample_table, segs, samples) {
 #   ..$ BAFsegmented : num [1:938946] 0.231 0.231 0.231 0.231 0.231 ...
 #   ..$ logRsegmented: num [1:938946] -0.327 -0.327 -0.327 -0.327 -0.327 ...
 #
-readInGermlineFromASCAT <- function(ascat_bc_rds_path) {
+readInGermlineFromASCAT <- function(ascat_bc_rds_path, snp_pos_vec) {
 
   cat("Starting to read sample", ascat_bc_rds_path, "\n")
 
@@ -1509,7 +1537,13 @@ readInGermlineFromASCAT <- function(ascat_bc_rds_path) {
                           # think, so it shouldn't alter the CN estimation.
                           BAFsegmented = rep(as.numeric(NA), length(baf)),
                           #samp_data$BAFsegmented = ascat_bc$Tumor_BAF_segmented[is_heterozygous]
-                          logRsegmented = as.numeric(ascat_bc$Tumor_LogR_segmented))
+                          logRsegmented = as.numeric(ascat_bc$Tumor_LogR_segmented),
+                          snp_pos = paste0(as.numeric(gsub("Y", "24", gsub("X", "23", gsub("chr", "", as.character(ascat_bc$SNPpos$chr)))))
+                                    ,"_"
+                                    ,ascat_bc$SNPpos$pos),
+                          stringsAsFactors = FALSE)
+
+  final_gl_data_df <- gl_data_df[gl_data_df$snp_pos %in% snp_pos_vec,]
 
   return(gl_data_df)
 }

@@ -31,7 +31,21 @@ option_list <- list(
     make_option(c("--seed"), default=2134234,
                 help="Random seed")
     )
-conf <- parse_args(OptionParser(option_list = option_list), convert_hyphens_to_underscores = TRUE)
+
+
+print(packageVersion("optparse"))
+print(conf)
+#Hack to get it working on TRACERx 
+if(packageVersion("optparse") != "1.3.2") {
+
+	conf <- parse_args(OptionParser(option_list = option_list), convert_hyphens_to_underscores = TRUE)
+
+} else {
+
+	conf <- parse_args(OptionParser(option_list = option_list))
+	names(conf) <- gsub("\\-", "_", names(conf))
+}	
+#conf <- parse_args(OptionParser(option_list = option_list), convert_hyphens_to_underscores = TRUE)
 conf$id <- substr(digest(conf), 1, 8)
 set.seed(conf$seed)
 

@@ -1705,7 +1705,8 @@ plotAllSampleCCFsAcrossGenome <- function(asas.ph.raw.cpn.lists, full.joint.segs
 
   }#end for ( samp in sample.vec ) {
 
-}
+}#end plotAllSampleCCFsAcrossGenome <- function(asas.ph.raw.cpn.lists, full.joint.segs.df, sample.vec, seg.name.vec, all.seg.CCF.vals.list, cpnX, use.cpn.or.ccf.thresh = "CCF", use.pass.column.to.plot = FALSE) {
+
 
 
 
