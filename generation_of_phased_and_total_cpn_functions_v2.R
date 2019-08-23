@@ -35,11 +35,25 @@ getAllSegAllSamplePhasedRawCPNList <- function(sample.vec, ploidy.est.vec, purit
 
           }#end   if (nrow(samp.b.lr.baf.df) == 0) {
 
-          samp.seg.cpnA.cpnB.df <- calculateSNPsRawCopyNumberAB(logr.vec = samp.b.lr.baf.df$logR,
-                                                            baf.vec = samp.b.lr.baf.df$BAF,
-                                                            tumor.ploidy = ploidy.est.vec[samp],
-                                                            tumor.purity = purity.est.vec[samp],
-                                                            gamma.val = gamma.val)
+
+          if (USING_XPHASE == FALSE) {
+
+            samp.seg.cpnA.cpnB.df <- calculateSNPsRawCopyNumberAB(logr.vec = samp.b.lr.baf.df$logR,
+                                                              baf.vec = samp.b.lr.baf.df$BAF,
+                                                              tumor.ploidy = ploidy.est.vec[samp],
+                                                              tumor.purity = purity.est.vec[samp],
+                                                              gamma.val = gamma.val)
+
+
+          }else {
+
+          ##
+          samp.seg.cpnA.cpnB.df <- getPhasedASCATRawCopyNumberAB(ref.ss.lr.baf.df = samp.b.lr.baf.df,
+                                                              sample = samp,
+                                                              sample.ph.hz.ascat.df.list = PH_ALL_SAMP_ASCAT_RAW_CPN_DF_LIST)
+
+          }
+
 
         if (nrow(samp.b.lr.baf.df) < min.num.hz.snp.phasing) {
 
@@ -261,6 +275,17 @@ createAllSegsPhasedBAFDataFrame <- function(asas.lr.baf.lists, sample.to.phase.s
       samp.BAF.df$sample_phased_by_this_sample <-  sample.to.phase.seg.list[[seg.name]]$samp_chosen_to_phase_seg
       samp.BAF.df$maj_is_cpnA_logic_vec <- 0
       samp.BAF.df$maj_is_cpnB_logic_vec <- 0
+      samp.BAF.df$BAF_upper_in_ref <- 0
+
+      if ( ! sample.to.phase.seg.list[[seg.name]]$samp_chosen_to_phase_seg %in% "none_no_allelic_imbalance_called") {
+
+        samp.BAF.df$BAF_upper_in_ref <- as.numeric(asas.lr.baf.lists[[sample.to.phase.seg.list[[seg.name]]$samp_chosen_to_phase_seg]][[seg.name]]$BAF) > 0.5
+
+      } else {
+
+        samp.BAF.df$BAF_upper_in_ref <- as.numeric(1:nrow(samp.BAF.df)%%2)
+
+      }
 
       if (length(sample.to.phase.seg.list[[seg.name]]$maj_is_cpnA_idx_vec) > 1) {
 

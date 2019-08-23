@@ -1416,7 +1416,19 @@ readInASCAT <- function(sample_table, segs, samples) {
   for (sample in samples) {
     sample_info <- sample_table[sample,]
     cat("Starting to read sample", sample_info$samp_ascat_bc_path, "\n")
-    ascat_bc <- readRDS(sample_info$samp_ascat_bc_path)
+
+    if(grepl("RData", sample_info$samp_ascat_bc_path)) {
+
+      print("ascat.bc object in RData file, loading...")
+      load(sample_info$samp_ascat_bc_path)
+      ascat_bc <- ascat.bc
+
+    } else {
+
+      ascat_bc <- readRDS(sample_info$samp_ascat_bc_path)
+
+
+    }
 
     # First check to see which SNPs are heterozygous
     normal_baf <- ascat_bc$Germline_BAF[[1]]
@@ -1437,13 +1449,103 @@ readInASCAT <- function(sample_table, segs, samples) {
                             # think, so it shouldn't alter the CN estimation.
                             BAFsegmented = rep(as.numeric(NA), length(baf)),
                             #samp_data$BAFsegmented = ascat_bc$Tumor_BAF_segmented[is_heterozygous]
-                            logRsegmented = as.numeric(ascat_bc$Tumor_LogR_segmented))
+                            logRsegmented = as.numeric(ascat_bc$Tumor_LogR_segmented),
+                            snp_pos = paste0(as.numeric(gsub("Y", "24", gsub("X", "23", gsub("chr", "", as.character(ascat_bc$SNPpos$chr)))))
+                                      ,"_"
+                                      ,ascat_bc$SNPpos$pos),
+                            stringsAsFactors = FALSE)
+
     all_snps[[sample]] <- samp_data
-  }
+
+  }#end  for (sample in samples) {
+
+
+
+  #So, in TRACERx we have the issue that ASCAT, when run with exactly the same input ascat occasionally does not seem to have
+  #all the same positions. So, in order to get xphase to run I have to make sure that the same snps/positions are kept for all
+  #samples. Given the way M/XPhase works (finding the nearest SNP to a breakpoint) this should be fine even if we get rid of
+  #some positions that are the start or end indices of samples' segments.
 
   all_snps <- ascat_set_bafsegmented(segs, all_snps)
+  #Get snp positions that are common to all data frames
+  snp.pos.vec <- paste0(all_snps[[1]]$chrom, "_", all_snps[[1]]$pos)
+  for (sample in samples[2:length(samples)]) {
+
+    snp.pos.vec <- snp.pos.vec[snp.pos.vec %in%  all_snps[[sample]]$snp_pos]
+
+  }#for (samp in samples) {
+
+  for (sample in samples) {
+
+    all_snps[[sample]] <- all_snps[[sample]][ all_snps[[sample]]$snp_pos %in% snp.pos.vec, ]
+    all_snps[[sample]]$snp_pos <- NULL
+
+  }#for (samp in samples) {
 
   return(all_snps)
+
+}
+
+
+# Read in a single ascat.bc file and create the requisite gl.snp.df that is used to compare the allelic 
+# imbalance present in tumour regions to the exact same set of hz snps in the germline. 
+#
+# > x <- readRDS("LTX121_all_samp_SNP_list.RDS")
+# > str(x)
+# List of 2
+#  $ A_LTX121_SU_T1-R1:'data.frame':      938946 obs. of  6 variables:
+#   ..$ chrom        : num [1:938946] 1 1 1 1 1 1 1 1 1 1 ...
+#   ..$ pos          : int [1:938946] 762273 762496 762497 777237 777318 777335 777361 777456 783071 783147 ...
+#   ..$ BAF          : num [1:938946] NA NA NA NA NA NA NA NA NA NA ...
+#   ..$ logR         : num [1:938946] -0.049 -0.161 -0.161 -0.542 -0.46 -0.46 -0.46 -0.166 -0.047 -0.013 ...
+#   ..$ BAFsegmented : num [1:938946] 0.231 0.231 0.231 0.231 0.231 ...
+#   ..$ logRsegmented: num [1:938946] -0.327 -0.327 -0.327 -0.327 -0.327 ...
+#
+readInGermlineFromASCAT <- function(ascat_bc_rds_path, snp_pos_vec) {
+
+  cat("Starting to read sample", ascat_bc_rds_path, "\n")
+
+  if(grepl("RData", ascat_bc_rds_path)) {
+
+    print("ascat.bc object in RData file, loading...")
+    load(ascat_bc_rds_path)
+    ascat_bc <- ascat.bc
+
+  } else {
+
+    ascat_bc <- readRDS(ascat_bc_rds_path)
+
+
+  }
+
+  # First check to see which SNPs are heterozygous
+  normal_baf <- ascat_bc$Germline_BAF[[1]]
+  is_homozygous <- normal_baf < 0.3 | normal_baf > 0.7
+  is_heterozygous <- !(is.na(normal_baf) | is_homozygous)
+  cat("# of heterozygous SNPs:", sum(is_heterozygous), "\n")
+
+  # Mask non-heterozygous SNPs with NA
+  baf <- ascat_bc$Germline_BAF[[1]]
+  baf[!is_heterozygous] <- NA
+
+  gl_data_df <- data.frame(chrom = as.numeric(gsub("Y", "24", gsub("X", "23", gsub("chr", "", as.character(ascat_bc$SNPpos$chr))))),
+                          pos = ascat_bc$SNPpos$pos,
+                          BAF = baf,
+                          logR = ascat_bc$Germline_LogR[[1]],
+                          # FIXME: huge hack. BAFsegmented does not contain all SNPs, so we
+                          # substitute the original BAFs here. This is only used for plotting I
+                          # think, so it shouldn't alter the CN estimation.
+                          BAFsegmented = rep(as.numeric(NA), length(baf)),
+                          #samp_data$BAFsegmented = ascat_bc$Tumor_BAF_segmented[is_heterozygous]
+                          logRsegmented = as.numeric(ascat_bc$Tumor_LogR_segmented),
+                          snp_pos = paste0(as.numeric(gsub("Y", "24", gsub("X", "23", gsub("chr", "", as.character(ascat_bc$SNPpos$chr)))))
+                                    ,"_"
+                                    ,ascat_bc$SNPpos$pos),
+                          stringsAsFactors = FALSE)
+
+  final_gl_data_df <- gl_data_df[gl_data_df$snp_pos %in% snp_pos_vec,]
+
+  return(gl_data_df)
 }
 
 

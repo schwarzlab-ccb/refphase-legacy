@@ -31,7 +31,21 @@ option_list <- list(
     make_option(c("--seed"), default=2134234,
                 help="Random seed")
     )
-conf <- parse_args(OptionParser(option_list = option_list), convert_hyphens_to_underscores = TRUE)
+
+
+print(packageVersion("optparse"))
+print(conf)
+#Hack to get it working on TRACERx 
+if(packageVersion("optparse") != "1.3.2") {
+
+	conf <- parse_args(OptionParser(option_list = option_list), convert_hyphens_to_underscores = TRUE)
+
+} else {
+
+	conf <- parse_args(OptionParser(option_list = option_list))
+	names(conf) <- gsub("\\-", "_", names(conf))
+}	
+#conf <- parse_args(OptionParser(option_list = option_list), convert_hyphens_to_underscores = TRUE)
 conf$id <- substr(digest(conf), 1, 8)
 set.seed(conf$seed)
 
@@ -56,6 +70,10 @@ genome <- conf$genome  # hg19 or hg38
 #or do attempt to fill in the gaps between every segment in each sample so that the entire genome is covered (so output from any sample can run in GISTIC
 #as all will cover the same genomic area)
 options(stringsAsFactors = FALSE)
+
+#TBKW edit
+###GLOBAL FLAG that alters the behaviour of some hacked functions so that they work with MPhase and XPhase
+USING_XPHASE <- FALSE 
 
 #function taken from https://github.com/molgenis/molgenis-pipelines/wiki/How-to-source-another_file.R-from-within-your-R-script
 LocationOfThisScript  <-  function() { # Function LocationOfThisScript returns the location of this .R script (may be needed to source other files in same dir)

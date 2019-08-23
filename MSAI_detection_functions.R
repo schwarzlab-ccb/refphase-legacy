@@ -1,3 +1,109 @@
+##This is a new version 
+##Params:
+##
+##Returns:
+##
+getAllSegsAIorMSAIDetectionFromBAFListLTNPD <- function(seg.name.vec, sample.vec, asas.SNPS.lr.and.or.baf.lists, all.seg.phasing.info.list, MSAI.BAF.LTPND.pval.thresh) {
+
+  all.seg.MSAI.by.BAF.ltnpd.present.list <- list()
+  for ( seg.name in seg.name.vec ) {
+
+    all.seg.MSAI.by.BAF.ltnpd.present.list[[seg.name]] <- list()  
+    all.seg.MSAI.by.BAF.ltnpd.present.list[[seg.name]]$seg_name <- seg.name
+    print(seg.name)
+    if (seg.name %in% names(all.seg.phasing.info.list)) {
+
+      ref.samp <- all.seg.phasing.info.list[[seg.name]]$samp_chosen_to_phase_seg
+      #Determine whether we can detect MSAI and fill in the info fields, resent ref.samp if mixture phasing was used
+      if ( grepl("none", ref.samp) == TRUE ) {
+
+        all.seg.MSAI.by.BAF.ltnpd.present.list[[seg.name]]$MSAI_detection_feasible <- FALSE
+        all.seg.MSAI.by.BAF.ltnpd.present.list[[seg.name]]$MSAI_detection_info <- "no_reference_although_phasing_attempted"
+        next
+
+      } else if (ref.samp == "mixture") {# end if ( grepl("none", ref.samp) == TRUE ) { 
+
+        all.seg.MSAI.by.BAF.ltnpd.present.list[[seg.name]]$MSAI_detection_feasible <- TRUE
+        all.seg.MSAI.by.BAF.ltnpd.present.list[[seg.name]]$MSAI_detection_info <- "mixture_phasing_using_top_ranked_samp_by_diptest"#Note might be an issue here, is it only
+        #samples that made it throigh to 
+        ref.samp <- all.seg.phasing.info.list[[seg.name]]$samp_most_significant_by_diptest
+
+      } else {# end if ( grepl("none", ref.samp) == TRUE ) { 
+
+        all.seg.MSAI.by.BAF.ltnpd.present.list[[seg.name]]$MSAI_detection_feasible <- TRUE
+        all.seg.MSAI.by.BAF.ltnpd.present.list[[seg.name]]$MSAI_detection_info <- "phasing_from_single_sample_used"#Note might be an issue here, is it only
+
+      }# end else if (ref.samp == "mixture") {
+      nr <- length(asas.SNPS.lr.and.or.baf.lists[[1]][[seg.name]]$BAF)
+      lower.band.col.names <- paste0(sample.vec, "_ltnpd_in_lower")
+      upper.band.col.names <- paste0(sample.vec, "_ltnpd_in_upper") 
+      interleaved.col.names <- c(rbind(sample.vec, lower.band.col.names, upper.band.col.names))
+      all.samp.seg.baf.df <- data.frame(matrix(vector(), nr, length(interleaved.col.names),
+                              dimnames = list(c(), interleaved.col.names)),
+                              stringsAsFactors = FALSE,
+                              check.names = FALSE)
+
+      for ( samp in sample.vec ) {
+
+        all.samp.seg.baf.df[[samp]] <- asas.SNPS.lr.and.or.baf.lists[[samp]][[seg.name]]$BAF
+        all.samp.seg.baf.df[[paste0(samp, "_ltnpd_in_lower")]] <- getLogTruncNormProbabilityDensitiesBAFvsLowerOrUpper(lower.or.upper.mu = 0.33, baf.vector = asas.SNPS.lr.and.or.baf.lists[[samp]][[seg.name]]$BAF)
+        all.samp.seg.baf.df[[paste0(samp, "_ltnpd_in_upper")]] <- getLogTruncNormProbabilityDensitiesBAFvsLowerOrUpper(lower.or.upper.mu = 0.66, baf.vector = asas.SNPS.lr.and.or.baf.lists[[samp]][[seg.name]]$BAF)
+
+      }#end for ( samp in sample.vec ) {
+
+      seg.all.samp.MSAI.results.df <- data.frame(sample_name = sample.vec,
+                            sample_is_ref = logical(length(sample.vec)),
+                            MSAI_pval = numeric(length(sample.vec)),
+                            MSAI_pval_passed_thresh = logical(length(sample.vec)),
+                            poss_dominant_allele = rep("cpnA", length(sample.vec)),#Need to check whether we end up calling alleic imbalance or not..
+                            stringsAsFactors = FALSE,
+                            check.names = FALSE)
+      rownames(seg.all.samp.MSAI.results.df) <- sample.vec
+      seg.all.samp.MSAI.results.df[seg.all.samp.MSAI.results.df$sample_name == ref.samp,]$sample_is_ref <- TRUE
+      seg.all.samp.MSAI.results.df[seg.all.samp.MSAI.results.df$sample_name == ref.samp,]$MSAI_pval <- 1 
+
+      for (test.samp in sample.vec[ ! sample.vec %in% ref.samp]) { 
+
+        msai.ltnpd.vec <- log( exp(all.samp.seg.baf.df[, paste0(test.samp, "_ltnpd_in_lower")] + all.samp.seg.baf.df[, paste0(ref.samp, "_ltnpd_in_upper")]) +
+                         exp(all.samp.seg.baf.df[, paste0(test.samp, "_ltnpd_in_upper")] + all.samp.seg.baf.df[, paste0(ref.samp, "_ltnpd_in_lower")]) )
+        no.msai.ltnpd.vec <- log( exp(all.samp.seg.baf.df[, paste0(test.samp, "_ltnpd_in_upper")] + all.samp.seg.baf.df[, paste0(ref.samp, "_ltnpd_in_upper")]) +
+                          exp(all.samp.seg.baf.df[, paste0(test.samp, "_ltnpd_in_lower")] + all.samp.seg.baf.df[, paste0(ref.samp, "_ltnpd_in_lower")]) )
+        
+        ratio.msai.vs.no.msai.ltnpd.vec <- msai.ltnpd.vec - no.msai.ltnpd.vec
+        seg.all.samp.MSAI.results.df[test.samp,]$MSAI_pval <- tTestWithErrorHandling(ratio.msai.vs.no.msai.ltnpd.vec, alternative = "greater")$p.value
+        #Now we can introduce another test to look for allelic imbalance here, if the tTest alternative is sent to
+         
+        if (seg.all.samp.MSAI.results.df[test.samp,]$MSAI_pval <= MSAI.BAF.LTPND.pval.thresh) {
+
+          seg.all.samp.MSAI.results.df[test.samp,]$MSAI_pval_passed_thresh <- TRUE
+          seg.all.samp.MSAI.results.df[test.samp,]$poss_dominant_allele <- "cpnB"
+
+        }
+        
+      }#end for (test.samp in sample.vec[ ! sample.vec %in% ref.samp]) { 
+
+      all.seg.MSAI.by.BAF.ltnpd.present.list[[seg.name]]$MSAI_present_any_sample_by_thresh <- any(seg.all.samp.MSAI.results.df$MSAI_pval_passed_thres)
+      all.seg.MSAI.by.BAF.ltnpd.present.list[[seg.name]]$MSAI_by_sample_df <- seg.all.samp.MSAI.results.df
+      all.seg.MSAI.by.BAF.ltnpd.present.list[[seg.name]]$all_samps_BAF_and_ltnpd_df <- seg.all.samp.MSAI.results.df
+
+    } else { #end if (seg.name %in% names(all.seg.phasing.info.list)) {
+
+      all.seg.MSAI.by.BAF.ltnpd.present.list[[seg.name]]$MSAI_detection_feasible <- FALSE
+      all.seg.MSAI.by.BAF.ltnpd.present.list[[seg.name]]$MSAI_detection_info <- "no_phasing_was_attempted"
+      all.seg.MSAI.by.BAF.ltnpd.present.list[[seg.name]]$MSAI_present_any_sample_by_thresh <- NA
+    }#end if ( ! seg.name %in% names(all.seg.phasing.info.list)) {
+
+  }#end for ( seg.name in seg.name.vec ) {
+
+  return(all.seg.MSAI.by.BAF.ltnpd.present.list)
+
+}#end getAllSegsMirroredSubclonalAllelicImbalanceDetectionFromBAFList (...)
+
+
+
+
+
+
 
 ##
 ##Params:
@@ -72,6 +178,7 @@ getAllSegsMSAIDetectionFromBAFListLTNPD <- function(seg.name.vec, sample.vec, as
         
         ratio.msai.vs.no.msai.ltnpd.vec <- msai.ltnpd.vec - no.msai.ltnpd.vec
         seg.all.samp.MSAI.results.df[test.samp,]$MSAI_pval <- tTestWithErrorHandling(ratio.msai.vs.no.msai.ltnpd.vec, alternative = "greater")$p.value
+        #Now we can introduce another test to look for allelic imbalance here, if the tTest alternative is sent to
 
         if (seg.all.samp.MSAI.results.df[test.samp,]$MSAI_pval <= MSAI.BAF.LTPND.pval.thresh) {
 

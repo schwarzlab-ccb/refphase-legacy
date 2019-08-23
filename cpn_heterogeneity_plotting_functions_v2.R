@@ -1705,7 +1705,8 @@ plotAllSampleCCFsAcrossGenome <- function(asas.ph.raw.cpn.lists, full.joint.segs
 
   }#end for ( samp in sample.vec ) {
 
-}
+}#end plotAllSampleCCFsAcrossGenome <- function(asas.ph.raw.cpn.lists, full.joint.segs.df, sample.vec, seg.name.vec, all.seg.CCF.vals.list, cpnX, use.cpn.or.ccf.thresh = "CCF", use.pass.column.to.plot = FALSE) {
+
 
 
 
@@ -1767,11 +1768,21 @@ plotAllSampleBAFsAndMSAIAcrossGenome <- function(sample.vec, all.seg.MSAI.by.BAF
     }
 
     samp.BAF.df <- patient.phased.BAF.df.list[[samp]]
-    samp.BAF.df <- samp.BAF.df[, c("chrom", "pos", "pos", "BAF","BAFsegmented","logR","logRsegmented", "samp","sample_phased_by_this_sample","maj_is_cpnA_logic_vec","maj_is_cpnB_logic_vec","ph_median_segmented_BAF")]
+    samp.BAF.df <- samp.BAF.df[, c("chrom", "pos", "pos", "BAF","BAFsegmented","logR","logRsegmented", "samp","sample_phased_by_this_sample","maj_is_cpnA_logic_vec","maj_is_cpnB_logic_vec","ph_median_segmented_BAF", "BAF_upper_in_ref")]
     samp.BAF.df.to.plot <- getCumulativeChromLengthsForPlottingDF(samp.BAF.df, chroms.length.vec, chr.vec)
     samp.BAF.df <- samp.BAF.df.to.plot
 
-    samp.BAF.df$color_to_plot <- ifelse(samp.BAF.df$maj_is_cpnA_logic_vec == 1, cpnA.allele.color, cpnB.allele.color)
+    if (USING_XPHASE == FALSE) {
+
+      samp.BAF.df$color_to_plot <- ifelse(samp.BAF.df$maj_is_cpnA_logic_vec == 1, cpnA.allele.color, cpnB.allele.color)
+
+    } else {
+
+      samp.BAF.df$color_to_plot <- ifelse(samp.BAF.df$BAF_upper_in_ref, cpnA.allele.color, cpnB.allele.color)
+
+
+    }
+
     samp.BAF.df$mphase_segmented_BAF <- 0.5
 
     if(nrow(samp.BAF.df[grepl("none", samp.BAF.df$sample_phased_by_this_sample),]) > 0) {
