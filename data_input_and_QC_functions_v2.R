@@ -1487,8 +1487,8 @@ readInASCAT <- function(sample_table, segs, samples) {
 }
 
 
-# Read in a single ascat.bc file and create the requisite gl.snp.df that is used to compare the allelic 
-# imbalance present in tumour regions to the exact same set of hz snps in the germline. 
+# Read in a single ascat.bc file and create the requisite gl.snp.df that is used to compare the allelic
+# imbalance present in tumour regions to the exact same set of hz snps in the germline.
 #
 # > x <- readRDS("LTX121_all_samp_SNP_list.RDS")
 # > str(x)
@@ -1528,22 +1528,41 @@ readInGermlineFromASCAT <- function(ascat_bc_rds_path, snp_pos_vec) {
   baf <- ascat_bc$Germline_BAF[[1]]
   baf[!is_heterozygous] <- NA
 
-  gl_data_df <- data.frame(chrom = as.numeric(gsub("Y", "24", gsub("X", "23", gsub("chr", "", as.character(ascat_bc$SNPpos$chr))))),
+  tmp <- list(chrom = as.numeric(gsub("Y", "24", gsub("X", "23", gsub("chr", "", as.character(ascat_bc$SNPpos$chr))))),
                           pos = ascat_bc$SNPpos$pos,
                           BAF = baf,
-                          logR = ascat_bc$Germline_LogR[[1]],
+                          #logR = ascat_bc$Germline_LogR[[1]],
+                          logR = rep(0, length(baf)),
                           # FIXME: huge hack. BAFsegmented does not contain all SNPs, so we
                           # substitute the original BAFs here. This is only used for plotting I
                           # think, so it shouldn't alter the CN estimation.
                           BAFsegmented = rep(as.numeric(NA), length(baf)),
                           #samp_data$BAFsegmented = ascat_bc$Tumor_BAF_segmented[is_heterozygous]
                           logRsegmented = as.numeric(ascat_bc$Tumor_LogR_segmented),
-                          snp_pos = paste0(as.numeric(gsub("Y", "24", gsub("X", "23", gsub("chr", "", as.character(ascat_bc$SNPpos$chr)))))
+                          snp_pos = paste0(as.numeric(sub("Y", "24", sub("X", "23", sub("chr", "", as.character(ascat_bc$SNPpos$chr)))))
                                     ,"_"
                                     ,ascat_bc$SNPpos$pos),
                           stringsAsFactors = FALSE)
 
-  final_gl_data_df <- gl_data_df[gl_data_df$snp_pos %in% snp_pos_vec,]
+  print(lapply(tmp, length))
+
+  gl_data_df <- data.frame(chrom = as.numeric(gsub("Y", "24", gsub("X", "23", gsub("chr", "", as.character(ascat_bc$SNPpos$chr))))),
+                          pos = ascat_bc$SNPpos$pos,
+                          BAF = baf,
+                          #logR = ascat_bc$Germline_LogR[[1]],
+                          logR = rep(0, length(baf)),
+                          # FIXME: huge hack. BAFsegmented does not contain all SNPs, so we
+                          # substitute the original BAFs here. This is only used for plotting I
+                          # think, so it shouldn't alter the CN estimation.
+                          BAFsegmented = rep(as.numeric(NA), length(baf)),
+                          #samp_data$BAFsegmented = ascat_bc$Tumor_BAF_segmented[is_heterozygous]
+                          logRsegmented = as.numeric(ascat_bc$Tumor_LogR_segmented),
+                          snp_pos = paste0(as.numeric(sub("Y", "24", sub("X", "23", sub("chr", "", as.character(ascat_bc$SNPpos$chr)))))
+                                    ,"_"
+                                    ,ascat_bc$SNPpos$pos),
+                          stringsAsFactors = FALSE)
+
+  #final_gl_data_df <- gl_data_df[gl_data_df$snp_pos %in% snp_pos_vec,]
 
   return(gl_data_df)
 }

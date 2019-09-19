@@ -34,8 +34,8 @@ option_list <- list(
 
 
 print(packageVersion("optparse"))
-print(conf)
-#Hack to get it working on TRACERx 
+#print(conf)
+#Hack to get it working on TRACERx
 if(packageVersion("optparse") != "1.3.2") {
 
 	conf <- parse_args(OptionParser(option_list = option_list), convert_hyphens_to_underscores = TRUE)
@@ -44,7 +44,7 @@ if(packageVersion("optparse") != "1.3.2") {
 
 	conf <- parse_args(OptionParser(option_list = option_list))
 	names(conf) <- gsub("\\-", "_", names(conf))
-}	
+}
 #conf <- parse_args(OptionParser(option_list = option_list), convert_hyphens_to_underscores = TRUE)
 conf$id <- substr(digest(conf), 1, 8)
 set.seed(conf$seed)
@@ -73,7 +73,7 @@ options(stringsAsFactors = FALSE)
 
 #TBKW edit
 ###GLOBAL FLAG that alters the behaviour of some hacked functions so that they work with MPhase and XPhase
-USING_XPHASE <- FALSE 
+USING_XPHASE <- FALSE
 
 #function taken from https://github.com/molgenis/molgenis-pipelines/wiki/How-to-source-another_file.R-from-within-your-R-script
 LocationOfThisScript  <-  function() { # Function LocationOfThisScript returns the location of this .R script (may be needed to source other files in same dir)

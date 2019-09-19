@@ -25,7 +25,7 @@ reformatInitialSegmentationInput <- function(f.joint.segs.df) {
 
 
 
-#TBKW As of 20190818 this function is used 
+#TBKW As of 20190818 this function is used
 #We will now make minimum consistent segments that will cover both arms of the chromosomes:
 ##
 ##Params:
@@ -34,7 +34,7 @@ reformatInitialSegmentationInput <- function(f.joint.segs.df) {
 ##Todo make version of the genome that's used a input option, for now stick with the hg19
 getChromosomeArmsGRangeList <- function(current.chr, chrom.info.df) {
 
-  arm.df.list <- list() 
+  arm.df.list <- list()
   p.arm.df <- data.frame(
   chrom  = current.chr,
   start = chrom.info.df[chrom.info.df$chrom == current.chr,]$p_start,
@@ -96,7 +96,7 @@ getChromosomeArmsGRangeList <- function(current.chr, chrom.info.df) {
 #Created as of 20190818 to allow multiple  calls of the segmentation
 #It absolutely needs breaking up into multiple smaller functions
 #And various design decisions regarding whether we should maintain the capability of covering
-#the entire genome in copy number segments should be mulled over, currently, as they are 
+#the entire genome in copy number segments should be mulled over, currently, as they are
 #are clearly marked and easily dropped I would be in favour of keeping them.
 createFullyAnnotatedJointSegmentation <- function(f.joint.segs.df) {
 
@@ -204,7 +204,6 @@ createFullyAnnotatedJointSegmentation <- function(f.joint.segs.df) {
     }#end     for (new.bp.gr in bps.to.introduce.grs.list) {
   }#end for ( chr in CHRS_TO_USE_VEC ) {
 
-
   #So actually defining the segments that are lost or gained makes sense here..
   print("Calculating arm level gain, loss, neutral, and LOH events in the original segmentation...")
   all.samp.w.metadata.grs <- new.all.samp.w.metadata.grs
@@ -289,6 +288,7 @@ createFullyAnnotatedJointSegmentation <- function(f.joint.segs.df) {
       }#end for (samp in sample.vec) {
   }#end for ( chr in CHRS_TO_USE_VEC ) {
 
+  names(all.samp.w.metadata.grs) <- NULL
   all.samp.w.metadata.df <- as.data.frame(all.samp.w.metadata.grs)
   all.samp.w.metadata.df <- all.samp.w.metadata.df[with(all.samp.w.metadata.df, order(sample, seqnames, start)), ]
   #print(all.samp.w.metadata.df)
@@ -510,7 +510,7 @@ createFullyAnnotatedJointSegmentation <- function(f.joint.segs.df) {
 
 }#end createFullyAnnotatedJointSegmentation
 
-#TBKW As of 20190818 this function is NOT used 
+#TBKW As of 20190818 this function is NOT used
 generateMinimumConsistentSegmentation <- function(orig.cpn.segs.df, chroms.vec = 1:22, mc.cores = 2, col.to.use = "cpn_to_use") {
   require(parallel)
   orig.cpn.segs.mat <- as.matrix(orig.cpn.segs.df)
@@ -531,7 +531,7 @@ generateMinimumConsistentSegmentation <- function(orig.cpn.segs.df, chroms.vec =
     joint.chr.end.vec <- c()
     current.end <- 0
     end.next <- 0
-    while (current.end < max(chr.seg.start.vec) & 
+    while (current.end < max(chr.seg.start.vec) &
             length(chr.seg.start.vec[chr.seg.start.vec > current.end]) > 0) {
       ##Added this condition to remove warning messages from a numeric(0) passed to min in the loop comparison, replaced this:
                 #& max(chr.seg.end.vec) > min(chr.seg.start.vec[chr.seg.start.vec > current.end])#potential bug with v low end positions? test later.
@@ -566,7 +566,7 @@ generateMinimumConsistentSegmentation <- function(orig.cpn.segs.df, chroms.vec =
 
 } #end generateMinimumConsistentSegmentation <- function(...
 
-#TBKW As of 20190818 this function is NOT used 
+#TBKW As of 20190818 this function is NOT used
 #Todo could fail if there are segments present in some but not others...
 #Check for this.
 mapOriginalCopyNumberToJointSegmentation <- function(chr.start.end.vec, orig.cpn.segs.mat, col.to.use) {
@@ -582,9 +582,9 @@ mapOriginalCopyNumberToJointSegmentation <- function(chr.start.end.vec, orig.cpn
                             #orig start                           #joint start                   #orig end                         #joint end
                |   (as.numeric(red.cpn.chr.segs.mat[, 2]) >= chr.start.end.vec[2] &  as.numeric(red.cpn.chr.segs.mat[, 3]) <= chr.start.end.vec[3]  ) #orig.start >= joint.start & orig.end <= joint.start#SEGS W/IN (So equal to) JOINT segs
   ))
-  
+
   overlap.orig.chr.segs.w.joint.mat <- orig.cpn.chr.segs.mat[overlapping.orig.cpn.chr.seg.idxs,, drop=FALSE]
-  #Gets the all indices of the run of rows of the same sample that overlapped in the original segmentation with the joint segment 
+  #Gets the all indices of the run of rows of the same sample that overlapped in the original segmentation with the joint segment
   sample.run.idxs.logical.vec <- duplicated(overlap.orig.chr.segs.w.joint.mat[, 1], fromLast=TRUE) == TRUE | duplicated(overlap.orig.chr.segs.w.joint.mat[, 1]) == TRUE
   #Get rows of samples that don't have multiple overlapping segments with this joint segment
   singleton.samp.overlap.chr.segs.w.joint.mat <- overlap.orig.chr.segs.w.joint.mat[! sample.run.idxs.logical.vec, ,drop=FALSE]
@@ -605,7 +605,7 @@ mapOriginalCopyNumberToJointSegmentation <- function(chr.start.end.vec, orig.cpn
 
       for (idx in matching.sample.idxs){
 
-          seg.overlap.sizes  <- c(seg.overlap.sizes, pmax(c(chr.start.end.vec[2], chr.start.end.vec[3])) - 
+          seg.overlap.sizes  <- c(seg.overlap.sizes, pmax(c(chr.start.end.vec[2], chr.start.end.vec[3])) -
                                   pmin(c(as.numeric(samples.w.multi.overlap.w.joint.mat[idx, 3]), as.numeric(samples.w.multi.overlap.w.joint.mat[idx,4]))))
 
       }#end for(idx in matching.sample.idxs)
@@ -618,7 +618,7 @@ mapOriginalCopyNumberToJointSegmentation <- function(chr.start.end.vec, orig.cpn
 
   }#end if (length(which(sample.run.idxs.logical.vec)) > 1)...
 
-  return(joint.seg.cpn.by.samp.vec)               
+  return(joint.seg.cpn.by.samp.vec)
 
 } #end mapOriginalCopyNumberToJointSegmentation <- function(...
 
