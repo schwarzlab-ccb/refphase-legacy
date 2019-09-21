@@ -648,6 +648,22 @@ plotAllSamplePairwiseComparisonSegmentCPN <- function(sample.vec, full.joint.seg
 
 }#end plotAllSamplePairwiseComparisonSegmentCPN  <- function(...)
 
+getChromLengthsVec2 <- function(seg) {
+  # This function returns the length of chromosome 1,...,22
+  # seg: first three columns of the minimum conistent samp matrix
+
+  chrom_lengths <- list()
+
+  # FIXME: do we need to sort this?
+  for (i in unique(seg[,"chr"])) {
+    chrom_lengths[[as.character(i)]] <- max(seg[seg[,"chr"] == i, "endpos"])
+  }
+
+  stopifnot(all(!is.na(chrom_lengths)))
+
+  return(chrom_lengths)
+
+}
 
 #These small functions should bve quick to rewrite:
 #was fun.chrom.length
@@ -659,11 +675,43 @@ getChromLengthsVec <- function(seg) {
   for (i in 1:22) {
 
     sub.chrom <- subset(seg, seg[, 1] == i)
-    chrom.length <- c(chrom.length, sub.chrom[nrow(sub.chrom), 3])
+    if (nrow(sub.chrom) < 1) {
+      chrom.length <- c(chrom.length, 0)
+    } else {
+      chrom.length <- c(chrom.length, sub.chrom[nrow(sub.chrom), 3])
+    }
 
   }
 
+  stopifnot(all(!is.na(chrom.length)))
+
   return(chrom.length)
+
+}
+
+#Was fun.add.chrom
+getCumulativeChromLengthsForPlottingDF2 <-function(seg, chrom.length, chr.vec) {
+  # This function adds the length of chromosome 1,...,(i - 1) to chromsomes 2,...,22
+  # seg: first three columns of the minimum conistent samp matrix
+  # chrom.length: output of fun.chrom.length(...)
+
+  if(is.null(nrow(seg)) ) {
+    seg <- matrix(seg, ncol=3)
+  }
+
+  chr.vec <- as.character(chr.vec)
+
+  # Calculate the chromosome starts in "absolute" positions (position 1 in chr2
+  # is the length of chr1 + 1)
+  chrom_starts <- c(0, cumsum(chrom.length[chr.vec]))
+  # We don't care about the final chrom length
+  chrom_starts <- chrom_starts[seq_len(length(chrom_starts) - 1)]
+  names(chrom_starts) <- chr.vec
+
+  seg[, "startpos"] <- seg[, "startpos"] + chrom_starts[as.character(seg[, "chr"])]
+  seg[, "endpos"] <- seg[, "endpos"] + chrom_starts[as.character(seg[, "chr"])]
+
+  return(seg)
 
 }
 
@@ -676,36 +724,27 @@ getCumulativeChromLengthsForPlottingDF <-function(seg, chrom.length, chr.vec) {
   #print(str(seg, max=1))
 
   if(is.null(nrow(seg)) ) {
-
     seg <- matrix(seg, ncol=3)
-
-
   }
   #print(str(seg, max=1))
   chr.vec <- as.numeric(chr.vec)
+  # Order the lengths
+  chrom.length <- chrom.length[chr.vec]
   start.chr <- chr.vec[1]
 
   if (start.chr %in% seg[, 1]) {
-
     seg.tmp <-  subset(seg, seg[, 1] == start.chr)
-
     if (length(chr.vec) == 1) {
-
       return(seg.tmp)
-
     }
-
   } else {
-
     seg.tmp <- matrix(NA, nr = 0, nc = ncol(seg))
   }
 
   for (i in 2:length(chr.vec)) {
 
     if( ! (chr.vec[i] %in% seg[, 1])){
-
-      next()
-
+      next
     }
 
     sub.chrom <- subset(seg, seg[, 1] == chr.vec[i])
@@ -1516,23 +1555,15 @@ plotAllSampleCCFsAcrossGenome <- function(asas.ph.raw.cpn.lists, full.joint.segs
   chr.start.end.df <- apply(chr.start.end.df, 2, as.numeric)
   #print("head(chr.start.end.df)")
 
-  chr.vec <- unique(full.joint.segs.df[, "chr"])
+  chr.vec <- unique(phased.joint.segs.df[, "chr"])
   #print(head(chr.start.end.df))
-  chroms.length.vec <- getChromLengthsVec(chr.start.end.df)
+  chroms.length.vec <- getChromLengthsVec2(chr.start.end.df)
+  chrom.segs.to.plot.df <- getCumulativeChromLengthsForPlottingDF2(chr.start.end.df, chroms.length.vec, chr.vec)
 
-  names(chroms.length.vec) <- unique(chr.start.end.df[, 1])
-
-  #print("chroms.length.vec")
-  #print(chroms.length.vec)
-  chrom.segs.to.plot.df <- getCumulativeChromLengthsForPlottingDF(chr.start.end.df, chroms.length.vec, chr.vec)
-
-  #print("head(chrom.segs.to.plot.df)")
-  #print(head(chrom.segs.to.plot.df))
   min.x               <- 0
   min.y               <- -0.5
   max.y               <- 8.5
   max.x               <- as.numeric(max(chrom.segs.to.plot.df[, 3]))
-
 
   num.samples  <- length(sample.vec)
   first.samp <- sample.vec[1]
@@ -1597,13 +1628,13 @@ plotAllSampleCCFsAcrossGenome <- function(asas.ph.raw.cpn.lists, full.joint.segs
       #print("print(str(seg.ccf.cpnX.frac.vec))")
       #print(str(seg.ccf.cpnX.frac.vec))
 
-      seg.to.plot.df <- cbind(seg.samp.one.cpnX.vals.list$chr_vec,
-                              seg.samp.one.cpnX.vals.list$pos_vec,
-                              seg.samp.one.cpnX.vals.list$pos_vec,
-                              seg.samp.cpnX.vals.list[[paste0("ph_", cpnX, "_vec")]],
-                              seg.samp.cpnX.vals.list[[paste0("ph_", cpnX, "_vec")]],
-                              seg.samp.cpnX.vals.list[[paste0("ph_", cpnX, "_vec")]],
-                              seg.ccf.cpnX.frac.vec
+      seg.to.plot.df <- data.frame(chr=seg.samp.one.cpnX.vals.list$chr_vec,
+                              startpos=seg.samp.one.cpnX.vals.list$pos_vec,
+                              endpos=seg.samp.one.cpnX.vals.list$pos_vec,
+                              Sample1nA=seg.samp.cpnX.vals.list[[paste0("ph_", cpnX, "_vec")]],
+                              Sample1nA=seg.samp.cpnX.vals.list[[paste0("ph_", cpnX, "_vec")]],
+                              Sample1nA=seg.samp.cpnX.vals.list[[paste0("ph_", cpnX, "_vec")]],
+                              CCF=seg.ccf.cpnX.frac.vec
                               )
 
       if (is.na(seg.to.plot.df[1,1])) {
@@ -1613,7 +1644,7 @@ plotAllSampleCCFsAcrossGenome <- function(asas.ph.raw.cpn.lists, full.joint.segs
       }#end if(is.na(seg.to.plot.df[1,1])) {
 
       #toPlot <- cbind(logRBAFSample1$chrom,logRBAFSample1$pos,logRBAFSample1$pos,ABSample1,ABSample2)
-      seg.to.plot.df[,1:3] <- getCumulativeChromLengthsForPlottingDF(apply(seg.to.plot.df[,1:3], 2, as.numeric), chroms.length.vec, chr.vec)
+      seg.to.plot.df[,1:3] <- getCumulativeChromLengthsForPlottingDF2(seg.to.plot.df[,1:3], chroms.length.vec, chr.vec)
       seg.to.plot.df <- data.frame(seg.to.plot.df, stringsAsFactors = FALSE)
       colnames(seg.to.plot.df) <- c('chr','pos','pos','Sample1nA','Sample1nA','Sample1nA','CCF')
 
