@@ -855,12 +855,11 @@ if (OVERWRITE_FLAG == TRUE) {
 	#Initiate list for segmentation
 	ph.ascat.output.list <- list()
 	ph.ascat.segs.df.list <- list()
+	base.dir <- getwd()
 	for (samp in sample.vec) {
 		print(samp)
-		#load(pt.snp.file.paths.df[pt.snp.file.paths.df$sample %in% samp,]$samp_ascat_bc_path)
 		#Here we load in the file path of the relevant samples ascat.bc object. For compatibility with Matt's code
 		#This should accept the ascat.bc files in eithe RDS or RData format.
-		load(pt.snp.file.paths.df[samp,]$samp_ascat_bc_path)
 
 		if(grepl("RData", pt.snp.file.paths.df[samp,]$samp_ascat_bc_path)) {
 
@@ -1100,6 +1099,7 @@ if (OVERWRITE_FLAG == TRUE) {
 		#rm(seg)
 
 		print("Next sample....")
+		setwd(base.dir)
 	}#for (samp in sample.vec) {
 
 }#end if (OVERWRITE_FLAG == TRUE) {
@@ -1124,7 +1124,6 @@ if (OVERWRITE_FLAG == TRUE) {
 	PH_ALL_SAMP_ASCAT_RAW_CPN_DF_LIST <- list()
 	for (samp in sample.vec) {
 
-		load(pt.snp.file.paths.df[samp,]$samp_ascat_bc_path)
 		if(grepl("RData", pt.snp.file.paths.df[samp,]$samp_ascat_bc_path)) {
 
 		  print("ascat.bc object in RData file, loading...")
