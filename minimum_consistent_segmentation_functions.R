@@ -323,7 +323,7 @@ createFullyAnnotatedJointSegmentation <- function(f.joint.segs.df) {
   print("Creating set of segments that cover all bp in the non-acrocentric selected chromosomes' arms of the selected genome...")
   all.bp.chr.grs <- NULL
   for ( chr in CHRS_TO_USE_VEC ) {
-    print(chr)
+    #print(chr)
     curr.chr.grs <- non.ones.dj.all.samp.grs[seqnames(non.ones.dj.all.samp.grs) == chr]
     #This is done to stop intersect merging segments that start and end right after each other:
     alternating.idx.vec <- (seq(1, length(curr.chr.grs)) %% 2) + 1#plus one to match 1-based indexing

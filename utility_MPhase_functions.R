@@ -7,7 +7,7 @@
 ##Returns:
 ##
 getPhasedASCATRawCopyNumberAB <- function(ref.ss.lr.baf.df, sample, sample.ph.hz.ascat.df.list = PH_ALL_SAMP_ASCAT_RAW_CPN_DF_LIST) {
-  print("called getPhasedASCATRawCopyNumberAB")
+  #print("called getPhasedASCATRawCopyNumberAB")
   #     chrom    pos      BAF       logR BAFsegmented logRsegmented
   # 41      1 871020 0.256944 -0.2700826    0.2308897    -0.3350534
   ph.raw.cpn.df <- PH_ALL_SAMP_ASCAT_RAW_CPN_DF_LIST[[sample]]

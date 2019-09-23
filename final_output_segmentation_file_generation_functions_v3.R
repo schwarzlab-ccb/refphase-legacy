@@ -8,8 +8,8 @@ addOriginalCPNValuesAndCallsVsPloidyToOutputSegmentation <- function(sample.vec,
     min.cons.segs.raw.cpnB.df <- generateMinimumConsistentSegmentation(processed.orig.cpn.segs.df, chroms = 1:22, col.to.use = "nBraw")
     min.cons.segs.nMinor.df <- generateMinimumConsistentSegmentation(processed.orig.cpn.segs.df, chroms = 1:22, col.to.use = "nMinor")
     min.cons.segs.nMajor.df <- generateMinimumConsistentSegmentation(processed.orig.cpn.segs.df, chroms = 1:22, col.to.use = "nMajor")
-    print("nrow(min.cons.segs.raw.cpnA.df)")
-    print(nrow(min.cons.segs.raw.cpnA.df))
+    #print("nrow(min.cons.segs.raw.cpnA.df)")
+    #print(nrow(min.cons.segs.raw.cpnA.df))
     rownames(min.cons.segs.raw.cpnA.df) <- paste(min.cons.segs.raw.cpnA.df[,1], min.cons.segs.raw.cpnA.df[,2], min.cons.segs.raw.cpnA.df[,3], sep = ":") 
     rownames(min.cons.segs.raw.cpnB.df) <- paste(min.cons.segs.raw.cpnA.df[,1], min.cons.segs.raw.cpnA.df[,2], min.cons.segs.raw.cpnA.df[,3], sep = ":")
     rownames(min.cons.segs.nMinor.df) <- paste(min.cons.segs.raw.cpnA.df[,1], min.cons.segs.raw.cpnA.df[,2], min.cons.segs.raw.cpnA.df[,3], sep = ":") 
@@ -18,7 +18,7 @@ addOriginalCPNValuesAndCallsVsPloidyToOutputSegmentation <- function(sample.vec,
     for ( samp in sample.vec ) {
 
         for ( seg.name in seg.name.vec ) {
-            print(seg.name)
+            #print(seg.name)
             if (length(sample.vec) > 1) {
 
                 samp.seg.name <- paste0(samp, ":", seg.name)
@@ -27,7 +27,7 @@ addOriginalCPNValuesAndCallsVsPloidyToOutputSegmentation <- function(sample.vec,
 
                 samp.seg.name <- seg.name
             }
-            print(samp.seg.name)
+            #print(samp.seg.name)
             all.segs.df[samp.seg.name,]$orig_cpnA_raw <- min.cons.segs.raw.cpnB.df[seg.name, samp]
             all.segs.df[samp.seg.name,]$orig_cpnB_raw <- min.cons.segs.raw.cpnA.df[seg.name, samp]
             all.segs.df[samp.seg.name,]$orig_nMinor <- min.cons.segs.nMinor.df[seg.name, samp]
@@ -60,7 +60,7 @@ addPhasingInformationToOutputSegmentation <- function(sample.vec,
 
             for ( seg.name in seg.name.vec ) {
 
-                print(seg.name)
+                #print(seg.name)
                 if (length(sample.vec) > 1) {
                     samp.seg.name <- paste0(samp, ":", seg.name)
                 } else {
@@ -136,7 +136,7 @@ addNewRawAndIntCPNCallsToFinalSegmentationParallel <- function(seg.name.vec,
     # cl <- makeCluster(NUM_CORES)
     # registerDoParallel(cl)
     itx <- iter(iterable.samp.seg.df, by="row")
-    print("Starting addNewRawAndIntCPNCallsToFinalSegmentationParallel:")
+    message("Starting addNewRawAndIntCPNCallsToFinalSegmentationParallel:")
     # Create class which holds multiple results for each loop iteration.
     # Each loop iteration populates two properties: $result1 and $result2.
     # For a great tutorial on S3 classes, see: 
@@ -192,7 +192,7 @@ addNewRawAndIntCPNCallsToFinalSegmentationParallel <- function(seg.name.vec,
                 ret.mrc <- MultiResultClass()
                 samp <- samp.seg.df[, 1]
                 seg.name <- samp.seg.df[, 2]
-                print(paste0(samp, "_", seg.name))
+                #print(paste0(samp, "_", seg.name))
                 cpnX <- "cpnA"
                 #Fill in flag that shows whether segment has been phasing and CCF valculuation process, ie has greater than min num of hz snp positions
                 if ( length(all.seg.CCF.vals.list[[cpnX]][[seg.name]]) == 1) {
@@ -402,8 +402,8 @@ addNewRawAndIntCPNCallsToFinalSegmentation <- function(seg.name.vec,
 
         for ( seg.name in seg.name.vec ) {
 
-            print(samp)
-            print(seg.name)
+            #print(samp)
+            #print(seg.name)
             for ( cpnX in cpnX.vec ) {
 
                 if (length(sample.vec) > 1) {
@@ -842,12 +842,12 @@ addWithinSampleChangeToCpnAndAllelicImbalanceCalls <- function(all.seg.df, sampl
             } else {
                 samp.seg.name <- seg.name
             }
-            print(samp.seg.name)
+            #print(samp.seg.name)
             #In some cases we may not be able to do this as the they are 
             #Add where the new nMinor differs
             if ( is.na(all.seg.df[samp.seg.name, ]$nMinor) == TRUE ){
                 #If couldn't phase then there won't be any change to the nMinmor, should probably change this to 
-                print("skipping to next seg.")
+                #print("skipping to next seg.")
                 next
 
 
@@ -1110,15 +1110,15 @@ addWithinSampleClonalityAndCCFToFinalSegmentation <- function(seg.name.vec
                             cpnX.pval.vs.other.chroms <- seg.diff.from.others.list[[paste0(cpnX,"_pval_vs_oth_cpn_match_chrs_raw_cpn")]]
                             mean.oth.cpn.match.chrs.raw.cpn <- seg.diff.from.others.list[[paste0(cpnX, "_mean_oth_cpn_match_chrs_raw_cpn")]]
                             median.oth.cpn.match.chrs.raw.cpn <- seg.diff.from.others.list[[paste0(cpnX, "_median_oth_cpn_match_chrs_raw_cpn")]]
-                            print("######3")
-                            print(mean(ph.cpnX.vec))
-                            print(mean.oth.cpn.match.chrs.raw.cpn)
-                            print(median(ph.cpnX.vec))
-                            print(median.oth.cpn.match.chrs.raw.cpn)
-                            print("$$$$$$$$$$$$$$$$")
-                            print(abs(mean(ph.cpnX.vec) - mean.oth.cpn.match.chrs.raw.cpn))
-                            print(abs(median(ph.cpnX.vec) - median.oth.cpn.match.chrs.raw.cpn))
-                            print("##########")
+                            #print("######3")
+                            #print(mean(ph.cpnX.vec))
+                            #print(mean.oth.cpn.match.chrs.raw.cpn)
+                            #print(median(ph.cpnX.vec))
+                            #print(median.oth.cpn.match.chrs.raw.cpn)
+                            #print("$$$$$$$$$$$$$$$$")
+                            #print(abs(mean(ph.cpnX.vec) - mean.oth.cpn.match.chrs.raw.cpn))
+                            #print(abs(median(ph.cpnX.vec) - median.oth.cpn.match.chrs.raw.cpn))
+                            #print("##########")
                             abs.diff.from.oth.match.cpn.chrs.flag <- abs(mean(ph.cpnX.vec) - mean.oth.cpn.match.chrs.raw.cpn) >= 0.04  & abs(median(ph.cpnX.vec) - median.oth.cpn.match.chrs.raw.cpn) >= 0.04
 
                             
@@ -1175,19 +1175,19 @@ addWithinSampleClonalityAndCCFToFinalSegmentation <- function(seg.name.vec
                             all.seg.df[samp.seg.name, paste0("within_samp_sc_", cpnX, "_present_using_min_cpn_diff")] <-  FALSE
 
 
-                            print("conditions:")
-                            print(all.seg.df[samp.seg.name, paste0("frac_psc_",cpnX,"_low")])
-                            print(all.seg.df[samp.seg.name, paste0("frac_psc_",cpnX,"_high")])
-                            print(all.seg.df[samp.seg.name, paste0("sc_",cpnX,"_vs_min_cpn_pval")])
-                            print(all.seg.df[samp.seg.name, paste0("sc_",cpnX,"_vs_min_CCF_pval")])
-                            print(all.seg.df[samp.seg.name, paste0("vs_other_chrs_same_",cpnX,"_pval")])
-                            print(samp)
-                            print(seg.name)
-                            print(mean(ph.cpnX.vec))
-                            print(median(ph.cpnX.vec))
-                            print(cpnX.mean.and.median.flag)
-                            print(abs.diff.from.oth.match.cpn.chrs.flag)
-                            print(directionality.vs.oth.cpn.match.chrs.raw.cpn)
+                            # print("conditions:")
+                            # print(all.seg.df[samp.seg.name, paste0("frac_psc_",cpnX,"_low")])
+                            # print(all.seg.df[samp.seg.name, paste0("frac_psc_",cpnX,"_high")])
+                            # print(all.seg.df[samp.seg.name, paste0("sc_",cpnX,"_vs_min_cpn_pval")])
+                            # print(all.seg.df[samp.seg.name, paste0("sc_",cpnX,"_vs_min_CCF_pval")])
+                            # print(all.seg.df[samp.seg.name, paste0("vs_other_chrs_same_",cpnX,"_pval")])
+                            # print(samp)
+                            # print(seg.name)
+                            # print(mean(ph.cpnX.vec))
+                            # print(median(ph.cpnX.vec))
+                            # print(cpnX.mean.and.median.flag)
+                            # print(abs.diff.from.oth.match.cpn.chrs.flag)
+                            # print(directionality.vs.oth.cpn.match.chrs.raw.cpn)
 
 
                             # if ( grepl("^5:", seg.name) ) {
@@ -1202,19 +1202,19 @@ addWithinSampleClonalityAndCCFToFinalSegmentation <- function(seg.name.vec
                                 all.seg.df[samp.seg.name, paste0("within_samp_sc_", cpnX, "_present_using_min_cpn_diff")] <- TRUE
 
 
-                                print(all.seg.df[samp.seg.name,])
-                                print(str(seg.diff.from.others.list, max=1))
+                                #print(all.seg.df[samp.seg.name,])
+                                #print(str(seg.diff.from.others.list, max=1))
 
-                                print("conditions:")
-                                print(all.seg.df[samp.seg.name, paste0("frac_psc_",cpnX,"_low")])
-                                print(all.seg.df[samp.seg.name, paste0("frac_psc_",cpnX,"_high")])
-                                print(all.seg.df[samp.seg.name, paste0("sc_",cpnX,"_vs_min_cpn_pval")])
-                                print(all.seg.df[samp.seg.name, paste0("sc_",cpnX,"_vs_min_CCF_pval")])
-                                print(all.seg.df[samp.seg.name, paste0("vs_other_chrs_same_",cpnX,"_pval")])
-                                print(samp)
-                                print(seg.name)
-                                print(mean(ph.cpnX.vec))
-                                print(median(ph.cpnX.vec))
+                                #print("conditions:")
+                                #print(all.seg.df[samp.seg.name, paste0("frac_psc_",cpnX,"_low")])
+                                #print(all.seg.df[samp.seg.name, paste0("frac_psc_",cpnX,"_high")])
+                                #print(all.seg.df[samp.seg.name, paste0("sc_",cpnX,"_vs_min_cpn_pval")])
+                                #print(all.seg.df[samp.seg.name, paste0("sc_",cpnX,"_vs_min_CCF_pval")])
+                                #print(all.seg.df[samp.seg.name, paste0("vs_other_chrs_same_",cpnX,"_pval")])
+                                #print(samp)
+                                #print(seg.name)
+                                #print(mean(ph.cpnX.vec))
+                                #print(median(ph.cpnX.vec))
 
                                # 
 

@@ -12,7 +12,7 @@ makeMEDICCInputListsFromSegmentationDF <- function(segs.to.make.MEDICC.input.df,
 		#select by
 		chr.samp.segs.df <- segs.to.make.MEDICC.input.df[segs.to.make.MEDICC.input.df$sample == sample.vec[1]
 													& segs.to.make.MEDICC.input.df[,chr.col] == chr, , drop = FALSE]
-		print(head(chr.samp.segs.df))
+		#print(head(chr.samp.segs.df))
 		MEDICC.FASTA.file.list[[chr]][["diploid"]]$cpnA <- paste(rep("1", nrow(chr.samp.segs.df)), collapse="")
 		MEDICC.FASTA.file.list[[chr]][["diploid"]]$cpnB <- paste(rep("1", nrow(chr.samp.segs.df)), collapse="")
 
@@ -130,8 +130,8 @@ calculateWGII <- function(seg.df, threshold = 0.6, include.sex.chrom = FALSE) {
   }#end if( ! all(seg.df[,"nMinor"] <= seg.df[,"nMajor"]) ) {
   cat("Setting sample ploidy according to major proportion copy number. Ploidy < 2 re-set at 2\n")
   ploidy.mat <- calculatePloidy(seg.df)
-  print("ploidy.mat")
-  print(ploidy.mat)
+  #print("ploidy.mat")
+  #print(ploidy.mat)
   ploidy.vec <- setNames(ploidy.mat[,2], rownames(ploidy.mat))
   ploidy.vec[ploidy.vec < 2] <- 2
 

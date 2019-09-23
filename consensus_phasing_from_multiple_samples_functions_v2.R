@@ -523,7 +523,7 @@ getCombinedBAFDipTestPhasingParallel <- function(asas.lr.baf.lists,
   #sample.to.phase.seg.list <- list()
   #for ( seg.name in seg.name.vec ) {
     ret.mrc <- MultiResultClass()
-    print(seg.name)
+    #print(seg.name)
     first.ss.lr.baf.df <- asas.lr.baf.lists[[sample.vec[1]]][[seg.name]]
     if (nrow(first.ss.lr.baf.df) < min.num.hz.snp.phasing) {
 
@@ -559,7 +559,7 @@ getCombinedBAFDipTestPhasingParallel <- function(asas.lr.baf.lists,
         poss.phas.s.df <- a.s.sum.phas.df[a.s.sum.phas.df$ASCAT_called_as_AI == TRUE, ,drop = FALSE] 
 
       }
-      print(poss.phas.s.df)
+      #print(poss.phas.s.df)
       #Now assess the samples that can actualy be phased...
       #initialise the seg mixture phasing to NULL so that, as a default, it won't be used:
       seg.mixture.phasing.list <- NULL
@@ -672,7 +672,7 @@ getCombinedBAFDipTestPhasingParallel <- function(asas.lr.baf.lists,
 
   }#end for ( seg.name in seg.name.vec ) {
 
-  print("Finished paralell portion of getCombinedBAFDipTestPhasingParallel, combining results into correct format...")
+  message("Finished paralell portion of getCombinedBAFDipTestPhasingParallel, combining results into correct format...")
   sample.to.phase.seg.list <- list()
   for ( seg.name in names(sample.to.phase.seg.mrc.list)) {
 

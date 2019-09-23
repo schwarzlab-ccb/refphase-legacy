@@ -655,12 +655,13 @@ if (OVERWRITE_FLAG == TRUE) {
 	#matter to much.
 	int.anno.seg.df$nearest_preceding_snp <- NA
 	int.anno.seg.df$nearest_following_snp <- NA 
+	message("Lacking snp idx:")
 	for (i in 1:length(all.int.grs)) {
 		#Check the seqnames part as SNPs really need to be in the same need to be in the same chromosome arm...?
 		if( ! i %in% lacking.snp.idx.vec) {
 			next
 		}
-		message("Lacking snp idx:", i)
+    message(" ", i, appendLF = FALSE)
 
 		curr.arm <- int.anno.seg.df[i,]$chr_arm
 
@@ -810,12 +811,8 @@ if (OVERWRITE_FLAG == TRUE) {
 
 		  if(nrow(seg.ph.hz.snp.df) != nrow(gl.seg.hz.snp.df)) {
 
-		  	print("Number of phased SNPs is different to the actual number hz snps present in seg, perhaps to few to phase by MPhase?")
-		  	print("nrow(seg.ph.hz.snp.df)")
-		  	print(nrow(seg.ph.hz.snp.df) )
-
-		  	print("nrow(gl.seg.hz.snp.df)")
-		  	print(nrow(gl.seg.hz.snp.df))
+		  	message("Number of phased SNPs is different to the actual number hz snps present in seg, perhaps to few to phase by MPhase?")
+		  	message("nrow(seg.ph.hz.snp.df) = ", nrow(seg.ph.hz.snp.df), " nrow(gl.seg.hz.snp.df) = ", nrow(gl.seg.hz.snp.df))
 		  	next
 		  }#end if(nrow(seg.ph.hz.snp.df) != nrow(gl.seg.hz.snp.df)) {
 		  #GL specific
