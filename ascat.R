@@ -946,11 +946,11 @@ runASCAT = function(lrr, baf, lrrsegmented, bafsegmented, gender, SNPpos, chromo
   ch = chromosomes
   chrs = chrnames
   b = bafsegmented
-    print("length(bafsegmented)")
-  print(length(bafsegmented))
-  print("length(baf)")
-  print(length(baf))
-  print(str(bafsegmented, max=1))
+  #  print("length(bafsegmented)")
+  #print(length(bafsegmented))
+  #print("length(baf)")
+  #print(length(baf))
+  #print(str(bafsegmented, max=1))
   raw_b = baf[as.numeric(attributes(bafsegmented)$names)]
   raw_b <- ifelse(raw_b>0.5,raw_b,1-raw_b)
   raw_b <- 1-raw_b

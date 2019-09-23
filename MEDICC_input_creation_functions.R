@@ -111,7 +111,7 @@ calculateWGII <- function(seg.df, threshold = 0.6, include.sex.chrom = FALSE) {
 
   colnames(seg.df) <- c("sample","chrom", "startpos", "endpos", "n.het", "cnTotal", "nMajor","nMinor", "Ploidy", "ACF", "nAraw", "nBraw")
   cat("calculateWGII: segmentation data frame:\n")
-  str(seg.df)
+  #str(seg.df)
   #First column is meant to be the sample name
   seg.df[, 1] <- as.character(seg.df[, 1])
   sample.vec <- unique(seg.df[, 1])
@@ -164,8 +164,8 @@ calculateWGII <- function(seg.df, threshold = 0.6, include.sex.chrom = FALSE) {
        chrom.length.vec <- chrom.length.vec[ ! names(chrom.length.vec) %in% c("X", "Y", "x", "y", 23, 24)]
 
     }#end if ( ! include.sex.chrom == TRUE ) {
-    print("chrom.vec")
-    print(chrom.vec)
+    #print("chrom.vec")
+    #print(chrom.vec)
     for (chrom in chrom.vec) {
 
       chrom.samp.seg.SCNA.df <- samp.seg.SCNA.df[samp.seg.SCNA.df[, 2] %in% chrom,]
@@ -191,9 +191,9 @@ calculateWGII <- function(seg.df, threshold = 0.6, include.sex.chrom = FALSE) {
 
   }#end for (samp in sample.vec)
 
-  cat("WGII output matrix\n")
-  str(output.mat)
-  print(output.mat)
+  #cat("WGII output matrix\n")
+  #str(output.mat)
+  #print(output.mat)
 
   return(output.mat)
 

@@ -23,7 +23,7 @@ remakeCombinedBAFDipTestPhasingWithNewSegs <- function(asas.lr.baf.lists,
   sample.to.phase.seg.list <- list()
 
   for ( seg.name in seg.name.vec ) {
-        print(seg.name)
+        #print(seg.name)
     first.ss.lr.baf.df <- asas.lr.baf.lists[[sample.vec[1]]][[seg.name]]
     if (nrow(first.ss.lr.baf.df) < min.num.hz.snp.phasing) {
 
@@ -67,7 +67,7 @@ remakeCombinedBAFDipTestPhasingWithNewSegs <- function(asas.lr.baf.lists,
     seg.mixture.phasing.list <- NULL
     if (nrow(poss.phas.s.df) > 0) {
 
-      print(poss.phas.s.df)
+      #print(poss.phas.s.df)
       if (nrow(poss.phas.s.df) == 1) {
         #If only one sample passes then choose this sample as the reference
         sample.to.phase.seg <- rownames(poss.phas.s.df)[1]
@@ -76,7 +76,7 @@ remakeCombinedBAFDipTestPhasingWithNewSegs <- function(asas.lr.baf.lists,
         #If there are multiple alance instances called choose the top one and check mixture phasing
         sample.to.phase.seg <- rownames(poss.phas.s.df)[1]
         poss.phas.sample.vec <- rownames(poss.phas.s.df)
-        print(poss.phas.sample.vec)
+        #print(poss.phas.sample.vec)
         all.poss.phas.samp.seg.phasing.ability.list <- getAssessmentOfEachSamplesAbilityToPhaseAllOthersForSeg(asas.lr.baf.lists = asas.lr.baf.lists,
                                                                                                     sample.vec = poss.phas.sample.vec,
                                                                                                     seg.name = seg.name,

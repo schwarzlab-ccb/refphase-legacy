@@ -37,13 +37,13 @@ getSubclonalFocalEvents <- function(possible.samp.segs.vec,
 		                         end.field=c("endpos"),
 		                         starts.in.df.are.0based=FALSE)
 
-	print(mcs.sc.cpn.event.to.map.gr)
-	print(reduced.poss.f.sc.gr)
+	#print(mcs.sc.cpn.event.to.map.gr)
+	#print(reduced.poss.f.sc.gr)
 	overlapping.f.sc.grs <- suppressWarnings(getOverlapGRanges(mcs.sc.cpn.event.to.map.gr, reduced.poss.f.sc.gr))
-	print(overlapping.f.sc.grs)
+	#print(overlapping.f.sc.grs)
 	mcs.sc.cpn.event.to.map.df$focal_event_id <- "none"
 	mcs.sc.cpn.event.to.map.df[overlapping.f.sc.grs$query_hit_idx, ]$focal_event_id <- overlapping.f.sc.grs$focal_event_id
-	print(mcs.sc.cpn.event.to.map.df)
+	#print(mcs.sc.cpn.event.to.map.df)
 	return(mcs.sc.cpn.event.to.map.df)
 
 	}#end getSubclonalFocalEvents
@@ -160,7 +160,7 @@ markClonalFocalEvents <- function(potential.cl.foc.mcs.segs.vec, pj.mcs.df, col.
 		unclassified.cl.focals.remain <- any(f.acr.samp.vec)
 
 		while (unclassified.cl.focals.remain) {
-			print(unclassified.cl.focals.remain)
+			#print(unclassified.cl.focals.remain)
 
 			cl.foc.rle.df <- with(rle(f.acr.samp.vec), 
 								data.frame(number = values,
@@ -177,11 +177,11 @@ markClonalFocalEvents <- function(potential.cl.foc.mcs.segs.vec, pj.mcs.df, col.
 			centre.seg.name <- colnames(arm.unclassified.focal.mat)[mid.cl.fcl.idx]
 			samps.w.centre.seg <- rownames(arm.unclassified.focal.mat[arm.unclassified.focal.mat[,max.seg.name]==TRUE,max.seg.name, drop = FALSE])
 			joined.seg.size.vec <- arm.pj.mcs.df[arm.pj.mcs.df$sample %in% samps.w.max.seg & arm.pj.mcs.df$seg_name %in% max.seg.name,]$MPhase_joined_seg_width
-			print("joined.seg.size.vec")
-			print(joined.seg.size.vec)
+			#print("joined.seg.size.vec")
+			#print(joined.seg.size.vec)
 			names(joined.seg.size.vec) <- arm.pj.mcs.df[arm.pj.mcs.df$sample %in% samps.w.max.seg & arm.pj.mcs.df$seg_name %in% max.seg.name,]$uniq_joined_seg_name
 			joined.focal.seg.matching.back.to <- names(which.max(joined.seg.size.vec))
-			print(joined.seg.size.vec)
+			#print(joined.seg.size.vec)
 			#So now we have the segment we're matching back to, we need its start and end so we can give these segments this id
 			chr.start.end.vec <- as.numeric(strsplit(strsplit(joined.focal.seg.matching.back.to, split="@")[[1]][2], split = ":")[[1]])
 			#So now we can make the new ID
@@ -195,8 +195,8 @@ markClonalFocalEvents <- function(potential.cl.foc.mcs.segs.vec, pj.mcs.df, col.
 			arm.pj.mcs.df[arm.pj.mcs.df$sample%in%samps.w.centre.seg & arm.pj.mcs.df$seg_name%in%seg.names.to.update, col.to.update] <- new.focal.id
 			f.acr.samp.vec <- colSums(arm.unclassified.focal.mat) == length(unique(arm.pj.mcs.df$sample))
 			unclassified.cl.focals.remain <- any(f.acr.samp.vec)
-			print(new.focal.id)
-			print("##########3")
+			#print(new.focal.id)
+			#print("##########3")
 
 		}#end while (unclassified.focals.remain) {
 
@@ -245,15 +245,15 @@ markSubclonalFocalEvents <- function(potential.sc.foc.mcs.segs.vec, pj.mcs.df, c
 
 		unclassified.focals.remain <- any(arm.unclassified.focal.mat==TRUE)
 		while (unclassified.focals.remain) {
-			print(arm.unclassified.focal.mat)
+			#print(arm.unclassified.focal.mat)
 			max.seg.name <- names(which.max(colSums(arm.unclassified.focal.mat)))
 			samps.w.max.seg <-rownames(arm.unclassified.focal.mat[arm.unclassified.focal.mat[,max.seg.name]==TRUE,max.seg.name, drop = FALSE])
 			joined.seg.size.vec <- arm.pj.mcs.df[arm.pj.mcs.df$sample %in% samps.w.max.seg & arm.pj.mcs.df$seg_name %in% max.seg.name,]$MPhase_joined_seg_width
-			print("joined.seg.size.vec")
-			print(joined.seg.size.vec)
+			#print("joined.seg.size.vec")
+			#print(joined.seg.size.vec)
 			names(joined.seg.size.vec) <- arm.pj.mcs.df[arm.pj.mcs.df$sample %in% samps.w.max.seg & arm.pj.mcs.df$seg_name %in% max.seg.name,]$uniq_joined_seg_name
 			joined.focal.seg.matching.back.to <- names(which.max(joined.seg.size.vec))
-			print(joined.seg.size.vec)
+			#print(joined.seg.size.vec)
 			#So now we have the segment we're matching back to, we need its start and end so we can give these segments this id
 			chr.start.end.vec <- as.numeric(strsplit(strsplit(joined.focal.seg.matching.back.to, split="@")[[1]][2], split = ":")[[1]])
 			#So now we can make the new ID
@@ -266,8 +266,8 @@ markSubclonalFocalEvents <- function(potential.sc.foc.mcs.segs.vec, pj.mcs.df, c
 			#Update the original matrix with the new focal ids
 			arpj.mcs.df[arm.pj.mcs.df$sample%in%samps.w.max.seg & arm.pj.mcs.df$seg_name%in%seg.names.to.update, col.to.update] <- new.focal.id
 			unclassified.focals.remain <- any(arm.unclassified.focal.mat==TRUE)
-			print(new.focal.id)
-			print("##########3")
+			#print(new.focal.id)
+			#print("##########3")
 
 		}#end while (unclassified.focals.remain) {
 
