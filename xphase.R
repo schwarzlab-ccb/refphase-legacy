@@ -5,52 +5,62 @@ library(digest)
 
 
 
-option_list <- list(
-    make_option(c("--patient"), default="CB1002",
-                help="Patient id"),
-    make_option(c("--dip-test"), default=FALSE,
-                help="Use dip test (default=TRUE)"),
-    make_option(c("--output-dir"), default="../output/CB1002/mphase",
-                help="Output directory"),
-    make_option(c("--medicc-output-dir"), default="../output/CB1002/mphase",
-                help="Output directory"),
-    make_option(c("--input-format"), default="ASCAT",
-                help="Input data format (default=MEDICC)"),
-    make_option(c("--snp-data"), default="../input/nb-schulte//CB1002_input_paths_df.txt",
-                help="SNP data"),
-    make_option(c("--seg-data"), default="../input/nb-schulte//CB1002.segmentation",
-                help="Segmentation data output from ASCAT"),
-    make_option(c("--overwrite"), default=TRUE,
-                help="Overwrite output (default=TRUE)"),
-    make_option(c("--gamma"), default=1.0,
-                help="Gamma (for seq=1, for arrays~=0.5 (default=1.0)"),
-    make_option(c("-j", "--cores"), default=1,
-                help="CPU cores (default=1)"),
-    make_option(c("--segment-type"), default="intersection",
-                help="Segment type, intersection or whole_arm (default=1)"),
-    make_option(c("--genome"), default="hg38",
-                help="Human genome version (default=hg19, also supports hg38)"),
-    make_option(c("--seed"), default=2134234,
-                help="Random seed")
-    )
+if (!interactive()) {
 
-#conf <- parse_args(OptionParser(option_list = option_list, convert_hyphens_to_underscores = TRUE))
-#Hack to get it working on TRACERx 
-if(packageVersion("optparse") != "1.3.2") {
+  option_list <- list( make_option(c("--patient"), default="CB1002",
+                  help="Patient id"),
+      make_option(c("--dip-test"), default=FALSE,
+                  help="Use dip test (default=TRUE)"),
+      make_option(c("--output-dir"), default="../output/CB1002/mphase",
+                  help="Output directory"),
+      make_option(c("--medicc-output-dir"), default="../output/CB1002/mphase",
+                  help="Output directory"),
+      make_option(c("--input-format"), default="ASCAT",
+                  help="Input data format (default=MEDICC)"),
+      make_option(c("--snp-data"), default="../input/nb-schulte//CB1002_input_paths_df.txt",
+                  help="SNP data"),
+      make_option(c("--snp-data-prefix"), default="",
+                  help="Directory prefix for the paths to the SNP data in the file above"),
+      make_option(c("--seg-data"), default="../input/nb-schulte//CB1002.segmentation",
+                  help="Segmentation data output from ASCAT"),
+      make_option(c("--overwrite"), default=TRUE,
+                  help="Overwrite output (default=TRUE)"),
+      make_option(c("--gamma"), default=1.0,
+                  help="Gamma (for seq=1, for arrays~=0.5 (default=1.0)"),
+      make_option(c("-j", "--cores"), default=1,
+                  help="CPU cores (default=1)"),
+      make_option(c("--segment-type"), default="intersection",
+                  help="Segment type, intersection or whole_arm (default=1)"),
+      make_option(c("--genome"), default="hg38",
+                  help="Human genome version (default=hg19, also supports hg38)"),
+      make_option(c("--seed"), default=2134234,
+                  help="Random seed")
+      )
 
-	conf <- parse_args(OptionParser(option_list = option_list), convert_hyphens_to_underscores = TRUE)
+  #conf <- parse_args(OptionParser(option_list = option_list, convert_hyphens_to_underscores = TRUE))
+  #Hack to get it working on TRACERx 
+  if(packageVersion("optparse") != "1.3.2") {
+
+    conf <- parse_args(OptionParser(option_list = option_list), convert_hyphens_to_underscores = TRUE)
+
+  } else {
+
+    conf <- parse_args(OptionParser(option_list = option_list))
+    names(conf) <- gsub("\\-", "_", names(conf))
+  }
+  conf$id <- substr(digest(conf), 1, 8)
+  args = commandArgs(trailingOnly=TRUE)
 
 } else {
 
-	conf <- parse_args(OptionParser(option_list = option_list))
-	names(conf) <- gsub("\\-", "_", names(conf))
-}
-conf$id <- substr(digest(conf), 1, 8)
-set.seed(conf$seed)#Why is a seed required? I'm not sure anything non-deterministic should be occurring
+  source("debugging_conf.R")
 
-args = commandArgs(trailingOnly=TRUE)
+}
+
 message("Arguments:")
 cat(paste(names(conf), conf, collapse="\n"))
+
+set.seed(conf$seed)#Why is a seed required? I'm not sure anything non-deterministic should be occurring
 
 
 patient <- conf$patient
@@ -87,13 +97,13 @@ genome <- conf$genome  # hg19 or hg38
 # output.directory.base.path <- paste0("/camp/project/proj-tracerx-lung/tctProjects/watkint/tx421_copy_number_qc/xphase_runs/", full.patient, "/")
 # system(paste0("mkdir ", output.directory.base.path))
 #Right we need a free run folder:
-free.run.dir <- paste0(output.directory.base.path, "free_run/")
-qc.choice.dir <- paste0(output.directory.base.path, "run_qc_choice/")
-rescue.run.dir <- paste0(output.directory.base.path, "rescue_runs/")
-system(paste0("mkdir ", free.run.dir))
-system(paste0("mkdir ", qc.choice.dir))
-system(paste0("mkdir ", rescue.run.dir))
+free.run.dir <- file.path(output.directory.base.path, "free_run/")
+qc.choice.dir <- file.path(output.directory.base.path, "run_qc_choice/")
+rescue.run.dir <- file.path(output.directory.base.path, "rescue_runs/")
 
+dir.create(free.run.dir, recursive = TRUE, showWarnings = FALSE)
+dir.create(qc.choice.dir, recursive = TRUE, showWarnings = FALSE)
+dir.create(rescue.run.dir, recursive = TRUE, showWarnings = FALSE)
 
 ###GLOBAL FLAG that alters the behaviour of some hacked functions so that they work with MPhase and XPhase
 USING_XPHASE <- FALSE 
@@ -317,6 +327,10 @@ if (OVERWRITE_FLAG == TRUE) {
                               stringsAsFactors = FALSE,
                               header = TRUE,
                               row.names = "sample")
+
+    pt.snp.file.paths.df$samp_ascat_bc_path <- ifelse(nchar(conf$snp_data_prefix) > 0,
+                         file.path(conf$snp_data_prefix, pt.snp.file.paths.df$samp_ascat_bc_path),
+                         pt.snp.file.paths.df$samp_ascat_bc_path)
     all.samp.SNP.list <- readInASCAT(sample_table = pt.snp.file.paths.df,
                                      segs = f.joint.segs.df,
                                      samples = sample.vec)
