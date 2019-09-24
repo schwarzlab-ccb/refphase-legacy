@@ -261,6 +261,7 @@ if (genome == "hg19") {
 } else {
   stop("Genome version not recognized: ", genome)
 }
+#OJO change back!
 chrom.info.df <- read.table(info.path, stringsAsFactors = FALSE, sep = "\t", header = TRUE)
 # We don't need this until much later, don't try to load it now
 #access.df <- read.table(access.path, sep="\t", header=F, stringsAsFactors=F)
@@ -296,11 +297,24 @@ all.seg.greater.than.two.diff.list.path <- paste0(PLOT_OUTPUT_DIR, patient, "_al
 if (OVERWRITE_FLAG == TRUE) {
 
 	init.f.joint.segs.df <- read.table(seg.file.path, stringsAsFactors = FALSE, sep = "\t", header = TRUE)
+	# > head(init.f.joint.segs.df) CB001
+	#             sample chr  startpos    endpos n.het cnTotal nMajor nMinor Ploidy  ACF nAraw nBraw callState
+	# 1 CB1001-11-D01-X1   1    138781  16490694   418       1      1      0    1.9 0.88     1     0        NA
+
+	#                   sample chr  startpos    endpos n.het cnTotal nMajor nMinor   Ploidy ACF    nAraw    nBraw callState
+	# 1 A_LTX121_SU_T1.R1_LogR   1    762273  26136282 17836       2      2      0 3.174119 0.5 2.044263 0.000000      Loss
+
 
 	#Legacy, but I wanted to add in the thresholds for gain/loss etc as they were called in the TRACER NEJM 2017 paper
 	#Might be useful... it is aved as part of f.joint.segs.df
 	f.joint.segs.df <- reformatInitialSegmentationInput(f.joint.segs.df = init.f.joint.segs.df)
+	# > head(f.joint.segs.df) CB001
+	#             sample chr  startpos    endpos n.het cnTotal nMajor nMinor Ploidy  ACF nAraw nBraw patient sample_name cpn_call arm_or_focal_event arm_event_present within_chr_arm                                uniq_id
+	# 1 CB1001-11-D01-X1   1    138781  16490694   418       1      1      0    1.9 0.88     1     0  CB1001   CB1001:11     loss               none              none     not_in_arm     CB1001-11-D01-X1@1:138781:16490694
 
+	# > head(f.joint.segs.df)
+	#              sample chr  startpos    endpos n.het cnTotal nMajor nMinor   Ploidy ACF    nAraw    nBraw patient sample_name cpn_call arm_or_focal_event arm_event_present within_chr_arm                                 uniq_id
+	# 1 A_LTX121_SU_T1-R1   1    762273  26136282 17836       2      2      0 3.174119 0.5 2.044263 0.000000  LTX121   LTX121:R1     loss               none              none     not_in_arm     A_LTX121_SU_T1-R1@1:762273:26136282
 	sample.vec <- unique(f.joint.segs.df$sample)
 	ploidy.est.vec <- f.joint.segs.df[ ! duplicated(f.joint.segs.df$sample), 'Ploidy']
 	names(ploidy.est.vec) <- unique(f.joint.segs.df$sample)
@@ -327,13 +341,44 @@ if (OVERWRITE_FLAG == TRUE) {
                               stringsAsFactors = FALSE,
                               header = TRUE,
                               row.names = "sample")
+    #                  patient_id                                                        samp_ascat_bc_path 
+    # CB1001-11-D01-X1     CB1001 ../input/modified-nb-schulte/CB1001-11-D01-X1/ascat_bc_nochr_modified.rds
+    #                   patient_id                                                                       samp_ascat_bc_path
+    # A_LTX121_SU_T1-R1     LTX121 ../input/20190617_MPhase_example_data/A_LTX121_SU_T1-R1/A_LTX121_SU_T1-R1.ascat.bc.RData
 
-    pt.snp.file.paths.df$samp_ascat_bc_path <- ifelse(nchar(conf$snp_data_prefix) > 0,
-                         file.path(conf$snp_data_prefix, pt.snp.file.paths.df$samp_ascat_bc_path),
-                         pt.snp.file.paths.df$samp_ascat_bc_path)
+    if (nchar(conf$snp_data_prefix) > 0) {
+       pt.snp.file.paths.df$samp_ascat_bc_path <- file.path(conf$snp_data_prefix, pt.snp.file.paths.df$samp_ascat_bc_path)           
+    } 
+    #                  patient_id                                                           samp_ascat_bc_path
+    # CB1001-11-D01-X1     CB1001 ../../input/modified-nb-schulte/CB1001-11-D01-X1/ascat_bc_nochr_modified.rds
+
+    #                   patient_id                                                                          samp_ascat_bc_path
+    # A_LTX121_SU_T1-R1     LTX121 ../../input/20190617_MPhase_example_data/A_LTX121_SU_T1-R1/A_LTX121_SU_T1-R1.ascat.bc.RData
+
     all.samp.SNP.list <- readInASCAT(sample_table = pt.snp.file.paths.df,
                                      segs = f.joint.segs.df,
                                      samples = sample.vec)
+    # List of 5
+    #  $ CB1001-11-D01-X1:'data.frame':	675964 obs. of  6 variables:
+    #   ..$ chrom        : num [1:675964] 1 1 1 1 1 1 1 1 1 1 ...
+    #   ..$ pos          : int [1:675964] 13116 13118 13273 13284 13380 138781 138817 138829 139060 139294 ...
+    #   ..$ BAF          : num [1:675964] NA NA NA NA NA NA NA NA NA NA ...
+    #   ..$ logR         : num [1:675964] 0.573 0.602 0.622 0.77 0.505 ...
+    #   ..$ BAFsegmented : num [1:675964] NA NA NA NA NA ...
+    #   ..$ logRsegmented: num [1:675964] -0.838 -0.838 -0.838 -0.838 -0.838 ...
+
+
+    # List of 2
+    #  $ A_LTX121_SU_T1-R1:'data.frame':	938946 obs. of  6 variables:
+    #   ..$ chrom        : num [1:938946] 1 1 1 1 1 1 1 1 1 1 ...
+    #   ..$ pos          : int [1:938946] 762273 762496 762497 777237 777318 777335 777361 777456 783071 783147 ...
+    #   ..$ BAF          : num [1:938946] NA NA NA NA NA NA NA NA NA NA ...
+    #   ..$ logR         : num [1:938946] -0.0542 -0.2103 -0.2103 -0.4974 -0.3978 ...
+    #   ..$ BAFsegmented : num [1:938946] 0.231 0.231 0.231 0.231 0.231 ...
+    #   ..$ logRsegmented: num [1:938946] -0.335 -0.335 -0.335 -0.335 -0.335 ...
+
+
+
     #TBKW edit, I'm assuming that these ascat objects will also contain the germline values and am pulling 
     #them out for this "xphase" version that requires the germline BAFs to compare the allelic imbalance in each tumour
     #region segment vs the equivalent segment in the germline. This comparison is done to try and counter the effect
@@ -347,6 +392,28 @@ if (OVERWRITE_FLAG == TRUE) {
     									snp_pos_vec = paste0(all.samp.SNP.list[[1]]$chrom
     														,"_"
     														,all.samp.SNP.list[[1]]$pos))
+
+    # > head(gl.snp.df) CB
+    #   chrom    pos BAF logR BAFsegmented logRsegmented  snp_pos
+    # 1     1  13116  NA    0           NA    -0.8384372  1_13116
+    #ALTX
+    #   chrom    pos BAF logR BAFsegmented logRsegmented  snp_pos
+    # 1     1 762273  NA    0           NA    -0.3346204 1_762273
+
+    #Strange difference here in that the dat coming from tracerx has mostly NAs in the logr column with occasional zeros, mostly acompanied
+    #by a BAF values but not always:
+    # > min(gl.snp.df$BAF,na.rm=TRUE)
+    # [1] 0.300244
+    # > max(gl.snp.df$BAF,na.rm=TRUE)
+    # [1] 0.7
+    #So it seems that SNPs whose BAF falls outside the 0.3 to 0.7 threshold are given a zero value and have the BAF set to zero but those
+    #with it wihin have zero and their ogiinal BAF 
+    # > nrow(gl.snp.df)
+    # [1] 938946
+
+    #Similary the min and max in the CB is 0.3 and 0.7 but every datapoint has a zero set as logr
+    # > nrow(gl.snp.df)
+    # [1] 675964
 
     # # Temporarily remove everything except a few chromosomes
     # #test_chrs <- c("chr1", "chr2")
@@ -392,6 +459,14 @@ if (OVERWRITE_FLAG == TRUE) {
 	mock.cpn.matrix <- matrix(data=0, nrow=nrow(cpn.chr.start.end.df), ncol = length(sample.vec))
 	colnames(mock.cpn.matrix) <- sample.vec
 	min.cons.segs.df <- cbind(cpn.chr.start.end.df, mock.cpn.matrix)
+	#                                      Chromosome Start_Position End_Position CB1001-11-D01-X1 CB1001-16-D01-X1 CB1001-15-D01-X1 CB1001-17-D01-X1 CB1001-18-D01-X1
+	# CB1001-11-D01-X1:1:1:138780                   1              1       138780                0                0                0                0                0
+	# CB1001-11-D01-X1:1:138781:16421937            1         138781     16421937                0                0                0                0                0
+
+	# > head(min.cons.segs.df)
+	#                                         Chromosome Start_Position End_Position A_LTX121_SU_T1-R1 A_LTX121_SU_T1-R2
+	# A_LTX121_SU_T1-R1:1:1:762272                     1              1       762272                 0                 0
+
 	#end of 201908TBKW edit all this code 
 
 
@@ -404,6 +479,30 @@ if (OVERWRITE_FLAG == TRUE) {
 																		mcs.seg.to.use.df =min.cons.segs.df,
 																		allow.logr.only.flag = FALSE,
 																		data.type = data.format.to.use)
+
+	# List of 5
+	#  $ CB1001-11-D01-X1:List of 186
+	# > str(asas.SNPs.w.both.lr.baf.snp.lists[[1]][[2]], max=2)
+	# 'data.frame':	294 obs. of  6 variables:
+	#  $ chrom        : num  1 1 1 1 1 1 1 1 1 1 ...
+	#  $ pos          : int  970892 973673 974175 981169 1049886 1087765 1091327 1522693 1541864 1704310 ...
+	#  $ BAF          : num  1 0 0.1 0.9 0.867 ...
+	#  $ logR         : num  -0.526 -1.879 -0.363 -1.287 -1.773 ...
+	#  $ BAFsegmented : num  0.107 0.107 0.107 0.107 0.107 ...
+	#  $ logRsegmented: num  -0.838 -0.838 -0.838 -0.838 -0.838 ...
+
+	#  List of 2
+	#   $ A_LTX121_SU_T1-R1:List of 418
+
+	# >  str(asas.SNPs.w.both.lr.baf.snp.lists[[1]][[2]], max=2)
+	# 'data.frame':	755 obs. of  6 variables:
+	#  $ chrom        : num  1 1 1 1 1 1 1 1 1 1 ...
+	#  $ pos          : int  871020 879317 880390 881627 892460 894573 896064 897730 902108 906272 ...
+	#  $ BAF          : num  0.257 0.248 0.2 0.866 0.143 ...
+	#  $ logR         : num  -0.271 -0.36 -0.385 -0.208 -0.571 ...
+	#  $ BAFsegmented : num  0.231 0.231 0.231 0.231 0.231 ...
+	#  $ logRsegmented: num  -0.335 -0.335 -0.335 -0.335 -0.335 ...
+	# >
 	if (length(unique(sapply(asas.SNPs.w.both.lr.baf.snp.lists, length))) != 1) {
 
 		stop("Not all segments are present in all samples' snp assignations, likely something has gone wrong, is the parallelisation working correctly?")
@@ -422,6 +521,24 @@ if (OVERWRITE_FLAG == TRUE) {
 																	mcs.seg.to.use.df =min.cons.segs.df,
 																	allow.logr.only.flag = TRUE,
 																	data.type = data.format.to.use)
+	#CB
+	# > str(asas.SNPS.lr.and.or.baf.lists[[1]][[2]], max=1)
+	# 'data.frame':	7923 obs. of  6 variables:
+	#  $ chrom        : num  1 1 1 1 1 1 1 1 1 1 ...
+	#  $ pos          : int  138781 138817 138829 139060 139294 732966 732994 733201 733202 733225 ...
+	#  $ BAF          : num  NA NA NA NA NA NA NA NA NA NA ...
+	#  $ logR         : num  -0.3305 -0.1493 0.073 -0.3676 -0.0592 ...
+	#  $ BAFsegmented : num  0.107 0.107 0.107 0.107 0.107 ...
+	#  $ logRsegmented: num  -0.838 -0.838 -0.838 -0.838 -0.838 ...
+	#ALTX121
+	# > str(asas.SNPS.lr.and.or.baf.lists[[1]][[2]], max=1)
+	# 'data.frame':	7923 obs. of  6 variables:
+	#  $ chrom        : num  1 1 1 1 1 1 1 1 1 1 ...
+	#  $ pos          : int  138781 138817 138829 139060 139294 732966 732994 733201 733202 733225 ...
+	#  $ BAF          : num  NA NA NA NA NA NA NA NA NA NA ...
+	#  $ logR         : num  -0.3305 -0.1493 0.073 -0.3676 -0.0592 ...
+	#  $ BAFsegmented : num  0.107 0.107 0.107 0.107 0.107 ...
+	#  $ logRsegmented: num  -0.838 -0.838 -0.838 -0.838 -0.838 ...
 
 	if (length(unique(sapply(asas.SNPS.lr.and.or.baf.lists, length))) != 1) {
 
@@ -520,7 +637,7 @@ sample.vec <- names(asas.SNPs.w.both.lr.baf.snp.lists)
 if (OVERWRITE_FLAG == TRUE) {
 
 	source(paste0(current.dir, "consensus_phasing_from_multiple_samples_functions_v2.R"))
-	#all.seg.phasing.info.list <- getCombinedBAFDipTestPhasing(asas.lr.baf.lists = asas.SNPs.w.both.lr.baf.snp.lists,
+	# all.seg.phasing.info.list <- getCombinedBAFDipTestPhasing(asas.lr.baf.lists = asas.SNPs.w.both.lr.baf.snp.lists,
 	#                                            seg.name.vec = seg.name.vec,
 	#                                            ploidy.est.vec = ploidy.est.vec,
 	#                                            purity.est.vec = purity.est.vec,
@@ -543,6 +660,13 @@ if (OVERWRITE_FLAG == TRUE) {
 	                                            comb.wilcox.snp.sep.p.val.threshold = PVAL_COMB_WILCOX_PH_THRESH,
 	                                            allow.dip.test.without.ASCAT.to.phase = ALLOW_DIPTEST_ALONE_PH_FLAG
 	                                            )
+
+	# #SO note both CB and LTX have the following warnings:
+	# 29: In regularize.values(x, y, ties, missing(ties)) :
+ #  	collapsing to unique 'x' values
+ #  	#However, LTX has many more of them with fewer regions? Why?
+
+ 	#Also both seem to be broken as there is never anything returned by samp_most_significant_by_diptest in either.
 
 	saveRDS(all.seg.phasing.info.list, file = all.seg.phasing.info.list.path)
 
@@ -578,6 +702,28 @@ if (OVERWRITE_FLAG == TRUE) {
 
 	snp.file.df$snp_pos <- paste0(snp.file.df$chrom, "_", snp.file.df$pos)
 	snp.file.df$snp_idx <- 1:nrow(snp.file.df)
+
+	# #CB
+	# > head(snp.file.df)
+	#   chrom    pos BAF logR BAFsegmented logRsegmented  snp_pos snp_idx
+	# 1     1  13116  NA    0           NA    -0.8384372  1_13116       1
+	# 2     1  13118  NA    0           NA    -0.8384372  1_13118       2
+	# 3     1  13273  NA    0           NA    -0.8384372  1_13273       3
+	# 4     1  13284  NA    0           NA    -0.8384372  1_13284       4
+	# 5     1  13380  NA    0           NA    -0.8384372  1_13380       5
+	# 6     1 138781  NA    0           NA    -0.8384372 1_138781       6
+
+	# #LTX121
+	# > head(snp.file.df)
+	#   chrom    pos BAF logR BAFsegmented logRsegmented  snp_pos
+	# 1     1 762273  NA    0           NA    -0.3346204 1_762273
+	# 2     1 762496  NA   NA           NA    -0.3346204 1_762496
+	# 3     1 762497  NA   NA           NA    -0.3346204 1_762497
+	# 4     1 777237  NA   NA           NA    -0.3346204 1_777237
+	# 5     1 777318  NA   NA           NA    -0.3346204 1_777318
+	# 6     1 777335  NA   NA           NA    -0.3346204 1_777335
+	#Differences can be seen here and are noted when the gl.snp.df has been read in
+
 	#get germline column
 	gl.col.name <- "BAF"#grep("_GL_BAF", colnames(snp.file.df), value=TRUE)
 	logr.only.snp.df <- snp.file.df[is.na(snp.file.df[,gl.col.name]),]
@@ -589,6 +735,7 @@ if (OVERWRITE_FLAG == TRUE) {
 	gl.homo.snp.df <- actual.snp.file.df[! is.na(actual.snp.file.df[,gl.col.name]) & (as.numeric(actual.snp.file.df[,gl.col.name]) > 0.7 | as.numeric(actual.snp.file.df[,gl.col.name]) < 0.3) ,]
 	gl.hz.snp.df <- actual.snp.file.df[! is.na(actual.snp.file.df[,gl.col.name]) & (as.numeric(actual.snp.file.df[,gl.col.name]) <= 0.7 &  as.numeric(actual.snp.file.df[,gl.col.name]) >= 0.3),]
 	gl.hz.snp.df$hz_snp_idx <- 1:nrow(gl.hz.snp.df)
+	#Note anno seg is sorted.all.bp.all.samps.segs.anno.df
 	anno.seg.df$start_pos <- paste0(anno.seg.df$Chromosome, "_", anno.seg.df$Start_Position)
 	anno.seg.df$start_is_hz <- anno.seg.df$start_pos %in% gl.hz.snp.df$snp_pos
 	anno.seg.df$start_is_homo <- anno.seg.df$start_pos %in% gl.homo.snp.df$snp_pos
@@ -610,6 +757,24 @@ if (OVERWRITE_FLAG == TRUE) {
 
 	#Let's try adding in the disjoin...
 	int.anno.seg.df <- anno.seg.df[anno.seg.df$in_intersection%in%TRUE | anno.seg.df$in_disjoin_only%in%TRUE & anno.seg.df$full_sample %in% sample.vec[1],]
+
+	# > head(int.anno.seg.df[,ncol(int.anno.seg.df):(ncol(int.anno.seg.df)-12)])
+	#                                      end_snp_idx start_snp_idx end_is_pos start_is_pos end_is_logr end_is_homo end_is_hz    end_pos start_is_logr start_is_homo start_is_hz  start_pos chr_arm
+	# CB1001-11-D01-X1:1:138781:16421937          7928             6       TRUE         TRUE       FALSE       FALSE      TRUE 1_16421937          TRUE         FALSE       FALSE   1_138781      1p
+	# CB1001-11-D01-X1:1:16421938:16490693          NA            NA      FALSE        FALSE       FALSE       FALSE     FALSE 1_16490693         FALSE         FALSE       FALSE 1_16421938      1p
+	# CB1001-11-D01-X1:1:16490694:16535960          NA          7973      FALSE         TRUE       FALSE       FALSE     FALSE 1_16535960         FALSE         FALSE        TRUE 1_16490694      1p
+	# CB1001-11-D01-X1:1:16535961:16948870        8287          7979       TRUE         TRUE        TRUE       FALSE     FALSE 1_16948870          TRUE         FALSE       FALSE 1_16535961      1p
+	# CB1001-11-D01-X1:1:16948871:17232700          NA            NA      FALSE        FALSE       FALSE       FALSE     FALSE 1_17232700         FALSE         FALSE       FALSE 1_16948871      1p
+	# CB1001-11-D01-X1:1:17232701:17243971        8487          8477       TRUE         TRUE       FALSE       FALSE      TRUE 1_17243971         FALSE         FALSE        TRUE 1_17232701      1p
+
+	# > head(int.anno.seg.df[,ncol(int.anno.seg.df):(ncol(int.anno.seg.df)-12)])
+	#                                         end_snp_idx start_snp_idx end_is_pos start_is_pos end_is_logr end_is_homo end_is_hz     end_pos start_is_logr start_is_homo start_is_hz   start_pos chr_arm
+	# A_LTX121_SU_T1-R1:1:762273:26136282           17836             1       TRUE         TRUE        TRUE       FALSE     FALSE  1_26136282          TRUE         FALSE       FALSE    1_762273      1p
+	# A_LTX121_SU_T1-R1:1:26136283:26136297            NA            NA      FALSE        FALSE       FALSE       FALSE     FALSE  1_26136297         FALSE         FALSE       FALSE  1_26136283      1p
+	# A_LTX121_SU_T1-R1:1:26136298:121310061        50594         17837       TRUE         TRUE        TRUE       FALSE     FALSE 1_121310061          TRUE         FALSE       FALSE  1_26136298      1p
+	# A_LTX121_SU_T1-R1:1:144052752:145096660       50645         50595       TRUE         TRUE        TRUE       FALSE     FALSE 1_145096660          TRUE         FALSE       FALSE 1_144052752      1q
+	# A_LTX121_SU_T1-R1:1:145096661:145109582          NA            NA      FALSE        FALSE       FALSE       FALSE     FALSE 1_145109582         FALSE         FALSE       FALSE 1_145096661      1q
+	# A_LTX121_SU_T1-R1:1:145109583:145477446       50734         50646       TRUE         TRUE        TRUE       FALSE     FALSE 1_145477446         FALSE         FALSE        TRUE 1_145109583      1q
 	#Let's just add the arm classificaitons to all the snp positions
 	snp.file.df$arm <- NA
 	for (ch in c(unique(int.anno.seg.df$chrom))) {
@@ -636,6 +801,26 @@ if (OVERWRITE_FLAG == TRUE) {
 
 	}#end for (chr in unique(int.anno.seg.df$chrom)) {
 
+	# #IN CB there are some SNPs that do not have an arm assiged:
+	# >  length(unique(snp.file.df$arm))
+	# [1] 41
+	# > unique(snp.file.df$arm
+	# + )
+	#  [1] "1p"  "1q"  "2p"  "2q"  "3p"  "3q"  "4p"  "4q"  "5p"  "5q"  
+	#  "6p"  "6q"  "7p"  "7q"  "8p"  "8q"  "9p"  "9q"  "10p" "10q" "11p" 
+	#  "11q" "12p" "12q" "13q" "14q" "15q" "16p" "16q" "17p" "17q" "18p" 
+	#  "18q" "19p" "19q" "20p" "20q" "21p" "21q" "22q" NA
+
+	#vs LTX121
+
+	# > length(unique(snp.file.df$arm))
+	# [1] 40
+	# > unique(snp.file.df$arm)
+	#  [1] "1p"  "1q"  "2p"  "2q"  "3p"  "3q"  "4p"  "4q"  "5p"  "5q"
+	#    "6p"  "6q"  "7p"  "7q"  "8p"  "8q"  "9p"  "9q"  "10p" "10q" "11p"
+	#     "11q" "12p" "12q" "13q" "14q" "15q" "16p" "16q" "17p" "17q" "18p"
+	#      "18q" "19p" "19q" "20p" "20q" "21p" "21q" "22q"
+
 	#So we need to write a function that finds the nearest SNP that is
 	#1) in the same chromosome arm
 	#2) not already the the start or end of another segment
@@ -650,6 +835,29 @@ if (OVERWRITE_FLAG == TRUE) {
 			                         end.field=c("pos"),
 			                         strand.field="strand",
 			                         starts.in.df.are.0based=FALSE)
+	#CB
+	# > head(all.snp.grs)
+	# GRanges object with 6 ranges and 0 metadata columns:
+	#     seqnames    ranges strand
+	#        <Rle> <IRanges>  <Rle>
+	#   1        1     13116      *
+	#   2        1     13118      *
+	#   3        1     13273      *
+	#   4        1     13284      *
+	#   5        1     13380      *
+	#   7        1    138817      *
+	#   -------
+	#LTX121
+	# > head(all.snp.grs)
+	# GRanges object with 6 ranges and 0 metadata columns:
+	#     seqnames    ranges strand
+	#        <Rle> <IRanges>  <Rle>
+	#   2        1    762496      *
+	#   3        1    762497      *
+	#   4        1    777237      *
+	#   5        1    777318      *
+	#   6        1    777335      *
+	#   7        1    777361      *
 
 	#Get indices of SNPs with missing start or end idxs
 	int.anno.seg.df$strand <- "*"
@@ -662,6 +870,28 @@ if (OVERWRITE_FLAG == TRUE) {
 			                         end.field=c("End_Position"),
 			                         strand.field="strand",
 			                         starts.in.df.are.0based=FALSE)
+
+	# > head(all.int.grs)
+	# GRanges object with 6 ranges and 0 metadata columns:
+	#                                        seqnames            ranges strand
+	#                                           <Rle>         <IRanges>  <Rle>
+	#     CB1001-11-D01-X1:1:138781:16421937        1   138781-16421937      *
+	#   CB1001-11-D01-X1:1:16421938:16490693        1 16421938-16490693      *
+	#   CB1001-11-D01-X1:1:16490694:16535960        1 16490694-16535960      *
+	#   CB1001-11-D01-X1:1:16535961:16948870        1 16535961-16948870      *
+	#   CB1001-11-D01-X1:1:16948871:17232700        1 16948871-17232700      *
+	#   CB1001-11-D01-X1:1:17232701:17243971        1 17232701-17243971      *
+
+	# > head(all.int.grs)
+	# GRanges object with 6 ranges and 0 metadata columns:
+	#                                           seqnames              ranges strand
+	#                                              <Rle>           <IRanges>  <Rle>
+	#       A_LTX121_SU_T1-R1:1:762273:26136282        1     762273-26136282      *
+	#     A_LTX121_SU_T1-R1:1:26136283:26136297        1   26136283-26136297      *
+	#    A_LTX121_SU_T1-R1:1:26136298:121310061        1  26136298-121310061      *
+	#   A_LTX121_SU_T1-R1:1:144052752:145096660        1 144052752-145096660      *
+	#   A_LTX121_SU_T1-R1:1:145096661:145109582        1 145096661-145109582      *
+	#   A_LTX121_SU_T1-R1:1:145109583:145477446        1 145109583-145477446      *
 	#
 	lacking.snp.idx.vec <- which(int.anno.seg.df$start_is_pos %in% FALSE | int.anno.seg.df$end_is_pos %in% FALSE)
 	#FIXME, potential improvement that could be written in would be to, once a SNP is being used
@@ -678,16 +908,38 @@ if (OVERWRITE_FLAG == TRUE) {
     message(" ", i, appendLF = FALSE)
 
 		curr.arm <- int.anno.seg.df[i,]$chr_arm
-
     i_grs <- all.int.grs[i]
-    before_i <- precede(i_grs, all.snp.grs)
-		if (! is.na(before_i) && snp.file.df[before_i,]$arm %in% curr.arm) {
-			int.anno.seg.df[i,]$nearest_preceding_snp <- start(all.snp.grs[before_i])
+    print(i_grs)
+    #Precde is wrong here follow is correct, check the granges documentation.
+    #before_i <- precede(i_grs, all.snp.grs)
+    before_i <- follow(i_grs, all.snp.grs)
+
+
+    print("before_i")
+    print(before_i)
+
+		if (! is.na(before_i) ) {
+			print(snp.file.df[before_i,]$arm)
+			if(snp.file.df[before_i,]$arm %in% curr.arm) {
+
+				int.anno.seg.df[i,]$nearest_preceding_snp <- start(all.snp.grs[before_i])
+
+			}
 		}
 
-    after_i <- follow(i_grs, all.snp.grs)
-		if (! is.na(after_i) && snp.file.df[after_i,]$arm %in% curr.arm) {
-			int.anno.seg.df[i,]$nearest_following_snp <- start(all.snp.grs[after_i])
+	#follow is wrong here precede is correct, check the granges documentation.
+    after_i <- precede(i_grs, all.snp.grs)
+    print("after_i")
+    print(after_i)
+
+		if (! is.na(after_i) ) {
+			print(snp.file.df[after_i,]$arm)
+			if( snp.file.df[after_i,]$arm %in% curr.arm) {
+
+				int.anno.seg.df[i,]$nearest_following_snp <- start(all.snp.grs[after_i])
+
+			}
+
 		}
 
 		#Any remaining examples are going to be the first or only 
@@ -700,6 +952,8 @@ if (OVERWRITE_FLAG == TRUE) {
 
 
 	}#end for (i in 1:length(all.int.grs)) {
+
+
 
 	int.anno.seg.df[is.na(int.anno.seg.df$start_snp_idx) | is.na(int.anno.seg.df$end_snp_idx), c("Start_Position", "End_Position", "start_snp_idx", "end_snp_idx", "nearest_preceding_snp", "nearest_following_snp") ]
 	int.anno.seg.df[int.anno.seg.df$start_is_pos %in% FALSE, ]$Start_Position <- int.anno.seg.df[int.anno.seg.df$start_is_pos %in% FALSE, ]$nearest_following_snp
@@ -749,6 +1003,11 @@ if (OVERWRITE_FLAG == TRUE) {
 	#The variable was renamed here to allow debugging but is just continues.
 	all.samp.j.seg.df <- f.int.anno.seg.df
 
+	test <- f.int.anno.seg.df[(! is.na(f.int.anno.seg.df$nearest_preceding_snp)) & ( ! is.na(f.int.anno.seg.df$nearest_following_snp)),]
+	nrow(test)
+	nrow(test[test$nearest_following_snp > test$nearest_preceding_snp,])
+	nrow(test[test$nearest_following_snp == test$nearest_preceding_snp,])
+	nrow(test[test$nearest_following_snp < test$nearest_preceding_snp,])#THis is a bug!
 	#Note there could be an issue here if not every segment contains a BAF point...
 	#But, if we're using hte intersection this should be fine? Not sure on this point.
 	#However it doesn't really matter as ASCAT makes sure every segment whether or not it had any baf point has an allele-specific value.
@@ -762,13 +1021,32 @@ if (OVERWRITE_FLAG == TRUE) {
 	#Initiate list for segmentation
 	ph.ascat.output.list <- list()
 	ph.ascat.segs.df.list <- list()
+	#/fast/work/groups/ag_schwarz/Projects/project-refphase/tom/tools/multiregioncopynum
 	base.dir <- getwd()
 	for (samp in sample.vec) {
+		setwd("/fast/work/groups/ag_schwarz/Projects/project-refphase/tom/tools/multiregioncopynum/")
 		print(samp)
 		#Here we load in the file path of the relevant samples ascat.bc object. For compatibility with Matt's code
 		#This should accept the ascat.bc files in eithe RDS or RData format.
 
 		if(grepl("RData", pt.snp.file.paths.df[samp,]$samp_ascat_bc_path)) {
+		#OJO: fix this warning
+		# [1] "CB1001-11-D01-X1"
+		# Error in gzfile(file, "rb") :
+		#   (converted from warning) cannot open compressed file '../../input/modified-nb-schulte/CB1001-11-D01-X1/ascat_bc_nochr_modified.rds', probable reason 'No such file or directory'
+		# > options(warn=1)
+		# > traceback()
+		# 6: doWithOneRestart(return(expr), restart)
+		# 5: withOneRestart(expr, restarts[[1L]])
+		# 4: withRestarts({
+		#        .Internal(.signalCondition(simpleWarning(msg, call), msg,
+		#            call))
+		#        .Internal(.dfltWarn(msg, call))
+		#    }, muffleWarning = function() NULL)
+		# 3: .signalSimpleWarning("cannot open compressed file '../../input/modified-nb-schulte/CB1001-11-D01-X1/ascat_bc_nochr_modified.rds', probable reason 'No such file or directory'",
+		#        base::quote(gzfile(file, "rb")))
+		# 2: gzfile(file, "rb")
+		# 1: readRDS(pt.snp.file.paths.df[samp, ]$samp_ascat_bc_path)
 
 		  print("ascat.bc object in RData file, loading...")
 		  load(pt.snp.file.paths.df[samp,]$samp_ascat_bc_path)
@@ -790,7 +1068,25 @@ if (OVERWRITE_FLAG == TRUE) {
 		samp.seg.df <- all.samp.j.seg.df#[all.samp.j.seg.df$full_sample %in% samp,]#No need for everything to be reset as we have one set of joint segmentation.
 		#Let's do the LogR
 		tum.logr.vec <- ascat.bc[["Tumor_LogR"]][,1]
+
+		if(any(is.na(tum.logr.vec))) {
+
+			message("There are NA values in the ascat.bc Tumor_LogR field which need to be removed. Revisit generation of this input. For changing the NAs to 0.")
+			na.idx.vec <- which(is.na(tum.logr.vec))
+			tum.logr.vec[na.idx.vec] <- 0
+
+		}
+
 		tum.logr.segmented.vec <- ascat.bc[["Tumor_LogR_segmented"]][,1]
+
+		if(any(is.na(tum.logr.segmented.vec))) {
+
+			message("There are NA values in the ascat.bc Tumor_LogR_segmented field which need to be removed. Revisit generation of this input. For changing the NAs to 0.")
+			na.segmented.idx.vec <- which(is.na(tum.logr.segmented.vec))
+			tum.logr.segmented.vec[na.segmented.idx.vec] <- 0
+
+		}
+
 
 		for (i in 1:nrow(samp.seg.df)){
 		  
@@ -905,6 +1201,15 @@ if (OVERWRITE_FLAG == TRUE) {
 
 		}#end 	for (i in 1:nrow(samp.seg.df)){ 
 
+
+		if(any(is.na(tum.logr.segmented.vec))) {
+
+			message("There are NA values in the tum.logr.segmented.vec after applying phasing which need to be removed. Revisit generation of this input. For changing the NAs to 0.")
+			na.segmented.idx.vec <- which(is.na(tum.logr.segmented.vec))
+			tum.logr.segmented.vec[na.segmented.idx.vec] <- 0
+
+		}
+
 		#First let's do the free runs:
 		ascat.bc[["Tumor_LogR_segmented"]][,1] <- tum.logr.segmented.vec
 		ascat.bc[["Tumor_BAF_segmented"]][[1]][,1] <- tum.baf.segmented.vec
@@ -967,6 +1272,34 @@ if (OVERWRITE_FLAG == TRUE) {
 
 
 		ascat.plotSegmentedData(ascat.bc)
+		#So now somehow there's a missing value resulting from running ascat on the ascat.bc object.
+		# List of 14
+		#  $ Tumor_LogR          :'data.frame':	675964 obs. of  1 variable:
+		#  $ Tumor_BAF           :'data.frame':	675964 obs. of  1 variable:
+		#  $ Tumor_LogR_segmented: num [1:675964, 1] -0.838 -0.838 -0.838 -0.838 -0.838 ...
+		#   ..- attr(*, "dimnames")=List of 2
+		#  $ Tumor_BAF_segmented :List of 1
+		#  $ Germline_LogR       :'data.frame':	675964 obs. of  1 variable:
+		#  $ Germline_BAF        :'data.frame':	675964 obs. of  1 variable:
+		#  $ SNPpos              :'data.frame':	675964 obs. of  2 variables:
+		#  $ ch                  :List of 22
+		#  $ chr                 :List of 28
+		#  $ chrs                : chr [1:22] "1" "2" "3" "4" ...
+		#  $ samples             : chr "CB1001-11-D01-X1"
+		#  $ gender              : chr "XX"
+		#  $ sexchromosomes      : chr [1:2] "X" "Y"
+		#  $ failedarrays        : NULL
+		#>
+		ascat.bc$BAFsegmented
+		any(is.na(ascat.bc$Tumor_LogR[,1]))
+		which(is.na(ascat.bc$Tumor_LogR[,1]))
+
+		any(is.na(ascat.bc$Tumor_LogR_segmented[,1]))
+		missing.logr.segmented.idx.vec <- which(is.na(ascat.bc$Tumor_LogR_segmented[,1]))
+		checking.cont.range <- missing.logr.segmented.idx.vec - c(missing.logr.segmented.idx.vec[2:length(missing.logr.segmented.idx.vec)], missing.logr.segmented.idx.vec[length(missing.logr.segmented.idx.vec)] + 1)  
+
+				any(is.na(ascat.bc$Tumor_LogR[,1]))
+
 		ascat.output = ascat.runAscat(ascat.bc,gamma=1, rho_manual = samp.purity, psi_manual = samp.ploidy)
 		ph.ascat.output.list[[samp]] <- ascat.output
 		save(ascat.bc, file=paste(samp, 'ascat.bc.RData',sep='.'))
@@ -1001,7 +1334,9 @@ if (OVERWRITE_FLAG == TRUE) {
 		#rm(seg)
 
 		print("Next sample....")
-		setwd(base.dir)
+		#setwd(base.dir)
+		setwd("/fast/work/groups/ag_schwarz/Projects/project-refphase/tom/tools/multiregioncopynum/")
+
 	}#for (samp in sample.vec) {
 
 }#end if (OVERWRITE_FLAG == TRUE) {
@@ -1098,6 +1433,45 @@ if (OVERWRITE_FLAG == TRUE) {
 	#New df contain phased ASCAT segmentation for all samples. 
 	ph.init.f.joint.segs.df <- do.call(rbind, ph.ascat.segs.df.list)
 	ph.f.joint.segs.df <- reformatInitialSegmentationInput(f.joint.segs.df = ph.init.f.joint.segs.df)
+
+	#OJO.... FIX THIS
+	#So we're going to drop the singe bp segments that we get here... with a bit of effort they are rescuable
+	#https://support.bioconductor.org/p/119589/
+	#Or could be merged into a larger segment as they produce the following error:
+	# Error in validObject(.Object) : invalid class "GRanges" object:
+	#     'x@strand' is not parallel to 'x'
+	# > traceback()
+	# 15: stop(msg, ": ", errors, domain = NA)
+	# 14: validObject(.Object)
+	# 13: initialize(value, ...)
+	# 12: initialize(value, ...)
+	# 11: new(Class, seqnames = seqnames, ranges = ranges, strand = strand,
+	#         elementMetadata = mcols, seqinfo = seqinfo)
+	# 10: new_GRanges("GRanges", seqnames = seqnames, ranges = ranges,
+	#         strand = strand, mcols = mcols, seqlengths = seqlengths,
+	#         seqinfo = seqinfo)
+	# 9: GRanges(ans_seqnames, ans_ranges, strand = ans_strand, ans_mcols,
+	#        seqinfo = ans_seqinfo)
+	# 8: makeGRangesFromDataFrame(f.joint.segs.df[f.joint.segs.df$sample ==
+	#        samp, ], keep.extra.columns = FALSE, ignore.strand = FALSE,
+	#        seqinfo = NULL, seqnames.field = c("seqnames", "seqname",
+	#            "chromosome", "chrom", "chr", "chromosome_name", "seqid"),
+	#        start.field = c("Start_Position", "start", "startpos"), end.field = c("End_Position",
+	#            "end", "stop", "endpos"), strand.field = "strand", starts.in.df.are.0based = FALSE) at data_input_and_QC_functions_v2.R#856
+	# 7: getAllPatientSamplesAndIntersectionGRangesList(sample.vec, f.joint.segs.df) at data_input_and_QC_functions_v2.R#904
+	# 6: compareOverlapsBetweenSamples(sample.vec, f.joint.segs.df, chrom.info.df,
+	#        chrs.to.use.vec = CHRS_TO_USE_VEC) at minimum_consistent_segmentation_functions.R#306
+	# 5: createFullyAnnotatedJointSegmentation(f.joint.segs.df = ph.f.joint.segs.df) at xphase.R#1436
+	# 4: eval(ei, envir)
+	# 3: eval(ei, envir)
+	# 2: withVisible(eval(ei, envir))
+	ph.f.joint.segs.df <- ph.f.joint.segs.df[ph.f.joint.segs.df$startpos != ph.f.joint.segs.df$endpos,]
+	rownames(ph.f.joint.segs.df) <- 1:nrow(ph.f.joint.segs.df)
+
+
+
+
+
 	ph.sorted.all.bp.all.samps.segs.anno.df <- createFullyAnnotatedJointSegmentation(f.joint.segs.df = ph.f.joint.segs.df)
 
 	#we need to update the purity and ploidy for each sample:

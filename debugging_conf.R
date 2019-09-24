@@ -1,4 +1,4 @@
-# Sourced automatically by the xphase.R script when it is run interactively
+#Sourced automatically by the xphase.R script when it is run interactively
 conf <- list(patient = "CB1001",
              dip_test = FALSE,
              output_dir = "../../output/CB1001/xphase-modified",
