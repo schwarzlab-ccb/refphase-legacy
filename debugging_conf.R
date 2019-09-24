@@ -15,3 +15,21 @@ conf <- list(patient = "CB1001",
              seed = 2134234,
              help = FALSE,
              id = "1b151cc1")
+
+# conf <- list(patient = "LTX121",
+#              dip_test = FALSE,
+#              output_dir = "../output/LTX121/xphase",
+#              medicc_output_dir = "../output/CB1002/mphase",
+#              input_format = "ASCAT",
+#              snp_data = "../input/20190617_MPhase_example_data//LTX121_TRACERx_input_paths_df.txt",
+#              snp_data_prefix = "",
+#              seg_data = "../input/20190617_MPhase_example_data//LTX121_joint_segs_all_ascat_info.txt",
+#              overwrite = TRUE,
+#              gamma = 1,
+#              cores = 1,
+#              segment_type = "intersection",
+#              genome = "hg19",
+#              seed = 2134234,
+#              help = FALSE,
+#              conf = "1b151cc2")
+
