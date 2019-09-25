@@ -169,6 +169,7 @@ source(paste0(current.dir, "new_seg_joining_functions.R"))
 source(paste0(current.dir, "cpn_heterogeneity_plotting_functions_v2.R"))
 source(paste0(current.dir, "MEDICC_input_creation_functions.R"))
 source(paste0(current.dir, "ascat.R"))
+source(paste0(current.dir, "validate_input.R"))
 
 
 #####Get relevant libraries:
@@ -297,6 +298,11 @@ all.seg.greater.than.two.diff.list.path <- paste0(PLOT_OUTPUT_DIR, patient, "_al
 if (OVERWRITE_FLAG == TRUE) {
 
 	init.f.joint.segs.df <- read.table(seg.file.path, stringsAsFactors = FALSE, sep = "\t", header = TRUE)
+  
+  # This function will stop the script if the input is not valid
+  # FIXME: not working yet
+  #validate_seg_all_samples(init.f.joint.segs.df)
+
 	# > head(init.f.joint.segs.df) CB001
 	#             sample chr  startpos    endpos n.het cnTotal nMajor nMinor Ploidy  ACF nAraw nBraw callState
 	# 1 CB1001-11-D01-X1   1    138781  16490694   418       1      1      0    1.9 0.88     1     0        NA
@@ -909,51 +915,30 @@ if (OVERWRITE_FLAG == TRUE) {
 
 		curr.arm <- int.anno.seg.df[i,]$chr_arm
     i_grs <- all.int.grs[i]
-    print(i_grs)
     #Precde is wrong here follow is correct, check the granges documentation.
     #before_i <- precede(i_grs, all.snp.grs)
     before_i <- follow(i_grs, all.snp.grs)
-
-
-    print("before_i")
-    print(before_i)
-
 		if (! is.na(before_i) ) {
-			print(snp.file.df[before_i,]$arm)
 			if(snp.file.df[before_i,]$arm %in% curr.arm) {
-
 				int.anno.seg.df[i,]$nearest_preceding_snp <- start(all.snp.grs[before_i])
 
 			}
 		}
 
-	#follow is wrong here precede is correct, check the granges documentation.
+    #follow is wrong here precede is correct, check the granges documentation.
     after_i <- precede(i_grs, all.snp.grs)
-    print("after_i")
-    print(after_i)
-
 		if (! is.na(after_i) ) {
-			print(snp.file.df[after_i,]$arm)
 			if( snp.file.df[after_i,]$arm %in% curr.arm) {
-
 				int.anno.seg.df[i,]$nearest_following_snp <- start(all.snp.grs[after_i])
-
 			}
-
 		}
 
 		#Any remaining examples are going to be the first or only 
 		if(is.na(int.anno.seg.df[i,]$nearest_following_snp) & is.na(int.anno.seg.df[i,]$nearest_preceding_snp)) {
-
 			int.anno.seg.df[i,]$nearest_following_snp <- start(all.snp.grs[nearest(i_grs, all.snp.grs)])
 			int.anno.seg.df[i,]$nearest_preceding_snp <- start(all.snp.grs[nearest(i_grs, all.snp.grs)])
-
-		}#end if(is.na(int.anno.seg.df[i,]$nearest_following_snp) & is.na(int.anno.seg.df[i,]$nearest_preceding_snp)) {
-
-
-	}#end for (i in 1:length(all.int.grs)) {
-
-
+		}
+	}
 
 	int.anno.seg.df[is.na(int.anno.seg.df$start_snp_idx) | is.na(int.anno.seg.df$end_snp_idx), c("Start_Position", "End_Position", "start_snp_idx", "end_snp_idx", "nearest_preceding_snp", "nearest_following_snp") ]
 	int.anno.seg.df[int.anno.seg.df$start_is_pos %in% FALSE, ]$Start_Position <- int.anno.seg.df[int.anno.seg.df$start_is_pos %in% FALSE, ]$nearest_following_snp
@@ -1011,7 +996,7 @@ if (OVERWRITE_FLAG == TRUE) {
 	#Note there could be an issue here if not every segment contains a BAF point...
 	#But, if we're using hte intersection this should be fine? Not sure on this point.
 	#However it doesn't really matter as ASCAT makes sure every segment whether or not it had any baf point has an allele-specific value.
-	message("	for (samp in sample.vec) { run ASCAT...")
+	message("Running ASCAT on all samples...")
 
 	#So now there are several things we want to do here depending on the options passed to the tool
 	#1) Using the phasing information obtained from all samples, allow a free run allowing ASCAT to call whatever purity and ploidy of all samples included
@@ -1024,12 +1009,11 @@ if (OVERWRITE_FLAG == TRUE) {
 	#/fast/work/groups/ag_schwarz/Projects/project-refphase/tom/tools/multiregioncopynum
 	base.dir <- getwd()
 	for (samp in sample.vec) {
-		setwd("/fast/work/groups/ag_schwarz/Projects/project-refphase/tom/tools/multiregioncopynum/")
-		print(samp)
+		message("Loading sample: ", samp)
 		#Here we load in the file path of the relevant samples ascat.bc object. For compatibility with Matt's code
 		#This should accept the ascat.bc files in eithe RDS or RData format.
 
-		if(grepl("RData", pt.snp.file.paths.df[samp,]$samp_ascat_bc_path)) {
+    if (grepl("RData", pt.snp.file.paths.df[samp,]$samp_ascat_bc_path)) {
 		#OJO: fix this warning
 		# [1] "CB1001-11-D01-X1"
 		# Error in gzfile(file, "rb") :
@@ -1048,7 +1032,7 @@ if (OVERWRITE_FLAG == TRUE) {
 		# 2: gzfile(file, "rb")
 		# 1: readRDS(pt.snp.file.paths.df[samp, ]$samp_ascat_bc_path)
 
-		  print("ascat.bc object in RData file, loading...")
+		  message("ascat.bc object in RData file, loading...")
 		  load(pt.snp.file.paths.df[samp,]$samp_ascat_bc_path)
 		  #This will have loaded the ascat.bc object in
 
@@ -1069,33 +1053,28 @@ if (OVERWRITE_FLAG == TRUE) {
 		#Let's do the LogR
 		tum.logr.vec <- ascat.bc[["Tumor_LogR"]][,1]
 
-		if(any(is.na(tum.logr.vec))) {
-
+		if (any(is.na(tum.logr.vec))) {
 			message("There are NA values in the ascat.bc Tumor_LogR field which need to be removed. Revisit generation of this input. For changing the NAs to 0.")
 			na.idx.vec <- which(is.na(tum.logr.vec))
 			tum.logr.vec[na.idx.vec] <- 0
-
 		}
 
 		tum.logr.segmented.vec <- ascat.bc[["Tumor_LogR_segmented"]][,1]
 
 		if(any(is.na(tum.logr.segmented.vec))) {
-
 			message("There are NA values in the ascat.bc Tumor_LogR_segmented field which need to be removed. Revisit generation of this input. For changing the NAs to 0.")
 			na.segmented.idx.vec <- which(is.na(tum.logr.segmented.vec))
 			tum.logr.segmented.vec[na.segmented.idx.vec] <- 0
-
 		}
 
 
 		for (i in 1:nrow(samp.seg.df)){
-		  
 		  tum.logr.segmented.vec[samp.seg.df[i,]$start_snp_idx:samp.seg.df[i,]$end_snp_idx] <- mean(tum.logr.vec[samp.seg.df[i,]$start_snp_idx:samp.seg.df[i,]$end_snp_idx])
-		  
 		}#end for (i in 1:nrow(rle.baf.pcf.df)){
 		#Let's do the BAF recalculation
 		tum.baf.vec <- ascat.bc[["Tumor_BAF"]][,1]
 		tum.baf.segmented.vec <- ascat.bc[["Tumor_BAF_segmented"]][[1]][,1]
+
 		#So now this is a little more complicated as the BAF segmented is only in the SNPs
 		#Would be nice to make the compaison with the germline here as well. We have the data so could...
 		for (i in 1:nrow(samp.seg.df)){ 
@@ -1158,18 +1137,18 @@ if (OVERWRITE_FLAG == TRUE) {
 
 		  #Let's get the equivalent germline snps 
 		  #Default should be to make the BAF segmented 0.5 if we don't have any info w/regards to hz snps
-		  seg.md.ph.BAF.vec<-c()
-		  if(! is.na(m.hap.A.BAF) && m.hap.A.BAF > 0.5) {
-			#mirror
-			seg.md.ph.BAF.vec <- c(seg.md.ph.BAF.vec, abs(seg.ph.hz.snp.df[seg.ph.hz.snp.df$snp_pos %in% haplotype.A.snp.pos.vec,]$BAF - 1) - gl.m.hap.A.BAF)
-			##We could attempt to add in a germline correction here...
+      seg.md.ph.BAF.vec<-c()
+      if(! is.na(m.hap.A.BAF) && m.hap.A.BAF > 0.5) {
+        #mirror
+        seg.md.ph.BAF.vec <- c(seg.md.ph.BAF.vec, abs(seg.ph.hz.snp.df[seg.ph.hz.snp.df$snp_pos %in% haplotype.A.snp.pos.vec,]$BAF - 1) - gl.m.hap.A.BAF)
+        ##We could attempt to add in a germline correction here...
 
-		  } else if (! is.na(m.hap.A.BAF) && m.hap.A.BAF < 0.5) {
+      } else if (! is.na(m.hap.A.BAF) && m.hap.A.BAF < 0.5) {
 
-		  	seg.md.ph.BAF.vec <- c(seg.md.ph.BAF.vec, seg.ph.hz.snp.df[seg.ph.hz.snp.df$snp_pos %in% haplotype.A.snp.pos.vec,]$BAF - gl.m.hap.A.BAF)
-		  	##We could attempt to add in a germline correction here...
+        seg.md.ph.BAF.vec <- c(seg.md.ph.BAF.vec, seg.ph.hz.snp.df[seg.ph.hz.snp.df$snp_pos %in% haplotype.A.snp.pos.vec,]$BAF - gl.m.hap.A.BAF)
+        ##We could attempt to add in a germline correction here...
 
-		  }
+      }
 
 		  if(! is.na(m.hap.B.BAF) && m.hap.B.BAF > 0.5) {
 		  	#mirror
@@ -1266,11 +1245,10 @@ if (OVERWRITE_FLAG == TRUE) {
 
 
 		#OK so now let's do the fixed solution run... 
-		setwd(qc.choice.dir)
 		samp.ploidy <- ploidy.est.vec[samp]
 		samp.purity <- purity.est.vec[samp]
 
-
+		setwd(qc.choice.dir)
 		ascat.plotSegmentedData(ascat.bc)
 		#So now somehow there's a missing value resulting from running ascat on the ascat.bc object.
 		# List of 14
@@ -1290,20 +1268,22 @@ if (OVERWRITE_FLAG == TRUE) {
 		#  $ sexchromosomes      : chr [1:2] "X" "Y"
 		#  $ failedarrays        : NULL
 		#>
-		ascat.bc$BAFsegmented
-		any(is.na(ascat.bc$Tumor_LogR[,1]))
-		which(is.na(ascat.bc$Tumor_LogR[,1]))
+		# ascat.bc$BAFsegmented
+		# any(is.na(ascat.bc$Tumor_LogR[,1]))
+		# which(is.na(ascat.bc$Tumor_LogR[,1]))
 
-		any(is.na(ascat.bc$Tumor_LogR_segmented[,1]))
+		# any(is.na(ascat.bc$Tumor_LogR_segmented[,1]))
 		missing.logr.segmented.idx.vec <- which(is.na(ascat.bc$Tumor_LogR_segmented[,1]))
 		checking.cont.range <- missing.logr.segmented.idx.vec - c(missing.logr.segmented.idx.vec[2:length(missing.logr.segmented.idx.vec)], missing.logr.segmented.idx.vec[length(missing.logr.segmented.idx.vec)] + 1)  
 
-				any(is.na(ascat.bc$Tumor_LogR[,1]))
+    #any(is.na(ascat.bc$Tumor_LogR[,1]))
 
 		ascat.output = ascat.runAscat(ascat.bc,gamma=1, rho_manual = samp.purity, psi_manual = samp.ploidy)
+		setwd(base.dir)
+		#setwd("/fast/work/groups/ag_schwarz/Projects/project-refphase/tom/tools/multiregioncopynum/")
 		ph.ascat.output.list[[samp]] <- ascat.output
-		save(ascat.bc, file=paste(samp, 'ascat.bc.RData',sep='.'))
-		save(ascat.output, file=paste(samp, 'ascat.output.RData',sep='.'))
+		save(ascat.bc, file=file.path(qc.choice.dir, paste(samp, 'ascat.bc.RData',sep='.')))
+		save(ascat.output, file=file.path(qc.choice.dir, paste(samp, 'ascat.output.RData',sep='.')))
 		#We need to work out where the MSAI is and flip it as well...
 		#Calculate number of heterozygous positions per segment
 		tmp <- ascat.output$segments_raw
@@ -1329,13 +1309,11 @@ if (OVERWRITE_FLAG == TRUE) {
 		ph.ascat.segs.df.list[[samp]] <- samp.ph.ascat.segs.df
 		#This ren
 		seg <- samp.ph.ascat.segs.df
-		save(seg, file=paste(samp,'ascat.seg.RData',sep='.'))
+		save(seg, file=file.path(qc.choice.dir, paste(samp,'ascat.seg.RData',sep='.')))
 		#rm(ascat.output)
 		#rm(seg)
 
 		print("Next sample....")
-		#setwd(base.dir)
-		setwd("/fast/work/groups/ag_schwarz/Projects/project-refphase/tom/tools/multiregioncopynum/")
 
 	}#for (samp in sample.vec) {
 

@@ -182,35 +182,29 @@ getAllSampLogrAlonePositionsLogrAndTotalCPNDFsList <- function(sample.vec,
 
     #So what do we want to do here? if there are NAs and it's MEDICC their likely incorrect...
     if ( nrow(samp.logr.baf.df[is.na(samp.logr.baf.df$BAF) ,]) > 0 ) {
-      print("if ( nrow(samp.logr.baf.df[is.na(samp.logr.baf.df$BAF) ,]) > 0 ) {")
-      print(nrow(samp.logr.baf.df))
+      message("Found NAs in BAF (samp.logr.baf.df rows = ", nrow(samp.logr.baf.df), ")")
+
       if (data.format.to.use != "TRACERx_exome") {
-
         samp.logr.df <- samp.logr.baf.df[ ! is.na(samp.logr.baf.df$BAF) ,]
-
       } else {
-
         samp.logr.df <- samp.logr.baf.df
-
       }
-      print(nrow(samp.logr.df))
+
+      message("samp.logr.df = ", nrow(samp.logr.df))
 
     } else if ( nrow(samp.logr.baf.df[samp.logr.baf.df$BAF == 2 ,]) > 0) {
 
-      print("} else if ( nrow(samp.logr.baf.df[samp.logr.baf.df$BAF == 2 ,]) > 0) {")
-      print(nrow(samp.logr.baf.df))
+      message("Found BAFs == 2 (samp.logr.baf.df rows = ", nrow(samp.logr.baf.df), ")")
       samp.logr.df <- samp.logr.baf.df[ samp.logr.baf.df$BAF == 2 ,]
-      print(nrow(samp.logr.df))
+      message("samp.logr.df = ", nrow(samp.logr.df))
 
     } else {
 
-      print("No logr only SNPs, 0 row dataframe will be passed to functions.")
-      print(nrow(samp.logr.baf.df))
+      message("No logr only SNPs, 0 row dataframe will be passed to functions (samp.logr.baf.df rows = ", nrow(samp.logr.baf.df), ")")
       samp.logr.df <- samp.logr.baf.df[ samp.logr.baf.df$BAF == 2 ,]
-      print(nrow(samp.logr.df))
+      message("samp.logr.df = ", nrow(samp.logr.df))
 
     }
-
 
     if (nrow(samp.logr.baf.df) > 0 ) {
 
@@ -221,14 +215,11 @@ getAllSampLogrAlonePositionsLogrAndTotalCPNDFsList <- function(sample.vec,
                                                             gamma.val = gamma.val)
       samp.logr.df$tot_raw_un_ph_cpn <- unlist(rowSums(mock.cpnA.cpnB.logr.df))
 
-      #samp.logr.df$tot_raw_un_ph_cpn <- rowSums(mock.cpnA.cpnB.logr.df)
-
     }
 
     all.samp.logr.df.list[[samp]] <- samp.logr.df
 
   }
-
 
   return(all.samp.logr.df.list)
 

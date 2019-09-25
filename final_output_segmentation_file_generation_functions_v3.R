@@ -1399,7 +1399,7 @@ addLogrDefinedCPNEventsToOutputSegmentationParallel <- function(sample.vec,
     # cl <- makeCluster(NUM_CORES)
     # registerDoParallel(cl)
     itx <- iter(iterable.samp.seg.df, by="row")
-    print("Starting parallel addLogrDefinedCPNEventsToOutputSegmentation:")
+    message("Starting parallel addLogrDefinedCPNEventsToOutputSegmentation:")
     MultiResultClass <- function()
     {
       me <- list(

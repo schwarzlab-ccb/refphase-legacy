@@ -1749,22 +1749,13 @@ plotAllSampleBAFsAndMSAIAcrossGenome <- function(sample.vec, all.seg.MSAI.by.BAF
   for ( samp in sample.vec ) {
 
     #Set out border size for sub plot
-    print(samp)
-    print(typeof(samp))
-    print(first.samp)
-    print(typeof(first.samp))
+    message("Processing: ", samp, " (First sample: ", first.samp, ")")
     if (samp == first.samp) {
-
       par(mar = c(2, 3, 4, 3))
-
     } else if (samp == last.samp) {
-
       par(mar = c(4, 3, 2, 3))
-
     } else {
-
       par(mar = c(3, 3, 3, 3))
-
     }
 
     samp.BAF.df <- patient.phased.BAF.df.list[[samp]]
