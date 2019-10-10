@@ -178,11 +178,14 @@ getAllSampLogrAlonePositionsLogrAndTotalCPNDFsList <- function(sample.vec,
 
   for ( samp in sample.vec ) {
 
+    str(asas.SNPS.lr.and.or.baf.lists[[samp]])
     samp.logr.baf.df <- do.call(rbind, asas.SNPS.lr.and.or.baf.lists[[samp]])
+    str(samp.logr.baf.df)
 
     #So what do we want to do here? if there are NAs and it's MEDICC their likely incorrect...
     if ( nrow(samp.logr.baf.df[is.na(samp.logr.baf.df$BAF) ,]) > 0 ) {
       message("Found NAs in BAF (samp.logr.baf.df rows = ", nrow(samp.logr.baf.df), ")")
+      message("number of nas: ", sum(is.na(samp.logr.baf.df$BAF)))
 
       if (data.format.to.use != "TRACERx_exome") {
         samp.logr.df <- samp.logr.baf.df[ ! is.na(samp.logr.baf.df$BAF) ,]

@@ -16,7 +16,7 @@ if (!interactive()) {
       make_option(c("--medicc-output-dir"), default="../output/CB1002/mphase",
                   help="Output directory"),
       make_option(c("--input-format"), default="ASCAT",
-                  help="Input data format (default=MEDICC)"),
+                  help="Input data format (default=ASCAT)"),
       make_option(c("--snp-data"), default="../input/nb-schulte//CB1002_input_paths_df.txt",
                   help="SNP data"),
       make_option(c("--snp-data-prefix"), default="",
@@ -301,7 +301,7 @@ if (OVERWRITE_FLAG == TRUE) {
   
   # This function will stop the script if the input is not valid
   # FIXME: not working yet
-  #validate_seg_all_samples(init.f.joint.segs.df)
+  validate_seg_all_samples(init.f.joint.segs.df)
 
 	# > head(init.f.joint.segs.df) CB001
 	#             sample chr  startpos    endpos n.het cnTotal nMajor nMinor Ploidy  ACF nAraw nBraw callState
@@ -421,22 +421,15 @@ if (OVERWRITE_FLAG == TRUE) {
     # > nrow(gl.snp.df)
     # [1] 675964
 
-    # # Temporarily remove everything except a few chromosomes
-    # #test_chrs <- c("chr1", "chr2")
-    # test_chrs <- c(1, 2)
-    # all.samp.SNP.list <- lapply(all.samp.SNP.list, function(x) { str(x); return(x[x$chrom %in% test_chrs,]) })
-    # f.joint.segs.df <- f.joint.segs.df[f.joint.segs.df$chr %in% test_chrs,]
-
-    # cat("Subset of chromosomes 1 and 2 only.\n")
-    # str(all.samp.SNP.list)
-    # str(f.joint.segs.df)
-
 	} else {
 
 		print(data.format.to.use)
 		stop("Incorrect data.format.to.use input to mphase")
 
 	}
+
+  # Immediately validate input SNP information (BAF, logR and more)
+  #validate_snp_input(all.samp.SNP.list, gl.snp.df)
 
 	if (length(unique(unlist(lapply(all.samp.SNP.list, nrow)))) != 1 | length(all.samp.SNP.list) < 2) {
 		print("length(all.samp.SNP.list)")
@@ -1338,18 +1331,18 @@ if (OVERWRITE_FLAG == TRUE) {
 	USING_XPHASE <- TRUE 
 	PH_ALL_SAMP_ASCAT_RAW_CPN_DF_LIST <- list()
 	for (samp in sample.vec) {
-
 		if(grepl("RData", pt.snp.file.paths.df[samp,]$samp_ascat_bc_path)) {
-
 		  print("ascat.bc object in RData file, loading...")
 		  load(pt.snp.file.paths.df[samp,]$samp_ascat_bc_path)
 		  #This will have loaded the ascat.bc object in
 
 		} else {
-
 		  ascat.bc <- readRDS(pt.snp.file.paths.df[samp,]$samp_ascat_bc_path)
-
 		}
+
+    # Validate the input immediately
+    validate_ascat_bc_input(ascat.bc)
+
 		normal_baf <- ascat.bc$Germline_BAF[[1]]
 		is_homozygous <- normal_baf < 0.3 | normal_baf > 0.7
 		is_heterozygous <- !(is.na(normal_baf) | is_homozygous)

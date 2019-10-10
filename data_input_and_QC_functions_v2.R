@@ -1418,17 +1418,14 @@ readInASCAT <- function(sample_table, segs, samples) {
     cat("Starting to read sample", sample_info$samp_ascat_bc_path, "\n")
 
     if(grepl("RData", sample_info$samp_ascat_bc_path)) {
-
       print("ascat.bc object in RData file, loading...")
       load(sample_info$samp_ascat_bc_path)
       ascat_bc <- ascat.bc
-
     } else {
-
       ascat_bc <- readRDS(sample_info$samp_ascat_bc_path)
-
-
     }
+
+    validate_ascat_bc_input(ascat_bc)
 
     # First check to see which SNPs are heterozygous
     normal_baf <- ascat_bc$Germline_BAF[[1]]
