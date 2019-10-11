@@ -635,7 +635,7 @@ sample.vec <- names(asas.SNPs.w.both.lr.baf.snp.lists)
 
 if (OVERWRITE_FLAG == TRUE) {
 
-	source(paste0(current.dir, "consensus_phasing_from_multiple_samples_functions_v2.R"))
+	#source(paste0(current.dir, "consensus_phasing_from_multiple_samples_functions_v2.R"))
 	# all.seg.phasing.info.list <- getCombinedBAFDipTestPhasing(asas.lr.baf.lists = asas.SNPs.w.both.lr.baf.snp.lists,
 	#                                            seg.name.vec = seg.name.vec,
 	#                                            ploidy.est.vec = ploidy.est.vec,
@@ -2087,17 +2087,12 @@ if (PLOTTING_FLAG == TRUE) {
 	################################################
 
 } else if (PLOTTING_FLAG == FALSE) {
-
-
 	message("Not plotting CCFs for cpnA and cpnB across the genome using cpn definition of subclonality as plotting flag is FALSE.")
-
-
 }
 
 # We need a .tsv version of this data for interoperability with python
 write.table(full.joint.segs.df, file=file.path(PLOT_OUTPUT_DIR, "full_joint_segs.tsv"), row.names=FALSE, sep="\t")
 message("MPhase comparison with snpphase: Finished for now. Got the <patient>_full_joint_segs_df.RDS object.")
-
 
 # Hack! Hope this works...
 full.joint.segs.nona <- full.joint.segs.df[!is.na(full.joint.segs.df$ph_int_cpnA),]
