@@ -1,6 +1,6 @@
 
 cn_text <- function(x, y, labels, cex = 1.5, col = "black") {
-  text(x = x, y = y, labels = labels, cex = cex * 1.1, font = 2, col = "white")
+  text(x = x, y = y, labels = labels, cex = cex * 1.1, col = "white")
   text(x = x, y = y, labels = labels, cex = cex, col = col)
 }
 
@@ -44,11 +44,12 @@ plot_track_baf <- function(data_sample, segs_sample, msai) {
   #phasing_col <- ifelse(data_sample$, "blue", "yellow")
   phasing_col[data_sample$sample_phased_by_this_sample == "none_no_allelic_imbalance_called"] <- "grey"
   phasing_col <- adjustcolor(phasing_col, 0.6)
-  plot(data_sample$pos, data_sample$BAF, ylab = "BAF", col = phasing_col, ylim = c(0, 1), pch = 20, xaxt = "n")
+  plot(data_sample$pos, data_sample$BAF, ylab = "BAF", col = phasing_col, ylim = c(0, 1), pch = 20, xaxt = "n", yaxt = "n")
+  axis(2, seq(0, 1, by=0.25))
   #lines(x = data_sample$pos, y = data_sample$BAFsegmented, col="black")
 
   # Mean segments
-  mean_col <- ifelse(segs_sample$within_samp_cl_AI_present, "black", NA)
+  mean_col <- ifelse(segs_sample$orig_nMajor != segs_sample$orig_nMinor, "black", NA)
   segments(x0 = segs_sample$startpos, y0 = segs_sample$mean_BAF + 0.5, x1 = segs_sample$endpos, col = mean_col)
   segments(x0 = segs_sample$startpos, y0 = -1 * segs_sample$mean_BAF + 0.5, x1 = segs_sample$endpos, col = mean_col)
 
@@ -63,6 +64,11 @@ plot_track_baf <- function(data_sample, segs_sample, msai) {
   cn_text(x = segs_sample$seg_center, y = 0.1, labels = minor_cn)
 
   cn_text(x = segs_sample$seg_center, y = 0.5, labels = ifelse(segs_sample$dominant_allele == "cpnB", "msai", ""), col = "darkgreen")
+
+  # Indicate which sample is the reference
+  if (any(segs_sample$is_reference))
+    segments(x0 = segs_sample$startpos[segs_sample$is_reference], y0 = -0.02,
+             x1 = segs_sample$endpos[segs_sample$is_reference], col = "red", lwd = 4, lend = 1)
 }
 
 # --------------------------------------------------------------------------
@@ -75,15 +81,6 @@ plot_track_logr_whole_genome <- function(data_sample, segs_sample, chrom_info) {
   segments(x0 = segs_sample$startpos, y0 = segs_sample$median_non_hz_logr, x1 = segs_sample$endpos, col = "black")
   abline(v = chrom_info$start, lty = 2, col = "black")
   cn_text(x = chrom_info$center, y = 1, labels = chrom_info$label, cex=1.0)
-  #cn_text(x = segs_sample$seg_center, y = 1, labels = segs_sample$cnTotal)
-
-  # Changed copy numbers
-  ##changed_cn <- segs_sample$nMinor_change | segs_sample$nMajor_change
-  #changed_cn[is.na(changed_cn)] <- FALSE
-  #if (sum(changed_cn, na.rm = TRUE) > 0) {
-  #  message("Found some adjusted copy numbers!")
-  #  cn_text(x = segs_sample$seg_center[changed_cn], y = -1, labels = segs_sample$orig_cnTotal[changed_cn])
-  #}
 }
 
 plot_track_baf_whole_genome <- function(data_sample, segs_sample, chrom_info) {
@@ -101,19 +98,6 @@ plot_track_baf_whole_genome <- function(data_sample, segs_sample, chrom_info) {
 
   # Chromosome boundaries
   abline(v = chrom_info$start, lty = 2, col = "black")
-
-#  # Original copy numbers
-#  cn_text(x = segs_sample$seg_center, y = 0.9, labels = segs_sample$nMajor)
-#  cn_text(x = segs_sample$seg_center, y = 0.1, labels = segs_sample$nMinor)
-#
-#  # Changed copy numbers
-#  changed_cn <- segs_sample$nMinor_change | segs_sample$nMajor_change
-#  changed_cn[is.na(changed_cn)] <- FALSE
-#  if (sum(changed_cn, na.rm = TRUE) > 0) {
-#    message("Found some adjusted copy numbers!")
-#    cn_text(x = segs_sample$seg_center[changed_cn], y = 0.7, labels = segs_sample$orig_nMajor[changed_cn])
-#    cn_text(x = segs_sample$seg_center[changed_cn], y = 0.3, labels = segs_sample$orig_nMinor[changed_cn])
-#  }
 }
 
 # --------------------------------------------------------------------------

@@ -36,7 +36,7 @@ baf_logr <- readRDS(file.path(conf$input_dir, paste0(conf$patient_id, "_phased_B
 segs <- readRDS(file.path(conf$input_dir, paste0(conf$patient_id, "_full_joint_segs_df.RDS")))
 segs$seg_center <- segs$startpos + (segs$endpos - segs$startpos) / 2
 segs$seg_idx <- seq(nrow(segs))
-
+segs$is_reference <- segs$samp_used_to_phase == segs$sample
 
 # Convert chromosomal positions to absolute positions for plotting the whole genome
 chrom_ends <- cumsum(by(segs$endpos, segs$chr, max))
@@ -80,6 +80,31 @@ for (chrom_to_plot in names(chrom_starts)) {
     segs_sample <- segs[segs$sample == sample_name, ]
     orig_segs_sample <- orig_segs[orig_segs$sample == sample_name, ]
 
+    # Split the plotting area vertically (sample name + info on left, plots on right)
+    screen(sample_screens[[sample_idx]])
+    split_coords <- matrix(c(0, 0.1, 0, 1, 0.1, 1, 0, 1), ncol = 4, byrow = TRUE)
+    screen_idxs <- split.screen(split_coords)
+
+    screen(screen_idxs[[1]])
+    plot_sample_info(sample_name, segs_sample$Ploidy[[1]], segs_sample$ACF[[1]])
+
+    screen(screen_idxs[[2]])
+    sub_split_coords <- matrix(c(0, 1, 0.65, 1,
+                                 0, 1, 0.3, 0.65,
+                                 0, 1, 0.2, 0.3,
+                                 0, 1, 0.1, 0.2,
+                                 0, 1, 0, 0.1), ncol = 4, byrow = TRUE)
+    subfigure_idx <- split.screen(sub_split_coords)
+    #subfigure_idx <- split.screen(c(num_subfigures, 1))
+
+    # Remove the many NA regions
+    segs_sample <- segs_sample[!is.na(segs_sample$cnTotal), ]
+
+    # Keep data for this sample
+    data_sample <- data_sample[data_sample$chrom == chrom_to_plot, ]
+    segs_sample <- segs_sample[segs_sample$chr == chrom_to_plot, ]
+    orig_segs_sample <- orig_segs_sample[orig_segs_sample$chr == chrom_to_plot, ]
+
     # ------------------------------------------------------------------------
     # Calculate which segments have been changed by refphase
     gr_orig <- makeGRangesFromDataFrame(orig_segs_sample,
@@ -89,6 +114,8 @@ for (chrom_to_plot in names(chrom_starts)) {
                                         start.field = "startpos",
                                         end.field = "endpos")
 
+    stopifnot(length(gr_orig) == nrow(orig_segs_sample))
+
     gr_new <- makeGRangesFromDataFrame(segs_sample,
                                        keep.extra.columns = TRUE,
                                        ignore.strand = FALSE,
@@ -96,13 +123,13 @@ for (chrom_to_plot in names(chrom_starts)) {
                                        start.field = "startpos",
                                        end.field = "endpos")
 
+    stopifnot(length(gr_new) == nrow(segs_sample))
+
     ov <- findOverlaps(gr_new, gr_orig)
 
-    str(ov)
-
-    orig_cns <- mcols(gr_orig)[to(ov), c("cnTotal", "nMinor", "nMajor")]
     new_cns <- mcols(gr_new)[from(ov), c("orig_cnTotal", "orig_nMinor", "orig_nMajor")]
     colnames(new_cns) <- c("cnTotal", "nMinor", "nMajor")
+    orig_cns <- mcols(gr_orig)[to(ov), c("cnTotal", "nMinor", "nMajor")]
 
     str(orig_cns)
     str(new_cns)
@@ -132,31 +159,6 @@ for (chrom_to_plot in names(chrom_starts)) {
 
     str(segs_sample)
     # ------------------------------------------------------------------------
-
-    # Split the plotting area vertically (sample name + info on left, plots on right)
-    screen(sample_screens[[sample_idx]])
-    split_coords <- matrix(c(0, 0.1, 0, 1, 0.1, 1, 0, 1), ncol = 4, byrow = TRUE)
-    screen_idxs <- split.screen(split_coords)
-
-    screen(screen_idxs[[1]])
-    plot_sample_info(sample_name, segs_sample$Ploidy[[1]], segs_sample$ACF[[1]])
-
-    screen(screen_idxs[[2]])
-    sub_split_coords <- matrix(c(0, 1, 0.65, 1,
-                                 0, 1, 0.3, 0.65,
-                                 0, 1, 0.2, 0.3,
-                                 0, 1, 0.1, 0.2,
-                                 0, 1, 0, 0.1), ncol = 4, byrow = TRUE)
-    subfigure_idx <- split.screen(sub_split_coords)
-    #subfigure_idx <- split.screen(c(num_subfigures, 1))
-
-    # Remove the many NA regions
-    segs_sample <- segs_sample[!is.na(segs_sample$cnTotal), ]
-
-    # Keep data for this sample
-    data_sample <- data_sample[data_sample$chrom == chrom_to_plot, ]
-    segs_sample <- segs_sample[segs_sample$chr == chrom_to_plot, ]
-    orig_segs_sample <- orig_segs_sample[orig_segs_sample$chr == chrom_to_plot, ]
 
     # logR track
     screen(subfigure_idx[[1]])
