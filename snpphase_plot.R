@@ -8,6 +8,8 @@ option_list <- list(
     make_option(c("-s", "--original-segmentation"), default="",
                 help="Pre-refphase segmentation (from sequenza)"),
     make_option(c("-i", "--input-dir"), default="",
+                help="Input directory containing the output of Xphase"),
+    make_option(c("--input-dir-old"), default="",
                 help="Input directory containing the output of Mphase"),
     make_option(c("-p", "--patient-id"), default="",
                 help="Patient ID"),
@@ -23,6 +25,53 @@ conf <- args
 conf$id <- substr(digest(args), 1, 8)
 set.seed(args$seed)
 
+# ------------------------------------------------------------------------
+# Calculate which segments have been changed by refphase
+get_seg_changes <- function(new_seg, old_seg) {
+    new_seg$seg_idx <- seq(nrow(new_seg))
+    gr_new <- makeGRangesFromDataFrame(new_seg,
+                                       keep.extra.columns = TRUE,
+                                       ignore.strand = FALSE,
+                                       seqnames.field = "chr",
+                                       start.field = "startpos",
+                                       end.field = "endpos")
+    stopifnot(length(gr_new) == nrow(new_seg))
+
+    gr_orig <- makeGRangesFromDataFrame(old_seg,
+                                        keep.extra.columns = TRUE,
+                                        ignore.strand = FALSE,
+                                        seqnames.field = "chr",
+                                        start.field = "startpos",
+                                        end.field = "endpos")
+    stopifnot(length(gr_orig) == nrow(old_seg))
+
+    ov <- findOverlaps(gr_new, gr_orig)
+    new_cns <- mcols(gr_new)[from(ov), c("cnTotal", "nMinor", "nMajor")]
+    orig_cns <- mcols(gr_orig)[to(ov), c("cnTotal", "nMinor", "nMajor")]
+
+    na_row <- apply(is.na(orig_cns), 1, any) | apply(is.na(new_cns), 1, any)
+
+    orig_cns <- orig_cns[!na_row,]
+    new_cns <- new_cns[!na_row,]
+
+    #write.csv(cbind(ov[!na_row, ], new_cns, orig_cns), file="all_cns.csv")
+
+    message("# of segments not changed=", nrow(new_cns))
+    seg_changed <- apply(as.matrix(orig_cns) != as.matrix(new_cns), 1, any)
+    #message("# of segments changed=", sum(seg_changed))
+    message("# of segments not changed=", sum(!seg_changed))
+
+    new_changed <- by(seg_changed, from(ov)[!na_row], any)
+    message("# of segments changed=", sum(unlist(new_changed)))
+
+    changed_idx <- mcols(gr_new)[from(ov)[!na_row],"seg_idx"][new_changed]
+    #print(changed_idx)
+    is_changed <- FALSE
+    is_changed[new_seg$seg_idx %in% changed_idx] <- TRUE
+
+    return(is_changed)
+}
+
 source("install/src/multiregioncopynum/snpphase_plot_utils.R")
 
 if (!dir.exists(conf$output_dir))
@@ -32,11 +81,17 @@ if (!dir.exists(conf$output_dir))
 orig_segs <- read.table(conf$original_segmentation, stringsAsFactors = FALSE, sep = "\t", header = TRUE)
 orig_segs$seg_center <- orig_segs$startpos + (orig_segs$endpos - orig_segs$startpos) / 2
 
+# Out from mphase (the version before Tom's most recent changes that add ASCAT
+# runs)
+old_segs <- read.table(file.path(conf$input_dir_old, "full_joint_segs.tsv"), stringsAsFactors = FALSE, sep = "\t", header = TRUE)
+old_segs$seg_center <- old_segs$startpos + (old_segs$endpos - old_segs$startpos) / 2
+old_segs$dominant_allele[is.na(old_segs$dominant_allele)] <- "na"
+
 baf_logr <- readRDS(file.path(conf$input_dir, paste0(conf$patient_id, "_phased_BAF_df_list.RDS")))
 segs <- readRDS(file.path(conf$input_dir, paste0(conf$patient_id, "_full_joint_segs_df.RDS")))
 segs$seg_center <- segs$startpos + (segs$endpos - segs$startpos) / 2
-segs$seg_idx <- seq(nrow(segs))
 segs$is_reference <- segs$samp_used_to_phase == segs$sample
+segs$dominant_allele[is.na(segs$dominant_allele)] <- "na"
 
 # Convert chromosomal positions to absolute positions for plotting the whole genome
 chrom_ends <- cumsum(by(segs$endpos, segs$chr, max))
@@ -51,7 +106,7 @@ chrom_info <- data.frame(start = chrom_starts,
                          center = chrom_center,
                          label = names(chrom_starts))
 
-num_subfigures <- 5  # BAF and logR subfigures only + copy numbers
+num_subfigures <- 6  # BAF and logR subfigures only + copy numbers
 
 # Split the output figure into one row per sample
 samples <- names(baf_logr)
@@ -63,7 +118,7 @@ for (chrom_to_plot in names(chrom_starts)) {
   # Header: Leave space for the chromosome name
   # coordinates are: left, right, bottom, and top
   #heading_height_fraction <- 1 / (length(samples) + 0.5)
-  heading_height_fraction <- 1 / (1 + 5 * length(samples))
+  heading_height_fraction <- 1 / (1 + 4 * length(samples))
   #split_coords <- matrix(c(0, 1, 0, 1 - heading_height_fraction, 0, 1, 0, heading_height_fraction), ncol = 4, byrow = TRUE)
   split_coords <- matrix(c(0, 1, 1 - heading_height_fraction, 1, 0, 1, 0, 1 - heading_height_fraction), ncol = 4, byrow = TRUE)
   outer_screens <- split.screen(split_coords)
@@ -79,6 +134,7 @@ for (chrom_to_plot in names(chrom_starts)) {
     data_sample <- baf_logr[[sample_idx]]
     segs_sample <- segs[segs$sample == sample_name, ]
     orig_segs_sample <- orig_segs[orig_segs$sample == sample_name, ]
+    old_segs_sample <- old_segs[old_segs$sample == sample_name, ]
 
     # Split the plotting area vertically (sample name + info on left, plots on right)
     screen(sample_screens[[sample_idx]])
@@ -89,8 +145,9 @@ for (chrom_to_plot in names(chrom_starts)) {
     plot_sample_info(sample_name, segs_sample$Ploidy[[1]], segs_sample$ACF[[1]])
 
     screen(screen_idxs[[2]])
-    sub_split_coords <- matrix(c(0, 1, 0.65, 1,
-                                 0, 1, 0.3, 0.65,
+    sub_split_coords <- matrix(c(0, 1, 0.7, 1,
+                                 0, 1, 0.4, 0.7,
+                                 0, 1, 0.3, 0.4,
                                  0, 1, 0.2, 0.3,
                                  0, 1, 0.1, 0.2,
                                  0, 1, 0, 0.1), ncol = 4, byrow = TRUE)
@@ -98,67 +155,34 @@ for (chrom_to_plot in names(chrom_starts)) {
     #subfigure_idx <- split.screen(c(num_subfigures, 1))
 
     # Remove the many NA regions
-    segs_sample <- segs_sample[!is.na(segs_sample$cnTotal), ]
+    segs_sample <- segs_sample[!is.na(segs_sample$nMajor), ]
+    old_segs_sample <- old_segs_sample[!is.na(old_segs_sample$nMajor), ]
 
     # Keep data for this sample
     data_sample <- data_sample[data_sample$chrom == chrom_to_plot, ]
     segs_sample <- segs_sample[segs_sample$chr == chrom_to_plot, ]
     orig_segs_sample <- orig_segs_sample[orig_segs_sample$chr == chrom_to_plot, ]
+    old_segs_sample <- old_segs_sample[old_segs_sample$chr == chrom_to_plot, ]
+
+    #message("sample", sample_name, "chrom", chrom_to_plot)
+    #print(old_segs_sample)
 
     # ------------------------------------------------------------------------
-    # Calculate which segments have been changed by refphase
-    gr_orig <- makeGRangesFromDataFrame(orig_segs_sample,
-                                        keep.extra.columns = TRUE,
-                                        ignore.strand = FALSE,
-                                        seqnames.field = "chr",
-                                        start.field = "startpos",
-                                        end.field = "endpos")
+    # Swap CNs when we have MSAI
+    segs_sample$cnTotal <- segs_sample$orig_cnTotal
+    segs_sample$nMajor <- ifelse(segs_sample$dominant_allele == "cpnB", segs_sample$orig_nMinor, segs_sample$orig_nMajor)
+    segs_sample$nMinor <- ifelse(segs_sample$dominant_allele == "cpnB", segs_sample$orig_nMajor, segs_sample$orig_nMinor)
 
-    stopifnot(length(gr_orig) == nrow(orig_segs_sample))
+    old_segs_sample$cnTotal <- old_segs_sample$orig_cnTotal
+    old_segs_sample$nMajor <- ifelse(old_segs_sample$dominant_allele == "cpnB", old_segs_sample$orig_nMinor, old_segs_sample$orig_nMajor)
+    old_segs_sample$nMinor <- ifelse(old_segs_sample$dominant_allele == "cpnB", old_segs_sample$orig_nMajor, old_segs_sample$orig_nMinor)
 
-    gr_new <- makeGRangesFromDataFrame(segs_sample,
-                                       keep.extra.columns = TRUE,
-                                       ignore.strand = FALSE,
-                                       seqnames.field = "chr",
-                                       start.field = "startpos",
-                                       end.field = "endpos")
-
-    stopifnot(length(gr_new) == nrow(segs_sample))
-
-    ov <- findOverlaps(gr_new, gr_orig)
-
-    new_cns <- mcols(gr_new)[from(ov), c("orig_cnTotal", "orig_nMinor", "orig_nMajor")]
-    colnames(new_cns) <- c("cnTotal", "nMinor", "nMajor")
-    orig_cns <- mcols(gr_orig)[to(ov), c("cnTotal", "nMinor", "nMajor")]
-
-    str(orig_cns)
-    str(new_cns)
-
-    na_row <- apply(is.na(orig_cns), 1, any) | apply(is.na(new_cns), 1, any)
-
-    orig_cns <- orig_cns[!na_row,]
-    new_cns <- new_cns[!na_row,]
-
-    str(orig_cns)
-    str(new_cns)
-
-    write.csv(cbind(ov[!na_row, ], new_cns, orig_cns), file="all_cns.csv")
-
-    seg_changed <- apply(as.matrix(orig_cns) != as.matrix(new_cns), 1, any)
-    message("# of segments changed=", sum(seg_changed))
-    message("# of segments not changed=", sum(!seg_changed))
-
-    new_changed <- by(seg_changed, from(ov)[!na_row], any)
-    str(new_changed)
-    message("# of segments changed=", sum(unlist(new_changed)))
-
-    changed_idx <- mcols(gr_new)[from(ov)[!na_row],"seg_idx"][new_changed]
-    print(changed_idx)
-    segs_sample$is_changed <- FALSE
-    segs_sample$is_changed[segs_sample$seg_idx %in% changed_idx] <- TRUE
-
-    str(segs_sample)
     # ------------------------------------------------------------------------
+    # Indivate which segments have changed
+    segs_sample$is_changed <- get_seg_changes(segs_sample, orig_segs_sample)
+    old_segs_sample$is_changed <- get_seg_changes(old_segs_sample, orig_segs_sample)
+    #print(segs_sample)
+    #print(orig_segs_sample)
 
     # logR track
     screen(subfigure_idx[[1]])
@@ -174,19 +198,23 @@ for (chrom_to_plot in names(chrom_starts)) {
 
     # Refphase CNs
     screen(subfigure_idx[[4]])
-    plot_track_cn(data.frame(startpos = segs_sample$startpos,
-                             endpos = segs_sample$endpos,
-                             seg_center = segs_sample$seg_center,
-                             cnTotal = segs_sample$orig_cnTotal,
-                             nMajor = segs_sample$orig_nMajor,
-                             nMinor = segs_sample$orig_nMinor,
-                             is_changed = segs_sample$is_changed),
-                  track_name = "new")
+    plot_track_cn(segs_sample, track_name = "new")
+    #plot_track_cn(data.frame(startpos = segs_sample$startpos,
+    #                         endpos = segs_sample$endpos,
+    #                         seg_center = segs_sample$seg_center,
+    #                         cnTotal = segs_sample$orig_cnTotal,
+    #                         nMajor = segs_sample$orig_nMajor,
+    #                         nMinor = segs_sample$orig_nMinor,
+    #                         is_changed = segs_sample$is_changed),
+    #              track_name = "new")
+
+    # pre-ASCAT mphase CNs
+    screen(subfigure_idx[[5]])
+    plot_track_cn(old_segs_sample, "noascat")
 
     # Add an x-axis with genomic co-ordinates
-    screen(subfigure_idx[[5]])
+    screen(subfigure_idx[[6]])
     plot_track_axis(min(segs_sample$startpos), max(segs_sample$endpos))
-
   }
 
   close.screen(all = TRUE)

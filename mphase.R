@@ -34,7 +34,6 @@ option_list <- list(
 
 
 print(packageVersion("optparse"))
-print(conf)
 #Hack to get it working on TRACERx 
 if(packageVersion("optparse") != "1.3.2") {
 
@@ -152,6 +151,7 @@ source(paste0(current.dir, "final_output_segmentation_file_generation_functions_
 source(paste0(current.dir, "new_seg_joining_functions.R"))
 source(paste0(current.dir, "cpn_heterogeneity_plotting_functions_v2.R"))
 source(paste0(current.dir, "MEDICC_input_creation_functions.R"))
+source(paste0(current.dir, "validate_input.R"))
 
 #####Get relevant libraries:
 #Todo check this is the only required library.

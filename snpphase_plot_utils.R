@@ -12,6 +12,7 @@ plot_track_axis <- function(xmin, xmax) {
 
 # Plot CNs only in this track
 plot_track_cn <- function(segs, track_name, show_axis = FALSE) {
+  message(track_name)
   par(mar = c(ifelse(show_axis, 2, 0.1), 5, 0.1, 1))
   plot(1, ylim=c(-1, 1), xlim=c(min(segs$startpos), max(segs$endpos)), col = "white", ylab = track_name, xaxt = ifelse(show_axis, "s", "n"), yaxt = "n")
   abline(v = unique(c(segs$startpos, segs$endpos)), lty = 2, col = "black")
@@ -63,12 +64,21 @@ plot_track_baf <- function(data_sample, segs_sample, msai) {
   cn_text(x = segs_sample$seg_center, y = 0.9, labels = major_cn)
   cn_text(x = segs_sample$seg_center, y = 0.1, labels = minor_cn)
 
+  # Indicate which sample is the reference
+  #print(head(segs_sample))
+  #print(segs_sample$dominant_allele == "cpnB")
+  segs_sample$dominant_allele[is.na(segs_sample$dominant_allele)] <- "na"
+  if (any(segs_sample$dominant_allele == "cpnB")) {
+    segments(x0 = segs_sample$startpos[segs_sample$dominant_allele == "cpnB"], y0 = 1.02,
+             x1 = segs_sample$endpos[segs_sample$dominant_allele == "cpnB"], col = "darkgreen", lwd = 4, lend = 1)
+  }
   cn_text(x = segs_sample$seg_center, y = 0.5, labels = ifelse(segs_sample$dominant_allele == "cpnB", "msai", ""), col = "darkgreen")
 
   # Indicate which sample is the reference
   if (any(segs_sample$is_reference))
     segments(x0 = segs_sample$startpos[segs_sample$is_reference], y0 = -0.02,
              x1 = segs_sample$endpos[segs_sample$is_reference], col = "red", lwd = 4, lend = 1)
+
 }
 
 # --------------------------------------------------------------------------
