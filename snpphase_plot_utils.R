@@ -60,6 +60,9 @@ plot_track_baf <- function(data_sample, segs_sample, msai) {
   # MPhase copy numbers
   major_cn <- as.character(segs_sample$orig_nMajor)
   minor_cn <- as.character(segs_sample$orig_nMinor)
+  
+  #major_cn <- as.character(segs_sample$nMajor)
+  #minor_cn <- as.character(segs_sample$nMinor)
 
   cn_text(x = segs_sample$seg_center, y = 0.9, labels = major_cn)
   cn_text(x = segs_sample$seg_center, y = 0.1, labels = minor_cn)

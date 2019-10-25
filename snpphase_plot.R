@@ -13,6 +13,8 @@ option_list <- list(
                 help="Input directory containing the output of Mphase"),
     make_option(c("-p", "--patient-id"), default="",
                 help="Patient ID"),
+    make_option(c("-r", "--raw"), default=FALSE,
+                help="Plot raw CNs instead of integer CNs"),
     make_option(c("-o", "--output-dir"), default="",
                 help="Input directory containing the output of Mphase"),
     make_option(c("-f", "--plot-format"), default="png",
@@ -72,7 +74,7 @@ get_seg_changes <- function(new_seg, old_seg) {
     return(is_changed)
 }
 
-source("install/src/multiregioncopynum/snpphase_plot_utils.R")
+source("install/src/refphase/snpphase_plot_utils.R")
 
 if (!dir.exists(conf$output_dir))
   dir.create(conf$output_dir, recursive = TRUE, showWarnings = FALSE)
@@ -169,13 +171,23 @@ for (chrom_to_plot in names(chrom_starts)) {
 
     # ------------------------------------------------------------------------
     # Swap CNs when we have MSAI
-    segs_sample$cnTotal <- segs_sample$orig_cnTotal
-    segs_sample$nMajor <- ifelse(segs_sample$dominant_allele == "cpnB", segs_sample$orig_nMinor, segs_sample$orig_nMajor)
-    segs_sample$nMinor <- ifelse(segs_sample$dominant_allele == "cpnB", segs_sample$orig_nMajor, segs_sample$orig_nMinor)
+    if (conf$raw) {
+      segs_sample$nMajor <- round(ifelse(segs_sample$dominant_allele == "cpnB", segs_sample$orig_cpnB_raw, segs_sample$orig_cpnA_raw), 2)
+      segs_sample$nMinor <- round(ifelse(segs_sample$dominant_allele == "cpnB", segs_sample$orig_cpnA_raw, segs_sample$orig_cpnB_raw), 2)
+      segs_sample$cnTotal <- round(segs_sample$nMajor + segs_sample$nMinor, 2)
 
-    old_segs_sample$cnTotal <- old_segs_sample$orig_cnTotal
-    old_segs_sample$nMajor <- ifelse(old_segs_sample$dominant_allele == "cpnB", old_segs_sample$orig_nMinor, old_segs_sample$orig_nMajor)
-    old_segs_sample$nMinor <- ifelse(old_segs_sample$dominant_allele == "cpnB", old_segs_sample$orig_nMajor, old_segs_sample$orig_nMinor)
+      old_segs_sample$nMajor <- round(old_segs_sample$ph_raw_cpnA, 2)
+      old_segs_sample$nMinor <- round(old_segs_sample$ph_raw_cpnB, 2)
+      old_segs_sample$cnTotal <- round(old_segs_sample$nMajor + old_segs_sample$nMinor, 2)
+    } else {
+      segs_sample$nMajor <- ifelse(segs_sample$dominant_allele == "cpnB", segs_sample$orig_nMinor, segs_sample$orig_nMajor)
+      segs_sample$nMinor <- ifelse(segs_sample$dominant_allele == "cpnB", segs_sample$orig_nMajor, segs_sample$orig_nMinor)
+      segs_sample$cnTotal <- segs_sample$orig_cnTotal
+
+      old_segs_sample$nMajor <- ifelse(old_segs_sample$dominant_allele == "cpnB", old_segs_sample$orig_nMinor, old_segs_sample$orig_nMajor)
+      old_segs_sample$nMinor <- ifelse(old_segs_sample$dominant_allele == "cpnB", old_segs_sample$orig_nMajor, old_segs_sample$orig_nMinor)
+      old_segs_sample$cnTotal <- old_segs_sample$orig_cnTotal
+    }
 
     # ------------------------------------------------------------------------
     # Indivate which segments have changed
@@ -199,14 +211,6 @@ for (chrom_to_plot in names(chrom_starts)) {
     # Refphase CNs
     screen(subfigure_idx[[4]])
     plot_track_cn(segs_sample, track_name = "new")
-    #plot_track_cn(data.frame(startpos = segs_sample$startpos,
-    #                         endpos = segs_sample$endpos,
-    #                         seg_center = segs_sample$seg_center,
-    #                         cnTotal = segs_sample$orig_cnTotal,
-    #                         nMajor = segs_sample$orig_nMajor,
-    #                         nMinor = segs_sample$orig_nMinor,
-    #                         is_changed = segs_sample$is_changed),
-    #              track_name = "new")
 
     # pre-ASCAT mphase CNs
     screen(subfigure_idx[[5]])
