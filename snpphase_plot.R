@@ -4,6 +4,8 @@ library(digest)
 library(GenomicRanges)
 library(optparse)
 
+options(error = traceback)
+
 option_list <- list(
     make_option(c("-s", "--original-segmentation"), default="",
                 help="Pre-refphase segmentation (from sequenza)"),
@@ -15,6 +17,8 @@ option_list <- list(
                 help="Patient ID"),
     make_option(c("-r", "--raw"), default=FALSE,
                 help="Plot raw CNs instead of integer CNs"),
+    make_option("--scale-segs", default=FALSE,
+                help="Rescale segment lengths to all be equal (for debugging)"),
     make_option(c("-o", "--output-dir"), default="",
                 help="Input directory containing the output of Mphase"),
     make_option(c("-f", "--plot-format"), default="png",
@@ -74,6 +78,66 @@ get_seg_changes <- function(new_seg, old_seg) {
     return(is_changed)
 }
 
+get_seg_new_ai <- function(new_seg, old_seg) {
+    new_seg$seg_idx <- seq(nrow(new_seg))
+    gr_new <- makeGRangesFromDataFrame(new_seg,
+                                       keep.extra.columns = TRUE,
+                                       ignore.strand = FALSE,
+                                       seqnames.field = "chr",
+                                       start.field = "startpos",
+                                       end.field = "endpos")
+    stopifnot(length(gr_new) == nrow(new_seg))
+
+    gr_orig <- makeGRangesFromDataFrame(old_seg,
+                                        keep.extra.columns = TRUE,
+                                        ignore.strand = FALSE,
+                                        seqnames.field = "chr",
+                                        start.field = "startpos",
+                                        end.field = "endpos")
+    stopifnot(length(gr_orig) == nrow(old_seg))
+
+    ov <- findOverlaps(gr_new, gr_orig)
+    new_cns <- mcols(gr_new)[from(ov), c("cnTotal", "nMinor", "nMajor")]
+    orig_cns <- mcols(gr_orig)[to(ov), c("cnTotal", "nMinor", "nMajor")]
+
+    na_row <- apply(is.na(orig_cns), 1, any) | apply(is.na(new_cns), 1, any)
+
+    orig_cns <- orig_cns[!na_row,]
+    new_cns <- new_cns[!na_row,]
+
+    #write.csv(cbind(ov[!na_row, ], new_cns, orig_cns), file="all_cns.csv")
+
+    message("# of segments not changed=", nrow(new_cns))
+    orig_cns <- as.matrix(orig_cns)
+    new_cns <- as.matrix(new_cns)
+
+    message("CN for checking new_ai")
+    print(orig_cns)
+    print(new_cns)
+
+    orig_balanced <- orig_cns[,"nMinor"] == orig_cns[,"nMajor"]
+    new_not_balanced <- new_cns[,"nMinor"] != new_cns[,"nMajor"]
+    seg_changed <- orig_balanced & new_not_balanced
+    print(seg_changed)
+    print("--------------------------")
+    #message("# of segments changed=", sum(seg_changed))
+    message("# of segments not changed=", sum(!seg_changed))
+
+    new_changed <- by(seg_changed, from(ov)[!na_row], any)
+    message("# of segments changed=", sum(unlist(new_changed)))
+
+    changed_idx <- mcols(gr_new)[from(ov)[!na_row],"seg_idx"][new_changed]
+    #print(changed_idx)
+    is_changed <- FALSE
+    is_changed[new_seg$seg_idx %in% changed_idx] <- TRUE
+    
+    print(is_changed)
+    message("Num changed:", sum(is_changed))
+    print("--------------------------")
+
+    return(is_changed)
+}
+
 source("install/src/refphase/snpphase_plot_utils.R")
 
 if (!dir.exists(conf$output_dir))
@@ -95,6 +159,45 @@ segs$seg_center <- segs$startpos + (segs$endpos - segs$startpos) / 2
 segs$is_reference <- segs$samp_used_to_phase == segs$sample
 segs$dominant_allele[is.na(segs$dominant_allele)] <- "na"
 
+# Size distribution of segments
+pdf(file.path(conf$output_dir, "segment-size-distribution-orig.pdf"))
+hist(orig_segs$endpos - orig_segs$startpos, xlab = "Segment width")
+dev.off()
+
+pdf(file.path(conf$output_dir, "segment-size-distribution-oldrefphase.pdf"))
+hist(old_segs$endpos - old_segs$startpos, xlab = "Segment width")
+dev.off()
+
+pdf(file.path(conf$output_dir, "segment-size-distribution-newrefphase.pdf"))
+hist(segs$endpos - segs$startpos, xlab = "Segment width")
+dev.off()
+
+keep_orig <- !is.na(orig_segs$cnTotal)
+keep_old <- !is.na(old_segs$nMinor)
+keep_new <- !is.na(segs$orig_nMinor)
+
+# Dump some basic stats
+stats_file <- file.path(conf$output_dir, "misc-stats.tsv")
+stats <- data.frame(cn_diff_total = c(NA, 0, 0),
+                    cn_diff_changed = c(NA, 0, 0),
+                    cn_diff_new_ai = c(NA, 0, 0),
+                    num_segments = c(sum(!is.na(orig_segs$cnTotal)),
+                                     sum(!is.na(old_segs$nMinor)),
+                                     sum(!is.na(segs$orig_nMinor))),
+                    num_segments_with_na = c(nrow(orig_segs),
+                                     nrow(old_segs),
+                                     nrow(segs)),
+                    num_segments_under_1kb = c(sum(orig_segs[keep_orig,]$endpos - orig_segs[keep_orig,]$startpos < 1000),
+                                               sum(old_segs[keep_old,]$endpos - old_segs[keep_old,]$startpos < 1000),
+                                               sum(segs[keep_new,]$endpos - segs[keep_new,]$startpos < 1000)),
+                    num_homozygous_deletion = c(sum(orig_segs[keep_orig,]$cnTotal == 0, na.rm = TRUE),
+                                                sum(old_segs[keep_old,]$cnTotal == 0, na.rm = TRUE),
+                                                sum(segs[keep_new,]$orig_cnTotal == 0, na.rm = TRUE)),
+                    row.names = c("original", "oldrefphase", "newrefphase"))
+
+stats$fraction_segments_under_1kb <- stats$num_segments_under_1kb / stats$num_segments
+stats$fraction_homozygous_deletion <- stats$num_homozygous_deletion / stats$num_segments
+
 # Convert chromosomal positions to absolute positions for plotting the whole genome
 chrom_ends <- cumsum(by(segs$endpos, segs$chr, max))
 chrom_starts <- c(0, chrom_ends[-length(chrom_ends)])
@@ -113,7 +216,7 @@ num_subfigures <- 6  # BAF and logR subfigures only + copy numbers
 # Split the output figure into one row per sample
 samples <- names(baf_logr)
 
-output_plot <- file.path(conf$output_dir, paste0("all_chromosomes.pdf"))
+output_plot <- file.path(conf$output_dir, "all_chromosomes.pdf")
 pdf(output_plot, width = 10, height = 1 + 4 * length(samples))
 for (chrom_to_plot in names(chrom_starts)) {
   par(cex = 0.8)
@@ -166,7 +269,92 @@ for (chrom_to_plot in names(chrom_starts)) {
     orig_segs_sample <- orig_segs_sample[orig_segs_sample$chr == chrom_to_plot, ]
     old_segs_sample <- old_segs_sample[old_segs_sample$chr == chrom_to_plot, ]
 
-    #message("sample", sample_name, "chrom", chrom_to_plot)
+    # Adjust segment widths
+    if (conf$scale_segs) {
+      #segs_sample <- segs[segs$sample == sample_name, ]
+      #orig_segs_sample <- orig_segs[orig_segs$sample == sample_name, ]
+      #old_segs_sample <- old_segs[old_segs$sample == sample_name, ]
+
+      data_chrom <- data[data$chrom == chrom_to_plot, ]
+      segs_chrom <- segs[segs$chr == chrom_to_plot, ]
+      orig_segs_chrom <- orig_segs[orig_segs$chr == chrom_to_plot, ]
+      old_segs_chrom <- old_segs[old_segs$chr == chrom_to_plot, ]
+
+      allbreaks <- sort(unique(c(segs_chrom$startpos,
+                                 segs_chrom$endpos,
+                                 old_segs_chrom$startpos,
+                                 old_segs_chrom$endpos,
+                                 orig_segs_chrom$startpos,
+                                 orig_segs_chrom$endpos)))
+
+      #allbreaks <- sort(unique(c(segs_sample$startpos,
+      #                           segs_sample$endpos,
+      #                           old_segs_sample$startpos,
+      #                           old_segs_sample$endpos,
+      #                           orig_segs_sample$startpos,
+      #                           orig_segs_sample$endpos)))
+
+      all_segs <- list()
+      all_segs$startpos <- allbreaks[-length(allbreaks)]
+      all_segs$endpos <- allbreaks[-1]
+      all_segs$width <- all_segs$endpos - all_segs$startpos
+      all_segs$scaling_factor <- 1 / all_segs$width
+      all_segs$startidx <- seq_len(length(all_segs$startpos)) - 1
+      all_segs$endidx <- all_segs$startidx + 1
+
+      plot_range <- c(min(all_segs$startidx), max(all_segs$endidx))
+
+      #message("----------------- all_segs")
+      #print(all_segs)
+      # Correct logr and baf data
+      for (segidx in seq_len(length(all_segs$startpos))) {
+        #which_seg <- segs_sample$startpos[[segidx]] <= data_sample$pos & segs_sample$endpos[[segidx]] >= data_sample$pos
+        which_pos <- data_sample$pos >= all_segs$startpos[[segidx]] & data_sample$pos <= all_segs$endpos[[segidx]]
+        if (sum(which_pos) == 0)
+          next
+        data_sample$pos[which_pos] <- all_segs$startidx[[segidx]] + ((data_sample$pos[which_pos] - all_segs$startpos[[segidx]]) * all_segs$scaling_factor[[segidx]])
+      }
+
+      for (segidx in seq_len(length(all_segs$startpos))) {
+        which_pos <- segs_sample$startpos == all_segs$startpos[[segidx]]
+        segs_sample$startpos[which_pos] <- all_segs$startidx[[segidx]]
+
+        which_pos <- segs_sample$endpos == all_segs$endpos[[segidx]]
+        segs_sample$endpos[which_pos] <- all_segs$endidx[[segidx]]
+
+        segs_sample$seg_center <- segs_sample$startpos + ((segs_sample$endpos - segs_sample$startpos) / 2)
+      }
+
+      for (segidx in seq_len(length(all_segs$startpos))) {
+        which_pos <- orig_segs_sample$startpos == all_segs$startpos[[segidx]]
+        orig_segs_sample$startpos[which_pos] <- all_segs$startidx[[segidx]]
+
+        which_pos <- orig_segs_sample$endpos == all_segs$endpos[[segidx]]
+        orig_segs_sample$endpos[which_pos] <- all_segs$endidx[[segidx]]
+
+        orig_segs_sample$seg_center <- orig_segs_sample$startpos + ((orig_segs_sample$endpos - orig_segs_sample$startpos) / 2)
+      }
+
+      for (segidx in seq_len(length(all_segs$startpos))) {
+        which_pos <- old_segs_sample$startpos == all_segs$startpos[[segidx]]
+        old_segs_sample$startpos[which_pos] <- all_segs$startidx[[segidx]]
+
+        which_pos <- old_segs_sample$endpos == all_segs$endpos[[segidx]]
+        old_segs_sample$endpos[which_pos] <- all_segs$endidx[[segidx]]
+
+        old_segs_sample$seg_center <- old_segs_sample$startpos + ((old_segs_sample$endpos - old_segs_sample$startpos) / 2)
+      }
+    } else {
+      plot_range <- c(min(data_sample$pos), max(data_sample$pos))
+    }
+
+    message("Plot range:", plot_range[[1]], "-", plot_range[[2]])
+
+    #message("-------------------- segs_sample")
+    #print(segs_sample)
+    #message("-------------------- orig_segs_sample")
+    #print(orig_segs_sample)
+    #message("-------------------- old_segs_sample")
     #print(old_segs_sample)
 
     # ------------------------------------------------------------------------
@@ -190,11 +378,22 @@ for (chrom_to_plot in names(chrom_starts)) {
     }
 
     # ------------------------------------------------------------------------
-    # Indivate which segments have changed
+    # Indicate which segments have changed
     segs_sample$is_changed <- get_seg_changes(segs_sample, orig_segs_sample)
     old_segs_sample$is_changed <- get_seg_changes(old_segs_sample, orig_segs_sample)
-    #print(segs_sample)
-    #print(orig_segs_sample)
+
+    # Count the number of segments that are different to the original
+    stats["newrefphase", "cn_diff_total"] <- stats["newrefphase", "cn_diff_total"] + length(segs_sample$is_changed)
+    stats["oldrefphase", "cn_diff_total"] <- stats["oldrefphase", "cn_diff_total"] + length(old_segs_sample$is_changed)
+
+    stats["newrefphase", "cn_diff_changed"] <- stats["newrefphase", "cn_diff_changed"] + sum(segs_sample$is_changed, na.rm = TRUE)
+    stats["oldrefphase", "cn_diff_changed"] <- stats["oldrefphase", "cn_diff_changed"] + sum(old_segs_sample$is_changed, na.rm = TRUE)
+
+    segs_sample$is_new_ai <- get_seg_new_ai(segs_sample, orig_segs_sample)
+    old_segs_sample$is_new_ai <- get_seg_new_ai(old_segs_sample, orig_segs_sample)
+
+    stats["newrefphase", "cn_diff_new_ai"] <- stats["newrefphase", "cn_diff_new_ai"] + sum(segs_sample$is_new_ai, na.rm = TRUE)
+    stats["oldrefphase", "cn_diff_new_ai"] <- stats["oldrefphase", "cn_diff_new_ai"] + sum(old_segs_sample$is_new_ai, na.rm = TRUE)
 
     # logR track
     screen(subfigure_idx[[1]])
@@ -206,24 +405,28 @@ for (chrom_to_plot in names(chrom_starts)) {
 
     # Orig CNs
     screen(subfigure_idx[[3]])
-    plot_track_cn(orig_segs_sample, "orig")
+    plot_track_cn(orig_segs_sample, "orig", xlim = plot_range)
 
     # Refphase CNs
     screen(subfigure_idx[[4]])
-    plot_track_cn(segs_sample, track_name = "new")
+    plot_track_cn(segs_sample, track_name = "new", xlim = plot_range)
 
     # pre-ASCAT mphase CNs
     screen(subfigure_idx[[5]])
-    plot_track_cn(old_segs_sample, "noascat")
+    plot_track_cn(old_segs_sample, "noascat", xlim = plot_range)
 
     # Add an x-axis with genomic co-ordinates
     screen(subfigure_idx[[6]])
-    plot_track_axis(min(segs_sample$startpos), max(segs_sample$endpos))
+    plot_track_axis(plot_range)
   }
 
   close.screen(all = TRUE)
 }
 dev.off()
+
+# Finally write the stats
+stats$patient <- conf$patient_id
+write.table(stats, file = stats_file, sep = "\t", col.names = NA)
 
 # Whole genome plot
 output_plot <- file.path(conf$output_dir, "whole_genome.pdf")
@@ -266,6 +469,7 @@ for (sample_idx in seq_along(samples)) {
   plot_track_baf_whole_genome(data_sample, segs_sample, chrom_info)
 
 }
+
 
 close.screen(all = TRUE)
 dev.off()
