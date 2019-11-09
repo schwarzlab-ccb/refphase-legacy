@@ -33,6 +33,8 @@ if (!interactive()) {
                   help="Segment type, intersection or whole_arm (default=1)"),
       make_option(c("--genome"), default="hg38",
                   help="Human genome version (default=hg19, also supports hg38)"),
+      make_option(c("--validate-input"), default=TRUE,
+                  help="Validate input files and abort if input is not valid"),
       make_option(c("--seed"), default=2134234,
                   help="Random seed")
       )
@@ -301,7 +303,8 @@ if (OVERWRITE_FLAG == TRUE) {
   
   # This function will stop the script if the input is not valid
   # FIXME: not working yet
-  validate_seg_all_samples(init.f.joint.segs.df)
+  if (conf$validate_input)
+    validate_seg_all_samples(init.f.joint.segs.df)
 
 	# > head(init.f.joint.segs.df) CB001
 	#             sample chr  startpos    endpos n.het cnTotal nMajor nMinor Ploidy  ACF nAraw nBraw callState
@@ -1341,7 +1344,8 @@ if (OVERWRITE_FLAG == TRUE) {
 		}
 
     # Validate the input immediately
-    validate_ascat_bc_input(ascat.bc)
+    if (conf$validate_input)
+      validate_ascat_bc_input(ascat.bc)
 
 		normal_baf <- ascat.bc$Germline_BAF[[1]]
 		is_homozygous <- normal_baf < 0.3 | normal_baf > 0.7

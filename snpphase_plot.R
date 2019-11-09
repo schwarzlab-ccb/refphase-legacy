@@ -34,111 +34,117 @@ set.seed(args$seed)
 # ------------------------------------------------------------------------
 # Calculate which segments have been changed by refphase
 get_seg_changes <- function(new_seg, old_seg) {
-    new_seg$seg_idx <- seq(nrow(new_seg))
-    gr_new <- makeGRangesFromDataFrame(new_seg,
-                                       keep.extra.columns = TRUE,
-                                       ignore.strand = FALSE,
-                                       seqnames.field = "chr",
-                                       start.field = "startpos",
-                                       end.field = "endpos")
-    stopifnot(length(gr_new) == nrow(new_seg))
 
-    gr_orig <- makeGRangesFromDataFrame(old_seg,
-                                        keep.extra.columns = TRUE,
-                                        ignore.strand = FALSE,
-                                        seqnames.field = "chr",
-                                        start.field = "startpos",
-                                        end.field = "endpos")
-    stopifnot(length(gr_orig) == nrow(old_seg))
+  #cat("------ new:")
+  #str(new_seg)
+  #cat("------ old:")
+  #str(old_seg)
 
-    ov <- findOverlaps(gr_new, gr_orig)
-    new_cns <- mcols(gr_new)[from(ov), c("cnTotal", "nMinor", "nMajor")]
-    orig_cns <- mcols(gr_orig)[to(ov), c("cnTotal", "nMinor", "nMajor")]
+  new_seg$seg_idx <- seq(nrow(new_seg))
+  gr_new <- makeGRangesFromDataFrame(new_seg,
+                                     keep.extra.columns = TRUE,
+                                     ignore.strand = FALSE,
+                                     seqnames.field = "chr",
+                                     start.field = "startpos",
+                                     end.field = "endpos")
+  stopifnot(length(gr_new) == nrow(new_seg))
 
-    na_row <- apply(is.na(orig_cns), 1, any) | apply(is.na(new_cns), 1, any)
+  gr_orig <- makeGRangesFromDataFrame(old_seg,
+                                      keep.extra.columns = TRUE,
+                                      ignore.strand = FALSE,
+                                      seqnames.field = "chr",
+                                      start.field = "startpos",
+                                      end.field = "endpos")
+  stopifnot(length(gr_orig) == nrow(old_seg))
 
-    orig_cns <- orig_cns[!na_row,]
-    new_cns <- new_cns[!na_row,]
+  ov <- findOverlaps(gr_new, gr_orig)
+  new_cns <- mcols(gr_new)[from(ov), c("cnTotal", "nMinor", "nMajor")]
+  orig_cns <- mcols(gr_orig)[to(ov), c("cnTotal", "nMinor", "nMajor")]
 
-    #write.csv(cbind(ov[!na_row, ], new_cns, orig_cns), file="all_cns.csv")
+  na_row <- apply(is.na(orig_cns), 1, any) | apply(is.na(new_cns), 1, any)
 
-    message("# of segments not changed=", nrow(new_cns))
-    seg_changed <- apply(as.matrix(orig_cns) != as.matrix(new_cns), 1, any)
-    #message("# of segments changed=", sum(seg_changed))
-    message("# of segments not changed=", sum(!seg_changed))
+  orig_cns <- orig_cns[!na_row,]
+  new_cns <- new_cns[!na_row,]
 
-    new_changed <- by(seg_changed, from(ov)[!na_row], any)
-    message("# of segments changed=", sum(unlist(new_changed)))
+  #write.csv(cbind(ov[!na_row, ], new_cns, orig_cns), file="all_cns.csv")
 
-    changed_idx <- mcols(gr_new)[from(ov)[!na_row],"seg_idx"][new_changed]
-    #print(changed_idx)
-    is_changed <- FALSE
-    is_changed[new_seg$seg_idx %in% changed_idx] <- TRUE
+  message("# of segments not changed=", nrow(new_cns))
+  seg_changed <- apply(as.matrix(orig_cns) != as.matrix(new_cns), 1, any)
+  #message("# of segments changed=", sum(seg_changed))
+  message("# of segments not changed=", sum(!seg_changed))
 
-    return(is_changed)
+  new_changed <- by(seg_changed, from(ov)[!na_row], any)
+  message("# of segments changed=", sum(unlist(new_changed)))
+
+  changed_idx <- mcols(gr_new)[from(ov)[!na_row],"seg_idx"][new_changed]
+  #print(changed_idx)
+  is_changed <- FALSE
+  is_changed[new_seg$seg_idx %in% changed_idx] <- TRUE
+
+  return(is_changed)
 }
 
 get_seg_new_ai <- function(new_seg, old_seg) {
-    new_seg$seg_idx <- seq(nrow(new_seg))
-    gr_new <- makeGRangesFromDataFrame(new_seg,
-                                       keep.extra.columns = TRUE,
-                                       ignore.strand = FALSE,
-                                       seqnames.field = "chr",
-                                       start.field = "startpos",
-                                       end.field = "endpos")
-    stopifnot(length(gr_new) == nrow(new_seg))
+  new_seg$seg_idx <- seq(nrow(new_seg))
+  gr_new <- makeGRangesFromDataFrame(new_seg,
+                                     keep.extra.columns = TRUE,
+                                     ignore.strand = FALSE,
+                                     seqnames.field = "chr",
+                                     start.field = "startpos",
+                                     end.field = "endpos")
+  stopifnot(length(gr_new) == nrow(new_seg))
 
-    gr_orig <- makeGRangesFromDataFrame(old_seg,
-                                        keep.extra.columns = TRUE,
-                                        ignore.strand = FALSE,
-                                        seqnames.field = "chr",
-                                        start.field = "startpos",
-                                        end.field = "endpos")
-    stopifnot(length(gr_orig) == nrow(old_seg))
+  gr_orig <- makeGRangesFromDataFrame(old_seg,
+                                      keep.extra.columns = TRUE,
+                                      ignore.strand = FALSE,
+                                      seqnames.field = "chr",
+                                      start.field = "startpos",
+                                      end.field = "endpos")
+  stopifnot(length(gr_orig) == nrow(old_seg))
 
-    ov <- findOverlaps(gr_new, gr_orig)
-    new_cns <- mcols(gr_new)[from(ov), c("cnTotal", "nMinor", "nMajor")]
-    orig_cns <- mcols(gr_orig)[to(ov), c("cnTotal", "nMinor", "nMajor")]
+  ov <- findOverlaps(gr_new, gr_orig)
+  new_cns <- mcols(gr_new)[from(ov), c("cnTotal", "nMinor", "nMajor")]
+  orig_cns <- mcols(gr_orig)[to(ov), c("cnTotal", "nMinor", "nMajor")]
 
-    na_row <- apply(is.na(orig_cns), 1, any) | apply(is.na(new_cns), 1, any)
+  na_row <- apply(is.na(orig_cns), 1, any) | apply(is.na(new_cns), 1, any)
 
-    orig_cns <- orig_cns[!na_row,]
-    new_cns <- new_cns[!na_row,]
+  orig_cns <- orig_cns[!na_row,]
+  new_cns <- new_cns[!na_row,]
 
-    #write.csv(cbind(ov[!na_row, ], new_cns, orig_cns), file="all_cns.csv")
+  #write.csv(cbind(ov[!na_row, ], new_cns, orig_cns), file="all_cns.csv")
 
-    message("# of segments not changed=", nrow(new_cns))
-    orig_cns <- as.matrix(orig_cns)
-    new_cns <- as.matrix(new_cns)
+  message("# of segments not changed=", nrow(new_cns))
+  orig_cns <- as.matrix(orig_cns)
+  new_cns <- as.matrix(new_cns)
 
-    message("CN for checking new_ai")
-    print(orig_cns)
-    print(new_cns)
+  message("CN for checking new_ai")
+  print(orig_cns)
+  print(new_cns)
 
-    orig_balanced <- orig_cns[,"nMinor"] == orig_cns[,"nMajor"]
-    new_not_balanced <- new_cns[,"nMinor"] != new_cns[,"nMajor"]
-    seg_changed <- orig_balanced & new_not_balanced
-    print(seg_changed)
-    print("--------------------------")
-    #message("# of segments changed=", sum(seg_changed))
-    message("# of segments not changed=", sum(!seg_changed))
+  orig_balanced <- orig_cns[,"nMinor"] == orig_cns[,"nMajor"]
+  new_not_balanced <- new_cns[,"nMinor"] != new_cns[,"nMajor"]
+  seg_changed <- orig_balanced & new_not_balanced
+  print(seg_changed)
+  print("--------------------------")
+  #message("# of segments changed=", sum(seg_changed))
+  message("# of segments not changed=", sum(!seg_changed))
 
-    new_changed <- by(seg_changed, from(ov)[!na_row], any)
-    message("# of segments changed=", sum(unlist(new_changed)))
+  new_changed <- by(seg_changed, from(ov)[!na_row], any)
+  message("# of segments changed=", sum(unlist(new_changed)))
 
-    changed_idx <- mcols(gr_new)[from(ov)[!na_row],"seg_idx"][new_changed]
-    #print(changed_idx)
-    is_changed <- FALSE
-    is_changed[new_seg$seg_idx %in% changed_idx] <- TRUE
-    
-    print(is_changed)
-    message("Num changed:", sum(is_changed))
-    print("--------------------------")
+  changed_idx <- mcols(gr_new)[from(ov)[!na_row],"seg_idx"][new_changed]
+  #print(changed_idx)
+  is_changed <- FALSE
+  is_changed[new_seg$seg_idx %in% changed_idx] <- TRUE
 
-    return(is_changed)
+  print(is_changed)
+  message("Num changed:", sum(is_changed))
+  print("--------------------------")
+
+  return(is_changed)
 }
 
-source("install/src/refphase/snpphase_plot_utils.R")
+source("../tools/refphase/snpphase_plot_utils.R")
 
 if (!dir.exists(conf$output_dir))
   dir.create(conf$output_dir, recursive = TRUE, showWarnings = FALSE)
@@ -146,6 +152,11 @@ if (!dir.exists(conf$output_dir))
 # Read in all the data we need to plot
 orig_segs <- read.table(conf$original_segmentation, stringsAsFactors = FALSE, sep = "\t", header = TRUE)
 orig_segs$seg_center <- orig_segs$startpos + (orig_segs$endpos - orig_segs$startpos) / 2
+orig_segs$sample <- gsub("_LogR$", "", orig_segs$sample)
+orig_segs$sample <- gsub(".", "-", orig_segs$sample, fixed = TRUE)
+
+cat("----------- orig segs after reading\n")
+#str(orig_segs)
 
 # Out from mphase (the version before Tom's most recent changes that add ASCAT
 # runs)
@@ -158,6 +169,12 @@ segs <- readRDS(file.path(conf$input_dir, paste0(conf$patient_id, "_full_joint_s
 segs$seg_center <- segs$startpos + (segs$endpos - segs$startpos) / 2
 segs$is_reference <- segs$samp_used_to_phase == segs$sample
 segs$dominant_allele[is.na(segs$dominant_allele)] <- "na"
+
+print(unique(sort(orig_segs$sample)))
+print(unique(sort(segs$sample)))
+print(unique(sort(old_segs$sample)))
+stopifnot(all(old_segs$sample %in% orig_segs$sample))
+stopifnot(all(segs$sample %in% orig_segs$sample))
 
 # Size distribution of segments
 pdf(file.path(conf$output_dir, "segment-size-distribution-orig.pdf"))
@@ -236,10 +253,18 @@ for (chrom_to_plot in names(chrom_starts)) {
   sample_screens <- split.screen(c(length(samples), 1))
   for (sample_idx in seq_along(samples)) {
     sample_name <- samples[[sample_idx]]
+    message("Sample: ", sample_name, " Chromosome: ", chrom_to_plot)
     data_sample <- baf_logr[[sample_idx]]
     segs_sample <- segs[segs$sample == sample_name, ]
     orig_segs_sample <- orig_segs[orig_segs$sample == sample_name, ]
     old_segs_sample <- old_segs[old_segs$sample == sample_name, ]
+
+    #message("-------------------- segs_sample")
+    #str(segs_sample)
+    #message("-------------------- orig_segs_sample")
+    #str(orig_segs_sample)
+    #message("-------------------- old_segs_sample")
+    #str(old_segs_sample)
 
     # Split the plotting area vertically (sample name + info on left, plots on right)
     screen(sample_screens[[sample_idx]])
@@ -268,6 +293,14 @@ for (chrom_to_plot in names(chrom_starts)) {
     segs_sample <- segs_sample[segs_sample$chr == chrom_to_plot, ]
     orig_segs_sample <- orig_segs_sample[orig_segs_sample$chr == chrom_to_plot, ]
     old_segs_sample <- old_segs_sample[old_segs_sample$chr == chrom_to_plot, ]
+
+    #message("-------------------- segs_sample")
+    #str(segs_sample)
+    #message("-------------------- orig_segs_sample")
+    #str(orig_segs_sample)
+    #message("-------------------- old_segs_sample")
+    #str(old_segs_sample)
+
 
     # Adjust segment widths
     if (conf$scale_segs) {
@@ -350,13 +383,6 @@ for (chrom_to_plot in names(chrom_starts)) {
 
     message("Plot range:", plot_range[[1]], "-", plot_range[[2]])
 
-    #message("-------------------- segs_sample")
-    #print(segs_sample)
-    #message("-------------------- orig_segs_sample")
-    #print(orig_segs_sample)
-    #message("-------------------- old_segs_sample")
-    #print(old_segs_sample)
-
     # ------------------------------------------------------------------------
     # Swap CNs when we have MSAI
     if (conf$raw) {
@@ -372,9 +398,10 @@ for (chrom_to_plot in names(chrom_starts)) {
       segs_sample$nMinor <- ifelse(segs_sample$dominant_allele == "cpnB", segs_sample$orig_nMajor, segs_sample$orig_nMinor)
       segs_sample$cnTotal <- segs_sample$orig_cnTotal
 
-      old_segs_sample$nMajor <- ifelse(old_segs_sample$dominant_allele == "cpnB", old_segs_sample$orig_nMinor, old_segs_sample$orig_nMajor)
-      old_segs_sample$nMinor <- ifelse(old_segs_sample$dominant_allele == "cpnB", old_segs_sample$orig_nMajor, old_segs_sample$orig_nMinor)
-      old_segs_sample$cnTotal <- old_segs_sample$orig_cnTotal
+      nMajor <- ifelse(old_segs_sample$dominant_allele == "cpnB", old_segs_sample$nMinor, old_segs_sample$nMajor)
+      nMinor <- ifelse(old_segs_sample$dominant_allele == "cpnB", old_segs_sample$nMajor, old_segs_sample$nMinor)
+      old_segs_sample$nMajor <- nMajor
+      old_segs_sample$nMinor <- nMinor
     }
 
     # ------------------------------------------------------------------------
