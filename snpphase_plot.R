@@ -32,6 +32,141 @@ conf$id <- substr(digest(args), 1, 8)
 set.seed(args$seed)
 
 # ------------------------------------------------------------------------
+# Utility functions for plotting
+# ------------------------------------------------------------------------
+cn_text <- function(x, y, labels, cex = 1.5, col = "black") {
+  text(x = x, y = y, labels = labels, cex = cex * 1.1, col = "white")
+  text(x = x, y = y, labels = labels, cex = cex, col = col)
+}
+
+plot_track_axis <- function(xlim) {
+  par(mar = c(2, 5, 0, 1))
+  plot(y=c(0, 0), x=xlim, xlim=xlim, type = "n", ylab = "", xlab = "", axes = FALSE)
+  axis(1, at = NULL)
+}
+
+# Plot CNs only in this track
+plot_track_cn <- function(segs, track_name, xlim) {
+
+  if (missing(xlim))
+    xlim <- c(min(segs$startpos), max(segs$endpos))
+
+  par(mar = c(0.1, 5, 0.1, 1))
+  num_segs <- nrow(segs)
+  plot(1, ylim=c(-1, 1), xlim = xlim, col = "white", ylab = paste0(track_name, "\n(", num_segs, ")"), xaxt = "n", yaxt = "n")
+  abline(v = unique(c(segs$startpos, segs$endpos)), lty = 2, col = "black")
+  total_cn <- as.character(segs$cnTotal)
+  major <- as.character(segs$nMajor)
+  minor <- as.character(segs$nMinor)
+  full_label <- paste(total_cn, major, minor, sep = "\n")
+
+  col <- rep("grey", nrow(segs))
+  if ("is_changed" %in% colnames(segs))
+    col[segs$is_changed] <- "black"
+  cn_text(x = segs$seg_center, y = 0, labels = full_label, cex = 0.7, col = col)
+}
+
+plot_track_logr <- function(data_sample, segs_sample) {
+  par(mar = c(0.1, 5, 0.1, 1))
+  plot(data_sample$pos, data_sample$logR, ylab = "logR", xaxt = "n", col = adjustcolor("darkgrey", 0.2), pch = 20, ylim = c(-2, 2))
+  segments(x0 = segs_sample$startpos, y0 = segs_sample$median_non_hz_logr, x1 = segs_sample$endpos, col = "black")
+  abline(v = unique(c(segs_sample$startpos, segs_sample$endpos)), lty = 2, col = "black")
+
+  # MPhase copy numbers
+  total_cn <- as.character(segs_sample$orig_cnTotal)
+
+  cn_text(x = segs_sample$seg_center, y = 1.5, labels = total_cn)
+}
+
+plot_track_baf <- function(data_sample, segs_sample, msai) {
+  par(mar = c(0.1, 5, 0.1, 1))
+  phasing_col <- ifelse(data_sample$maj_is_cpnB_logic_vec == 1, "blue", "orange")
+  phasing_col[data_sample$sample_phased_by_this_sample == "none_no_allelic_imbalance_called"] <- "grey"
+  phasing_col <- adjustcolor(phasing_col, 0.6)
+  plot(data_sample$pos, data_sample$BAF, ylab = "BAF", col = phasing_col, ylim = c(0, 1), pch = 20, xaxt = "n", yaxt = "n")
+  axis(2, seq(0, 1, by=0.25))
+
+  # Mean segments
+  mean_col <- ifelse(segs_sample$orig_nMajor != segs_sample$orig_nMinor, "black", NA)
+  segments(x0 = segs_sample$startpos, y0 = segs_sample$mean_BAF + 0.5, x1 = segs_sample$endpos, col = mean_col)
+  segments(x0 = segs_sample$startpos, y0 = -1 * segs_sample$mean_BAF + 0.5, x1 = segs_sample$endpos, col = mean_col)
+
+  # Segment boundaries
+  abline(v = unique(c(segs_sample$startpos, segs_sample$endpos)), lty = 2, col = "black")
+
+  # MPhase copy numbers
+  major_cn <- as.character(segs_sample$orig_nMajor)
+  minor_cn <- as.character(segs_sample$orig_nMinor)
+  
+  #major_cn <- as.character(segs_sample$nMajor)
+  #minor_cn <- as.character(segs_sample$nMinor)
+
+  cn_text(x = segs_sample$seg_center, y = 0.9, labels = major_cn)
+  cn_text(x = segs_sample$seg_center, y = 0.1, labels = minor_cn)
+
+  # Indicate which sample is the reference
+  segs_sample$dominant_allele[is.na(segs_sample$dominant_allele)] <- "na"
+  if (any(segs_sample$dominant_allele == "cpnB")) {
+    segments(x0 = segs_sample$startpos[segs_sample$dominant_allele == "cpnB"], y0 = 1.02,
+             x1 = segs_sample$endpos[segs_sample$dominant_allele == "cpnB"], col = "darkgreen", lwd = 4, lend = 1)
+  }
+  cn_text(x = segs_sample$seg_center, y = 0.5, labels = ifelse(segs_sample$dominant_allele == "cpnB", "msai", ""), col = "darkgreen")
+
+  # Indicate which sample is the reference
+  if (any(segs_sample$is_reference))
+    segments(x0 = segs_sample$startpos[segs_sample$is_reference], y0 = -0.02,
+             x1 = segs_sample$endpos[segs_sample$is_reference], col = "red", lwd = 4, lend = 1)
+
+}
+
+# --------------------------------------------------------------------------
+# Whole genome versions of the tracks
+
+plot_track_logr_whole_genome <- function(data_sample, segs_sample, chrom_info) {
+  par(mar = c(1, 5, 1, 0.1), xaxs = "i")
+  plot(data_sample$pos, data_sample$logR, ylab = "logR", xaxt = "n", col = adjustcolor("darkgrey", 0.2), pch = ".", ylim = c(-2, 2))
+  #lines(x = data_sample$pos, y = data_sample$logRsegmented, col=ifelse(is.na(data_sample$logRsegmented), "white", "black"))
+  segments(x0 = segs_sample$startpos, y0 = segs_sample$median_non_hz_logr, x1 = segs_sample$endpos, col = "black")
+  abline(v = chrom_info$start, lty = 2, col = "black")
+  cn_text(x = chrom_info$center, y = 1.5, labels = chrom_info$label, cex=1.0)
+}
+
+plot_track_baf_whole_genome <- function(data_sample, segs_sample, chrom_info) {
+  par(mar = c(2, 5, 0.1, 0.1), xaxs = "i")
+  phasing_col <- ifelse(data_sample$maj_is_cpnB_logic_vec == 1, "blue", "orange")
+  phasing_col[data_sample$sample_phased_by_this_sample == "none_no_allelic_imbalance_called"] <- "grey"
+  phasing_col <- adjustcolor(phasing_col, 0.6)
+  plot(data_sample$pos, data_sample$BAF, ylab = "BAF", col = phasing_col, ylim = c(0, 1), pch = ".")
+
+  # Mean segments
+  mean_col <- ifelse(segs_sample$within_samp_cl_AI_present, "black", NA)
+  segments(x0 = segs_sample$startpos, y0 = segs_sample$mean_BAF + 0.5, x1 = segs_sample$endpos, col = mean_col)
+  segments(x0 = segs_sample$startpos, y0 = -1 * segs_sample$mean_BAF + 0.5, x1 = segs_sample$endpos, col = mean_col)
+
+  # Chromosome boundaries
+  abline(v = chrom_info$start, lty = 2, col = "black")
+}
+
+# --------------------------------------------------------------------------
+
+plot_sample_info <- function(sample, ploidy, cellularity) {
+  par(mar = c(0,0,0,0))
+  plot(c(0, 1), c(0, 1), ann = F, bty = 'n', type = 'n', xaxt = 'n', yaxt = 'n')
+
+  text(x = 0.5, y = 0.5, adj = 0.5,
+       labels = paste0(sample, "\n", "cellularity:", round(cellularity, 2), "  ploidy:", round(ploidy, 2)),
+       cex = 1.3, col = "black", srt = 90)
+}
+
+plot_chromosome_header <- function(sample, chromosome, cex = 1.5) {
+  par(mar = c(0,0,0,0))
+  plot(c(0, 1), c(0, 1), ann = F, bty = 'n', type = 'n', xaxt = 'n', yaxt = 'n')
+
+  text(x = 0.5, y = 0.5, adj = 0.5, labels = paste0(sample, ": ", chromosome),
+       cex = cex, col = "black")
+}
+
+# ------------------------------------------------------------------------
 # Calculate which segments have been changed by refphase
 get_seg_changes <- function(new_seg, old_seg) {
 
@@ -143,8 +278,6 @@ get_seg_new_ai <- function(new_seg, old_seg) {
 
   return(is_changed)
 }
-
-source("../tools/refphase/snpphase_plot_utils.R")
 
 if (!dir.exists(conf$output_dir))
   dir.create(conf$output_dir, recursive = TRUE, showWarnings = FALSE)
