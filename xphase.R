@@ -3,38 +3,44 @@
 library(optparse)
 library(digest)
 
-
-
 if (!interactive()) {
 
   option_list <- list( make_option(c("--patient"), default="CB1002",
                   help="Patient id"),
       make_option(c("--dip-test"), default=FALSE,
-                  help="Use dip test (default=TRUE)"),
+                  help="Use dip test [default = %default]"),
       make_option(c("--output-dir"), default="../output/CB1002/mphase",
                   help="Output directory"),
       make_option(c("--medicc-output-dir"), default="../output/CB1002/mphase",
-                  help="Output directory"),
+                  help="Output directory for MEDICC input files"),
       make_option(c("--input-format"), default="ASCAT",
-                  help="Input data format (default=ASCAT)"),
+                  help="Input data format [default = %default]"),
       make_option(c("--snp-data"), default="../input/nb-schulte//CB1002_input_paths_df.txt",
                   help="SNP data"),
       make_option(c("--snp-data-prefix"), default="",
                   help="Directory prefix for the paths to the SNP data in the file above"),
       make_option(c("--seg-data"), default="../input/nb-schulte//CB1002.segmentation",
                   help="Segmentation data output from ASCAT"),
-      make_option(c("--overwrite"), default=TRUE,
-                  help="Overwrite output (default=TRUE)"),
       make_option(c("--gamma"), default=1.0,
-                  help="Gamma (for seq=1, for arrays~=0.5 (default=1.0)"),
+                  help="Gamma (for seq=1, for arrays~=0.5 [default = %default]"),
       make_option(c("-j", "--cores"), default=1,
-                  help="CPU cores (default=1)"),
+                  help="CPU cores [default = %default]"),
       make_option(c("--segment-type"), default="intersection",
-                  help="Segment type, intersection or whole_arm (default=1)"),
+                  help="Segment type, intersection or whole_arm [default = %default]"),
       make_option(c("--genome"), default="hg38",
-                  help="Human genome version (default=hg19, also supports hg38)"),
-      make_option(c("--validate-input"), default=TRUE,
+                  help="Human genome version [default = %default] (supports hg19 and hg38)"),
+      make_option(c("--overwrite"), default=TRUE, action="store_true",
+                  help="Overwrite output [default = %default]"),
+      make_option(c("--no-overwrite"), action="store_false", dest = "overwrite",
+                  help="Do not overwrite previous output"),
+      make_option("--cached-dir", default=NA,
+                  help="Set this to load intermediate data from the given directory"),
+      make_option("--debug-dir", default=NA,
+                  help="Set this to save intermediate data to the given directory for later debugging"),
+      make_option(c("--validate-input"), default=TRUE, action = "store_true",
                   help="Validate input files and abort if input is not valid"),
+      make_option(c("--no-validate-input"), action = "store_false", dest = "validate_input",
+                  help="Do not validate input"),
       make_option(c("--seed"), default=2134234,
                   help="Random seed")
       )
@@ -75,29 +81,12 @@ data.format.to.use <- conf$input_format #Default for this is MEDICC, but can spe
 #all.samp.snp.list.path <- conf$cached_data #Points towards the snp files, of whatever format they are given that should be used based on data.format to use.
 snp.file.path <- conf$snp_data #Points towards the snp files, of whatever format they are given that should be used based on data.format to use.
 seg.file.path <- conf$seg_data #Pintts towards the seg files, of whatever format they should be determined byh the data.format.to.use flag.
-overwrite.flag  <- conf$overwrite
 gamma.val <- conf$gamma #for sequencing it's 1 and SNP array it's 0.4/0.5 but this is platform specific see ASCAT help pages.
-num.cores <- conf$cores #number of cores for the do parallel package functions
 intersection.or.whole.arm <- conf$segment_type #Can either be intersection or whole_arm, do we take the only intersection of segments from each sample
 genome <- conf$genome  # hg19 or hg38
 #or do attempt to fill in the gaps between every segment in each sample so that the entire genome is covered (so output from any sample can run in GISTIC
 #as all will cover the same genomic area)
 
-#TBKW edit...
-#full.patient <- args[1]
-# full.patient<- "A_LTX121"
-# seg.file.path <- "/camp/project/proj-tracerx-lung/tracerx/release_tx421_20190411/A_LTX121/exome/MPhase/LTX121_joint_segs_all_ascat_info.txt" #Points towards the seg files, of whatever format they should be determined byh the data.format.to.use flag.
-# snp.file.path <- "/camp/project/proj-tracerx-lung/tracerx/release_tx421_20190411/A_LTX121/exome/MPhase/LTX121_TRACERx_input_paths_df.txt"
-# patient <- substring(full.patient, 3, 8)
-# intersection.or.whole.arm <- "intersection"
-# genome <- "hg19"
-# allow.dip.test.phasing.flag <- FALSE
-# data.format.to.use <- "ASCAT"
-# overwrite.flag <- TRUE
-# gamma.val <- 1
-# num.cores <- 1
-# output.directory.base.path <- paste0("/camp/project/proj-tracerx-lung/tctProjects/watkint/tx421_copy_number_qc/xphase_runs/", full.patient, "/")
-# system(paste0("mkdir ", output.directory.base.path))
 #Right we need a free run folder:
 free.run.dir <- file.path(output.directory.base.path, "free_run/")
 qc.choice.dir <- file.path(output.directory.base.path, "run_qc_choice/")
@@ -146,33 +135,32 @@ LocationOfThisScript  <-  function() { # Function LocationOfThisScript returns t
 	return(NULL)
 }#end LocationOfThisScript  <-  function()
 
-current.dir <-  LocationOfThisScript()
 
 #We need to be able to select the intersection of all regions or a full GISTIC compatible union with defined regions that will always be covered
 #What proportion of the chosen genome, in this case hg19, arms are covered by the segments that have been inputted.
 #We also need to add in the wgii calculations
 
-
 ###Source relevant scripts, best to do this at the top to check for errors...
+current.dir <-  LocationOfThisScript()
 if (is.null(current.dir)) {
 	current.dir <- ""
 } else {
 	current.dir <- paste0(current.dir, "/")
 }
-source(paste0(current.dir, "utility_MPhase_functions.R"))
-source(paste0(current.dir, "minimum_consistent_segmentation_functions.R"))
-source(paste0(current.dir, "data_input_and_QC_functions_v2.R"))
-source(paste0(current.dir, "consensus_phasing_from_multiple_samples_functions_v2.R"))
-source(paste0(current.dir, "generation_of_phased_and_total_cpn_functions_v2.R"))
-source(paste0(current.dir, "MSAI_detection_functions.R"))
-source(paste0(current.dir, "cancer_cell_fraction_calculation_functions_v2.R"))
-source(paste0(current.dir, "final_output_segmentation_file_generation_functions_v3.R"))
-source(paste0(current.dir, "new_seg_joining_functions.R"))
-source(paste0(current.dir, "cpn_heterogeneity_plotting_functions_v2.R"))
-source(paste0(current.dir, "MEDICC_input_creation_functions.R"))
-source(paste0(current.dir, "ascat.R"))
-source(paste0(current.dir, "validate_input.R"))
-
+source(file.path(current.dir, "input.R"))
+source(file.path(current.dir, "utility_MPhase_functions.R"))
+source(file.path(current.dir, "minimum_consistent_segmentation_functions.R"))
+source(file.path(current.dir, "data_input_and_QC_functions_v2.R"))
+source(file.path(current.dir, "consensus_phasing_from_multiple_samples_functions_v2.R"))
+source(file.path(current.dir, "generation_of_phased_and_total_cpn_functions_v2.R"))
+source(file.path(current.dir, "MSAI_detection_functions.R"))
+source(file.path(current.dir, "cancer_cell_fraction_calculation_functions_v2.R"))
+source(file.path(current.dir, "final_output_segmentation_file_generation_functions_v3.R"))
+source(file.path(current.dir, "new_seg_joining_functions.R"))
+source(file.path(current.dir, "cpn_heterogeneity_plotting_functions_v2.R"))
+source(file.path(current.dir, "MEDICC_input_creation_functions.R"))
+source(file.path(current.dir, "ascat.R"))
+source(file.path(current.dir, "validate_input.R"))
 
 #####Get relevant libraries:
 #Todo check this is the only required library.
@@ -181,16 +169,13 @@ suppressWarnings(suppressMessages(library(gplots)))
 suppressWarnings(suppressMessages(library(gdata)))
 suppressWarnings(suppressMessages(library(GenomicRanges)))
 suppressWarnings(suppressMessages(library(doParallel)))
-options("stringsAsFactors" = FALSE)
 
 ###############This is past the input stage and into the analysis:
 #Set constants for all analyses here... eventually these can be command line set
 MIN_NUM_HZ_SNP_PHASING <- 5
 #PLOT_OUTPUT_DIR <- NULL
-OVERWRITE_FLAG <- as.logical(overwrite.flag)
+OVERWRITE_FLAG <- conf$overwrite
 PLOTTING_FLAG <- TRUE
-#Pre joining overwrite flag
-OVERWRITE_FLAG <- TRUE#Load in the pre-joining results and don't regenerate them if FALSE.
 #POST JOINING FLAGS to run sections of code
 JOINED_SEGS_ERROR_CHECKING_FLAG <- FALSE
 OVERWRITE_INIT_MCS_ADD_INFO_FLAG <- TRUE#Using joined segs on second run throughof MPhase
@@ -209,13 +194,12 @@ if ( ! file.exists(PLOT_OUTPUT_DIR) ) {
 	print("Output directory doesn't exist.")
 
 }
-NUM_CORES <- as.numeric(num.cores)
 
 output_dir <- PLOT_OUTPUT_DIR
 if (!dir.exists(output_dir))
   dir.create(output_dir, recursive = TRUE)
 
-registerDoParallel(cores = NUM_CORES)
+registerDoParallel(cores = conf$cores)
 
 INTERSECTION_OR_ARM <- intersection.or.whole.arm
 GAMMA_VAL <- as.numeric(gamma.val)
@@ -249,10 +233,10 @@ if (is.null(output.directory.base.path))
 
 # so now we need to read in the MSAI data:
 if (!file.exists(snp.file.path))
-	stop("No file at the snp.file.path provided in the second argument")
+	stop("No file at the snp.file.path provided")
 
 if (!file.exists(seg.file.path))
-	stop("No file at the seg.file.path provided in the third argument")
+	stop("No file at the seg.file.path provided")
 
 # Load in the relevant genome file
 if (genome == "hg19") {
@@ -294,303 +278,64 @@ all.seg.int.ob.xp.cpn.df.list.path <- paste0(PLOT_OUTPUT_DIR, patient, "_all_seg
 all.seg.CCF.diff.from.exp.list.path <- paste0(PLOT_OUTPUT_DIR, patient, "_all_seg_CCF_diff_from_exp_list.RDS")
 all.seg.clonal.in.all.samps.list.path <- paste0(PLOT_OUTPUT_DIR, patient, "_all_seg_clonal_in_all_samps_list.RDS")
 all.seg.greater.than.two.diff.list.path <- paste0(PLOT_OUTPUT_DIR, patient, "_all_seg_greater_than_two_diff_list.RDS")
+pt.snp.file.paths.path <- paste0(PLOT_OUTPUT_DIR, patient, "_pt_snp_file_paths_df.RDS")
 
-#Load in the data:
-#Note that the functions to create the single dataframes that it accepts are in the data_input_and_QC_functions.R
-if (OVERWRITE_FLAG == TRUE) {
+# -------------------------------------------------------------------------
+# Load in the data:
+# Note that the functions to create the single dataframes that it accepts are
+# in the data_input_and_QC_functions.R
+if (conf$overwrite) {
+  cat("Overwrite existing files in output dir\n")
 
-	init.f.joint.segs.df <- read.table(seg.file.path, stringsAsFactors = FALSE, sep = "\t", header = TRUE)
-  
-  # This function will stop the script if the input is not valid
-  # FIXME: not working yet
-  if (conf$validate_input)
-    validate_seg_all_samples(init.f.joint.segs.df)
+  input_data <- read_input(seg.file.path, snp.file.path, input_format)
 
-	# > head(init.f.joint.segs.df) CB001
-	#             sample chr  startpos    endpos n.het cnTotal nMajor nMinor Ploidy  ACF nAraw nBraw callState
-	# 1 CB1001-11-D01-X1   1    138781  16490694   418       1      1      0    1.9 0.88     1     0        NA
+  # Unwrap the list returned from the read_input() function
+	all.samp.SNP.list <- input_data$all.samp.SNP.list
+	asas.SNPS.lr.and.or.baf.lists <- input_data$asas.SNPS.lr.and.or.baf.lists
+	asas.SNPs.w.both.lr.baf.snp.lists <- input_data$asas.SNPs.w.both.lr.baf.snp.lists
+	f.joint.segs.df <- input_data$f.joint.segs.df
+	gl.snp.df <- input_data$gl.snp.df
+	min.cons.segs.df <- input_data$min.cons.segs.df
+	ploidy.est.vec <- input_data$ploidy.est.vec
+  pt.snp.file.paths.df <- input_data$pt.snp.file.paths.df
+	purity.est.vec <- input_data$purity.est.vec
+	sorted.all.bp.all.samps.segs.anno.df <- input_data$sorted.all.bp.all.samps.segs.anno.df
 
-	#                   sample chr  startpos    endpos n.het cnTotal nMajor nMinor   Ploidy ACF    nAraw    nBraw callState
-	# 1 A_LTX121_SU_T1.R1_LogR   1    762273  26136282 17836       2      2      0 3.174119 0.5 2.044263 0.000000      Loss
+	anno.seg.df <- input_data$anno.seg.df
 
-
-	#Legacy, but I wanted to add in the thresholds for gain/loss etc as they were called in the TRACER NEJM 2017 paper
-	#Might be useful... it is aved as part of f.joint.segs.df
-	f.joint.segs.df <- reformatInitialSegmentationInput(f.joint.segs.df = init.f.joint.segs.df)
-	# > head(f.joint.segs.df) CB001
-	#             sample chr  startpos    endpos n.het cnTotal nMajor nMinor Ploidy  ACF nAraw nBraw patient sample_name cpn_call arm_or_focal_event arm_event_present within_chr_arm                                uniq_id
-	# 1 CB1001-11-D01-X1   1    138781  16490694   418       1      1      0    1.9 0.88     1     0  CB1001   CB1001:11     loss               none              none     not_in_arm     CB1001-11-D01-X1@1:138781:16490694
-
-	# > head(f.joint.segs.df)
-	#              sample chr  startpos    endpos n.het cnTotal nMajor nMinor   Ploidy ACF    nAraw    nBraw patient sample_name cpn_call arm_or_focal_event arm_event_present within_chr_arm                                 uniq_id
-	# 1 A_LTX121_SU_T1-R1   1    762273  26136282 17836       2      2      0 3.174119 0.5 2.044263 0.000000  LTX121   LTX121:R1     loss               none              none     not_in_arm     A_LTX121_SU_T1-R1@1:762273:26136282
-	sample.vec <- unique(f.joint.segs.df$sample)
-	ploidy.est.vec <- f.joint.segs.df[ ! duplicated(f.joint.segs.df$sample), 'Ploidy']
-	names(ploidy.est.vec) <- unique(f.joint.segs.df$sample)
-	purity.est.vec <- f.joint.segs.df[ ! duplicated(f.joint.segs.df$sample), 'ACF']
-	names(purity.est.vec) <- unique(f.joint.segs.df$sample)
-
-
-
-	if (data.format.to.use == "MEDICC") {
-		cat("data format is MEDICC, reading in sites text file...\n")
-
-		if (file.exists(input.snp.file.RDS.path)) {
-			snp.file.df <- readRDS(input.snp.file.RDS.path)
-		} else {
-			snp.file.df <- read.table(snp.file.path, stringsAsFactors = FALSE, sep = "\t", header = TRUE)
-			saveRDS(snp.file.df, file = input.snp.file.RDS.path)
-		}
-		all.samp.SNP.list <- readInMEDICCInputFormatParallel(snp.file.df = snp.file.df,
-															processed.orig.cpn.segs.df = f.joint.segs.df,
-															sample.vec = sample.vec)
-	} else if (data.format.to.use == "ASCAT") {
-    # Parse a bunch of rds files containing ascat.bc objects
-    pt.snp.file.paths.df <- read.delim(snp.file.path,
-                              stringsAsFactors = FALSE,
-                              header = TRUE,
-                              row.names = "sample")
-    #                  patient_id                                                        samp_ascat_bc_path 
-    # CB1001-11-D01-X1     CB1001 ../input/modified-nb-schulte/CB1001-11-D01-X1/ascat_bc_nochr_modified.rds
-    #                   patient_id                                                                       samp_ascat_bc_path
-    # A_LTX121_SU_T1-R1     LTX121 ../input/20190617_MPhase_example_data/A_LTX121_SU_T1-R1/A_LTX121_SU_T1-R1.ascat.bc.RData
-
-    if (nchar(conf$snp_data_prefix) > 0) {
-       pt.snp.file.paths.df$samp_ascat_bc_path <- file.path(conf$snp_data_prefix, pt.snp.file.paths.df$samp_ascat_bc_path)           
-    } 
-    #                  patient_id                                                           samp_ascat_bc_path
-    # CB1001-11-D01-X1     CB1001 ../../input/modified-nb-schulte/CB1001-11-D01-X1/ascat_bc_nochr_modified.rds
-
-    #                   patient_id                                                                          samp_ascat_bc_path
-    # A_LTX121_SU_T1-R1     LTX121 ../../input/20190617_MPhase_example_data/A_LTX121_SU_T1-R1/A_LTX121_SU_T1-R1.ascat.bc.RData
-
-    all.samp.SNP.list <- readInASCAT(sample_table = pt.snp.file.paths.df,
-                                     segs = f.joint.segs.df,
-                                     samples = sample.vec)
-    # List of 5
-    #  $ CB1001-11-D01-X1:'data.frame':	675964 obs. of  6 variables:
-    #   ..$ chrom        : num [1:675964] 1 1 1 1 1 1 1 1 1 1 ...
-    #   ..$ pos          : int [1:675964] 13116 13118 13273 13284 13380 138781 138817 138829 139060 139294 ...
-    #   ..$ BAF          : num [1:675964] NA NA NA NA NA NA NA NA NA NA ...
-    #   ..$ logR         : num [1:675964] 0.573 0.602 0.622 0.77 0.505 ...
-    #   ..$ BAFsegmented : num [1:675964] NA NA NA NA NA ...
-    #   ..$ logRsegmented: num [1:675964] -0.838 -0.838 -0.838 -0.838 -0.838 ...
-
-
-    # List of 2
-    #  $ A_LTX121_SU_T1-R1:'data.frame':	938946 obs. of  6 variables:
-    #   ..$ chrom        : num [1:938946] 1 1 1 1 1 1 1 1 1 1 ...
-    #   ..$ pos          : int [1:938946] 762273 762496 762497 777237 777318 777335 777361 777456 783071 783147 ...
-    #   ..$ BAF          : num [1:938946] NA NA NA NA NA NA NA NA NA NA ...
-    #   ..$ logR         : num [1:938946] -0.0542 -0.2103 -0.2103 -0.4974 -0.3978 ...
-    #   ..$ BAFsegmented : num [1:938946] 0.231 0.231 0.231 0.231 0.231 ...
-    #   ..$ logRsegmented: num [1:938946] -0.335 -0.335 -0.335 -0.335 -0.335 ...
-
-
-
-    #TBKW edit, I'm assuming that these ascat objects will also contain the germline values and am pulling 
-    #them out for this "xphase" version that requires the germline BAFs to compare the allelic imbalance in each tumour
-    #region segment vs the equivalent segment in the germline. This comparison is done to try and counter the effect
-    #of noise and "reference bias" that might result in false allelic imbalance. The correction that is performed to avert this
-    #is primitive as of 16/08/2019 and will require rewriting as well as testing. It should be noted the presence of 
-    #bias observed by allelic imbalance is from separate work I've performed and eye-balling the data, it needs to be 
-    #shown in the data...
-
-    #Making the assumption here that all regions that were analysed had 
-    gl.snp.df <- readInGermlineFromASCAT(ascat_bc_rds_path = pt.snp.file.paths.df[1,]$samp_ascat_bc_path,
-    									snp_pos_vec = paste0(all.samp.SNP.list[[1]]$chrom
-    														,"_"
-    														,all.samp.SNP.list[[1]]$pos))
-
-    # > head(gl.snp.df) CB
-    #   chrom    pos BAF logR BAFsegmented logRsegmented  snp_pos
-    # 1     1  13116  NA    0           NA    -0.8384372  1_13116
-    #ALTX
-    #   chrom    pos BAF logR BAFsegmented logRsegmented  snp_pos
-    # 1     1 762273  NA    0           NA    -0.3346204 1_762273
-
-    #Strange difference here in that the dat coming from tracerx has mostly NAs in the logr column with occasional zeros, mostly acompanied
-    #by a BAF values but not always:
-    # > min(gl.snp.df$BAF,na.rm=TRUE)
-    # [1] 0.300244
-    # > max(gl.snp.df$BAF,na.rm=TRUE)
-    # [1] 0.7
-    #So it seems that SNPs whose BAF falls outside the 0.3 to 0.7 threshold are given a zero value and have the BAF set to zero but those
-    #with it wihin have zero and their ogiinal BAF 
-    # > nrow(gl.snp.df)
-    # [1] 938946
-
-    #Similary the min and max in the CB is 0.3 and 0.7 but every datapoint has a zero set as logr
-    # > nrow(gl.snp.df)
-    # [1] 675964
-
-	} else {
-
-		print(data.format.to.use)
-		stop("Incorrect data.format.to.use input to mphase")
-
-	}
-
-  # Immediately validate input SNP information (BAF, logR and more)
-  #validate_snp_input(all.samp.SNP.list, gl.snp.df)
-
-	if (length(unique(unlist(lapply(all.samp.SNP.list, nrow)))) != 1 | length(all.samp.SNP.list) < 2) {
-		print("length(all.samp.SNP.list)")
-		print(length(all.samp.SNP.list))
-		print("length(unique(unlist(lapply(all.samp.SNP.list, nrow))))")
-    print(length(unique(unlist(lapply(all.samp.SNP.list, nrow)))))
-    print(lapply(all.samp.SNP.list, nrow))
-
-		stop("Not all sites are present in all samples' sites information read in or too few samples are present at this stage, this needs to be fixed before running MPhase.")
-	}
-
-	#Save the loaded in data:
-	saveRDS(all.samp.SNP.list, file = all.samp.SNP.list.path)
-	#So we need the centromere postions for each arm:
-	#Add in p_end and q_start
-
-	#TBKW  20190818 edit so here is where the joint segmentation stuff has been dumped into a function to allow multiple
-	#calls. Absolutely needs refactoring. 
-	sorted.all.bp.all.samps.segs.anno.df <- createFullyAnnotatedJointSegmentation(f.joint.segs.df = f.joint.segs.df)
-	#TBKW edit for xphase version
-	anno.seg.df <- sorted.all.bp.all.samps.segs.anno.df
-	# sorted.all.bp.all.samps.segs.anno.df.path <- paste0(PLOT_OUTPUT_DIR, patient, "_sorted_all_bp_all_samps_segs_anno_df.RDS")
-	# saveRDS(sorted.all.bp.all.samps.segs.anno.df, file = sorted.all.bp.all.samps.segs.anno.df.path)
-	#Now we want to save this annotated version:
-	cpn.chr.start.end.df <- sorted.all.bp.all.samps.segs.anno.df[sorted.all.bp.all.samps.segs.anno.df$full_sample==sorted.all.bp.all.samps.segs.anno.df[1,]$full_sample,1:3]
-	mock.cpn.matrix <- matrix(data=0, nrow=nrow(cpn.chr.start.end.df), ncol = length(sample.vec))
-	colnames(mock.cpn.matrix) <- sample.vec
-	min.cons.segs.df <- cbind(cpn.chr.start.end.df, mock.cpn.matrix)
-	#                                      Chromosome Start_Position End_Position CB1001-11-D01-X1 CB1001-16-D01-X1 CB1001-15-D01-X1 CB1001-17-D01-X1 CB1001-18-D01-X1
-	# CB1001-11-D01-X1:1:1:138780                   1              1       138780                0                0                0                0                0
-	# CB1001-11-D01-X1:1:138781:16421937            1         138781     16421937                0                0                0                0                0
-
-	# > head(min.cons.segs.df)
-	#                                         Chromosome Start_Position End_Position A_LTX121_SU_T1-R1 A_LTX121_SU_T1-R2
-	# A_LTX121_SU_T1-R1:1:1:762272                     1              1       762272                 0                 0
-
-	#end of 201908TBKW edit all this code 
-
-
-	#Minimum consistent segmentation is finished! Let's get the SNPs and their LogR and BAF values amd assign to segments.
-	#All SNPs in these lists must have both a logr and baf value: all sample all seg logr baf lists is asas.lr.baf
-	ptm <- proc.time()
-	message("cleanAndErrorCheckSNPsParallel first")
-	#source(paste0(current.dir, "data_input_and_QC_functions_v2.R"))
-	asas.SNPs.w.both.lr.baf.snp.lists <- cleanAndErrorCheckSNPsParallel(all.samp.SNP.list,
-																		mcs.seg.to.use.df =min.cons.segs.df,
-																		allow.logr.only.flag = FALSE,
-																		data.type = data.format.to.use)
-
-	# List of 5
-	#  $ CB1001-11-D01-X1:List of 186
-	# > str(asas.SNPs.w.both.lr.baf.snp.lists[[1]][[2]], max=2)
-	# 'data.frame':	294 obs. of  6 variables:
-	#  $ chrom        : num  1 1 1 1 1 1 1 1 1 1 ...
-	#  $ pos          : int  970892 973673 974175 981169 1049886 1087765 1091327 1522693 1541864 1704310 ...
-	#  $ BAF          : num  1 0 0.1 0.9 0.867 ...
-	#  $ logR         : num  -0.526 -1.879 -0.363 -1.287 -1.773 ...
-	#  $ BAFsegmented : num  0.107 0.107 0.107 0.107 0.107 ...
-	#  $ logRsegmented: num  -0.838 -0.838 -0.838 -0.838 -0.838 ...
-
-	#  List of 2
-	#   $ A_LTX121_SU_T1-R1:List of 418
-
-	# >  str(asas.SNPs.w.both.lr.baf.snp.lists[[1]][[2]], max=2)
-	# 'data.frame':	755 obs. of  6 variables:
-	#  $ chrom        : num  1 1 1 1 1 1 1 1 1 1 ...
-	#  $ pos          : int  871020 879317 880390 881627 892460 894573 896064 897730 902108 906272 ...
-	#  $ BAF          : num  0.257 0.248 0.2 0.866 0.143 ...
-	#  $ logR         : num  -0.271 -0.36 -0.385 -0.208 -0.571 ...
-	#  $ BAFsegmented : num  0.231 0.231 0.231 0.231 0.231 ...
-	#  $ logRsegmented: num  -0.335 -0.335 -0.335 -0.335 -0.335 ...
-	# >
-	if (length(unique(sapply(asas.SNPs.w.both.lr.baf.snp.lists, length))) != 1) {
-
-		stop("Not all segments are present in all samples' snp assignations, likely something has gone wrong, is the parallelisation working correctly?")
-
-	}
-	saveRDS(asas.SNPs.w.both.lr.baf.snp.lists, file = asas.SNPs.w.both.lr.baf.snp.lists.path)
-	time.taken <- proc.time() - ptm
-	message("Runtime of cleanAndErrorCheckSNPsParallel:")
-	print(time.taken)
-	##
-	#SNPs that only have LogR are permitted in these lists, but it also contains all the SNPs with both BAF and LogR
-	ptm <- proc.time()
-	message("cleanAndErrorCheckSNPsParallel second")
-
-	asas.SNPS.lr.and.or.baf.lists <- cleanAndErrorCheckSNPsParallel(all.samp.SNP.list,
-																	mcs.seg.to.use.df =min.cons.segs.df,
-																	allow.logr.only.flag = TRUE,
-																	data.type = data.format.to.use)
-	#CB
-	# > str(asas.SNPS.lr.and.or.baf.lists[[1]][[2]], max=1)
-	# 'data.frame':	7923 obs. of  6 variables:
-	#  $ chrom        : num  1 1 1 1 1 1 1 1 1 1 ...
-	#  $ pos          : int  138781 138817 138829 139060 139294 732966 732994 733201 733202 733225 ...
-	#  $ BAF          : num  NA NA NA NA NA NA NA NA NA NA ...
-	#  $ logR         : num  -0.3305 -0.1493 0.073 -0.3676 -0.0592 ...
-	#  $ BAFsegmented : num  0.107 0.107 0.107 0.107 0.107 ...
-	#  $ logRsegmented: num  -0.838 -0.838 -0.838 -0.838 -0.838 ...
-	#ALTX121
-	# > str(asas.SNPS.lr.and.or.baf.lists[[1]][[2]], max=1)
-	# 'data.frame':	7923 obs. of  6 variables:
-	#  $ chrom        : num  1 1 1 1 1 1 1 1 1 1 ...
-	#  $ pos          : int  138781 138817 138829 139060 139294 732966 732994 733201 733202 733225 ...
-	#  $ BAF          : num  NA NA NA NA NA NA NA NA NA NA ...
-	#  $ logR         : num  -0.3305 -0.1493 0.073 -0.3676 -0.0592 ...
-	#  $ BAFsegmented : num  0.107 0.107 0.107 0.107 0.107 ...
-	#  $ logRsegmented: num  -0.838 -0.838 -0.838 -0.838 -0.838 ...
-
-	if (length(unique(sapply(asas.SNPS.lr.and.or.baf.lists, length))) != 1) {
-
-		stop("Not all segments are present in all samples' snp assignations, likely something has gone wrong, is the parallelisation working correctly?")
-
-	}
-
-	#print(asas.SNPS.lr.and.or.baf.lists.path)
-	saveRDS(asas.SNPS.lr.and.or.baf.lists, file = asas.SNPS.lr.and.or.baf.lists.path)
-	time.taken <- proc.time() - ptm
-	message("Runtime of cleanAndErrorCheckSNPsParallel:")
-	print(time.taken)
-
-	if ( length(asas.SNPs.w.both.lr.baf.snp.lists) <= 1 ) {
-
-		print(str(asas.SNPs.w.both.lr.baf.snp.lists, max = 1))
-		stop("Only one or fewer samples present after reading in data.")
-
-	}
-
-	#######So here is where we should check if there are any segments that should be
-	#save:
+  # Save input data for later debugging
 	saveRDS(asas.SNPS.lr.and.or.baf.lists, file = asas.SNPS.lr.and.or.baf.lists.path)
 	saveRDS(asas.SNPs.w.both.lr.baf.snp.lists, file = asas.SNPs.w.both.lr.baf.snp.lists.path)
+	saveRDS(f.joint.segs.df, file = processed.orig.cpn.segs.df.path)
 	saveRDS(min.cons.segs.df, file = min.cons.segs.df.path)
 	saveRDS(ploidy.est.vec, file = ploidy.est.vec.path)
+	saveRDS(pt.snp.file.paths.df, file = pt.snp.file.paths.path)
 	saveRDS(purity.est.vec, file = purity.est.vec.path)
-	saveRDS(f.joint.segs.df, file = processed.orig.cpn.segs.df.path)
-
 	saveRDS(sorted.all.bp.all.samps.segs.anno.df, file = sorted.all.bp.all.samps.segs.anno.df.path)
 
-} else if (OVERWRITE_FLAG == FALSE) {#end if (OVERWRITE_FLAG == TRUE) {
+} else {
+  cat("Save output for later\n")
 
-	#load original data:
+  # Load in cached versions of the input data instead of parsing the
+  # segmentation and snp files again
 	all.samp.SNP.list <- readRDS(file = all.samp.SNP.list.path)
 	asas.SNPS.lr.and.or.baf.lists <- readRDS(file = asas.SNPS.lr.and.or.baf.lists.path)
 	asas.SNPs.w.both.lr.baf.snp.lists <- readRDS(file = asas.SNPs.w.both.lr.baf.snp.lists.path)
-	sorted.all.bp.all.samps.segs.anno.df <- readRDS( file = sorted.all.bp.all.samps.segs.anno.df.path)
-	min.cons.segs.df <- readRDS(file = min.cons.segs.df.path)
 	f.joint.segs.df <- readRDS(file = processed.orig.cpn.segs.df.path)
+	min.cons.segs.df <- readRDS(file = min.cons.segs.df.path)
 	ploidy.est.vec <- readRDS(file = ploidy.est.vec.path)
+	pt.snp.file.paths.df <- readRDS(file = pt.snp.file.paths.path)
 	purity.est.vec <- readRDS(file = purity.est.vec.path)
+	sorted.all.bp.all.samps.segs.anno.df <- readRDS( file = sorted.all.bp.all.samps.segs.anno.df.path)
 
-}#end else if (OVERWRITE_FLAG == FALSE
+}
 
 #TODO move this up
 #Let's come up with the original wgii score pre MPhase based on the segmentation:
-#source(paste0(current.dir, "MEDICC_input_creation_functions.R"))
 
 sample.vec <- names(asas.SNPs.w.both.lr.baf.snp.lists)
+cat("Samples:\n")
+print(sample.vec)
 sample.pre.Mphase.wgii.list <- list()
 for (samp in sample.vec) {
 
@@ -1442,10 +1187,6 @@ if (OVERWRITE_FLAG == TRUE) {
 	# 2: withVisible(eval(ei, envir))
 	ph.f.joint.segs.df <- ph.f.joint.segs.df[ph.f.joint.segs.df$startpos != ph.f.joint.segs.df$endpos,]
 	rownames(ph.f.joint.segs.df) <- 1:nrow(ph.f.joint.segs.df)
-
-
-
-
 
 	ph.sorted.all.bp.all.samps.segs.anno.df <- createFullyAnnotatedJointSegmentation(f.joint.segs.df = ph.f.joint.segs.df)
 

@@ -1862,125 +1862,27 @@ cleanAndErrorCheckSNPsParallel <- function(all.samp.SNP.list, mcs.seg.to.use.df,
 }#end cleanAndErrorCheckSNPsParallel <- function(all.samp.SNP.list, min.cons.seg.df,
 
 
+# -------------------------------------------------------------------------
+# Sequenza input format
+#
+# Read BAF and logR values from seqz files that are generated for sequenza
+#
+# - chromosome
+# - position
+# - base.ref
+# - depth.normal
+# - depth.tumor
+# - depth.ratio
+# - Af
+# - Bf
+# - zygosity.normal
+# - GC.percent
+# - good.reads
+# - AB.normal
+# - AB.tumor
+# - tumor.strand
 
+readBAFLogrSequenza <- function() {
+}
 
-
-
-
-
-
-
-
-
- # print("HERE")
- # for ( sample in sample.vec ) {
-
- #   samp.prob.SNPs.vec <- c()
-
- #   for ( seg.idx in 1:nrow(min.cpn.vals.df) ) {
-
- #     print(sample)
- #     print(seg.idx)
- #     samp.SNP.df <- all.samp.SNP.list[[sample]]
-
- #     samp.seg.logR.BAF.df <- samp.SNP.df[ samp.SNP.df$chrom == min.cons.seg.df[seg.idx, 1]
- #                                        & samp.SNP.df$pos >= min.cons.seg.df[seg.idx, 2]
- #                                        & samp.SNP.df$pos <= min.cons.seg.df[seg.idx, 3], ,drop = FALSE]
-
- #     #Catch any snp values that have a BAF but no logr in any region, these are likely incorrect
- #     samp.prob.SNPs.vec <- c(samp.prob.SNPs.vec, rownames(samp.seg.logR.BAF.df[ ! is.na(samp.seg.logR.BAF.df$BAFsegmented)
- #                                                                                & (is.na(samp.seg.logR.BAF.df$logRsegmented)
- #                                                                                   | is.na(samp.seg.logR.BAF.df$logR))
- #                                                                                ,]))
- #     #Remove any snps that have no logr but no BAF is the flag is false
- #     if (allow.logr.only.flag == FALSE) {
-
- #       samp.prob.SNPs.vec <- c(samp.prob.SNPs.vec, rownames(samp.seg.logR.BAF.df[is.na(samp.seg.logR.BAF.df$BAFsegmented),]))
- #       samp.seg.logR.BAF.df <- samp.seg.logR.BAF.df[samp.seg.logR.BAF.df$BAF != 2, ,drop = FALSE]
- #       samp.seg.logR.BAF.df <- samp.seg.logR.BAF.df[! is.na(samp.seg.logR.BAF.df$BAFsegmented), ,drop = FALSE]
-
- #     }#end if (allow.logr.only.flag == FALSE) {
- #     #Todo,
- #     #There's one more case we need to consider that a only on or some samples might have a logr SNP or BAF SNP as NA but the others don't, if this were the case
- #     #We'd want to remove these SNPs
- #     #Todo,
- #     #Another case is that we might have any of the SNPs removed might be the start or end position of the joint segs, if this is the case it might break downstream
- #     #analyses, we should stop the analysis if this is the case and say clean up the input data.
- #     working.all.samp.SNP.list[[sample]][[seg.name.vec[seg.idx]]] <- samp.seg.logR.BAF.df
-
-
- #   }#end for ( seg.idx in 1:nrow(min.cpn.vals.df) )
-
- #   all.samps.prob.SNPs.vec <- c(all.samps.prob.SNPs.vec, samp.prob.SNPs.vec)
-
- # }#end for ( sample in samples.vec ) {
-
-
-      # all.samp.SNP.list <- list()
-    # for ( samp in sample.vec ) {
-
-    #   print(samp)
-    #   print(head(snp.file.df))
-
-    #   ASCAT.summary <- data.frame(chr = as.numeric(snp.file.df$Chr),
-    #                         pos = as.numeric(snp.file.df$Pos),
-    #                   BAF = as.numeric(snp.file.df[, paste0(gsub("-" , "\\.", samp), "_BAF")]),
-    #                   BAFsegmented = rep(NA, length(snp.file.df$Chr)),
-    #                   logR = as.numeric(snp.file.df[, paste0(gsub("-", "\\.", samp), "_LogR")]),
-    #                   logRsegmented = rep(NA, length(snp.file.df$Chr)),
-    #                   stringsAsFactors = FALSE)
-
-    #   print(head(ASCAT.summary))
-
-    #   seg <- processed.orig.cpn.segs.df[processed.orig.cpn.segs.df$sample == samp,]
-
-    #   for ( j in 1:nrow(seg) ) {
-    #     #print(seg[j,])
-    #     #Are there any BAF values that aren't set at 2 (and thus shouldn't be used for allele specific cpn) present in this segment?
-    #     if (nrow(ASCAT.summary[ASCAT.summary$chr == seg[j ,]$chr
-    #                 & ASCAT.summary$pos >= seg[j ,]$startpos
-    #                 & ASCAT.summary$pos <= seg[j ,]$endpos
-    #                 & ASCAT.summary$BAF != 2 ,]) > 0) {
-    #       #Is this segment balanced, if so set the BAFsegmented to 0.5
-    #       if (seg[j ,]$nMajor == seg[j ,]$nMinor) {
-
-    #         ASCAT.summary[ASCAT.summary$chr == seg[j ,]$chr
-    #                 & ASCAT.summary$pos >= seg[j ,]$startpos
-    #                 & ASCAT.summary$pos <= seg[j ,]$endpos,]$BAFsegmented <- 0.5
-
-    #       } else {#Segment is balanced so we need to calculate the value of the BAF segmented and apply it to all these values
-
-
-    #         avg.seg.baf <- 0.5 - mean(abs(as.numeric(ASCAT.summary[ASCAT.summary$chr == seg[j ,]$chr
-    #                                     & ASCAT.summary$pos >= seg[j ,]$startpos
-    #                                     & ASCAT.summary$pos <= seg[j ,]$endpos
-    #                                     & ASCAT.summary$BAF != 2 ,]$BAF)          - 0.5))
-
-    #         ASCAT.summary[ASCAT.summary$chr == seg[j ,]$chr
-    #                 & ASCAT.summary$pos >= seg[j ,]$startpos
-    #                 & ASCAT.summary$pos <= seg[j ,]$endpos ,]$BAFsegmented <- avg.seg.baf
-
-    #       }
-
-    #     }#end if(nrow(ASCAT.summary[ASCAT.summary$chrom==seg[j,]$chr & ASCAT.summary$pos...
-    #     #We now need to calculate the average logr of any snps that are present
-    #     if (nrow(ASCAT.summary[ASCAT.summary$chr == seg[j ,]$chr
-    #                          & ASCAT.summary$pos >= seg[j ,]$startpos
-    #                          & ASCAT.summary$pos <= seg[j ,]$endpos ,]) > 0) {
-
-    #       avg.seg.logr <- mean(ASCAT.summary[ASCAT.summary$chr == seg[j ,]$chr
-    #                  & ASCAT.summary$pos >= seg[j ,]$startpos
-    #                  & ASCAT.summary$pos <= seg[j ,]$endpos, ]$logR)
-
-    #       ASCAT.summary[ASCAT.summary$chr == seg[j ,]$chr
-    #               & ASCAT.summary$pos >= seg[j ,]$startpos
-    #               & ASCAT.summary$pos <= seg[j ,]$endpos ,]$logRsegmented <- avg.seg.logr
-
-    #     }
-
-    #   }#end for ( j in 1:nrow(seg) ) {
-
-    #   all.samp.SNP.list[[samp]] <- ASCAT.summary
-
-    # }#end for ( samp in sample.vec ) {
 
