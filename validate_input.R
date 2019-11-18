@@ -9,9 +9,14 @@
 # -------------------------------------------------------------------------
 
 validate_snp_all_samples <- function(tumor_snps, germline_snps) {
+  message("Validating SNP data for all samples.")
+
   samples <- names(tumor_snps)
   # Make sure the tumor_snps list has names
-  stopifnot(!is_null(samples))
+  stopifnot(!is.null(samples))
+
+  # We need at least two samples
+  stopifnot(length(tumor_snps) >= 2)
 
   # Check individual SNP input files
   for (sample in samples) {
@@ -23,6 +28,9 @@ validate_snp_all_samples <- function(tumor_snps, germline_snps) {
 
   # -------------------------------------------------------------------------
   # 1) Positions are identical in all input files (both for Tumor and Germline)
+  stopifnot(all(sapply(tumor_snps[-1], FUN = function(x, y) { identical(x$snp_pos, y) }, tumor_snps[[1]]$snp_pos)))
+
+  # Checks 2 and 3 are not necessary if the above check passes.
 
   # -------------------------------------------------------------------------
   # 2) All the same chromosomes are represented in every SNP file (covered by
@@ -37,40 +45,45 @@ validate_snp_all_samples <- function(tumor_snps, germline_snps) {
   # 4) All SNPs that are “BAF” SNPs ie between 0.3 and 0.7 in the germline have
   # a BAF value in every SNP file.
 
+  # From the original input code. Can probably be skipped.
+  # Checks to see if all samples have the same number of snps (NOT that those
+  # snps are identical), and that there are at least 2 samples
+  if (length(unique(unlist(lapply(tumor_snps, nrow)))) != 1 | length(tumor_snps) < 2) {
+    stop("Not all sites are present in all samples' sites information read in or too few samples are present at this stage, this needs to be fixed before running MPhase.")
+  }
+
+  message("Validation passed.")
   
 }
 
-validate_snp_input <- function(tumor_snp) {
+validate_snp_input <- function(snp_data) {
 
   # -------------------------------------------------------------------------
   # 1) Are the columns in the expected order (check for types of data and
   # column names)
-  # expected_cols <- list(sample = character(),
-  #                       chr = integer(),
-  #                       startpos = integer(),
-  #                       endpos = integer(),
-  #                       n.het = integer(),
-  #                       cnTotal = integer(),
-  #                       nMajor = integer(),
-  #                       nMinor = integer(),
-  #                       Ploidy = numeric(),
-  #                       ACF = numeric(),
-  #                       nAraw = numeric(),
-  #                       nBraw = numeric(),
-  #                       callState = character())
+  expected_cols <- list(chrom = integer(),
+                        pos = integer(),
+                        BAF = numeric(),
+                        logR = numeric(),
+                        BAFsegmented = numeric(),
+                        logRsegmented = numeric(),
+                        snp_pos = character())
 
-  # # Do we need all of the columns?
-  # stopifnot(identical(names(seg), names(expected_cols)))
+  # Make sure we have (at least) the columns that we need
+  stopifnot(all(names(expected_cols) %in% names(snp_data)))
 
-  # # Check types
-  # for (expected_col in names(expected_cols))
-  #   stopifnot(class(seg[,expected_col]) == class(expected_cols[[expected_col]]))
+  # Check types
+  for (expected_col in names(expected_cols))
+    stopifnot(class(snp_data[,expected_col]) == class(expected_cols[[expected_col]]))
 
   # -------------------------------------------------------------------------
   # 2) Are any chromosome names not in the format 1-24 (check for NAs)
+  stopifnot(all(snp_data$chrom %in% 1:24))
 
   # -------------------------------------------------------------------------
   # 3) Are all positions of SNPs positive integers
+  # stopifnot(is.integer(snp_data$pos))  # Already checked above
+  stopifnot(!any(snp_data$pos < 0))
 
   # -------------------------------------------------------------------------
   # 4) Are all chromosomes and positions in the correct (1-24.. 1-200000)
@@ -78,9 +91,11 @@ validate_snp_input <- function(tumor_snp) {
 
   # -------------------------------------------------------------------------
   # 5) Are there any NA values in the LogR columns for any regions
+  stopifnot(!any(is.na(snp_data$logR)))
 
   # -------------------------------------------------------------------------
   # 6) Are there any Inf or -Inf values in the LogR columns
+  stopifnot(all(is.finite(snp_data$logR)))
 
   # -------------------------------------------------------------------------
   # 7) Given the chosen reference genome are the positions for each chromosome
@@ -88,11 +103,18 @@ validate_snp_input <- function(tumor_snp) {
 
   # -------------------------------------------------------------------------
   # 8) Are there any duplicate positions
+  stopifnot(anyDuplicated(snp_data$snp_pos) == 0)
   
   # -------------------------------------------------------------------------
   # 9) Are there positions present for all expected chromosomes if none present
-  # for any autosome error, else note that 23/24 are missing 
+  # for any autosome error
+  stopifnot(all(1:22 %in% snp_data$chrom))
+
+  # else note that 23/24 are missing 
+  if (!all(c(23, 24) %in% snp_data$chrom))
+    warning("No segment in either sex chromosome (23 or 24)")
   
+  return(TRUE)
 
 }
 
@@ -101,22 +123,23 @@ validate_ascat_bc_input <- function(bc) {
   # -------------------------------------------------------------------------
   # 1) Are the columns in the expected order (check for types of data and
   # column names)
-  # expected_cols <- list(sample = character(),
-  #                       chr = integer(),
-  #                       startpos = integer(),
-  #                       endpos = integer(),
-  #                       n.het = integer(),
-  #                       cnTotal = integer(),
-  #                       nMajor = integer(),
-  #                       nMinor = integer(),
-  #                       Ploidy = numeric(),
-  #                       ACF = numeric(),
-  #                       nAraw = numeric(),
-  #                       nBraw = numeric(),
-  #                       callState = character())
+  expected_cols <- list(Tumor_LogR = data.frame(),
+                        Tumor_BAF = data.frame(),
+                        Tumor_LogR_segmented = numeric(),
+                        Tumor_BAF_segmented = list(),
+                        Germline_LogR = data.frame(),
+                        Germline_BAF = data.frame(),
+                        SNPpos = data.frame(),
+                        ch = list(),
+                        chr = list(),
+                        chrs = character(),
+                        samples = character(),
+                        gender = character(),
+                        sexchromosomes = character(),
+                        failedarrays = character())
 
-  # # Do we need all of the columns?
-  # stopifnot(identical(names(seg), names(expected_cols)))
+  # Do we need all of the columns?
+  stopifnot(all(names(expected_cols) %in% names(bc)))
 
   # # Check types
   # for (expected_col in names(expected_cols))
@@ -137,15 +160,15 @@ validate_ascat_bc_input <- function(bc) {
 
   # -------------------------------------------------------------------------
   # 5) Are there any NA values in the LogR columns for any regions
-  stopifnot(!any(is.na(bc[["Tumor_LogR"]][,1])))
-  stopifnot(!any(is.na(bc[["Tumor_LogR_segmented"]][,1])))
-  stopifnot(!any(is.na(bc[["Tumor_BAF_segmented"]][[1]][,1])))
+  stopifnot(any(!is.na(bc[["Tumor_LogR"]][,1])))
+  stopifnot(any(!is.na(bc[["Tumor_LogR_segmented"]][,1])))
+  stopifnot(any(!is.na(bc[["Tumor_BAF_segmented"]][[1]][,1])))
 
   # -------------------------------------------------------------------------
   # 6) Are there any Inf or -Inf values in the LogR columns
-  #stopifnot(any(is.finite(bc[["Tumor_LogR"]][,1])))
-  #stopifnot(any(is.finite(bc[["Tumor_LogR_segmented"]][,1])))
-  #stopifnot(any(is.finite(bc[["Tumor_BAF_segmented"]][[1]][,1])))
+  #stopifnot(all(is.finite(bc[["Tumor_LogR"]][,1])))
+  #stopifnot(all(is.finite(bc[["Tumor_LogR_segmented"]][,1])))
+  #stopifnot(all(is.finite(bc[["Tumor_BAF_segmented"]][[1]][,1])))
 
   # -------------------------------------------------------------------------
   # 7) Given the chosen reference genome are the positions for each chromosome

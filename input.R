@@ -57,25 +57,37 @@ read_input <- function(seg_file, snp_file, input_format) {
     														,"_"
     														,all.samp.SNP.list[[1]]$pos))
 
+	} else if (data.format.to.use == "sequenza") {
+
+    pt.snp.file.paths.df <- read.delim(snp.file.path,
+                              stringsAsFactors = FALSE,
+                              header = TRUE,
+                              row.names = "sample")
+
+    message("Start parsing sequenza input.\n")
+
+    input_files <- pt.snp.file.paths.df$seqz_file
+    if (nchar(conf$snp_data_prefix) > 0) {
+      input_files <- file.path(conf$snp_data_prefix, pt.snp.file.paths.df$seqz_file)
+    }
+    names(input_files) <- rownames(pt.snp.file.paths.df)
+
+    sequenza_input <- read_snps_sequenza(input_files = input_files,
+                                         segs = f.joint.segs.df,
+                                         samples = sample.vec)
+    all.samp.SNP.list <- sequenza_input$all_samples
+    gl.snp.df <- sequenza_input$germline
+
+    message("Finished parsing sequenza input.\n")
+
 	} else {
-
 		print(data.format.to.use)
-		stop("Incorrect data.format.to.use input to mphase")
-
+		stop(paste0("Incorrect snp data input format (", data.format.to.use, ")"))
 	}
 
   # Immediately validate input SNP information (BAF, logR and more)
-  #validate_snp_input(all.samp.SNP.list, gl.snp.df)
-
-	if (length(unique(unlist(lapply(all.samp.SNP.list, nrow)))) != 1 | length(all.samp.SNP.list) < 2) {
-		print("length(all.samp.SNP.list)")
-		print(length(all.samp.SNP.list))
-		print("length(unique(unlist(lapply(all.samp.SNP.list, nrow))))")
-    print(length(unique(unlist(lapply(all.samp.SNP.list, nrow)))))
-    print(lapply(all.samp.SNP.list, nrow))
-
-		stop("Not all sites are present in all samples' sites information read in or too few samples are present at this stage, this needs to be fixed before running MPhase.")
-	}
+  if (conf$validate_input)
+    validate_snp_all_samples(all.samp.SNP.list, gl.snp.df)
 
 	#So we need the centromere postions for each arm:
 	#Add in p_end and q_start
@@ -102,6 +114,9 @@ read_input <- function(seg_file, snp_file, input_format) {
 																		allow.logr.only.flag = FALSE,
 																		data.type = data.format.to.use)
 
+  message("asas.SNPs.w.both.lr.baf.snp.lists output")
+  str(asas.SNPs.w.both.lr.baf.snp.lists)
+
 	if (length(unique(sapply(asas.SNPs.w.both.lr.baf.snp.lists, length))) != 1) {
 		stop("Not all segments are present in all samples' snp assignations, likely something has gone wrong, is the parallelisation working correctly?")
 	}
@@ -118,6 +133,9 @@ read_input <- function(seg_file, snp_file, input_format) {
 																	mcs.seg.to.use.df =min.cons.segs.df,
 																	allow.logr.only.flag = TRUE,
 																	data.type = data.format.to.use)
+
+  message("asas.SNPS.lr.and.or.baf.lists output")
+  str(asas.SNPS.lr.and.or.baf.lists)
 
 	if (length(unique(sapply(asas.SNPS.lr.and.or.baf.lists, length))) != 1) {
 		stop("Not all segments are present in all samples' snp assignations, likely something has gone wrong, is the parallelisation working correctly?")

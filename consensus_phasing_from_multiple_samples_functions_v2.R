@@ -484,21 +484,6 @@ getCombinedBAFDipTestPhasingParallel <- function(asas.lr.baf.lists,
                                         comb.wilcox.snp.sep.p.val.threshold = 0.01,
                                         allow.dip.test.without.ASCAT.to.phase = FALSE) {
 
-  #DEBUG
-  # asas.lr.baf.lists = asas.SNPs.w.both.lr.baf.snp.lists
-  # seg.name.vec = seg.name.vec
-  # ploidy.est.vec = ploidy.est.vec
-  # purity.est.vec = purity.est.vec
-  # gamma.val = GAMMA_VAL
-  # min.num.hz.snp.phasing = MIN_NUM_HZ_SNP_PHASING
-  # min.prop.snp.sep.threshold = MIN_PROP_SNP_SEP_THRESH
-  # dip.test.p.val.threshold = PVAL_DIPTEST_AI_THRESH
-  # comb.wilcox.snp.sep.p.val.threshold = PVAL_COMB_WILCOX_PH_THRESH
-  # allow.dip.test.without.ASCAT.to.phase = ALLOW_DIPTEST_ALONE_PH_FLAG
-
-  #source("/home/camp/watkint/working/watkint/scripts/multiregioncopynum/consensus_phasing_from_multiple_samples_functions_v2.R")
-  #source("/home/camp/watkint/working/watkint/scripts/multiregioncopynum/utility_MPhase_functions.R")
-
   sample.vec <- names(asas.lr.baf.lists)
   sample.to.phase.seg.list <- list()
 
@@ -519,7 +504,8 @@ getCombinedBAFDipTestPhasingParallel <- function(asas.lr.baf.lists,
 
 
   itx <- iter(seg.name.vec)
-  sample.to.phase.seg.mrc.list <- foreach(seg.name = itx, .combine = c) %dopar% {
+  #sample.to.phase.seg.mrc.list <- foreach(seg.name = itx, .combine = c) %dopar% {
+  sample.to.phase.seg.mrc.list <- foreach(seg.name = itx, .combine = c) %do% {
   #sample.to.phase.seg.list <- list()
   #for ( seg.name in seg.name.vec ) {
     ret.mrc <- MultiResultClass()
@@ -665,9 +651,9 @@ getCombinedBAFDipTestPhasingParallel <- function(asas.lr.baf.lists,
 
     }
 
-      returnable.list <- list(ret.mrc)
-      names(returnable.list) <- seg.name
-      returnable.list
+    returnable.list <- list(ret.mrc)
+    names(returnable.list) <- seg.name
+    returnable.list
 
 
   }#end for ( seg.name in seg.name.vec ) {

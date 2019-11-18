@@ -240,88 +240,6 @@ makeInputPathFileForTRACERxWGS <- function(pt.id, release.dir, array.type, save.
 }#end makeInputPathFileForTRACERxWGS <- function(pt.id, release.dir, array.type, save.output.path) {
 
 
-
-# getSNPDataForTRACERxWGS <- function(snp.file.path) {
-
-#   pt.file.paths.df <- read.table(snp.file.path, stringsAsFactors = FALSE, sep = "\t", header = TRUE)
-#   sample.vec <- pt.file.paths.df$sample
-#   all.regions.ASCAT.list <- list()
-
-#   itx <- iter(sample.vec)
-#   #for ( samp in sample.vec ) {
-#   all.samp.SNP.df <- foreach(samp = itx, .combine = rbind) %dopar% {
-
-#     print(samp)
-#     samp.logr.baf.path <- pt.file.paths.df[pt.file.paths.df$sample == samp ,]$samp_logr_baf_file_path
-#     load(samp.logr.baf.path)#gives tumor.baf_logr
-#     samp.seg.path <- pt.file.paths.df[pt.file.paths.df$sample == samp ,]$samp_seg_file_path
-#     load(samp.seg.path)#gives seg
-
-#     ASCAT.summary               <- tumor.baf_logr[,c("chrom", "pos")]
-#     ASCAT.summary$BAF           <- tumor.baf_logr$BAF
-#     ASCAT.summary$logR          <- tumor.baf_logr[, samp]
-#     ASCAT.summary$BAFsegmented  <- NA
-#     ASCAT.summary$logRsegmented <- NA
-#     ASCAT.summary$sample <- samp
-#     colnames(ASCAT.summary)[colnames(ASCAT.summary) == "chrom"] <- chr
-
-#     for ( j in 1:nrow(seg) ) {
-
-#         if(nrow(ASCAT.summary[ASCAT.summary$chr == seg[j ,]$chr
-#                             & ASCAT.summary$pos >= seg[j ,]$startpos
-#                             & ASCAT.summary$pos <= seg[j ,]$endpos,]) > 0) {
-
-#           if(seg[j,]$nMajor==seg[j,]$nMinor){
-
-#             ASCAT.summary[ASCAT.summary$chr == seg[j ,]$chr
-#                         & ASCAT.summary$pos >= seg[j ,]$startpos
-#                         & ASCAT.summary$pos <= seg[j ,]$endpos ,]$BAFsegmented <- 0.5
-
-#           } else {
-
-#             avg.seg.baf <- 0.5 - mean(abs(tumor.baf_logr[tumor.baf_logr$chr == seg[j ,]$chr
-#                                                        & tumor.baf_logr$pos >= seg[j ,]$startpos
-#                                                        & tumor.baf_logr$pos <= seg[j ,]$endpos,]$BAF - 0.5))
-
-#             ASCAT.summary[ASCAT.summary$chrom == seg[j ,]$chr
-#                         & ASCAT.summary$pos >= seg[j ,]$startpos
-#                         & ASCAT.summary$pos <= seg[j ,]$endpos ,]$BAFsegmented <- avg.seg.baf
-
-#           }
-
-#           avg.seg.logr <- mean(tumor.baf_logr[tumor.baf_logr$chr == seg[j ,]$chr
-#                              & tumor.baf_logr$pos >= seg[j ,]$startpos
-#                              & tumor.baf_logr$pos <= seg[j ,]$endpos, samp])
-
-#           ASCAT.summary[ASCAT.summary$chr == seg[j ,]$chr
-#                       & ASCAT.summary$pos >= seg[j ,]$startpos
-#                       & ASCAT.summary$pos <= seg[j ,]$endpos,]$logRsegmented <- avg.seg.logr
-
-#         }#end if(nrow(ASCAT.summary[ASCAT.summary$chrom==seg[j,]$chr & ASCAT.summary$pos...
-
-#       }#end for ( j in 1:nrow(seg) ) {
-
-#       ASCAT.summary
-
-#   }# end  for ( samp in sample.vec ) {
-
-
-#     all.samp.SNP.list <- list()
-#     for ( samp in sample.vec ) {
-
-#       samp.w.segmented.info.SNP.df <- all.samp.SNP.df[all.samp.SNP.df$sample==samp,]
-#       samp.w.segmented.info.SNP.df <- samp.w.segmented.info.SNP.df[, c("chr", "pos", "BAF", "BAFsegmented", "logR", "logRsegmented")]
-#       all.samp.SNP.list[[samp]] <- samp.w.segmented.info.SNP.df
-
-#     }
-
-#     return(all.regions.ASCAT.list)
-# }#end getSNPDataForTRACERxWGS
-
-
-
-
-
 getSNPDataForTRACERxWGS <- function(snp.file.path) {
 
   pt.file.paths.df <- read.table(snp.file.path, stringsAsFactors = FALSE, sep = "\t", header = TRUE)
@@ -452,42 +370,6 @@ getSNPDataForTRACERxWGS <- function(snp.file.path) {
 
     return(all.samp.SNP.list)
 }#end getSNPDataForTRACERxWGS
-
-
-
-
-
-# ##
-# ##Params:
-# ##
-# ##Returns:
-# ##
-# errorCheckAndAddPloidyAdjRawCPNToSegDF <- function(pt.id, orig.cpn.segs.df){
-#
-#   #TODO add checks that that:
-#   #all samples have the same number of chromosomes
-#   #There is more than one sample
-#   #minor is never larger than major cn
-#   #end value seg end postion is always greater than start
-#   #chromosomes and segments are sorted correctly
-#   #No NA values
-#   #Purity no greater than 1, flag if it is.
-#   #Check if there are snps in all segements
-#
-#   orig.cpn.segs.df <- orig.cpn.segs.df[orig.cpn.segs.df$patient==pt.id,,drop=FALSE]
-#
-#   samples <- unique(orig.cpn.segs.df$sample)
-#
-#   orig.cpn.segs.df$tot_raw_cpn <- as.numeric(orig.cpn.segs.df$nAraw) + as.numeric(orig.cpn.segs.df$nBraw)
-#   orig.cpn.segs.df$min_raw_cpn <- apply(cbind(orig.cpn.segs.df$nAraw, orig.cpn.segs.df$nBraw), 1, min)
-#   orig.cpn.segs.df$max_raw_cpn <- apply(cbind(orig.cpn.segs.df$nAraw, orig.cpn.segs.df$nBraw), 1, max)
-#   orig.cpn.segs.df$cpn_to_use <- orig.cpn.segs.df$tot_raw_cpn
-#
-#   orig.cpn.segs.df$ploidy_adj_tot_cpn <- log2(as.numeric(orig.cpn.segs.df$tot_raw_cpn) / as.numeric(orig.cpn.segs.df$Ploidy))
-#
-#   return(orig.cpn.segs.df)
-# }
-
 
 
 ##
@@ -1191,211 +1073,6 @@ getOverlapGRanges <- function(query, subject, output="gr", ...) {
 }
 
 
-
-
-
-
-
-
-# ##
-# ##Params:
-# ##
-# ##Returns:
-# ##
-# cleanAndErrorCheckSNPsParallel <- function(all.samp.SNP.list, min.cons.seg.df, allow.logr.only.flag = FALSE, num.cores = 8) {
-#   #TODO add check that every single all.samp.SNP.list has the same SNPs..
-#   #Note error checking of removing NAs from the min.cons.seg.df should already have been performed
-
-#   min.cpn.vals.df <- min.cons.seg.df[,4:ncol(min.cons.seg.df)]
-#   seg.name.vec <- paste(min.cons.seg.df[, 1], min.cons.segs.df[, 2], min.cons.segs.df[, 3], sep=":")
-#   #min.cpn.vals.df <- min.cpn.vals.df[ ! is.na(rowSums(min.cpn.vals.df)), ,drop = FALSE]
-#   working.all.samp.SNP.list <- list()
-#   all.samps.prob.SNPs.vec <- c()
-
-#   #Make vectors for sample vec:
-#   samp.seg.vec <- rep(seg.name.vec, length(sample.vec))
-#   sample.rep.vec <- c()
-#   for ( samp in sample.vec ) {
-
-#     sample.rep.vec <- c(sample.rep.vec, rep(samp, length(seg.name.vec)))
-
-#   }
-#   iterable.min.cons.seg.df <- cbind(do.call("rbind", replicate(length(sample.vec), min.cons.seg.df[,1:3], simplify = FALSE)), sample = sample.rep.vec)
-
-#   # cl <- makeCluster(num.cores)
-#   # registerDoParallel(cl)
-#   itx <- iter(iterable.min.cons.seg.df, by="row")
-#   print("Staring parallel assignation of snps to segs:")
-#   results.list <- foreach(min.cons.seg.df = itx, .combine = c) %dopar% {
-
-#     samp.SNP.df <- all.samp.SNP.list[[ min.cons.seg.df[, 4]]]
-
-#     samp.seg.logR.BAF.df <- samp.SNP.df[ samp.SNP.df$chrom == min.cons.seg.df[, 1]
-#                                        & samp.SNP.df$pos >= min.cons.seg.df[, 2]
-#                                        & samp.SNP.df$pos <= min.cons.seg.df[, 3], ,drop = FALSE]
-
-#     if (allow.logr.only.flag == FALSE) {
-
-#       samp.prob.SNPs.vec <- rownames(samp.seg.logR.BAF.df[is.na(samp.seg.logR.BAF.df$BAFsegmented),])
-#       samp.seg.logR.BAF.df <- samp.seg.logR.BAF.df[samp.seg.logR.BAF.df$BAF != 2, ,drop = FALSE]
-#       samp.seg.logR.BAF.df <- samp.seg.logR.BAF.df[! is.na(samp.seg.logR.BAF.df$BAFsegmented), ,drop = FALSE]
-
-#     }
-#     samp.seg.logR.BAF.df.list <- list(samp.seg.logR.BAF.df, samp.prob.SNPs.vec)
-#     names(samp.seg.logR.BAF.df.list) <- paste0(min.cons.seg.df[, 4], "@", min.cons.seg.df[, 1], ":", min.cons.seg.df[, 2], ":", min.cons.seg.df[, 3])
-
-#     return(samp.seg.logR.BAF.df.list)
-#   }
-
-#   #Create the list dataobject we're expecting:
-
-#   for ( result.name in names(results.list) ) {
-
-#     samp <- strsplit(result.name, "@")[[1]][1]
-#     seg.name <- strsplit(result.name, "@")[[1]][2]
-
-#     working.all.samp.SNP.list[[samp]][[seg.name]] <- results.list[[result.name]][[1]]
-
-#   }
-#   #Now get all the problem snps
-#   all.samps.prob.SNPs.vec <- sapply(results.list, function(x) x[[1]][2])
-#   all.samps.prob.SNPs.vec <- unique(all.samps.prob.SNPs.vec)
-#   print("Number of problem SNPs being removed:")
-#   print(length(all.samps.prob.SNPs.vec))
-
-
-#   for ( sample in sample.vec ) {
-
-#     for (seg.idx in 1:nrow(min.cpn.vals.df)) {
-
-#       working.all.samp.SNP.list[[sample]][[seg.name.vec[seg.idx]]] <- working.all.samp.SNP.list[[sample]][[seg.name.vec[seg.idx]]][ ! rownames(working.all.samp.SNP.list[[sample]][[seg.name.vec[seg.idx]]])%in%all.samps.prob.SNPs.vec, ,drop=FALSE]
-
-#     }#end for (seg.idx in 1:nrow(min.cpn.vals.df))
-
-#   }#end for ( sample in sample.vec ) {
-
-#   return(working.all.samp.SNP.list)
-
-# }#end <- function(all.samp.SNP.list, min.cons.seg.df)
-
-
-# # ##
-# ##Params:
-# ##
-# ##Returns:
-# ##
-# cleanAndErrorCheckSNPsParallel <- function(all.samp.SNP.list, min.cons.seg.df, allow.logr.only.flag = FALSE, num.cores = 8) {
-#   # TODO add check that every single all.samp.SNP.list has the same SNPs..
-#   # Note error checking of removing NAs from the min.cons.seg.df should already have been performed
-
-#   min.cpn.vals.df <- min.cons.seg.df[,4:ncol(min.cons.seg.df)]
-#   seg.name.vec <- paste(min.cons.seg.df[, 1], min.cons.segs.df[, 2], min.cons.segs.df[, 3], sep=":")
-#   #min.cpn.vals.df <- min.cpn.vals.df[ ! is.na(rowSums(min.cpn.vals.df)), ,drop = FALSE]
-#   working.all.samp.SNP.list <- list()
-#   all.samps.prob.SNPs.vec <- c()
-
-#   #Make vectors for sample vec:
-#   samp.seg.vec <- rep(seg.name.vec, length(sample.vec))
-#   sample.rep.vec <- c()
-#   for ( samp in sample.vec ) {
-
-#     working.all.samp.SNP.list[[samp]] <- list()
-#     sample.rep.vec <- c(sample.rep.vec, rep(samp, length(seg.name.vec)))
-
-#   }
-
-#   iterable.min.cons.seg.df <- cbind(do.call("rbind", replicate(length(sample.vec), min.cons.seg.df[,1:3], simplify = FALSE)), sample = sample.rep.vec)
-#   cl <- makeCluster(NUM_CORES)
-#   registerDoParallel(cl)
-#   itx <- iter(iterable.min.cons.seg.df, by="row")
-#   print("Starting parallel assignation of snps to segs:")
-#   # Create class which holds multiple results for each loop iteration.
-#   # Each loop iteration populates two properties: $result1 and $result2.
-#   # For a great tutorial on S3 classes, see:
-#   # http://www.cyclismo.org/tutorial/R/s3Classes.html#creating-an-s3-class
-#   MultiResultClass <- function(samp_seg_name=NULL, samp_seg_logR_BAF_df=NULL, samp_prob_SNPs_vec=NULL)
-#   {
-#     me <- list(
-#       samp_seg_name = samp_seg_name,
-#       samp_seg_logR_BAF_df = samp_seg_logR_BAF_df,
-#       samp_prob_SNPs_vec  = samp_prob_SNPs_vec
-#     )
-#     # Set the name for the class
-#     class(me) <- append(class(me),"MultiResultClass")
-#     return(me)
-#   }
-#   sites.in.each.samp.seg.list <- foreach(min.cons.seg.df = itx, .combine = c) %dopar% {
-
-#     samp.SNP.df <- all.samp.SNP.list[[ min.cons.seg.df[, 4]]]
-
-#     samp.seg.logR.BAF.df <- samp.SNP.df[ samp.SNP.df$chrom == min.cons.seg.df[, 1]
-#                                        & samp.SNP.df$pos >= min.cons.seg.df[, 2]
-#                                        & samp.SNP.df$pos <= min.cons.seg.df[, 3], ,drop = FALSE]
-
-#     if (allow.logr.only.flag == FALSE) {
-
-#       samp.prob.SNPs.vec <- rownames(samp.seg.logR.BAF.df[is.na(samp.seg.logR.BAF.df$BAFsegmented),])
-#       samp.seg.logR.BAF.df <- samp.seg.logR.BAF.df[samp.seg.logR.BAF.df$BAF != 2, ,drop = FALSE]
-#       samp.seg.logR.BAF.df <- samp.seg.logR.BAF.df[! is.na(samp.seg.logR.BAF.df$BAFsegmented), ,drop = FALSE]
-
-#     } else {
-
-#       samp.prob.SNPs.vec <- c()
-
-#     }
-
-#     result <- MultiResultClass(samp_seg_name = paste0(min.cons.seg.df[, 4], "@", min.cons.seg.df[, 1], ":", min.cons.seg.df[, 2], ":", min.cons.seg.df[, 3]),
-#                   samp_seg_logR_BAF_df = samp.seg.logR.BAF.df,
-#                   samp_prob_SNPs_vec = samp.prob.SNPs.vec)
-#     result.list <- list(result)
-#     names(result.list) <- paste0(min.cons.seg.df[, 4], "@", min.cons.seg.df[, 1], ":", min.cons.seg.df[, 2], ":", min.cons.seg.df[, 3])
-#     result.list
-
-#   }
-
-#   all.samps.prob.SNPs.vec <- unique(unlist(sapply(sites.in.each.samp.seg.list, function(x) x[["samp_prob_SNPs_vec"]])))
-#   print("Number of problem SNPs being removed:")
-#   print(length(all.samps.prob.SNPs.vec))
-
-#   if (length(all.samps.prob.SNPs.vec) > 0) {
-
-#     samp.seg.itx <- iter(sites.in.each.samp.seg.list)
-#     clean.sites.in.each.samp.seg.list <- foreach(samp.seg.mrc = samp.seg.itx, .combine = c) %dopar% {
-
-#       seg.name <- strsplit(samp.seg.mrc$samp_seg_name, "@")[[1]][2]
-#       samp.seg.mrc.list <- sites.in.each.samp.seg.list[grep(seg.name, names(sites.in.each.samp.seg.list), value = TRUE)]
-#       samp.seg.prob.snp.vec <- unique(unlist(sapply(samp.seg.mrc.list, function(x) x[["samp_prob_SNPs_vec"]])))
-#       samp.seg.logR.BAF.df <-  samp.seg.mrc$samp_seg_logR_BAF_df[ ! rownames(samp.seg.mrc$samp_seg_logR_BAF_df) %in% samp.seg.prob.snp.vec, ,drop = FALSE ]
-#       result <- MultiResultClass(samp_seg_name = samp.seg.mrc$samp_seg_name,
-#                     samp_seg_logR_BAF_df = samp.seg.logR.BAF.df,
-#                     samp_prob_SNPs_vec = c())
-#       result.list <- list(result)
-#       names(result.list) <- samp.seg.mrc$samp_seg_name
-#       result.list
-#     }
-
-#   } else {
-
-#     clean.sites.in.each.samp.seg.list <- sites.in.each.samp.seg.list
-
-#   }
-
-#   stopCluster(cl)
-
-#   for ( samp.seg.name in names(clean.sites.in.each.samp.seg.list) ) {
-
-#     samp <- strsplit(samp.seg.name, "@")[[1]][1]
-#     seg.name <- strsplit(samp.seg.name, "@")[[1]][2]
-#     working.all.samp.SNP.list[[samp]][[seg.name]] <- clean.sites.in.each.samp.seg.list[[samp.seg.name]]$samp_seg_logR_BAF_df
-
-#   }
-
-#   return(working.all.samp.SNP.list)
-
-# }#end cleanAndErrorCheckSNPsParallel <- function(all.samp.SNP.list, min.cons.seg.df,
-
-
-
 # Read in a set of ascat.bc files and create the requisite all.samp.SNP.list
 #
 # > x <- readRDS("LTX121_all_samp_SNP_list.RDS")
@@ -1437,26 +1114,19 @@ readInASCAT <- function(sample_table, segs, samples) {
     baf <- ascat_bc$Tumor_BAF[[1]]
     baf[!is_heterozygous] <- NA
 
-    samp_data <- data.frame(chrom = as.numeric(gsub("Y", "24", gsub("X", "23", gsub("chr", "", as.character(ascat_bc$SNPpos$chr))))),
+    chrom <- chrom2integer(ascat_bc$SNPpos$chr)
+
+    samp_data <- data.frame(chrom = chrom,
                             pos = ascat_bc$SNPpos$pos,
                             BAF = baf,
                             logR = ascat_bc$Tumor_LogR[[1]],
-                            # FIXME: huge hack. BAFsegmented does not contain all SNPs, so we
-                            # substitute the original BAFs here. This is only used for plotting I
-                            # think, so it shouldn't alter the CN estimation.
-                            BAFsegmented = rep(as.numeric(NA), length(baf)),
-                            #samp_data$BAFsegmented = ascat_bc$Tumor_BAF_segmented[is_heterozygous]
                             logRsegmented = as.numeric(ascat_bc$Tumor_LogR_segmented),
-                            snp_pos = paste0(as.numeric(gsub("Y", "24", gsub("X", "23", gsub("chr", "", as.character(ascat_bc$SNPpos$chr)))))
-                                      ,"_"
-                                      ,ascat_bc$SNPpos$pos),
+                            snp_pos = paste0(chrom, "_", ascat_bc$SNPpos$pos),
                             stringsAsFactors = FALSE)
 
     all_snps[[sample]] <- samp_data
 
-  }#end  for (sample in samples) {
-
-
+  }
 
   #So, in TRACERx we have the issue that ASCAT, when run with exactly the same input ascat occasionally does not seem to have
   #all the same positions. So, in order to get xphase to run I have to make sure that the same snps/positions are kept for all
@@ -1464,25 +1134,32 @@ readInASCAT <- function(sample_table, segs, samples) {
   #some positions that are the start or end indices of samples' segments.
 
   all_snps <- ascat_set_bafsegmented(segs, all_snps)
-  #Get snp positions that are common to all data frames
-  snp.pos.vec <- paste0(all_snps[[1]]$chrom, "_", all_snps[[1]]$pos)
-  for (sample in samples[2:length(samples)]) {
-
-    snp.pos.vec <- snp.pos.vec[snp.pos.vec %in%  all_snps[[sample]]$snp_pos]
-
-  }#for (samp in samples) {
-
-  for (sample in samples) {
-
-    all_snps[[sample]] <- all_snps[[sample]][ all_snps[[sample]]$snp_pos %in% snp.pos.vec, ]
-    all_snps[[sample]]$snp_pos <- NULL
-
-  }#for (samp in samples) {
+  all_snps <- keep_common_snps(all_snps)
 
   return(all_snps)
 
 }
 
+# Subset snp data frames to keep only those snps that are present in all of the
+# others
+keep_common_snps <- function(all_snps) {
+  message("Subsetting to shared SNPs only")
+
+  samples <- names(all_snps)
+
+  # Identify all SNPs that are present in every sample
+  snp.pos.vec <- all_snps[[1]]$snp_pos
+  for (sample in samples[-1]) {
+    snp.pos.vec <- snp.pos.vec[snp.pos.vec %in% all_snps[[sample]]$snp_pos]
+  }
+
+  # Remove SNP positions that are not in all samples
+  for (sample in samples) {
+    all_snps[[sample]] <- all_snps[[sample]][ all_snps[[sample]]$snp_pos %in% snp.pos.vec, ]
+  }
+
+  return(all_snps)
+}
 
 # Read in a single ascat.bc file and create the requisite gl.snp.df that is used to compare the allelic 
 # imbalance present in tumour regions to the exact same set of hz snps in the germline. 
@@ -1525,7 +1202,8 @@ readInGermlineFromASCAT <- function(ascat_bc_rds_path, snp_pos_vec) {
   baf <- ascat_bc$Germline_BAF[[1]]
   baf[!is_heterozygous] <- NA
 
-  gl_data_df <- data.frame(chrom = as.numeric(gsub("Y", "24", gsub("X", "23", gsub("chr", "", as.character(ascat_bc$SNPpos$chr))))),
+  chrom <- chrom2integer(as.character(ascat_bc$SNPpos$chr))
+  gl_data_df <- data.frame(chrom = chrom,
                           pos = ascat_bc$SNPpos$pos,
                           BAF = baf,
                           logR = ascat_bc$Germline_LogR[[1]],
@@ -1535,9 +1213,7 @@ readInGermlineFromASCAT <- function(ascat_bc_rds_path, snp_pos_vec) {
                           BAFsegmented = rep(as.numeric(NA), length(baf)),
                           #samp_data$BAFsegmented = ascat_bc$Tumor_BAF_segmented[is_heterozygous]
                           logRsegmented = as.numeric(ascat_bc$Tumor_LogR_segmented),
-                          snp_pos = paste0(as.numeric(gsub("Y", "24", gsub("X", "23", gsub("chr", "", as.character(ascat_bc$SNPpos$chr)))))
-                                    ,"_"
-                                    ,ascat_bc$SNPpos$pos),
+                          snp_pos = paste0(chrom, "_", ascat_bc$SNPpos$pos),
                           stringsAsFactors = FALSE)
 
   final_gl_data_df <- gl_data_df[gl_data_df$snp_pos %in% snp_pos_vec,]
@@ -1556,13 +1232,15 @@ readInGermlineFromASCAT <- function(ascat_bc_rds_path, snp_pos_vec) {
 # and whether a segment should be phased at all (it won't be if all samples
 # have ASCAT calling the region balanced)
 ascat_set_bafsegmented <- function(segs, all_snps) {
+  message("Calculating segmented BAF values.")
+
   sample_names <- names(all_snps)
   for (samp_idx in seq_along(all_snps)) {
     samp_segs <- segs[segs$sample == sample_names[[samp_idx]],]
+    samp_data <- all_snps[[samp_idx]]
     for (seg_idx in seq_len(nrow(samp_segs))) {
 
       seg <- samp_segs[seg_idx,]
-      samp_data <- all_snps[[samp_idx]]
 
       # Segments include both the start and end positions
       seg_data_idx <- (samp_data$chrom == seg$chr &
@@ -1586,11 +1264,37 @@ ascat_set_bafsegmented <- function(segs, all_snps) {
   return(all_snps)
 }
 
-  ##
-    ##Params:
-    ##
-    ##Returns:
-    ##
+
+ascat_set_logrsegmented <- function(segs, all_snps) {
+  message("Calculating segmented logR values.")
+
+  sample_names <- names(all_snps)
+  for (samp_idx in seq_along(all_snps)) {
+    samp_segs <- segs[segs$sample == sample_names[[samp_idx]],]
+    samp_data <- all_snps[[samp_idx]]
+    for (seg_idx in seq_len(nrow(samp_segs))) {
+
+      seg <- samp_segs[seg_idx,]
+
+      # Segments include both the start and end positions
+      seg_data_idx <- (samp_data$chrom == seg$chr &
+                       samp_data$pos >= seg$startpos &
+                       samp_data$pos <= seg$endpos)
+
+      mean_logr <- mean(samp_data[seg_data_idx, "logR"], na.rm = TRUE)
+      all_snps[[samp_idx]][seg_data_idx, "logRsegmented"] <- mean_logr
+    }
+  }
+
+  return(all_snps)
+}
+
+
+##
+##Params:
+##
+##Returns:
+##
 readInMEDICCInputFormatParallel <- function(snp.file.df, processed.orig.cpn.segs.df, sample.vec) {
       # TODO add check that every single all.samp.SNP.list has the same SNPs..
       # Note error checking of removing NAs from the min.cons.seg.df should already have been performed
@@ -1722,7 +1426,6 @@ readInMEDICCInputFormatParallel <- function(snp.file.df, processed.orig.cpn.segs
 ##Returns:
 ##
 cleanAndErrorCheckSNPsParallel <- function(all.samp.SNP.list, mcs.seg.to.use.df, allow.logr.only.flag = FALSE, data.type = "MEDICC") {
-  # TODO add check that every single all.samp.SNP.list has the same SNPs..
   # Note error checking of removing NAs from the min.cons.seg.df should already have been performed
 
   min.cpn.vals.df <- mcs.seg.to.use.df[,4:ncol(mcs.seg.to.use.df)]
@@ -1764,11 +1467,7 @@ cleanAndErrorCheckSNPsParallel <- function(all.samp.SNP.list, mcs.seg.to.use.df,
     return(me)
   }
   sites.in.each.samp.seg.list <- foreach(it.min.cons.seg.df = itx, .combine = c) %dopar% {
-  #for( i in 1:nrow(iterable.min.cons.seg.df)) {
 
-   # print(iterable.min.cons.seg.df[i,])
-    #min.cons.seg.df <- iterable.min.cons.seg.df[i, ,drop=FALSE]
-    #print(min.cons.seg.df)
     samp.SNP.df <- all.samp.SNP.list[[ it.min.cons.seg.df[, 4]]]
 
     if( "chr" %in% colnames(samp.SNP.df)) {
@@ -1776,7 +1475,6 @@ cleanAndErrorCheckSNPsParallel <- function(all.samp.SNP.list, mcs.seg.to.use.df,
           colnames(samp.SNP.df)[colnames(samp.SNP.df) == "chr"] <- "chrom"
 
     }
-    #print(it.min.cons.seg.df)
     samp.seg.logR.BAF.df <- samp.SNP.df[ samp.SNP.df$chrom == it.min.cons.seg.df[, 1]
                                        & samp.SNP.df$pos >= it.min.cons.seg.df[, 2]
                                        & samp.SNP.df$pos <= it.min.cons.seg.df[, 3], ,drop = FALSE]
@@ -1799,6 +1497,11 @@ cleanAndErrorCheckSNPsParallel <- function(all.samp.SNP.list, mcs.seg.to.use.df,
       #colnames(samp.seg.logR.BAF.df)[colnames(samp.seg.logR.BAF.df) == "chr"] <- "chrom"
 
     } else if (allow.logr.only.flag == FALSE & data.type == "ASCAT") {
+
+      samp.prob.SNPs.vec <- rownames(samp.seg.logR.BAF.df)[is.na(samp.seg.logR.BAF.df$BAF)]
+      samp.seg.logR.BAF.df <- samp.seg.logR.BAF.df[!is.na(samp.seg.logR.BAF.df$BAF), ,drop = FALSE]
+
+    } else if (allow.logr.only.flag == FALSE & data.type == "sequenza") {
 
       samp.prob.SNPs.vec <- rownames(samp.seg.logR.BAF.df)[is.na(samp.seg.logR.BAF.df$BAF)]
       samp.seg.logR.BAF.df <- samp.seg.logR.BAF.df[!is.na(samp.seg.logR.BAF.df$BAF), ,drop = FALSE]
@@ -1865,7 +1568,9 @@ cleanAndErrorCheckSNPsParallel <- function(all.samp.SNP.list, mcs.seg.to.use.df,
 # -------------------------------------------------------------------------
 # Sequenza input format
 #
-# Read BAF and logR values from seqz files that are generated for sequenza
+# Read BAF and logR values from seqz files that are generated for sequenza.
+# These files are seqz format, a tab-delimited and gzipped file format with the
+# following columns:
 #
 # - chromosome
 # - position
@@ -1881,8 +1586,145 @@ cleanAndErrorCheckSNPsParallel <- function(all.samp.SNP.list, mcs.seg.to.use.df,
 # - AB.normal
 # - AB.tumor
 # - tumor.strand
+#
+# example:
+# $ tabix CB1001-11-D01-X1.gz "chr1:10,000,000-20,000,000;" | head
+# chr1    10007515        C       15      5       0.333   1.0     0       hom     32      5       C       .       0
+# chr1    10007516        T       15      5       0.333   1.0     0       hom     32      5       T       .       0
+# chr1    10007517        T       16      5       0.312   1.0     0       hom     32      5       T       .       0
+# chr1    10007518        C       16      5       0.312   1.0     0       hom     32      5       C       .       0
+# chr1    10007519        A       15      5       0.333   1.0     0       hom     32      5       A       .       0
+# chr1    10007520        C       17      5       0.294   1.0     0       hom     32      5       C       .       0
+#
+# The object that is returned should have the format:
+# > x <- readRDS("LTX121_all_samp_SNP_list.RDS")
+# > str(x)
+# List of 2
+#  $ A_LTX121_SU_T1-R1:'data.frame':      938946 obs. of  6 variables:
+#   ..$ chrom        : num [1:938946] 1 1 1 1 1 1 1 1 1 1 ...
+#   ..$ pos          : int [1:938946] 762273 762496 762497 777237 777318 777335 777361 777456 783071 783147 ...
+#   ..$ BAF          : num [1:938946] NA NA NA NA NA NA NA NA NA NA ...
+#   ..$ logR         : num [1:938946] -0.049 -0.161 -0.161 -0.542 -0.46 -0.46 -0.46 -0.166 -0.047 -0.013 ...
+#   ..$ BAFsegmented : num [1:938946] 0.231 0.231 0.231 0.231 0.231 ...
+#   ..$ logRsegmented: num [1:938946] -0.327 -0.327 -0.327 -0.327 -0.327 ...
+read_snps_sequenza <- function(input_files, segs, samples) {
 
-readBAFLogrSequenza <- function() {
+  library(readr)
+
+  all_snps <- list()
+  gl_snps <- list()
+
+  for (sample in samples) {
+
+    input_file <- input_files[[sample]]
+
+    # All data that is available in a .seqz file. We only need a subset of it
+    # but this is a useful reference in case we need more info at a later date
+    #
+    # col_types = "ciciidddcddccc"
+    # col_names = c("chromosome", "position", "base.ref", "depth.normal",
+    #               "depth.tumor", "depth.ratio", "Af", "Bf", "zygosity.normal",
+    #               "GC.percent", "good.reads", "AB.normal", "AB.tumor",
+    #               "tumor.strand")
+    # Using readr
+    message("Reading SNP data for sample: ", sample)
+    col_types <- "ci---d-dc-----"  # Skip unnecessary columns
+    col_names <- c("chromosome", "position", "depth.ratio", "Bf", "zygosity.normal")
+    seqz_data <- read_tsv(input_file, col_types = col_types,
+                          progress = TRUE, col_names = col_names,
+                          skip = 1)
+
+    message("Creating SNP data frame.")
+    chrom <- chrom2integer(seqz_data$chromosome)
+    pos <- seqz_data$position
+    all_snps[[sample]] <- data.frame(chrom = chrom,
+                                     pos = pos,
+                                     BAF = seqz_data$Bf,
+                                     logR = log2(seqz_data$depth.ratio),
+                                     zygosity.normal = seqz_data$zygosity.normal,
+                                     snp_pos = paste0(chrom, "_", pos),
+                                     stringsAsFactors = FALSE)
+
+    # Mask non-hz SNPs with NA
+    all_snps[[sample]]$BAF[all_snps[[sample]]$zygosity.normal != "het"] <- NA
+
+  }
+
+  all_snps <- ascat_set_bafsegmented(segs, all_snps)
+  all_snps <- ascat_set_logrsegmented(segs, all_snps)
+  all_snps <- keep_common_snps(all_snps)
+
+  str(all_snps)
+
+  return(list(all_samples = all_snps, germline = gl_snps))
 }
 
 
+# Convert the internal refphase snps object into an ascat.bc object for use in
+# internal rerun of ASCAT
+#
+# example object format:
+# List of 14
+#  $ Tumor_LogR          :'data.frame':   675960 obs. of  1 variable:
+#   ..$ CB1001-11-D01-X1: num [1:675960] 0.573 0.602 0.622 0.77 0.505 ...
+#  $ Tumor_BAF           :'data.frame':   675960 obs. of  1 variable:
+#   ..$ BAF: num [1:675960] 0.0435 0 0 0 0 ...
+#  $ Tumor_LogR_segmented: num [1:675960, 1] -0.838 -0.838 -0.838 -0.838 -0.838 ...
+#   ..- attr(*, "dimnames")=List of 2
+#   .. ..$ : chr [1:675960] "1" "2" "3" "4" ...
+#   .. ..$ : chr "CB1001-11-D01-X1"
+#  $ Tumor_BAF_segmented :List of 1
+#   ..$ : num [1:29679, 1] 0.104 0.104 0.104 0.104 0.104 ...
+#   .. ..- attr(*, "dimnames")=List of 2
+#   .. .. ..$ : chr [1:29679] "250" "274" "278" "314" ...
+#   .. .. ..$ : NULL
+#  $ Germline_LogR       :'data.frame':   675960 obs. of  1 variable:
+#   ..$ CB1001-11-D01-X1: num [1:675960] 0 0 0 0 0 0 0 0 0 0 ...
+#  $ Germline_BAF        :'data.frame':   675960 obs. of  1 variable:
+#   ..$ BAF: num [1:675960] 0 0 0 0 0 0 0 0 0 0 ...
+#  $ SNPpos              :'data.frame':   675960 obs. of  2 variables:
+#   ..$ chrs: chr [1:675960] "1" "1" "1" "1" ...
+#   ..$ pos : int [1:675960] 13116 13118 13273 13284 13380 138781 138817 138829 139060 139294 ...
+#  $ ch                  :List of 22
+#   ..$ : int [1:66137] 1 2 3 4 5 6 7 8 9 10 ...
+#   ..$ : int [1:51827] 66138 66139 66140 66141 66142 66143 66144 66145 66146 66147 ...
+#   ..$ : int [1:8266] 652529 652530 652531 652532 652533 652534 652535 652536 652537 652538 ...
+#   ..$ : int [1:15166] 660795 660796 660797 660798 660799 660800 660801 660802 660803 660804 ...
+#  $ chr                 :List of 28
+#   ..$ : int [1:34703] 1 2 3 4 5 6 7 8 9 10 ...
+#   ..$ : int [1:31434] 34704 34705 34706 34707 34708 34709 34710 34711 34712 34713 ...
+#   ..$ : int [1:8266] 652529 652530 652531 652532 652533 652534 652535 652536 652537 652538 ...
+#   ..$ : int [1:15166] 660795 660796 660797 660798 660799 660800 660801 660802 660803 660804 ...
+#  $ chrs                : chr [1:22] "1" "2" "3" "4" ...
+#  $ samples             : chr "CB1001-11-D01-X1"
+#  $ gender              : chr "XX"
+#  $ sexchromosomes      : chr [1:2] "X" "Y"
+#  $ failedarrays        : NULL
+snps_to_ascat_bc <- function(snps, segs, sample) {
+
+  ascat_bc <- list(Tumor_LogR = data.frame(sample = snps$LogR),
+                   Tumor_BAF = data.frame(sample = snps$BAF),
+                   Tumor_LogR_segmented = snps$LogR_segmented,
+                   Germline_LogR = NA,
+                   Germline_BAF = NA,
+                   SNPpos = data.frame(chrs = snps$chrom,
+                                       pos = snps$pos),
+                   ch = NA,
+                   chr = NA,
+                   chrs = unique(sort(snps$chrom)),
+                   samples = sample,
+                   gender = "XX",
+                   sexchromosomes = c("X", "Y"),
+                   failedarrays = NULL)
+
+  ascat_bc$ch <- lapply(ascat_bc$chrs, function(x) { which(ascat_bc$SNPpos$chrs == x) })
+  ascat_bc$chr <- split_genome(bc$SNPpos)  # From ascat.R
+
+  #colnames(ascat_bc$Germline_BAF) <- "BAF"
+  colnames(ascat_bc$Tumor_BAF) <- "BAF"
+
+  # Validate our created object
+  validate_ascat_bc_input(ascat_bc)
+
+  return(ascat_bc)
+}

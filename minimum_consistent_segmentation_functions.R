@@ -459,9 +459,6 @@ createFullyAnnotatedJointSegmentation <- function(f.joint.segs.df) {
 
   all.bp.all.samps.segs.anno.df <- cbind(Chromosome, Start_Position, End_Position, full_sample, all.bp.all.samps.segs.df)
   sorted.all.bp.all.samps.segs.anno.df <- all.bp.all.samps.segs.anno.df[with(all.bp.all.samps.segs.anno.df, order(full_sample, Chromosome, Start_Position)), ]
-  sorted.all.bp.all.samps.segs.anno.df[1:50, 1:9]
-
-
 
   ###Add the chromosoem arms to the segments to make later joininbg etc much easier...
   print("Adding chromosome arm annotation to all segments original and new...")

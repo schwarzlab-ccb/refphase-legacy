@@ -226,3 +226,11 @@ calcExpectedBAF <- function(exp.intA, exp.intB, tumor.purity) {
   return(exp.BAF)
 
 }#end calcExpectedBAF <- function(exp.intA, exp.intB, tumor.purity)
+
+# Convert "chr1"-style chromosome names to integers
+# chr1 -> 1, ..., chrX -> 23, chrY -> 24
+chrom2integer <- function(chrom) {
+  return(as.integer(gsub("Y", "24",
+                    gsub("X", "23",
+                    gsub("chr", "", chrom, fixed = TRUE), fixed = TRUE), fixed = TRUE)))
+}
