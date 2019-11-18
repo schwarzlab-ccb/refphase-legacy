@@ -1121,7 +1121,7 @@ readInASCAT <- function(sample_table, segs, samples) {
                             BAF = baf,
                             logR = ascat_bc$Tumor_LogR[[1]],
                             logRsegmented = as.numeric(ascat_bc$Tumor_LogR_segmented),
-                            snp_pos = paste0(chrom, "_", ascat_bc$SNPpos$pos),
+                            row.names = paste0(chrom, "_", ascat_bc$SNPpos$pos),
                             stringsAsFactors = FALSE)
 
     all_snps[[sample]] <- samp_data
@@ -1148,14 +1148,15 @@ keep_common_snps <- function(all_snps) {
   samples <- names(all_snps)
 
   # Identify all SNPs that are present in every sample
-  snp.pos.vec <- all_snps[[1]]$snp_pos
+  snp.pos.vec <- row.names(all_snps[[1]])
   for (sample in samples[-1]) {
-    snp.pos.vec <- snp.pos.vec[snp.pos.vec %in% all_snps[[sample]]$snp_pos]
+    snp.pos.vec <- snp.pos.vec[snp.pos.vec %in% row.names(all_snps[[sample]])]
   }
 
   # Remove SNP positions that are not in all samples
   for (sample in samples) {
-    all_snps[[sample]] <- all_snps[[sample]][ all_snps[[sample]]$snp_pos %in% snp.pos.vec, ]
+    #all_snps[[sample]] <- all_snps[[sample]][ row.names(all_snps[[sample]]) %in% snp.pos.vec, ]
+    all_snps[[sample]] <- all_snps[[sample]][snp.pos.vec, ]
   }
 
   return(all_snps)
@@ -1180,16 +1181,11 @@ readInGermlineFromASCAT <- function(ascat_bc_rds_path, snp_pos_vec) {
   cat("Starting to read sample", ascat_bc_rds_path, "\n")
 
   if(grepl("RData", ascat_bc_rds_path)) {
-
     print("ascat.bc object in RData file, loading...")
     load(ascat_bc_rds_path)
     ascat_bc <- ascat.bc
-
   } else {
-
     ascat_bc <- readRDS(ascat_bc_rds_path)
-
-
   }
 
   # First check to see which SNPs are heterozygous
@@ -1213,10 +1209,10 @@ readInGermlineFromASCAT <- function(ascat_bc_rds_path, snp_pos_vec) {
                           BAFsegmented = rep(as.numeric(NA), length(baf)),
                           #samp_data$BAFsegmented = ascat_bc$Tumor_BAF_segmented[is_heterozygous]
                           logRsegmented = as.numeric(ascat_bc$Tumor_LogR_segmented),
-                          snp_pos = paste0(chrom, "_", ascat_bc$SNPpos$pos),
+                          row.names = paste0(chrom, "_", ascat_bc$SNPpos$pos),
                           stringsAsFactors = FALSE)
 
-  final_gl_data_df <- gl_data_df[gl_data_df$snp_pos %in% snp_pos_vec,]
+  final_gl_data_df <- gl_data_df[row.names(gl_data_df) %in% snp_pos_vec,]
 
   return(gl_data_df)
 }
@@ -1521,7 +1517,6 @@ cleanAndErrorCheckSNPsParallel <- function(all.samp.SNP.list, mcs.seg.to.use.df,
 
   }
 
-  #saveRDS(sites.in.each.samp.seg.list, file = )
   all.samps.prob.SNPs.vec <- unique(unlist(sapply(sites.in.each.samp.seg.list, function(x) x[["samp_prob_SNPs_vec"]])))
   print("Number of problem SNPs being removed:")
   print(length(all.samps.prob.SNPs.vec))
@@ -1538,8 +1533,8 @@ cleanAndErrorCheckSNPsParallel <- function(all.samp.SNP.list, mcs.seg.to.use.df,
       samp.seg.prob.snp.vec <- unique(unlist(sapply(samp.seg.mrc.list, function(x) x[["samp_prob_SNPs_vec"]])))
       samp.seg.logR.BAF.df <-  samp.seg.mrc$samp_seg_logR_BAF_df[ ! rownames(samp.seg.mrc$samp_seg_logR_BAF_df) %in% samp.seg.prob.snp.vec, ,drop = FALSE ]
       result <- MultiResultClass(samp_seg_name = samp.seg.mrc$samp_seg_name,
-                    samp_seg_logR_BAF_df = samp.seg.logR.BAF.df,
-                    samp_prob_SNPs_vec = c())
+                                 samp_seg_logR_BAF_df = samp.seg.logR.BAF.df,
+                                 samp_prob_SNPs_vec = c())
       result.list <- list(result)
       names(result.list) <- samp.seg.mrc$samp_seg_name
       result.list
@@ -1550,7 +1545,6 @@ cleanAndErrorCheckSNPsParallel <- function(all.samp.SNP.list, mcs.seg.to.use.df,
     clean.sites.in.each.samp.seg.list <- sites.in.each.samp.seg.list
 
   }
-
 
   for ( samp.seg.name in names(clean.sites.in.each.samp.seg.list) ) {
 
@@ -1642,7 +1636,7 @@ read_snps_sequenza <- function(input_files, segs, samples) {
                                      BAF = seqz_data$Bf,
                                      logR = log2(seqz_data$depth.ratio),
                                      zygosity.normal = seqz_data$zygosity.normal,
-                                     snp_pos = paste0(chrom, "_", pos),
+                                     row.names = paste0(chrom, "_", pos),
                                      stringsAsFactors = FALSE)
 
     # Mask non-hz SNPs with NA

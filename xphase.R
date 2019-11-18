@@ -285,57 +285,62 @@ pt.snp.file.paths.path <- paste0(PLOT_OUTPUT_DIR, patient, "_pt_snp_file_paths_d
 # Load in the data:
 # Note that the functions to create the single dataframes that it accepts are
 # in the data_input_and_QC_functions.R
-if (conf$overwrite) {
+#if (conf$overwrite) {
+use_cached_input <- FALSE
+if (!use_cached_input) {
 
   input_data <- read_input(seg.file.path, snp.file.path, input_format)
 
   # All input data in one object instead of a million smaller ones
 	saveRDS(input_data, file = file.path(PLOT_OUTPUT_DIR, "input_data.rds"))
 
-  # Unwrap the list returned from the read_input() function
-	all.samp.SNP.list <- input_data$all.samp.SNP.list
-	anno.seg.df <- input_data$anno.seg.df
-	asas.SNPS.lr.and.or.baf.lists <- input_data$asas.SNPS.lr.and.or.baf.lists
-	asas.SNPs.w.both.lr.baf.snp.lists <- input_data$asas.SNPs.w.both.lr.baf.snp.lists
-	f.joint.segs.df <- input_data$f.joint.segs.df
-	gl.snp.df <- input_data$gl.snp.df
-	min.cons.segs.df <- input_data$min.cons.segs.df
-	ploidy.est.vec <- input_data$ploidy.est.vec
-  pt.snp.file.paths.df <- input_data$pt.snp.file.paths.df
-	purity.est.vec <- input_data$purity.est.vec
-	sorted.all.bp.all.samps.segs.anno.df <- input_data$sorted.all.bp.all.samps.segs.anno.df
 
-  # Save input data for later debugging
-  message("Save output for later")
-	saveRDS(all.samp.SNP.list, file = all.samp.SNP.list.path)
-	saveRDS(anno.seg.df, file = anno.seg.df.path)
-	saveRDS(asas.SNPS.lr.and.or.baf.lists, file = asas.SNPS.lr.and.or.baf.lists.path)
-	saveRDS(asas.SNPs.w.both.lr.baf.snp.lists, file = asas.SNPs.w.both.lr.baf.snp.lists.path)
-	saveRDS(f.joint.segs.df, file = processed.orig.cpn.segs.df.path)
-	saveRDS(min.cons.segs.df, file = min.cons.segs.df.path)
-	saveRDS(ploidy.est.vec, file = ploidy.est.vec.path)
-	saveRDS(pt.snp.file.paths.df, file = pt.snp.file.paths.path)
-	saveRDS(purity.est.vec, file = purity.est.vec.path)
-	saveRDS(sorted.all.bp.all.samps.segs.anno.df, file = sorted.all.bp.all.samps.segs.anno.df.path)
+  #  # Save input data for later debugging
+  #  message("Save output for later")
+	#  saveRDS(all.samp.SNP.list, file = all.samp.SNP.list.path)
+	#  saveRDS(anno.seg.df, file = anno.seg.df.path)
+	#  saveRDS(asas.SNPS.lr.and.or.baf.lists, file = asas.SNPS.lr.and.or.baf.lists.path)
+	#  saveRDS(asas.SNPs.w.both.lr.baf.snp.lists, file = asas.SNPs.w.both.lr.baf.snp.lists.path)
+	#  saveRDS(f.joint.segs.df, file = processed.orig.cpn.segs.df.path)
+	#  saveRDS(min.cons.segs.df, file = min.cons.segs.df.path)
+	#  saveRDS(ploidy.est.vec, file = ploidy.est.vec.path)
+	#  saveRDS(pt.snp.file.paths.df, file = pt.snp.file.paths.path)
+	#  saveRDS(purity.est.vec, file = purity.est.vec.path)
+	#  saveRDS(sorted.all.bp.all.samps.segs.anno.df, file = sorted.all.bp.all.samps.segs.anno.df.path)
 
 } else {
 
-  # Load in cached versions of the input data instead of parsing the
-  # segmentation and snp files again
-  message("Loading cached input files")
-	all.samp.SNP.list <- readRDS(file = all.samp.SNP.list.path)
-	asas.SNPS.lr.and.or.baf.lists <- readRDS(file = asas.SNPS.lr.and.or.baf.lists.path)
-	asas.SNPs.w.both.lr.baf.snp.lists <- readRDS(file = asas.SNPs.w.both.lr.baf.snp.lists.path)
-	f.joint.segs.df <- readRDS(file = processed.orig.cpn.segs.df.path)
-	min.cons.segs.df <- readRDS(file = min.cons.segs.df.path)
-	ploidy.est.vec <- readRDS(file = ploidy.est.vec.path)
-	pt.snp.file.paths.df <- readRDS(file = pt.snp.file.paths.path)
-	purity.est.vec <- readRDS(file = purity.est.vec.path)
-	sorted.all.bp.all.samps.segs.anno.df <- readRDS( file = sorted.all.bp.all.samps.segs.anno.df.path)
+	input_data <- readRDS(file.path(PLOT_OUTPUT_DIR, "input_data.rds"))
+
+#  # Load in cached versions of the input data instead of parsing the
+#  # segmentation and snp files again
+#  message("Loading cached input files")
+#	all.samp.SNP.list <- readRDS(file = all.samp.SNP.list.path)
+#	asas.SNPS.lr.and.or.baf.lists <- readRDS(file = asas.SNPS.lr.and.or.baf.lists.path)
+#	asas.SNPs.w.both.lr.baf.snp.lists <- readRDS(file = asas.SNPs.w.both.lr.baf.snp.lists.path)
+#	f.joint.segs.df <- readRDS(file = processed.orig.cpn.segs.df.path)
+#	min.cons.segs.df <- readRDS(file = min.cons.segs.df.path)
+#	ploidy.est.vec <- readRDS(file = ploidy.est.vec.path)
+#	pt.snp.file.paths.df <- readRDS(file = pt.snp.file.paths.path)
+#	purity.est.vec <- readRDS(file = purity.est.vec.path)
+#	sorted.all.bp.all.samps.segs.anno.df <- readRDS( file = sorted.all.bp.all.samps.segs.anno.df.path)
 
 }
 
-# FIXME: MH This is never used again and not saved, disabling it for now
+# Unwrap the list returned from the read_input() function
+all.samp.SNP.list <- input_data$all.samp.SNP.list
+anno.seg.df <- input_data$anno.seg.df
+asas.SNPS.lr.and.or.baf.lists <- input_data$asas.SNPS.lr.and.or.baf.lists
+asas.SNPs.w.both.lr.baf.snp.lists <- input_data$asas.SNPs.w.both.lr.baf.snp.lists
+f.joint.segs.df <- input_data$f.joint.segs.df
+gl.snp.df <- input_data$gl.snp.df
+min.cons.segs.df <- input_data$min.cons.segs.df
+ploidy.est.vec <- input_data$ploidy.est.vec
+pt.snp.file.paths.df <- input_data$pt.snp.file.paths.df
+purity.est.vec <- input_data$purity.est.vec
+sorted.all.bp.all.samps.segs.anno.df <- input_data$sorted.all.bp.all.samps.segs.anno.df
+
+message("FIXME: MH This WGII calculation is never used again and not saved, disabling it for now")
 #TODO move this up
 #Let's come up with the original wgii score pre MPhase based on the segmentation:
 #   sample.vec <- names(asas.SNPs.w.both.lr.baf.snp.lists)

@@ -501,13 +501,10 @@ getCombinedBAFDipTestPhasingParallel <- function(asas.lr.baf.lists,
     return(me)
   }
 
-
-
   itx <- iter(seg.name.vec)
   #sample.to.phase.seg.mrc.list <- foreach(seg.name = itx, .combine = c) %dopar% {
   sample.to.phase.seg.mrc.list <- foreach(seg.name = itx, .combine = c) %do% {
-  #sample.to.phase.seg.list <- list()
-  #for ( seg.name in seg.name.vec ) {
+
     ret.mrc <- MultiResultClass()
     #print(seg.name)
     first.ss.lr.baf.df <- asas.lr.baf.lists[[sample.vec[1]]][[seg.name]]

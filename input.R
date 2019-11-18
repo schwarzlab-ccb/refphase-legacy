@@ -114,12 +114,17 @@ read_input <- function(seg_file, snp_file, input_format) {
 																		allow.logr.only.flag = FALSE,
 																		data.type = data.format.to.use)
 
-  message("asas.SNPs.w.both.lr.baf.snp.lists output")
-  str(asas.SNPs.w.both.lr.baf.snp.lists)
+  #message("asas.SNPs.w.both.lr.baf.snp.lists output")
+  #str(asas.SNPs.w.both.lr.baf.snp.lists)
 
 	if (length(unique(sapply(asas.SNPs.w.both.lr.baf.snp.lists, length))) != 1) {
 		stop("Not all segments are present in all samples' snp assignations, likely something has gone wrong, is the parallelisation working correctly?")
 	}
+
+  # 
+  message("Number of rows in each sample (asas.SNPs.w.both.lr.baf.snp.lists)")
+  snps_per_segment <- sapply(asas.SNPs.w.both.lr.baf.snp.lists, function(x) { sapply(x, nrow) })
+  print(snps_per_segment)
 
 	time.taken <- proc.time() - ptm
 	message("Runtime of cleanAndErrorCheckSNPsParallel:")
@@ -134,8 +139,8 @@ read_input <- function(seg_file, snp_file, input_format) {
 																	allow.logr.only.flag = TRUE,
 																	data.type = data.format.to.use)
 
-  message("asas.SNPS.lr.and.or.baf.lists output")
-  str(asas.SNPS.lr.and.or.baf.lists)
+  #message("asas.SNPS.lr.and.or.baf.lists output")
+  #str(asas.SNPS.lr.and.or.baf.lists)
 
 	if (length(unique(sapply(asas.SNPS.lr.and.or.baf.lists, length))) != 1) {
 		stop("Not all segments are present in all samples' snp assignations, likely something has gone wrong, is the parallelisation working correctly?")
