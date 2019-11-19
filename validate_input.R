@@ -28,7 +28,7 @@ validate_snp_all_samples <- function(tumor_snps, germline_snps) {
 
   # -------------------------------------------------------------------------
   # 1) Positions are identical in all input files (both for Tumor and Germline)
-  stopifnot(all(sapply(tumor_snps[-1], FUN = function(x, y) { identical(x$snp_pos, y) }, tumor_snps[[1]]$snp_pos)))
+  stopifnot(all(sapply(tumor_snps[-1], FUN = function(x, y) { identical(rownames(x), rownames(y)) }, tumor_snps[[1]])))
 
   # Checks 2 and 3 are not necessary if the above check passes.
 
@@ -66,8 +66,8 @@ validate_snp_input <- function(snp_data) {
                         BAF = numeric(),
                         logR = numeric(),
                         BAFsegmented = numeric(),
-                        logRsegmented = numeric(),
-                        snp_pos = character())
+                        logRsegmented = numeric())
+                        #snp_pos = character())
 
   # Make sure we have (at least) the columns that we need
   stopifnot(all(names(expected_cols) %in% names(snp_data)))
@@ -83,7 +83,7 @@ validate_snp_input <- function(snp_data) {
   # -------------------------------------------------------------------------
   # 3) Are all positions of SNPs positive integers
   # stopifnot(is.integer(snp_data$pos))  # Already checked above
-  stopifnot(!any(snp_data$pos < 0))
+  stopifnot(all(snp_data$pos >= 0))
 
   # -------------------------------------------------------------------------
   # 4) Are all chromosomes and positions in the correct (1-24.. 1-200000)
@@ -91,7 +91,7 @@ validate_snp_input <- function(snp_data) {
 
   # -------------------------------------------------------------------------
   # 5) Are there any NA values in the LogR columns for any regions
-  stopifnot(!any(is.na(snp_data$logR)))
+  stopifnot(all(!is.na(snp_data$logR)))
 
   # -------------------------------------------------------------------------
   # 6) Are there any Inf or -Inf values in the LogR columns
@@ -103,7 +103,7 @@ validate_snp_input <- function(snp_data) {
 
   # -------------------------------------------------------------------------
   # 8) Are there any duplicate positions
-  stopifnot(anyDuplicated(snp_data$snp_pos) == 0)
+  stopifnot(anyDuplicated(snp_data[, c("chrom", "pos")]) == 0)
   
   # -------------------------------------------------------------------------
   # 9) Are there positions present for all expected chromosomes if none present
@@ -222,7 +222,7 @@ validate_seg_input <- function(seg) {
   for (expected_col in names(expected_cols)) {
     if (expected_col %in% c("nAraw", "nBraw", "callState"))
       next
-    message("column: ", expected_col, "\tsegmentation: ", class(seg[,expected_col]), "\texpected: ", class(expected_cols[[expected_col]]))
+    #message("column: ", expected_col, "\tsegmentation: ", class(seg[,expected_col]), "\texpected: ", class(expected_cols[[expected_col]]))
     stopifnot(class(seg[,expected_col]) == class(expected_cols[[expected_col]]))
   }
 

@@ -1,8 +1,3 @@
-
-
-
-
-
 getAllSegAllSamplePhasedRawCPNList <- function(sample.vec, ploidy.est.vec, purity.est.vec, min.cons.segs.df, all.seg.phasing.info.list, asas.both.lr.baf.lists, gamma.val = 1, min.num.hz.snp.phasing = 5) {
 
     seg.name.vec <- paste(min.cons.segs.df[ , 1], min.cons.segs.df[ , 2], min.cons.segs.df[ , 3], sep=":")
@@ -30,11 +25,8 @@ getAllSegAllSamplePhasedRawCPNList <- function(sample.vec, ploidy.est.vec, purit
         #We may have the problem here that some segments don't have any snps in them at all, check for this perhaps? see if fails
           samp.b.lr.baf.df <- asas.both.lr.baf.lists[[samp]][[seg.name]]
           if (nrow(samp.b.lr.baf.df) == 0) {
-
             next
-
-          }#end   if (nrow(samp.b.lr.baf.df) == 0) {
-
+          }
 
           if (USING_XPHASE == FALSE) {
 
@@ -43,15 +35,10 @@ getAllSegAllSamplePhasedRawCPNList <- function(sample.vec, ploidy.est.vec, purit
                                                               tumor.ploidy = ploidy.est.vec[samp],
                                                               tumor.purity = purity.est.vec[samp],
                                                               gamma.val = gamma.val)
-
-
-          }else {
-
-          ##
-          samp.seg.cpnA.cpnB.df <- getPhasedASCATRawCopyNumberAB(ref.ss.lr.baf.df = samp.b.lr.baf.df,
-                                                              sample = samp,
-                                                              sample.ph.hz.ascat.df.list = PH_ALL_SAMP_ASCAT_RAW_CPN_DF_LIST)
-
+          } else {
+            samp.seg.cpnA.cpnB.df <- getPhasedASCATRawCopyNumberAB(ref.ss.lr.baf.df = samp.b.lr.baf.df,
+                                                                   sample = samp,
+                                                                   sample.ph.hz.ascat.df.list = PH_ALL_SAMP_ASCAT_RAW_CPN_DF_LIST)
           }
 
 
@@ -77,7 +64,6 @@ getAllSegAllSamplePhasedRawCPNList <- function(sample.vec, ploidy.est.vec, purit
                phased.samp.seg.cpnA.cpnB.df[is.upper.and.cpnA.in.ref.idx.vec, 1] <- samp.seg.cpnA.cpnB.df[is.upper.and.cpnA.in.ref.idx.vec, 1]
                phased.samp.seg.cpnA.cpnB.df[is.upper.and.cpnA.in.ref.idx.vec, 2] <- samp.seg.cpnA.cpnB.df[is.upper.and.cpnA.in.ref.idx.vec, 2]
 
-
           }
           #Get indices to phase cpnB
           if (length(all.seg.phasing.info.list[[seg.name]]$maj_is_cpnB_idx_vec) > 0) {
@@ -101,13 +87,8 @@ getAllSegAllSamplePhasedRawCPNList <- function(sample.vec, ploidy.est.vec, purit
       }#end for ( seg.name in chr.start.end.string.vec ) {
     }#end for   for ( samp in sample.vec) {
 
-
     #Now let's check all the samples have the segments have the same number of raw cpn points
-
-
     for ( seg.name in seg.name.vec ) {
-      # print("Checking seg:")
-      # print(seg.name)
       chr.len <- length(all.samples.phased.cpn.list[[1]][[seg.name]]$chr_vec)
       pos.len <- length(all.samples.phased.cpn.list[[1]][[seg.name]]$pos_vec)
       logr.len <- length(all.samples.phased.cpn.list[[1]][[seg.name]]$logr_vec)
@@ -161,10 +142,6 @@ getAllSegAllSamplePhasedRawCPNList <- function(sample.vec, ploidy.est.vec, purit
 
     return(all.samples.phased.cpn.list)
 }#end getAllSegAllSamplePhasedRawCPNList
-
-
-
-
 
 
 getAllSampLogrAlonePositionsLogrAndTotalCPNDFsList <- function(sample.vec,
@@ -229,8 +206,6 @@ getAllSampLogrAlonePositionsLogrAndTotalCPNDFsList <- function(sample.vec,
 }#end getAllSampLogrAlonePositionsLogrAndTotalCPNDFsList
 
 
-
-
 #This is used to generate CCF values so needs to be added to the sample.to.phase.seg.list
 createAllSegsPhasedBAFDataFrame <- function(asas.lr.baf.lists, sample.to.phase.seg.list, min.num.hz.snp.phasing = 5) {
 
@@ -239,10 +214,10 @@ createAllSegsPhasedBAFDataFrame <- function(asas.lr.baf.lists, sample.to.phase.s
   #Now we need to make sure that the asas.lr.baf.lists and sample.to.phase.seg.list
   if (length(names(sample.to.phase.seg.list)) != length(asas.lr.baf.lists[[1]])) {
 
-    print("Segments that will not have phasing attempted as were do not have the minimum number of hz positions:")
+    message("Segments that will not have phasing attempted as were do not have the minimum number of hz positions:")
     #print(names(sample.to.phase.seg.list)[ ! names(asas.lr.baf.lists[[1]]) %in% names(sample.to.phase.seg.list)])
     print(names(sample.to.phase.seg.list)[names(sample.to.phase.seg.list) %in% names(asas.lr.baf.lists[[1]])])
-    print("Continuing creation of phased BAF dataframe")
+    message("Continuing creation of phased BAF dataframe")
 
   }
 
@@ -257,12 +232,9 @@ createAllSegsPhasedBAFDataFrame <- function(asas.lr.baf.lists, sample.to.phase.s
       samp.BAF.df <- asas.lr.baf.lists[[samp]][[seg.name]]
 
       if (nrow(samp.BAF.df) < min.num.hz.snp.phasing) {
-
-        print(seg.name)
-        print("Has fewer than 5 heterozygous SNPs, not updating corresponding BAFs in table")
-        next;
-
-      }#end if(nrow(samp.BAF.df)<5) {
+        message("Segment has fewer than 5 heterozygous SNPs, not updating corresponding BAFs in table: ", seg.name)
+        next
+      }
 
       #initialise new columns
       samp.BAF.df$samp <- samp

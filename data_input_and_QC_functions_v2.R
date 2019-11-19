@@ -247,7 +247,7 @@ getSNPDataForTRACERxWGS <- function(snp.file.path) {
 
   all.regions.ASCAT.SNP.list <- list()
   all.regions.ASCAT.seg.df <- NULL
-  print("new WGS reader")
+  message("new WGS reader")
   for (samp in sample.vec) {
 
     print(samp)
@@ -288,12 +288,8 @@ getSNPDataForTRACERxWGS <- function(snp.file.path) {
   #for ( samp in sample.vec ) {
   all.samp.SNP.df <- foreach(seg = itx, .combine = rbind) %dopar% {
 
-        #print(seg)
         seg.to.return <- seg
 
-        # print(seg$chr)
-        # print(seg$startpos)
-        # print(seg$endpos)
         ASCAT.summary <- all.regions.ASCAT.SNP.list[[seg$sample]]
 
         ASCAT.summary$idx <- 1:nrow(ASCAT.summary)
@@ -344,7 +340,7 @@ getSNPDataForTRACERxWGS <- function(snp.file.path) {
       seg.to.return
 
   }# end  for ( samp in sample.vec ) {
-  print("all.samp.SNP.df")
+  message("all.samp.SNP.df")
   print(head(all.samp.SNP.df))
   all.samp.SNP.df <- all.samp.SNP.df[with(all.samp.SNP.df, order(sample, chr, startpos)), ]
   all.samp.SNP.list <- list()
@@ -595,17 +591,13 @@ cleanAndErrorCheckSNPsMPhase <- function(all.samp.SNP.list, min.cons.segs.df, al
 
   all.samps.prob.SNPs.vec <- unique(all.samps.prob.SNPs.vec)
 
-  print("Number of problem SNPs being removed:")
-  print(length(all.samps.prob.SNPs.vec))
-  for ( sample in sample.vec ) {
+  message("Number of problem SNPs being removed: ", length(all.samps.prob.SNPs.vec))
 
+  for (sample in sample.vec) {
     for (seg.idx in 1:nrow(min.cpn.vals.df)) {
-
       working.all.samp.SNP.list[[sample]][[seg.name.vec[seg.idx]]] <- working.all.samp.SNP.list[[sample]][[seg.name.vec[seg.idx]]][!rownames(working.all.samp.SNP.list[[sample]][[seg.name.vec[seg.idx]]])%in%all.samps.prob.SNPs.vec, ,drop=FALSE]
-
-    }#end for (seg.idx in 1:nrow(min.cpn.vals.df))
-
-  }#end for ( sample in sample.vec ) {
+    }
+  }
 
   return(working.all.samp.SNP.list)
 
@@ -798,8 +790,6 @@ compareOverlapsBetweenSamples <- function(sample.vec, f.joint.segs.df, hg19.info
 
     #Get sample granges:
     samp.gr <- samp.gr.list[[samp]]
-    #print(samp)
-    #print(samp.gr)
     for ( chr in chrs.to.use.vec ) {
       for ( arm in p.q.vec) {
 
@@ -831,7 +821,7 @@ joinTwoGrangesIntoOne <- function(gr.one, gr.two) {
   s.comb.grs <- sort(comb.grs)
   if (length(chr) > 1) {
 
-    print("More than one chromsome given as input, returning input unjoined")
+    message("More than one chromsome given as input, returning input unjoined")
     return(s.comb.grs)
 
   }
@@ -858,8 +848,6 @@ removeSingleBasePairSegmentsFromIntersectionGranges <- function(all.grs, min.wid
 
   working.no.ones.grs <- all.grs
   mcols(working.no.ones.grs) <- NULL
-  #print("width.one.grs")
-  #print(width.one.grs)
 
   if(length(width.one.grs) == 0) {
 
@@ -877,7 +865,7 @@ removeSingleBasePairSegmentsFromIntersectionGranges <- function(all.grs, min.wid
     #Check thats
     if ( length(non.na.merge.poss.idxs) == 0 ) {
 
-      print("No ante or post segments")
+      message("No ante or post segments")
       next()
 
     }
@@ -1088,6 +1076,7 @@ getOverlapGRanges <- function(query, subject, output="gr", ...) {
 #
 readInASCAT <- function(sample_table, segs, samples) {
   all_snps <- list()
+  message("Reading in ascat-format snp data from the following files")
   print(sample_table)
 
   for (sample in samples) {
@@ -1095,7 +1084,7 @@ readInASCAT <- function(sample_table, segs, samples) {
     cat("Starting to read sample", sample_info$samp_ascat_bc_path, "\n")
 
     if(grepl("RData", sample_info$samp_ascat_bc_path)) {
-      print("ascat.bc object in RData file, loading...")
+      message("ascat.bc object in RData file, loading...")
       load(sample_info$samp_ascat_bc_path)
       ascat_bc <- ascat.bc
     } else {
@@ -1108,7 +1097,7 @@ readInASCAT <- function(sample_table, segs, samples) {
     normal_baf <- ascat_bc$Germline_BAF[[1]]
     is_homozygous <- normal_baf < 0.3 | normal_baf > 0.7
     is_heterozygous <- !(is.na(normal_baf) | is_homozygous)
-    cat("# of heterozygous SNPs:", sum(is_heterozygous), "\n")
+    message("# of heterozygous SNPs: ", sum(is_heterozygous))
 
     # Mask non-heterozygous SNPs with NA
     baf <- ascat_bc$Tumor_BAF[[1]]
@@ -1121,6 +1110,7 @@ readInASCAT <- function(sample_table, segs, samples) {
                             BAF = baf,
                             logR = ascat_bc$Tumor_LogR[[1]],
                             logRsegmented = as.numeric(ascat_bc$Tumor_LogR_segmented),
+                            snp_pos = paste0(chrom, "_", ascat_bc$SNPpos$pos),
                             row.names = paste0(chrom, "_", ascat_bc$SNPpos$pos),
                             stringsAsFactors = FALSE)
 
@@ -1155,7 +1145,6 @@ keep_common_snps <- function(all_snps) {
 
   # Remove SNP positions that are not in all samples
   for (sample in samples) {
-    #all_snps[[sample]] <- all_snps[[sample]][ row.names(all_snps[[sample]]) %in% snp.pos.vec, ]
     all_snps[[sample]] <- all_snps[[sample]][snp.pos.vec, ]
   }
 
@@ -1181,7 +1170,7 @@ readInGermlineFromASCAT <- function(ascat_bc_rds_path, snp_pos_vec) {
   cat("Starting to read sample", ascat_bc_rds_path, "\n")
 
   if(grepl("RData", ascat_bc_rds_path)) {
-    print("ascat.bc object in RData file, loading...")
+    message("ascat.bc object in RData file, loading...")
     load(ascat_bc_rds_path)
     ascat_bc <- ascat.bc
   } else {
@@ -1209,6 +1198,7 @@ readInGermlineFromASCAT <- function(ascat_bc_rds_path, snp_pos_vec) {
                           BAFsegmented = rep(as.numeric(NA), length(baf)),
                           #samp_data$BAFsegmented = ascat_bc$Tumor_BAF_segmented[is_heterozygous]
                           logRsegmented = as.numeric(ascat_bc$Tumor_LogR_segmented),
+                          snp_pos = paste0(chrom, "_", ascat_bc$SNPpos$pos),
                           row.names = paste0(chrom, "_", ascat_bc$SNPpos$pos),
                           stringsAsFactors = FALSE)
 
@@ -1295,20 +1285,18 @@ readInMEDICCInputFormatParallel <- function(snp.file.df, processed.orig.cpn.segs
       # TODO add check that every single all.samp.SNP.list has the same SNPs..
       # Note error checking of removing NAs from the min.cons.seg.df should already have been performed
       # registerDoParallel(cores = num.cores)
-    print(foreach::getDoParWorkers())
+    # print(foreach::getDoParWorkers())
       # print(getDoParName())
       # print(getDoParVersion())
-     print("Calling readInMEDICCInputFormatParallel")
-     print("Reading in sites data for:")
+     message("Calling readInMEDICCInputFormatParallel")
+     message("Reading in sites data for:")
      print(sample.vec)
-     print("Starting parallel work:")
+     message("Starting parallel work:")
 
      num.pre.parallel.samps <- length(unique(sample.vec))
      itx <- iter(sample.vec)
      all.samp.SNP.df <- foreach(samp = itx, .combine = rbind) %dopar% {
 
-      print(samp)
-      #print(head(snp.file.df))
 
       ASCAT.summary <- data.frame(chr = as.numeric(snp.file.df$Chr),
                             pos = as.numeric(snp.file.df$Pos),
@@ -1318,7 +1306,6 @@ readInMEDICCInputFormatParallel <- function(snp.file.df, processed.orig.cpn.segs
                       logRsegmented = rep(NA, length(snp.file.df$Chr)),
                       stringsAsFactors = FALSE)
       ASCAT.summary$sample <- samp
-      #print(head(ASCAT.summary))
 
       if(nrow(processed.orig.cpn.segs.df) == 0) {
 
@@ -1331,7 +1318,6 @@ readInMEDICCInputFormatParallel <- function(snp.file.df, processed.orig.cpn.segs
 
       }
       for ( j in 1:nrow(seg) ) {
-        #print(seg[j,])
         #Are there any BAF values that aren't set at 2 (and thus shouldn't be used for allele specific cpn) present in this segment?
         if (nrow(ASCAT.summary[ASCAT.summary$chr == seg[j ,]$chr
                     & ASCAT.summary$pos >= seg[j ,]$startpos
@@ -1375,8 +1361,8 @@ readInMEDICCInputFormatParallel <- function(snp.file.df, processed.orig.cpn.segs
         }
 
       }#end for ( j in 1:nrow(seg) ) {
-      print(paste0("Returning: ", samp))
-      print(head(ASCAT.summary))
+      #print(paste0("Returning: ", samp))
+      #print(head(ASCAT.summary))
       ASCAT.summary
       # returnable.list <- list(ASCAT.summary)
       # names(returnable.list) <- samp
@@ -1384,6 +1370,7 @@ readInMEDICCInputFormatParallel <- function(snp.file.df, processed.orig.cpn.segs
 
 
     }#end for ( samp in sample.vec ) {
+
     print("After parallel read in:")
     print(head(all.samp.SNP.df))
     print(unique(all.samp.SNP.df$sample))
@@ -1636,6 +1623,7 @@ read_snps_sequenza <- function(input_files, segs, samples) {
                                      BAF = seqz_data$Bf,
                                      logR = log2(seqz_data$depth.ratio),
                                      zygosity.normal = seqz_data$zygosity.normal,
+                                     snp_pos = paste0(chrom, "_", pos),
                                      row.names = paste0(chrom, "_", pos),
                                      stringsAsFactors = FALSE)
 
