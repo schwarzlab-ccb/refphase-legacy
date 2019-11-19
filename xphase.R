@@ -340,6 +340,14 @@ pt.snp.file.paths.df <- input_data$pt.snp.file.paths.df
 purity.est.vec <- input_data$purity.est.vec
 sorted.all.bp.all.samps.segs.anno.df <- input_data$sorted.all.bp.all.samps.segs.anno.df
 
+if (FALSE) {
+  message("Number of rows in each sample (asas.SNPs.w.both.lr.baf.snp.lists)")
+  snps_per_segment <- sapply(asas.SNPs.w.both.lr.baf.snp.lists, function(x) { sapply(x, nrow) })
+  print(snps_per_segment)
+  message("segments that have < min number of hz positions:")
+  print(rownames(snps_per_segment)[apply(snps_per_segment < MIN_NUM_HZ_SNP_PHASING, 1, any)])
+}
+
 message("FIXME: WGII calculation is never used again and not saved, disabling it for now")
 #TODO move this up
 #Let's come up with the original wgii score pre MPhase based on the segmentation:
@@ -459,7 +467,7 @@ if (OVERWRITE_FLAG == TRUE) {
     } else {
       # Create an ascat.bc object from the existing snp data, rather than
       # reading an existing ascat.bc object
-      ascat.bc <- snps_to_ascat_bc(all_snps[[samp]], segs, samp)
+      ascat.bc <- snps_to_ascat_bc(all.samp.SNP.list[[samp]], samp)
     }
 
 		#So let's get the phased BAF:

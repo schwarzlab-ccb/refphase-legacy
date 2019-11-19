@@ -1682,11 +1682,13 @@ read_snps_sequenza <- function(input_files, segs, samples) {
 #  $ gender              : chr "XX"
 #  $ sexchromosomes      : chr [1:2] "X" "Y"
 #  $ failedarrays        : NULL
-snps_to_ascat_bc <- function(snps, segs, sample) {
+#snps_to_ascat_bc <- function(snps, segs, sample) {
+snps_to_ascat_bc <- function(snps, sample_name) {
 
-  ascat_bc <- list(Tumor_LogR = data.frame(sample = snps$LogR),
+  ascat_bc <- list(Tumor_LogR = data.frame(sample = snps$logR),
                    Tumor_BAF = data.frame(sample = snps$BAF),
-                   Tumor_LogR_segmented = snps$LogR_segmented,
+                   Tumor_LogR_segmented = snps$logRsegmented,
+                   Tumor_BAF_segmented = snps$BAFsegmented,
                    Germline_LogR = NA,
                    Germline_BAF = NA,
                    SNPpos = data.frame(chrs = snps$chrom,
@@ -1694,16 +1696,17 @@ snps_to_ascat_bc <- function(snps, segs, sample) {
                    ch = NA,
                    chr = NA,
                    chrs = unique(sort(snps$chrom)),
-                   samples = sample,
+                   samples = sample_name,
                    gender = "XX",
                    sexchromosomes = c("X", "Y"),
                    failedarrays = NULL)
 
   ascat_bc$ch <- lapply(ascat_bc$chrs, function(x) { which(ascat_bc$SNPpos$chrs == x) })
-  ascat_bc$chr <- split_genome(bc$SNPpos)  # From ascat.R
+  ascat_bc$chr <- split_genome(ascat_bc$SNPpos)  # From ascat.R
 
   #colnames(ascat_bc$Germline_BAF) <- "BAF"
   colnames(ascat_bc$Tumor_BAF) <- "BAF"
+  colnames(ascat_bc$Tumor_LogR) <- sample_name
 
   # Validate our created object
   validate_ascat_bc_input(ascat_bc)

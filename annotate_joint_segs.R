@@ -45,7 +45,7 @@ annotate_joint_segs <- function(segs, germline_snps) {
     gl.hz.snp.df <- actual.snp.file.df[actual.snp.file.df$zygosity.normal == "het",]
   }
 
-	gl.hz.snp.df$hz_snp_idx <- 1:nrow(gl.hz.snp.df)
+	gl.hz.snp.df$hz_snp_idx <- seq_len(nrow(gl.hz.snp.df))
 
 	#Note anno seg is sorted.all.bp.all.samps.segs.anno.df
 	anno.seg.df$start_pos <- paste0(anno.seg.df$Chromosome, "_", anno.seg.df$Start_Position)
@@ -199,46 +199,73 @@ annotate_joint_segs <- function(segs, germline_snps) {
 	#   A_LTX121_SU_T1-R1:1:145096661:145109582        1 145096661-145109582      *
 	#   A_LTX121_SU_T1-R1:1:145109583:145477446        1 145109583-145477446      *
 	#
-	lacking.snp.idx.vec <- which(int.anno.seg.df$start_is_pos %in% FALSE | int.anno.seg.df$end_is_pos %in% FALSE)
+
 	#FIXME, potential improvement that could be written in would be to, once a SNP is being used
 	#remove it from the pool of potential snps to be used as a potenial start and end. However, this might not
 	#matter to much.
-	int.anno.seg.df$nearest_preceding_snp <- NA
-	int.anno.seg.df$nearest_following_snp <- NA 
-	message("Lacking snp idx:")
-	for (i in 1:length(all.int.grs)) {
+
+  #int.anno.seg.df$nearest_preceding_snp_quick <- NA
+  #int.anno.seg.df$nearest_following_snp_quick <- NA
+
+
+  #int.anno.seg.df$nearest_preceding_snp_quick[!is.na(before)] <- start(all.snp.grs[before[!is.na(before)]])
+  #int.anno.seg.df$nearest_following_snp_quick[!is.na(before)] <- start(all.snp.grs[before[!is.na(before)]])
+  ##int.anno.seg.df$nearest_following_snp_quick[!is.na(bef
+
+  #message("before")
+  #str(before)
+  #message("after")
+  #str(after)
+
+  # Calculate all of these in one step, much faster than doing it one at a time
+	message("Checking all nearest SNPs (follow)")
+  before <- follow(all.int.grs, all.snp.grs)
+	message("Checking all nearest SNPs (precede)")
+  after <- precede(all.int.grs, all.snp.grs)
+	message("Checking all nearest SNPs (near)")
+  nearby <- nearest(all.int.grs, all.snp.grs)
+
+	message("Setting nearest preceding/following SNP")
+	lacking.snp.idx.vec <- which(!(int.anno.seg.df$start_is_pos & int.anno.seg.df$end_is_pos))
+  int.anno.seg.df$nearest_following_snp <- NA
+  int.anno.seg.df$nearest_preceding_snp <- NA
+	for (i in seq_along(all.int.grs)) {
 		#Check the seqnames part as SNPs really need to be in the same need to be in the same chromosome arm...?
-		if( ! i %in% lacking.snp.idx.vec) {
+		if ( ! i %in% lacking.snp.idx.vec) {
 			next
 		}
     message(" ", i, appendLF = FALSE)
+    #print(int.anno.seg.df)
 
 		curr.arm <- int.anno.seg.df[i,]$chr_arm
     i_grs <- all.int.grs[i]
-    #Precde is wrong here follow is correct, check the granges documentation.
-    #before_i <- precede(i_grs, all.snp.grs)
-    before_i <- follow(i_grs, all.snp.grs)
+    # Precede is wrong here follow is correct, check the granges documentation.
+    #before_i <- follow(i_grs, all.snp.grs)
+    before_i <- before[[i]]
 		if (! is.na(before_i) ) {
-			if(snp.file.df[before_i,]$arm %in% curr.arm) {
+			if (snp.file.df[before_i,]$arm == curr.arm) {
 				int.anno.seg.df[i,]$nearest_preceding_snp <- start(all.snp.grs[before_i])
 
 			}
 		}
 
     #follow is wrong here precede is correct, check the granges documentation.
-    after_i <- precede(i_grs, all.snp.grs)
+    after_i <- after[[i]]
 		if (! is.na(after_i) ) {
-			if( snp.file.df[after_i,]$arm %in% curr.arm) {
+			if ( snp.file.df[after_i,]$arm == curr.arm) {
 				int.anno.seg.df[i,]$nearest_following_snp <- start(all.snp.grs[after_i])
 			}
 		}
 
 		#Any remaining examples are going to be the first or only 
 		if(is.na(int.anno.seg.df[i,]$nearest_following_snp) & is.na(int.anno.seg.df[i,]$nearest_preceding_snp)) {
-			int.anno.seg.df[i,]$nearest_following_snp <- start(all.snp.grs[nearest(i_grs, all.snp.grs)])
-			int.anno.seg.df[i,]$nearest_preceding_snp <- start(all.snp.grs[nearest(i_grs, all.snp.grs)])
+      near_snp_start <- start(all.snp.grs[nearby[[i]]])
+			int.anno.seg.df[i,]$nearest_following_snp <- near_snp_start
+			int.anno.seg.df[i,]$nearest_preceding_snp <- near_snp_start
 		}
 	}
+  message("done")
+  str(int.anno.seg.df)
 
 	int.anno.seg.df[is.na(int.anno.seg.df$start_snp_idx) | is.na(int.anno.seg.df$end_snp_idx), c("Start_Position", "End_Position", "start_snp_idx", "end_snp_idx", "nearest_preceding_snp", "nearest_following_snp") ]
 	int.anno.seg.df[int.anno.seg.df$start_is_pos %in% FALSE, ]$Start_Position <- int.anno.seg.df[int.anno.seg.df$start_is_pos %in% FALSE, ]$nearest_following_snp
