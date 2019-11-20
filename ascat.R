@@ -961,7 +961,7 @@ runASCAT = function(lrr, baf, lrrsegmented, bafsegmented, gender, SNPpos, chromo
   library(RColorBrewer)
 
   SNPposhet = SNPpos[names(bafsegmented),]
-  autoprobes = !(SNPposhet[,1]%in%sexchromosomes)
+  autoprobes = !(SNPposhet[,1] %in% sexchromosomes)
 
   b2 = b[autoprobes]
   r2 = r[autoprobes]

@@ -315,5 +315,6 @@ annotate_joint_segs <- function(segs, germline_snps) {
 	all.samp.j.seg.df <- f.int.anno.seg.df
 
   return(list(all.samp.j.seg.df=all.samp.j.seg.df,
-              phased.baf.info.df=phased.baf.info.df))
+              phased.baf.info.df=phased.baf.info.df,
+              gl.hz.snp.df=gl.hz.snp.df))
 }

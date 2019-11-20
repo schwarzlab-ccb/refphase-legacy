@@ -433,6 +433,7 @@ if (OVERWRITE_FLAG == TRUE) {
   }
   all.samp.j.seg.df <- ret$all.samp.j.seg.df
   phased.baf.info.df <- ret$phased.baf.info.df
+  gl.hz.snp.df <- ret$gl.hz.snp.df
 
 	#Note there could be an issue here if not every segment contains a BAF point...
 	#But, if we're using hte intersection this should be fine? Not sure on this point.
