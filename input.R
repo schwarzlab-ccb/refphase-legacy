@@ -163,3 +163,15 @@ read_input <- function(seg_file, snp_file, input_format) {
               sorted.all.bp.all.samps.segs.anno.df=sorted.all.bp.all.samps.segs.anno.df,
               anno.seg.df=anno.seg.df))
 }
+
+# Read a ascat.bc object that has been saved by an earlier ASCAT run
+read_ascat_bc <- function(filename) {
+  if (grepl("\\.rdata$", tolower(filename))) {
+    load(filename)
+  } else if (grepl("\\.rds$", tolower(filename))) {
+    ascat.bc <- readRDS(filename)
+  } else {
+    stop(paste0("Input file format not recognized: ", filename))
+  }
+  ascat.bc
+}

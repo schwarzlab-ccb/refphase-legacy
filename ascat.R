@@ -5,7 +5,6 @@
 # Updated  2015-02-11: Lowered threshold for setting ACF to 1, from 0.2 to 0.15, added functionality to read files from R objects both to ascat.loadData and GCcorrection
 
 
-
 # function to read in SNP array data
 # input: filenames of tumor LogR, tumor BAF, germline LogR and germline BAF data
 # germline data files can be NULL - in that case these are not read in
@@ -24,9 +23,9 @@ ascat.loadData = function(Tumor_LogR_file, Tumor_BAF_file, Germline_LogR_file = 
 
 if(read.from.disk){
   # read in SNP array data files
-  print.noquote("Reading Tumor LogR data...")
+  message("Reading Tumor LogR data...")
   Tumor_LogR <- read.table(Tumor_LogR_file, header=T, row.names=1, comment.char="", sep = "\t", check.names=F)
-  print.noquote("Reading Tumor BAF data...")
+  message("Reading Tumor BAF data...")
   Tumor_BAF <- read.table(Tumor_BAF_file, header=T, row.names=1, comment.char="", sep = "\t", check.names=F)
  }
  if(!read.from.disk){
@@ -45,9 +44,9 @@ if(read.from.disk){
   if(!is.null(Germline_LogR_file)) {
     if(read.from.disk){
     # read in SNP array data files
-     print.noquote("Reading Germline LogR data...")
+     message("Reading Germline LogR data...")
      Germline_LogR <- read.table(Germline_LogR_file, header=T, row.names=1, comment.char="", sep = "\t", check.names=F)
-     print.noquote("Reading Germline BAF data...")
+     message("Reading Germline BAF data...")
      Germline_BAF <- read.table(Germline_BAF_file, header=T, row.names=1, comment.char="", sep = "\t", check.names=F)
   }
   if(!read.from.disk){
@@ -62,7 +61,7 @@ if(read.from.disk){
   }
 
   # make SNPpos vector that contains genomic position for all SNPs and remove all data not on chromosome 1-22,X,Y (or whatever is given in the input value of chrs)
-  print.noquote("Registering SNP locations...")
+  message("Registering SNP locations...")
   SNPpos <- Tumor_LogR[,1:2]
   SNPpos = SNPpos[SNPpos[,1]%in%chrs,]
 
@@ -109,7 +108,7 @@ if(read.from.disk){
   }
 
   # split the genome into distinct parts to be used for segmentation (e.g. chromosome arms, parts of genome between gaps in array design)
-  print.noquote("Splitting genome in distinct chunks...")
+  message("Splitting genome in distinct chunks...")
   chr = split_genome(SNPpos)
 
   if (is.null(gender)) {
@@ -124,13 +123,10 @@ if(read.from.disk){
               failedarrays = NULL))
 }
 
-
-
-
 # plots SNP array data
 # input: an ASCAT object (e.g. from ASCAT.loaddata and plots the SNP array data
 ascat.plotRawData = function(ASCATobj) {
-  print.noquote("Plotting tumor data")
+  message("Plotting tumor data")
   for (i in 1:dim(ASCATobj$Tumor_LogR)[2]) {
     png(filename = paste(ASCATobj$samples[i],".tumour.png",sep=""), width = 2000, height = 1000, res = 200)
     par(mar = c(0.5,5,5,0.5), mfrow = c(2,1), cex = 0.4, cex.main=3, cex.axis = 2, pch = ifelse(dim(ASCATobj$Tumor_LogR)[1]>100000,".",20))
@@ -164,7 +160,7 @@ ascat.plotRawData = function(ASCATobj) {
   }
 
   if(!is.null(ASCATobj$Germline_LogR)) {
-    print.noquote("Plotting germline data")
+    message("Plotting germline data")
     for (i in 1:dim(ASCATobj$Germline_LogR)[2]) {
       png(filename = paste(ASCATobj$samples[i],".germline.png",sep=""), width = 2000, height = 1000, res = 200)
       par(mar = c(0.5,5,5,0.5), mfrow = c(2,1), cex = 0.4, cex.main=3, cex.axis = 2, pch = ifelse(dim(ASCATobj$Tumor_LogR)[1]>100000,".",20))
@@ -203,7 +199,7 @@ ascat.plotRawData = function(ASCATobj) {
 # note that probes not present in the GCcontentfile will be lost from the results
 ascat.GCcorrect = function(ASCATobj, GCcontentfile = NULL, read.from.disk =FALSE) {
   if(is.null(GCcontentfile)) {
-    print.noquote("Error: no GC content file given!")
+    message("Error: no GC content file given!")
   }
   else {
     if(read.from.disk){GC_newlist<-read.table(file=GCcontentfile,header=TRUE,as.is=TRUE)}
@@ -228,7 +224,7 @@ ascat.GCcorrect = function(ASCATobj, GCcontentfile = NULL, read.from.disk =FALSE
     }
 
     for (s in 1:length(ASCATobj$samples)) {
-      print.noquote(paste("Sample ", ASCATobj$samples[s], " (",s,"/",length(ASCATobj$samples),")",sep=""))
+      message("Sample ", ASCATobj$samples[s], " (",s,"/",length(ASCATobj$samples),")")
       Tumordata = Tumor_LogR[,s]
       names(Tumordata) = rownames(Tumor_LogR)
 
@@ -283,8 +279,6 @@ ascat.GCcorrect = function(ASCATobj, GCcontentfile = NULL, read.from.disk =FALSE
 }
 
 
-
-
 # run ASPCF segmentation
 # input: (i) an ASCAT object from e.g. ASCAT.loaddata; 
 # (ii) selectsamples: a vector containing the sample(number)s to PCF otherwise
@@ -324,7 +318,7 @@ ascat.aspcf = function(ASCATobj, selectsamples = 1:length(ASCATobj$samples), asc
   colnames(Tumor_LogR_segmented) = colnames(ASCATobj$Tumor_LogR)
   Tumor_BAF_segmented = list();
   for (sample in selectsamples) {
-    print.noquote(paste("Sample ", ASCATobj$samples[sample], " (",sample,"/",length(ASCATobj$samples),")",sep=""))
+    message(paste("Sample ", ASCATobj$samples[sample], " (",sample,"/",length(ASCATobj$samples),")",sep=""))
     logrfilename = paste(ASCATobj$samples[sample],".LogR.PCFed.txt",sep="")
     baffilename = paste(ASCATobj$samples[sample],".BAF.PCFed.txt",sep="")
     logRPCFed = numeric(0)
@@ -534,7 +528,6 @@ ascat.aspcf = function(ASCATobj, selectsamples = 1:length(ASCATobj$samples), asc
 }
 
 
-
 # plots SNP array data
 # input: an ASCAT object (e.g. from ASCAT.ASPCF) and plots the SNP array data before and after segmentation
 ascat.plotSegmentedData = function(ASCATobj) {
@@ -602,7 +595,7 @@ ascat.runAscat = function(ASCATobj, gamma = 0.55, rho_manual = NA, psi_manual = 
   goodarrays=NULL
   res = vector("list",dim(ASCATobj$Tumor_LogR)[2])
   for (arraynr in 1:dim(ASCATobj$Tumor_LogR)[2]) {
-    print.noquote(paste("Sample ", ASCATobj$samples[arraynr], " (",arraynr,"/",length(ASCATobj$samples),")",sep=""))
+    message(paste("Sample ", ASCATobj$samples[arraynr], " (",arraynr,"/",length(ASCATobj$samples),")",sep=""))
     lrr=ASCATobj$Tumor_LogR[,arraynr]
     names(lrr)=rownames(ASCATobj$Tumor_LogR)
     baf=ASCATobj$Tumor_BAF[,arraynr]
@@ -716,16 +709,13 @@ ascat.runAscat = function(ASCATobj, gamma = 0.55, rho_manual = NA, psi_manual = 
 
   }
   #TBKWedit
-  print("Returning from ASCAT test:")
+  message("Returning from ASCAT test:")
 return(list(nA = n1, nB = n2, aberrantcellfraction = tp, ploidy = ploidy, psi = psi, goodnessOfFit = goodnessOfFit,
             failedarrays = fa, nonaberrantarrays = naarrays, segments = seg, segments_raw = seg_raw, nArawfull = nArawfull, nBrawfull = nBrawfull))
 
   # return(list(nA = n1, nB = n2, aberrantcellfraction = tp, ploidy = ploidy, psi = psi, goodnessOfFit = goodnessOfFit,
   #             failedarrays = fa, nonaberrantarrays = naarrays, segments = seg, segments_raw = seg_raw))
 }
-
-
-
 
 
 # helping function to read segments:
@@ -746,7 +736,6 @@ make_seg_lr = function(r) {
   }
   return(pcf_segments);
 }
-
 
 
 # helper function to split the genome into parts
@@ -808,7 +797,6 @@ split_genome = function(SNPpos) {
 }
 
 
-
 # helper function to predict germline homozygous segments for later resegmentation
 predictGermlineHomozygousStretches = function(chr, hom) {
 
@@ -858,9 +846,6 @@ predictGermlineHomozygousStretches = function(chr, hom) {
 }
 
 
-
-
-
 # function to make segments of constant LRR and BAF 
 # this function is more general and does not depend on specifically ASPCF output
 # it can also handle segmention performed on LRR and BAF separately
@@ -891,8 +876,6 @@ make_segments = function(r,b) {
   pcf_segments = as.matrix(na.omit(pcf_segments))[,]
   return(pcf_segments);
 }
-
-
 
 # function to create the distance matrix (distance for a range of ploidy and tumor percentage values)
 # input: segmented LRR and BAF and the value for gamma
@@ -925,7 +908,6 @@ create_distance_matrix = function(segments, gamma) {
 }
 
 
-
 # the ASCAT main function
 # lrr: (unsegmented) log R, in genomic sequence (all probes), with probe IDs
 # baf: (unsegmented) B Allele Frequency, in genomic sequence (all probes), with probe IDs
@@ -946,16 +928,10 @@ runASCAT = function(lrr, baf, lrrsegmented, bafsegmented, gender, SNPpos, chromo
   ch = chromosomes
   chrs = chrnames
   b = bafsegmented
-  #  print("length(bafsegmented)")
-  #print(length(bafsegmented))
-  #print("length(baf)")
-  #print(length(baf))
-  #print(str(bafsegmented, max=1))
   raw_b = baf[as.numeric(attributes(bafsegmented)$names)]
   raw_b <- ifelse(raw_b>0.5,raw_b,1-raw_b)
   raw_b <- 1-raw_b
-  print("length(raw_b)")
-  print(length(raw_b))
+  message("length(raw_b): ", length(raw_b))
   r = lrrsegmented[names(bafsegmented)]
 
   library(RColorBrewer)
@@ -970,8 +946,6 @@ runASCAT = function(lrr, baf, lrrsegmented, bafsegmented, gender, SNPpos, chromo
   d = create_distance_matrix(s, gamma) # Write out to get manual psi/rho ### NJB
   sampleid <-  sub(".aberrationreliability.png$",'', aberrationreliabilitypng) ### Get sample ID
   save(d, file=paste(sampleid,'distance_matrix.RData',sep='.')) ## Saving distance matrix for future optimization of rhp & psi 
-  
-
 
   if (!is.na(distancepng)) {
     png(filename = distancepng, width = 1000, height = 1000, res = 1000/7)
@@ -1258,10 +1232,8 @@ runASCAT = function(lrr, baf, lrrsegmented, bafsegmented, gender, SNPpos, chromo
                     ifelse(nullprobes,0,
                            ifelse(b<0.5,0,(rho-1+((1-rho)*2+rho*psi)*2^(r/gamma))/rho)))
     #TBKW edit...
-    print("length(raw_b)")
-    print(length(raw_b))
-    print("length(b)")
-    print(length(b))
+    message("length(raw_b): ", length(raw_b))
+    message("length(b): ", length(b))
     nArawfull = ifelse(diploidprobes,
                     (rho-1-(raw_b-1)*2^(r/gamma)*((1-rho)*2+rho*psi))/rho,
                     ifelse(nullprobes,0,
@@ -1533,33 +1505,21 @@ runASCAT = function(lrr, baf, lrrsegmented, bafsegmented, gender, SNPpos, chromo
       dev.off()
     }
 
-    # return(list(rho = rho_opt1, psi = psi_opt1, goodnessOfFit = goodnessOfFit_opt1, nonaberrant = nonaberrant,
-    #             nA = n1all, nB = n2all, seg = seg, seg_raw = seg_raw))
-    #TBKW edit
-    print("Returning from ASCAT test:")
-    return(list(rho = rho_opt1, psi = psi_opt1, goodnessOfFit = goodnessOfFit_opt1, nonaberrant = nonaberrant,
-                nA = n1all, nB = n2all, seg = seg, seg_raw = seg_raw, nArawfull = data.frame(nArawfull=nArawfull,stringsAsFactors=FALSE), nBrawfull = data.frame(nBrawfull=nBrawfull,stringsAsFactors=FALSE)))
+    return(list(rho = rho_opt1, psi = psi_opt1, goodnessOfFit = goodnessOfFit_opt1,
+                nonaberrant = nonaberrant, nA = n1all, nB = n2all, seg = seg,
+                seg_raw = seg_raw, nArawfull = data.frame(nArawfull=nArawfull,stringsAsFactors=FALSE),
+                nBrawfull = data.frame(nBrawfull=nBrawfull,stringsAsFactors=FALSE)))
 
-  }
-
-  else {
+  } else {
     return(list(rho = NA, psi = NA, goodnessOfFit = NA, nonaberrant = F, nA = NA, nB = NA, seg = NA, seg_raw = NA))
   }
   
 }
 
 
-
-
-
-
-
-
 # 
 # Enhanced bivariate PCF filter for aCGH data (v. 08.02.2010)
 # Whole chromosomes/chromosome arms wrapper function
-#
-
 fastAspcf <- function(logR, allB, kmin, gamma){
 
   N <- length(logR)
@@ -1639,7 +1599,6 @@ fastAspcf <- function(logR, allB, kmin, gamma){
   return(list(yhat1=yhat1,yhat2=yhat2))
 
 }#end fastAspcf
-
 
 
 aspcfpart <- function(logRpart, allBflip, a, b, d, sd1, sd2, N, kmin, gamma){
@@ -1772,10 +1731,6 @@ aspcfpart <- function(logRpart, allBflip, a, b, d, sd1, sd2, N, kmin, gamma){
 }#end aspcfpart
 
 
-
-
-
-
 div <- function(a, b, c){
 
   if(nargs() < 3){
@@ -1792,19 +1747,6 @@ div <- function(a, b, c){
 }#endfunction
 
 
-#function v = div(a, b, c)
-# if nargin < 3
-#     c = 0;
-# end
-# if b > 0
-#     v = a/b;
-# else
-#     v = c;
-# end
-#end
-
-
-
 #Get mad SD (based on KL code)
 getMad <- function(x,k=25){
   
@@ -1819,9 +1761,6 @@ getMad <- function(x,k=25){
  
   return(SD)
 }
-
-
-
 
 
 exactPcf <- function(y, kmin, gamma) {
@@ -1942,20 +1881,12 @@ medianFilter <- function(x,k){
 }
 
 
-
-
-
 psi <- function(x,z){
  xwin <- x
  xwin[x < -z] <- -z
  xwin[x > z] <- z
  return(xwin)
 }
-
-
-
-
-
 
 
 ascat.predictGermlineGenotypes = function(ASCATobj, platform = "AffySNP6") {
@@ -2080,7 +2011,7 @@ ascat.predictGermlineGenotypes = function(ASCATobj, platform = "AffySNP6") {
     segmentLength = 30
   }
   else {
-    print("Error: platform unknown")
+    warning("Error: platform unknown")
   }
 
   failedarrays = NULL

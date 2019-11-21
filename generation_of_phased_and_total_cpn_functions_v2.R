@@ -4,7 +4,9 @@ getAllSegAllSamplePhasedRawCPNList <- function(sample.vec, ploidy.est.vec,
                                                all.seg.phasing.info.list,
                                                asas.both.lr.baf.lists,
                                                gamma.val = 1,
-                                               min.num.hz.snp.phasing = 5) {
+                                               min.num.hz.snp.phasing = 5,
+                                               use.xphase = FALSE,
+                                               ascat.raw.cpn) {
 
     seg.name.vec <- paste(min.cons.segs.df[ , 1], min.cons.segs.df[ , 2], min.cons.segs.df[ , 3], sep=":")
     #Initialise all lists
@@ -12,16 +14,15 @@ getAllSegAllSamplePhasedRawCPNList <- function(sample.vec, ploidy.est.vec,
     for ( samp in sample.vec ) {
       all.samples.phased.cpn.list[[samp]] <- list()
       for ( seg.name in seg.name.vec ) {
-        all.samples.phased.cpn.list[[samp]][[seg.name]] <- list()
-        all.samples.phased.cpn.list[[samp]][[seg.name]]$chr_vec <- NA
-        all.samples.phased.cpn.list[[samp]][[seg.name]]$pos_vec <- NA
-        all.samples.phased.cpn.list[[samp]][[seg.name]]$logr_vec <- NA
-        all.samples.phased.cpn.list[[samp]][[seg.name]]$ph_cpnA_vec <- NA
-        all.samples.phased.cpn.list[[samp]][[seg.name]]$ph_cpnB_vec <- NA
-        all.samples.phased.cpn.list[[samp]][[seg.name]]$mean_ph_cpnA <- NA
-        all.samples.phased.cpn.list[[samp]][[seg.name]]$mean_ph_cpnB <- NA
-        all.samples.phased.cpn.list[[samp]][[seg.name]]$un_ph_cpn_total <- NA
-        all.samples.phased.cpn.list[[samp]][[seg.name]]$un_ph_cpn_total_mean <- NA
+        all.samples.phased.cpn.list[[samp]][[seg.name]] <- list(chr_vec = NA,
+                                                                pos_vec = NA,
+                                                                logr_vec = NA,
+                                                                ph_cpnA_vec = NA,
+                                                                ph_cpnB_vec = NA,
+                                                                mean_ph_cpnA = NA,
+                                                                mean_ph_cpnB = NA,
+                                                                un_ph_cpn_total = NA,
+                                                                un_ph_cpn_total_mean = NA)
     }#end for ( seg.name in seg.name.vec ) {
   }#end for ( samp in sample.vec ) {
   #Now add all phased copy number usin gthe all.se.phasing.info.list
@@ -34,7 +35,7 @@ getAllSegAllSamplePhasedRawCPNList <- function(sample.vec, ploidy.est.vec,
             next
           }
 
-          if (USING_XPHASE == FALSE) {
+          if (!use.xphase) {
 
             samp.seg.cpnA.cpnB.df <- calculateSNPsRawCopyNumberAB(logr.vec = samp.b.lr.baf.df$logR,
                                                               baf.vec = samp.b.lr.baf.df$BAF,
@@ -44,7 +45,7 @@ getAllSegAllSamplePhasedRawCPNList <- function(sample.vec, ploidy.est.vec,
           } else {
             samp.seg.cpnA.cpnB.df <- getPhasedASCATRawCopyNumberAB(ref.ss.lr.baf.df = samp.b.lr.baf.df,
                                                                    sample = samp,
-                                                                   sample.ph.hz.ascat.df.list = PH_ALL_SAMP_ASCAT_RAW_CPN_DF_LIST)
+                                                                   sample.ph.hz.ascat.df.list = ascat.raw.cpn)
           }
 
 
@@ -147,7 +148,7 @@ getAllSegAllSamplePhasedRawCPNList <- function(sample.vec, ploidy.est.vec,
     }#end for ( seg.name in seg.name.vec ) {
 
     return(all.samples.phased.cpn.list)
-}#end getAllSegAllSamplePhasedRawCPNList
+}
 
 
 getAllSampLogrAlonePositionsLogrAndTotalCPNDFsList <- function(sample.vec,
@@ -160,10 +161,7 @@ getAllSampLogrAlonePositionsLogrAndTotalCPNDFsList <- function(sample.vec,
   all.samp.logr.df.list <- list()
 
   for ( samp in sample.vec ) {
-
-    str(asas.SNPS.lr.and.or.baf.lists[[samp]])
     samp.logr.baf.df <- do.call(rbind, asas.SNPS.lr.and.or.baf.lists[[samp]])
-    str(samp.logr.baf.df)
 
     #So what do we want to do here? if there are NAs and it's MEDICC their likely incorrect...
     if ( nrow(samp.logr.baf.df[is.na(samp.logr.baf.df$BAF) ,]) > 0 ) {

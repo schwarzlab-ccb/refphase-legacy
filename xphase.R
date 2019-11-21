@@ -4,6 +4,7 @@ library(optparse)
 library(digest)
 
 if (!interactive()) {
+  options(error = traceback)
 
   option_list <- list( make_option(c("--patient"), default="CB1002",
                   help="Patient id"),
@@ -98,8 +99,6 @@ dir.create(rescue.run.dir, recursive = TRUE, showWarnings = FALSE)
 
 ###GLOBAL FLAG that alters the behaviour of some hacked functions so that they work with MPhase and XPhase
 USING_XPHASE <- FALSE 
-
-
 
 options(stringsAsFactors = FALSE)
 
@@ -402,7 +401,6 @@ if (OVERWRITE_FLAG == TRUE) {
 
 	saveRDS(all.seg.phasing.info.list, file = all.seg.phasing.info.list.path)
 
-
 	#Todo unsure of what to do with the baf logr lists which have positions that only have logr here, at the moment exclude them but how
 	#does that affect later run
 	message("Generating phased BAF dataframes...")
@@ -411,7 +409,6 @@ if (OVERWRITE_FLAG == TRUE) {
                                                          min.num.hz.snp.phasing = MIN_NUM_HZ_SNP_PHASING
                                                          )
 	if(length(patient.phased.BAF.df.list) <= 1) {
-
 		stop("Error in generating phased BAF dataframes")
 	}
 	saveRDS(patient.phased.BAF.df.list, file = patient.phased.BAF.df.list.path)
@@ -450,24 +447,13 @@ if (OVERWRITE_FLAG == TRUE) {
 	ph.ascat.segs.df.list <- list()
 	base.dir <- getwd()
 	for (samp in sample.vec) {
-		message("Loading sample: ", samp)
+		message("Preparing sample for ASCAT: ", samp)
 
     if (conf$input_format == "ASCAT") {
-      #Here we load in the file path of the relevant samples ascat.bc object. For compatibility with Matt's code
-      #This should accept the ascat.bc files in eithe RDS or RData format.
-      if (grepl("RData", pt.snp.file.paths.df[samp,]$samp_ascat_bc_path)) {
-
-        message("ascat.bc object in RData file, loading...")
-        load(pt.snp.file.paths.df[samp,]$samp_ascat_bc_path)
-
-      } else {
-
-        ascat.bc <- readRDS(pt.snp.file.paths.df[samp,]$samp_ascat_bc_path)
-
-      }
+      ascat.bc <- read_ascat_bc(pt.snp.file.paths.df[samp,]$samp_ascat_bc_path)
     } else {
       # Create an ascat.bc object from the existing snp data, rather than
-      # reading an existing ascat.bc object
+      # reading an existing ascat.bc object. This also removes NAs.
       ascat.bc <- snps_to_ascat_bc(all.samp.SNP.list[[samp]], samp)
     }
 
@@ -479,9 +465,12 @@ if (OVERWRITE_FLAG == TRUE) {
 		#So now we need the segments that refer to this sample (as these are joint segments
 		#these should all be same for each sample regardless.)
 		samp.seg.df <- all.samp.j.seg.df#[all.samp.j.seg.df$full_sample %in% samp,]#No need for everything to be reset as we have one set of joint segmentation.
+
+    # Handle positions with NA in the LogR or BAF (+ segmented)
+    #ascat.bc <- ascat_bc_remove_na(ascat.bc)
+
 		#Let's do the LogR
 		tum.logr.vec <- ascat.bc[["Tumor_LogR"]][,1]
-
 		if (any(is.na(tum.logr.vec))) {
 			message("There are NA values in the ascat.bc Tumor_LogR field which need to be removed. Revisit generation of this input. For changing the NAs to 0.")
 			na.idx.vec <- which(is.na(tum.logr.vec))
@@ -489,32 +478,29 @@ if (OVERWRITE_FLAG == TRUE) {
 		}
 
 		tum.logr.segmented.vec <- ascat.bc[["Tumor_LogR_segmented"]][,1]
-
 		if(any(is.na(tum.logr.segmented.vec))) {
 			message("There are NA values in the ascat.bc Tumor_LogR_segmented field which need to be removed. Revisit generation of this input. For changing the NAs to 0.")
 			na.segmented.idx.vec <- which(is.na(tum.logr.segmented.vec))
 			tum.logr.segmented.vec[na.segmented.idx.vec] <- 0
 		}
 
+		for (i in 1:nrow(samp.seg.df)) {
+      tum.logr.segmented.vec[samp.seg.df[i,]$start_snp_idx:samp.seg.df[i,]$end_snp_idx] <- mean(tum.logr.vec[samp.seg.df[i,]$start_snp_idx:samp.seg.df[i,]$end_snp_idx])
+		}
 
-		for (i in 1:nrow(samp.seg.df)){
-		  tum.logr.segmented.vec[samp.seg.df[i,]$start_snp_idx:samp.seg.df[i,]$end_snp_idx] <- mean(tum.logr.vec[samp.seg.df[i,]$start_snp_idx:samp.seg.df[i,]$end_snp_idx])
-		}#end for (i in 1:nrow(rle.baf.pcf.df)){
 		#Let's do the BAF recalculation
 		tum.baf.vec <- ascat.bc[["Tumor_BAF"]][,1]
 		tum.baf.segmented.vec <- ascat.bc[["Tumor_BAF_segmented"]][[1]][,1]
 
 		#So now this is a little more complicated as the BAF segmented is only in the SNPs
 		#Would be nice to make the compaison with the germline here as well. We have the data so could...
-		for (i in 1:nrow(samp.seg.df)){ 
+		for (i in seq_len(nrow(samp.seg.df))) { 
 
 		  #So first get the indices of the BAF indices within the segment
 		  seg.hz.snp.df <- gl.hz.snp.df[gl.hz.snp.df$snp_idx <= samp.seg.df[i,]$end_snp_idx & gl.hz.snp.df$snp_idx >= samp.seg.df[i,]$start_snp_idx,]
-		  if( nrow(seg.hz.snp.df) == 0) {
-
+		  if (nrow(seg.hz.snp.df) == 0) {
 		  	next
-
-		  }#end if( nrow(seg.hz.snp.df) == 0) {
+		  }
 		  #Get indices of hz SNPs that are present ... so we need some form of mapping here to the smaller
 		  #These data contain all samples from this patient:
 		  seg.min.hz.snp.idx<- seg.hz.snp.df[1,]$hz_snp_idx
@@ -528,33 +514,29 @@ if (OVERWRITE_FLAG == TRUE) {
 		  seg.ph.hz.snp.df <- samp.pha.baf.df[samp.pha.baf.df$snp_idx <= samp.seg.df[i,]$end_snp_idx & samp.pha.baf.df$snp_idx >= samp.seg.df[i,]$start_snp_idx,]
 
 		  if(nrow(seg.ph.hz.snp.df) != nrow(gl.seg.hz.snp.df)) {
-
 		  	message("Number of phased SNPs is different to the actual number hz snps present in seg, perhaps to few to phase by MPhase?")
 		  	message("nrow(seg.ph.hz.snp.df) = ", nrow(seg.ph.hz.snp.df), " nrow(gl.seg.hz.snp.df) = ", nrow(gl.seg.hz.snp.df))
 		  	next
-		  }#end if(nrow(seg.ph.hz.snp.df) != nrow(gl.seg.hz.snp.df)) {
+		  }
+
 		  #GL specific
 		  gl.seg.hz.snp.df <- cbind(gl.seg.hz.snp.df, seg.ph.hz.snp.df[, c("maj_is_cpnA_logic_vec", "maj_is_cpnB_logic_vec", "snp_pos", "snp_idx")])
-		  if(nrow(seg.hz.snp.df) == 0 | nrow(seg.ph.hz.snp.df) == 0){
 
+		  if (nrow(seg.hz.snp.df) == 0 | nrow(seg.ph.hz.snp.df) == 0) {
 		  	message("No heterozygous SNPs present within segment.")
-		  	#print(samp.seg.df[i,])
-
 		  }
+
 		  if (nrow(seg.hz.snp.df) != nrow(seg.ph.hz.snp.df)) {
-
-		  	message("Differing numbers of hz snps in the original hz snp df and the phased. Not sure why?")
-		  	#print(samp.seg.df[i,])
-
+		  	message("Differing numbers of hz snps in the original hz snp df and the phased. Not sure why.")
 		  }
 		  #Ok so...
 		  #Let's get the phasing and calculate difference for the sample and the germline
 		  #We're assuming that these are in the same order at this point:
 		  #germline segmentation value:
 		  #Get groups of indices...
-		  haplotype.A.snp.pos.vec <- seg.ph.hz.snp.df[seg.ph.hz.snp.df$maj_is_cpnA_logic_vec %in% 1,]$snp_pos
+		  haplotype.A.snp.pos.vec <- seg.ph.hz.snp.df[seg.ph.hz.snp.df$maj_is_cpnA_logic_vec == 1,]$snp_pos
 		  m.hap.A.BAF <- suppressWarnings(mean(seg.ph.hz.snp.df[seg.ph.hz.snp.df$snp_pos %in% haplotype.A.snp.pos.vec,]$BAF, na.rm=TRUE))
-		  haplotype.B.snp.pos.vec <- seg.ph.hz.snp.df[seg.ph.hz.snp.df$maj_is_cpnA_logic_vec %in% 0,]$snp_pos
+		  haplotype.B.snp.pos.vec <- seg.ph.hz.snp.df[seg.ph.hz.snp.df$maj_is_cpnA_logic_vec == 0,]$snp_pos
 		  m.hap.B.BAF <- suppressWarnings(mean(seg.ph.hz.snp.df[seg.ph.hz.snp.df$snp_pos %in% haplotype.B.snp.pos.vec,]$BAF, na.rm=TRUE))
 
 		  #Now let's do the same for the germline data.. this actually isn't necessary..
@@ -566,39 +548,26 @@ if (OVERWRITE_FLAG == TRUE) {
 
 		  #Let's get the equivalent germline snps 
 		  #Default should be to make the BAF segmented 0.5 if we don't have any info w/regards to hz snps
-      seg.md.ph.BAF.vec<-c()
+      seg.md.ph.BAF.vec <- c()
+      # We could attempt to add in a germline correction here...
       if(! is.na(m.hap.A.BAF) && m.hap.A.BAF > 0.5) {
-        #mirror
         seg.md.ph.BAF.vec <- c(seg.md.ph.BAF.vec, abs(seg.ph.hz.snp.df[seg.ph.hz.snp.df$snp_pos %in% haplotype.A.snp.pos.vec,]$BAF - 1) - gl.m.hap.A.BAF)
-        ##We could attempt to add in a germline correction here...
-
       } else if (! is.na(m.hap.A.BAF) && m.hap.A.BAF < 0.5) {
-
         seg.md.ph.BAF.vec <- c(seg.md.ph.BAF.vec, seg.ph.hz.snp.df[seg.ph.hz.snp.df$snp_pos %in% haplotype.A.snp.pos.vec,]$BAF - gl.m.hap.A.BAF)
-        ##We could attempt to add in a germline correction here...
-
       }
 
+		  #We could attempt to add in a germline correction here...
 		  if(! is.na(m.hap.B.BAF) && m.hap.B.BAF > 0.5) {
-		  	#mirror
 		  	seg.md.ph.BAF.vec <- c(seg.md.ph.BAF.vec, abs(seg.ph.hz.snp.df[seg.ph.hz.snp.df$snp_pos %in% haplotype.B.snp.pos.vec,]$BAF - 1) - gl.m.hap.B.BAF)
-		  	##We could attempt to add in a germline correction here...
-
 		  } else if (! is.na(m.hap.B.BAF) && m.hap.B.BAF < 0.5) {
-
 		    seg.md.ph.BAF.vec <- c(seg.md.ph.BAF.vec, seg.ph.hz.snp.df[seg.ph.hz.snp.df$snp_pos %in% haplotype.B.snp.pos.vec,]$BAF - gl.m.hap.B.BAF)
-		    ##We could attempt to add in a germline correction here...
-
 		  }
+
 		  #Format
-		  if(length(seg.md.ph.BAF.vec) > 0) {
-
+		  if (length(seg.md.ph.BAF.vec) > 0) {
 		  	seg.BAF.segmented.val <- rep(mean(seg.md.ph.BAF.vec, na.rm=TRUE), length(seg.min.hz.snp.idx:seg.max.hz.snp.idx))
-
 		  } else {
-
 		  	seg.BAF.segmented.val <- rep(0.5, length(seg.min.hz.snp.idx:seg.max.hz.snp.idx)) 
-
 		  }
 
 		  #Now let's update the segmented baf values with the correct indices in the vector
@@ -609,18 +578,18 @@ if (OVERWRITE_FLAG == TRUE) {
 
 		}#end 	for (i in 1:nrow(samp.seg.df)){ 
 
-
 		if(any(is.na(tum.logr.segmented.vec))) {
-
 			message("There are NA values in the tum.logr.segmented.vec after applying phasing which need to be removed. Revisit generation of this input. For changing the NAs to 0.")
 			na.segmented.idx.vec <- which(is.na(tum.logr.segmented.vec))
 			tum.logr.segmented.vec[na.segmented.idx.vec] <- 0
-
 		}
 
 		#First let's do the free runs:
+    message("Setting LogR segmented")
 		ascat.bc[["Tumor_LogR_segmented"]][,1] <- tum.logr.segmented.vec
+    message("Finished setting BAF segmented")
 		ascat.bc[["Tumor_BAF_segmented"]][[1]][,1] <- tum.baf.segmented.vec
+    message("Finished setting segmented")
 
 		#End of section generating the spoofed ascat.bc object that utilises the phasing information. This should be made into a function.
 
@@ -701,15 +670,12 @@ if (OVERWRITE_FLAG == TRUE) {
 		# any(is.na(ascat.bc$Tumor_LogR[,1]))
 		# which(is.na(ascat.bc$Tumor_LogR[,1]))
 
-		# any(is.na(ascat.bc$Tumor_LogR_segmented[,1]))
 		missing.logr.segmented.idx.vec <- which(is.na(ascat.bc$Tumor_LogR_segmented[,1]))
 		checking.cont.range <- missing.logr.segmented.idx.vec - c(missing.logr.segmented.idx.vec[2:length(missing.logr.segmented.idx.vec)], missing.logr.segmented.idx.vec[length(missing.logr.segmented.idx.vec)] + 1)  
 
-    #any(is.na(ascat.bc$Tumor_LogR[,1]))
-
+    message("Running ASCAT")
 		ascat.output = ascat.runAscat(ascat.bc,gamma=1, rho_manual = samp.purity, psi_manual = samp.ploidy)
 		setwd(base.dir)
-		#setwd("/fast/work/groups/ag_schwarz/Projects/project-refphase/tom/tools/multiregioncopynum/")
 		ph.ascat.output.list[[samp]] <- ascat.output
 		save(ascat.bc, file=file.path(qc.choice.dir, paste(samp, 'ascat.bc.RData',sep='.')))
 		save(ascat.output, file=file.path(qc.choice.dir, paste(samp, 'ascat.output.RData',sep='.')))
@@ -736,11 +702,9 @@ if (OVERWRITE_FLAG == TRUE) {
 
 		samp.ph.ascat.segs.df <- cbind(tmp,callState)
 		ph.ascat.segs.df.list[[samp]] <- samp.ph.ascat.segs.df
-		#This ren
+
 		seg <- samp.ph.ascat.segs.df
 		save(seg, file=file.path(qc.choice.dir, paste(samp,'ascat.seg.RData',sep='.')))
-		#rm(ascat.output)
-		#rm(seg)
 
 		print("Next sample....")
 
@@ -767,27 +731,30 @@ if (OVERWRITE_FLAG == TRUE) {
 	USING_XPHASE <- TRUE 
 	PH_ALL_SAMP_ASCAT_RAW_CPN_DF_LIST <- list()
 	for (samp in sample.vec) {
-		if(grepl("RData", pt.snp.file.paths.df[samp,]$samp_ascat_bc_path)) {
-		  print("ascat.bc object in RData file, loading...")
-		  load(pt.snp.file.paths.df[samp,]$samp_ascat_bc_path)
-		  #This will have loaded the ascat.bc object in
 
-		} else {
-		  ascat.bc <- readRDS(pt.snp.file.paths.df[samp,]$samp_ascat_bc_path)
-		}
+    if (conf$input_format == "ASCAT") {
+      ascat.bc <- read_ascat_bc(pt.snp.file.paths.df[samp,]$samp_ascat_bc_path)
+    } else {
+      # Create an ascat.bc object from the existing snp data, rather than
+      # reading an existing ascat.bc object
+      ascat.bc <- snps_to_ascat_bc(all.samp.SNP.list[[samp]], samp)
+    }
 
     # Validate the input immediately
     if (conf$validate_input)
       validate_ascat_bc_input(ascat.bc)
 
-		normal_baf <- ascat.bc$Germline_BAF[[1]]
-		is_homozygous <- normal_baf < 0.3 | normal_baf > 0.7
-		is_heterozygous <- !(is.na(normal_baf) | is_homozygous)
-		cat("# of heterozygous SNPs:", sum(is_heterozygous), "\n")
+    if (conf$input_format == "ASCAT") {
+      normal_baf <- ascat.bc$Germline_BAF[[1]]
+      is_homozygous <- normal_baf < 0.3 | normal_baf > 0.7
+      is_heterozygous <- !(is.na(normal_baf) | is_homozygous)
+    } else {
+      is_homozygous <- all.samp.SNP.list[[samp]]$zygosity.normal == "hom"
+      is_heterozygous <- !is_homozygous
+      stopifnot(length(ascat.bc$Tumor_BAF$BAF) == length(is_homozygous))
+    }
 
-		# Get hz SNPs
-		baf <- ascat.bc$Germline_BAF[[1]]
-		baf[!is_heterozygous] <- NA
+		cat("# of heterozygous SNPs:", sum(is_heterozygous), "\n")
 
 		chr.vec <- chrom2integer(as.character(ascat.bc$SNPpos$chr))
 		ph.ascat.nAraw.w.minus.vec <- ph.ascat.output.list[[samp]]$nArawfull$nArawfull
@@ -823,9 +790,6 @@ if (OVERWRITE_FLAG == TRUE) {
 
 	}#end for (samp in sample.vec) {
 
-
-
-
 	#Paths for phased versions of data:
 	ph.asas.SNPS.lr.and.or.baf.lists.path <- paste0(PLOT_OUTPUT_DIR, patient, "_ph_asas_SNPS_lr_and_or_baf_lists_lists.RDS")
 	ph.asas.SNPs.w.both.lr.baf.snp.lists.path <- paste0(PLOT_OUTPUT_DIR, patient, "_ph_asas_SNPs_w_both_lr_baf_snp_lists.RDS")
@@ -835,44 +799,12 @@ if (OVERWRITE_FLAG == TRUE) {
 	ph.processed.orig.cpn.segs.df.path <- paste0(PLOT_OUTPUT_DIR, patient, "_ph_processed_orig_cpn_segs_df.RDS")
 	ph.ploidy.est.vec.path <- paste0(PLOT_OUTPUT_DIR, patient, "_ph_ploidy_est_vec.RDS")
 	ph.purity.est.vec.path <- paste0(PLOT_OUTPUT_DIR, patient, "_ph_purity_est_vec.RDS")
-	#TODO add save these files when generated.
-
 
 	#New df contain phased ASCAT segmentation for all samples. 
 	ph.init.f.joint.segs.df <- do.call(rbind, ph.ascat.segs.df.list)
 	ph.f.joint.segs.df <- reformatInitialSegmentationInput(f.joint.segs.df = ph.init.f.joint.segs.df)
 
-	#OJO.... FIX THIS
 	#So we're going to drop the singe bp segments that we get here... with a bit of effort they are rescuable
-	#https://support.bioconductor.org/p/119589/
-	#Or could be merged into a larger segment as they produce the following error:
-	# Error in validObject(.Object) : invalid class "GRanges" object:
-	#     'x@strand' is not parallel to 'x'
-	# > traceback()
-	# 15: stop(msg, ": ", errors, domain = NA)
-	# 14: validObject(.Object)
-	# 13: initialize(value, ...)
-	# 12: initialize(value, ...)
-	# 11: new(Class, seqnames = seqnames, ranges = ranges, strand = strand,
-	#         elementMetadata = mcols, seqinfo = seqinfo)
-	# 10: new_GRanges("GRanges", seqnames = seqnames, ranges = ranges,
-	#         strand = strand, mcols = mcols, seqlengths = seqlengths,
-	#         seqinfo = seqinfo)
-	# 9: GRanges(ans_seqnames, ans_ranges, strand = ans_strand, ans_mcols,
-	#        seqinfo = ans_seqinfo)
-	# 8: makeGRangesFromDataFrame(f.joint.segs.df[f.joint.segs.df$sample ==
-	#        samp, ], keep.extra.columns = FALSE, ignore.strand = FALSE,
-	#        seqinfo = NULL, seqnames.field = c("seqnames", "seqname",
-	#            "chromosome", "chrom", "chr", "chromosome_name", "seqid"),
-	#        start.field = c("Start_Position", "start", "startpos"), end.field = c("End_Position",
-	#            "end", "stop", "endpos"), strand.field = "strand", starts.in.df.are.0based = FALSE) at data_input_and_QC_functions_v2.R#856
-	# 7: getAllPatientSamplesAndIntersectionGRangesList(sample.vec, f.joint.segs.df) at data_input_and_QC_functions_v2.R#904
-	# 6: compareOverlapsBetweenSamples(sample.vec, f.joint.segs.df, chrom.info.df,
-	#        chrs.to.use.vec = CHRS_TO_USE_VEC) at minimum_consistent_segmentation_functions.R#306
-	# 5: createFullyAnnotatedJointSegmentation(f.joint.segs.df = ph.f.joint.segs.df) at xphase.R#1436
-	# 4: eval(ei, envir)
-	# 3: eval(ei, envir)
-	# 2: withVisible(eval(ei, envir))
 	ph.f.joint.segs.df <- ph.f.joint.segs.df[ph.f.joint.segs.df$startpos != ph.f.joint.segs.df$endpos,]
 	rownames(ph.f.joint.segs.df) <- 1:nrow(ph.f.joint.segs.df)
 
@@ -931,20 +863,14 @@ if (OVERWRITE_FLAG == TRUE) {
 
 	}
 
-	#print(ph.asas.SNPS.lr.and.or.baf.lists.path)
 	saveRDS(ph.asas.SNPS.lr.and.or.baf.lists, file = ph.asas.SNPS.lr.and.or.baf.lists.path)
 	time.taken <- proc.time() - ptm
 	print("time.taken")
 	print(time.taken)
 
 	if ( length(ph.asas.SNPS.lr.and.or.baf.lists) <= 1 ) {
-
-		#print(str(ph.asas.SNPS.lr.and.or.baf.lists.path, max = 1))
 		stop("Only one or fewer samples present after reading in data.")
-
 	}
-
-
 
 	message("Getting phasing to apply to all samples using getCombinedBAFDipTestPhasingParallel...")
 	ph.all.seg.phasing.info.list <- getCombinedBAFDipTestPhasingParallel(asas.lr.baf.lists = ph.asas.SNPs.w.both.lr.baf.snp.lists,
@@ -1023,7 +949,8 @@ if (OVERWRITE_FLAG == TRUE) {
 											all.seg.MSAI.by.BAF.ltnpd.present.list = all.seg.MSAI.by.BAF.ltnpd.present.list,
 											patient.phased.BAF.df.list = patient.phased.BAF.df.list,
 											cpnA.allele.color = '#de2d2699',
-											cpnB.allele.color= '#3182bd99')
+											cpnB.allele.color= '#3182bd99',
+                      use.xphase = USING_XPHASE)
 		dev.off()
 
 	} else if (PLOTTING_FLAG == FALSE) {
@@ -1077,7 +1004,6 @@ if (OVERWRITE_FLAG == TRUE) {
 		}#end if (all.seg.MSAI.by.BAF.ltnpd.present.list[[seg.name]]$MSAI_detection_feasible %in% TRUE) {
 
 	}#end for (seg.name in intersection.seg.name.vec) {
-	#print(orig.intersection.mcs.w.MSAI.df[orig.intersection.mcs.w.MSAI.df$nMinor > orig.intersection.mcs.w.MSAI.df$nMajor,])
 
 	orig.intersection.mcs.w.MSAI.df.path <- paste0(PLOT_OUTPUT_DIR, patient, "_orig_intersection_mcs_w_MSAI_df.RDS")
 	saveRDS(orig.intersection.mcs.w.MSAI.df, file = orig.intersection.mcs.w.MSAI.df.path)
@@ -1126,7 +1052,9 @@ if (OVERWRITE_FLAG == TRUE) {
 																all.seg.phasing.info.list = all.seg.phasing.info.list,
 																asas.both.lr.baf.lists = asas.SNPs.w.both.lr.baf.snp.lists,
 																gamma.val = GAMMA_VAL,
-																min.num.hz.snp.phasing = MIN_NUM_HZ_SNP_PHASING)
+																min.num.hz.snp.phasing = MIN_NUM_HZ_SNP_PHASING,
+                                use.xphase = USING_XPHASE,
+                                ascat.raw.cpn = PH_ALL_SAMP_ASCAT_RAW_CPN_DF_LIST)
 	saveRDS(asas.ph.raw.cpn.lists, file = asas.ph.raw.cpn.lists.path)
 
 
@@ -1160,9 +1088,7 @@ if (OVERWRITE_FLAG == TRUE) {
 																								 reduced.seg.flag = FALSE)
 	saveRDS(samps.int.cpn.raw.cpn.by.chr.list, file = samps.int.cpn.raw.cpn.by.chr.list.path)
 
-
 	for (cpnX in c("cpnA", "cpnB")) {
-	  #print(cpnX)
 	  #Here is where we're going to have iniatalise on all the lists
 	  all.seg.CCF.list[[cpnX]] <- list()
 	  all.seg.int.ob.xp.cpn.df.list[[cpnX]] <- list()

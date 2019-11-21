@@ -160,15 +160,15 @@ validate_ascat_bc_input <- function(bc) {
 
   # -------------------------------------------------------------------------
   # 5) Are there any NA values in the LogR columns for any regions
-  stopifnot(any(!is.na(bc[["Tumor_LogR"]][,1])))
-  stopifnot(any(!is.na(bc[["Tumor_LogR_segmented"]][,1])))
-  stopifnot(any(!is.na(bc[["Tumor_BAF_segmented"]][[1]][,1])))
+  warning(all(!is.na(bc[["Tumor_LogR"]][,1])))
+  warning(all(!is.na(bc[["Tumor_LogR_segmented"]][,1])))
+  warning(all(!is.na(bc[["Tumor_BAF_segmented"]][[1]][,1])))
 
   # -------------------------------------------------------------------------
   # 6) Are there any Inf or -Inf values in the LogR columns
-  #stopifnot(all(is.finite(bc[["Tumor_LogR"]][,1])))
-  #stopifnot(all(is.finite(bc[["Tumor_LogR_segmented"]][,1])))
-  #stopifnot(all(is.finite(bc[["Tumor_BAF_segmented"]][[1]][,1])))
+  warning(all(is.finite(bc[["Tumor_LogR"]][,1])))
+  warning(all(is.finite(bc[["Tumor_LogR_segmented"]][,1])))
+  warning(all(is.finite(bc[["Tumor_BAF_segmented"]][[1]][,1])))
 
   # -------------------------------------------------------------------------
   # 7) Given the chosen reference genome are the positions for each chromosome

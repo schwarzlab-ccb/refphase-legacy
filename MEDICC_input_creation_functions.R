@@ -111,7 +111,6 @@ calculateWGII <- function(seg.df, threshold = 0.6, include.sex.chrom = FALSE) {
 
   colnames(seg.df) <- c("sample","chrom", "startpos", "endpos", "n.het", "cnTotal", "nMajor","nMinor", "Ploidy", "ACF", "nAraw", "nBraw")
   cat("calculateWGII: segmentation data frame:\n")
-  #str(seg.df)
   #First column is meant to be the sample name
   seg.df[, 1] <- as.character(seg.df[, 1])
   sample.vec <- unique(seg.df[, 1])
@@ -147,8 +146,6 @@ calculateWGII <- function(seg.df, threshold = 0.6, include.sex.chrom = FALSE) {
   for (samp in sample.vec) {
 
     samp.seg.df <- seg.df[seg.df[, 1] %in% samp,]
-    #cat("Segmentation for:", samp, "\n")
-    #print(str(samp.seg.df))
 
     samp.seg.SCNA.df <- samp.seg.df[samp.seg.df[, 6] < (ploidy.vec[samp] - threshold) | samp.seg.df[, 6] > (ploidy.vec[samp] + threshold),] # Restrict to aberrant segments
     samp.seg.LOH.df <- samp.seg.df[samp.seg.df[, 8] == 0 & samp.seg.df[, 7] != 0,] # Restrict to LOH segments
@@ -160,44 +157,26 @@ calculateWGII <- function(seg.df, threshold = 0.6, include.sex.chrom = FALSE) {
     wfloh.vec <- vector()
 
     if ( ! include.sex.chrom == TRUE ) {
-
        chrom.length.vec <- chrom.length.vec[ ! names(chrom.length.vec) %in% c("X", "Y", "x", "y", 23, 24)]
+    }
 
-    }#end if ( ! include.sex.chrom == TRUE ) {
-    #print("chrom.vec")
-    #print(chrom.vec)
     for (chrom in chrom.vec) {
 
       chrom.samp.seg.SCNA.df <- samp.seg.SCNA.df[samp.seg.SCNA.df[, 2] %in% chrom,]
       chrom.samp.seg.LOH.df <- samp.seg.LOH.df[samp.seg.LOH.df[, 2] %in% chrom,]
 
-      #cat("Chrom df:", samp, chrom, "\n")
-      #cat("SCNA\n")
-      #print(str(chrom.samp.seg.SCNA.df))
-      #cat("LOH\n")
-      #print(str(chrom.samp.seg.LOH.df))
-
       wgii.vec <- c(wgii.vec, sum(chrom.samp.seg.SCNA.df[, 4] - chrom.samp.seg.SCNA.df[, 3]) / chrom.length.vec[chrom])
       wfloh.vec <- c(wfloh.vec, sum(chrom.samp.seg.LOH.df[,4] - chrom.samp.seg.LOH.df[,3]) / chrom.length.vec[chrom])
 
-      #print("==== wgii.vec")
-      #print(wgii.vec)
-      #print("==== wfloh.vec")
-      #print(wfloh.vec)
+    }
 
-    }#end for (chrom in chrom.vec) {
     output.mat[samp, 2] <- sum(wgii.vec) / length(chrom.length.vec)
     output.mat[samp, 4] <- sum(wfloh.vec) / length(chrom.length.vec)
 
   }#end for (samp in sample.vec)
 
-  #cat("WGII output matrix\n")
-  #str(output.mat)
-  #print(output.mat)
-
   return(output.mat)
-
-}#calculateWGII
+}
 
 
 calculatePloidy  <- function(seg.df, tot.cpn.col.idx = 6, calculate.raw.ploidy = TRUE) {

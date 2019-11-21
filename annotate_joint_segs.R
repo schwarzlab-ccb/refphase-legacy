@@ -235,12 +235,10 @@ annotate_joint_segs <- function(segs, germline_snps) {
 			next
 		}
     message(" ", i, appendLF = FALSE)
-    #print(int.anno.seg.df)
 
 		curr.arm <- int.anno.seg.df[i,]$chr_arm
     i_grs <- all.int.grs[i]
     # Precede is wrong here follow is correct, check the granges documentation.
-    #before_i <- follow(i_grs, all.snp.grs)
     before_i <- before[[i]]
 		if (! is.na(before_i) ) {
 			if (snp.file.df[before_i,]$arm == curr.arm) {
@@ -264,8 +262,6 @@ annotate_joint_segs <- function(segs, germline_snps) {
 			int.anno.seg.df[i,]$nearest_preceding_snp <- near_snp_start
 		}
 	}
-  message("done")
-  str(int.anno.seg.df)
 
 	int.anno.seg.df[is.na(int.anno.seg.df$start_snp_idx) | is.na(int.anno.seg.df$end_snp_idx), c("Start_Position", "End_Position", "start_snp_idx", "end_snp_idx", "nearest_preceding_snp", "nearest_following_snp") ]
 	int.anno.seg.df[int.anno.seg.df$start_is_pos %in% FALSE, ]$Start_Position <- int.anno.seg.df[int.anno.seg.df$start_is_pos %in% FALSE, ]$nearest_following_snp

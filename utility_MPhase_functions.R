@@ -6,11 +6,8 @@
 ##
 ##Returns:
 ##
-getPhasedASCATRawCopyNumberAB <- function(ref.ss.lr.baf.df, sample, sample.ph.hz.ascat.df.list = PH_ALL_SAMP_ASCAT_RAW_CPN_DF_LIST) {
-  #print("called getPhasedASCATRawCopyNumberAB")
-  #     chrom    pos      BAF       logR BAFsegmented logRsegmented
-  # 41      1 871020 0.256944 -0.2700826    0.2308897    -0.3350534
-  ph.raw.cpn.df <- PH_ALL_SAMP_ASCAT_RAW_CPN_DF_LIST[[sample]]
+getPhasedASCATRawCopyNumberAB <- function(ref.ss.lr.baf.df, sample, sample.ph.hz.ascat.df.list) {
+  ph.raw.cpn.df <- sample.ph.hz.ascat.df.list[[sample]]
   return(ph.raw.cpn.df[ph.raw.cpn.df$snp_pos %in% paste0(ref.ss.lr.baf.df$chrom, "_", ref.ss.lr.baf.df$pos), c("ph_ascat_nAraw","ph_ascat_nBraw")])
 
 }#end calculateSNPCopyNumberAB <- function(
@@ -73,22 +70,9 @@ wilcoxTestWithErrorHandling <- function(x, y = NULL,
           } else if(grepl("enough|constant|NULL", err$message) & "other" %in% errors.not.permitted){
             stop(err$message)
           }
-          # cat("\n")
-          # paste("Input for wilcox test")
-          # print("x")
-          # print(x)
-          # print("y")
-          # print(y)
-          # print("mu")
-          # print(mu)
-          # print("paired")
-          # print(paired)
-          # print("conf.level")
-          # print(conf.level)
-          test.results <- list()
-          test.results[["stat"]] <- 1
-          test.results[["conf.int"]] <- c(NA, NA)
-          test.results[["p.val"]] <- 1
+          test.results <- list(stat = 1,
+                               conf.int = c(NA, NA),
+                               p.val = 1)
           return(test.results)
         })
 
@@ -134,18 +118,6 @@ tTestWithErrorHandling <- function(x, y = NULL, alternative = c("two.sided", "le
       } else if(grepl("enough|constant|NULL", err$message) & "other" %in% errors.not.permitted){
         stop(err$message)
       }
-      # cat("\n")
-      # paste("Input for t test")
-      # print("x")
-      # print(x)
-      # print("y")
-      # print(y)
-      # print("mu")
-      # print(mu)
-      # print("paired")
-      # print(paired)
-      # print("conf.level")
-      # print(conf.level)
       test.results <- list()
       test.results[["stat"]] <- 1
       test.results[["conf.int"]] <- c(NA, NA)

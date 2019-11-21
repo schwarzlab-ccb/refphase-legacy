@@ -1686,6 +1686,9 @@ read_snps_sequenza <- function(input_files, segs, samples) {
 # $ failedarrays        : NULL
 snps_to_ascat_bc <- function(snps, sample_name) {
 
+  na_snps <- is.na(snps$logR) | is.na(snps$logRsegmented) | is.na(snps$BAFsegmented)
+  snps <- snps[!na_snps,]
+
   bafseg <- matrix(snps$BAFsegmented, ncol = 1, dimnames = list(as.character(seq_along(snps$BAFsegmented))))
   bafseg <- bafseg[!is.na(snps$BAFsegmented),, drop=FALSE]
 
@@ -1721,3 +1724,10 @@ snps_to_ascat_bc <- function(snps, sample_name) {
 
   return(ascat_bc)
 }
+
+#ascat_bc_remove_na <- function(ascat_bc) {
+#
+#
+#
+#
+#}

@@ -70,10 +70,6 @@ genome <- conf$genome  # hg19 or hg38
 #as all will cover the same genomic area)
 options(stringsAsFactors = FALSE)
 
-#TBKW edit
-###GLOBAL FLAG that alters the behaviour of some hacked functions so that they work with MPhase and XPhase
-USING_XPHASE <- FALSE 
-
 #function taken from https://github.com/molgenis/molgenis-pipelines/wiki/How-to-source-another_file.R-from-within-your-R-script
 LocationOfThisScript  <-  function() { # Function LocationOfThisScript returns the location of this .R script (may be needed to source other files in same dir)
 	this.file = NULL
@@ -986,19 +982,8 @@ sample.vec <- names(asas.SNPs.w.both.lr.baf.snp.lists)
 
 if (OVERWRITE_FLAG == TRUE) {
 
-	print("Getting phasing to apply to all samples...")
 	source(paste0(current.dir, "consensus_phasing_from_multiple_samples_functions_v2.R"))
-	#all.seg.phasing.info.list <- getCombinedBAFDipTestPhasing(asas.lr.baf.lists = asas.SNPs.w.both.lr.baf.snp.lists,
-	#                                            seg.name.vec = seg.name.vec,
-	#                                            ploidy.est.vec = ploidy.est.vec,
-	#                                            purity.est.vec = purity.est.vec,
-	#                                            gamma.val = GAMMA_VAL,
-	#                                            min.num.hz.snp.phasing = MIN_NUM_HZ_SNP_PHASING,
-	#                                            min.prop.snp.sep.threshold = MIN_PROP_SNP_SEP_THRESH,
-	#                                            dip.test.p.val.threshold = PVAL_DIPTEST_AI_THRESH,
-	#                                            comb.wilcox.snp.sep.p.val.threshold = PVAL_COMB_WILCOX_PH_THRESH,
-	#                                            allow.dip.test.without.ASCAT.to.phase = ALLOW_DIPTEST_ALONE_PH_FLAG
-	#                	                          )
+
 	print("Getting phasing to apply to all samples using getCombinedBAFDipTestPhasingParallel...")
 	all.seg.phasing.info.list <- getCombinedBAFDipTestPhasingParallel(asas.lr.baf.lists = asas.SNPs.w.both.lr.baf.snp.lists,
 	                                            seg.name.vec = seg.name.vec,

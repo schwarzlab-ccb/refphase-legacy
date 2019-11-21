@@ -1,46 +1,46 @@
 
-addOriginalCPNValuesAndCallsVsPloidyToOutputSegmentation <- function(sample.vec,
-                                        seg.name.vec, 
-                                        processed.orig.cpn.segs.df,
-                                        all.segs.df) {
-
-    min.cons.segs.raw.cpnA.df <- generateMinimumConsistentSegmentation(processed.orig.cpn.segs.df, chroms = 1:22, col.to.use = "nAraw")
-    min.cons.segs.raw.cpnB.df <- generateMinimumConsistentSegmentation(processed.orig.cpn.segs.df, chroms = 1:22, col.to.use = "nBraw")
-    min.cons.segs.nMinor.df <- generateMinimumConsistentSegmentation(processed.orig.cpn.segs.df, chroms = 1:22, col.to.use = "nMinor")
-    min.cons.segs.nMajor.df <- generateMinimumConsistentSegmentation(processed.orig.cpn.segs.df, chroms = 1:22, col.to.use = "nMajor")
-    #print("nrow(min.cons.segs.raw.cpnA.df)")
-    #print(nrow(min.cons.segs.raw.cpnA.df))
-    rownames(min.cons.segs.raw.cpnA.df) <- paste(min.cons.segs.raw.cpnA.df[,1], min.cons.segs.raw.cpnA.df[,2], min.cons.segs.raw.cpnA.df[,3], sep = ":") 
-    rownames(min.cons.segs.raw.cpnB.df) <- paste(min.cons.segs.raw.cpnA.df[,1], min.cons.segs.raw.cpnA.df[,2], min.cons.segs.raw.cpnA.df[,3], sep = ":")
-    rownames(min.cons.segs.nMinor.df) <- paste(min.cons.segs.raw.cpnA.df[,1], min.cons.segs.raw.cpnA.df[,2], min.cons.segs.raw.cpnA.df[,3], sep = ":") 
-    rownames(min.cons.segs.nMajor.df) <- paste(min.cons.segs.raw.cpnA.df[,1], min.cons.segs.raw.cpnA.df[,2], min.cons.segs.raw.cpnA.df[,3], sep = ":")
-
-    for ( samp in sample.vec ) {
-
-        for ( seg.name in seg.name.vec ) {
-            #print(seg.name)
-            if (length(sample.vec) > 1) {
-
-                samp.seg.name <- paste0(samp, ":", seg.name)
-
-            } else {
-
-                samp.seg.name <- seg.name
-            }
-            #print(samp.seg.name)
-            all.segs.df[samp.seg.name,]$orig_cpnA_raw <- min.cons.segs.raw.cpnB.df[seg.name, samp]
-            all.segs.df[samp.seg.name,]$orig_cpnB_raw <- min.cons.segs.raw.cpnA.df[seg.name, samp]
-            all.segs.df[samp.seg.name,]$orig_nMinor <- min.cons.segs.nMinor.df[seg.name, samp]
-            all.segs.df[samp.seg.name,]$orig_nMajor <- min.cons.segs.nMajor.df[seg.name, samp]
-            all.segs.df[samp.seg.name,]$orig_cnTotal <- all.segs.df[samp.seg.name,]$orig_nMinor + all.segs.df[samp.seg.name,]$orig_nMajor
-
-        }#end for ( seg.name in seg.name.vec ) {
-
-    }#end for ( samp in sample.vec ) {
-
-    return(all.segs.df)
-
-}#end addOriginalRawValuesToOutputSegmentation
+#addOriginalCPNValuesAndCallsVsPloidyToOutputSegmentation <- function(sample.vec,
+#                                        seg.name.vec, 
+#                                        processed.orig.cpn.segs.df,
+#                                        all.segs.df) {
+#
+#    min.cons.segs.raw.cpnA.df <- generateMinimumConsistentSegmentation(processed.orig.cpn.segs.df, chroms = 1:22, col.to.use = "nAraw")
+#    min.cons.segs.raw.cpnB.df <- generateMinimumConsistentSegmentation(processed.orig.cpn.segs.df, chroms = 1:22, col.to.use = "nBraw")
+#    min.cons.segs.nMinor.df <- generateMinimumConsistentSegmentation(processed.orig.cpn.segs.df, chroms = 1:22, col.to.use = "nMinor")
+#    min.cons.segs.nMajor.df <- generateMinimumConsistentSegmentation(processed.orig.cpn.segs.df, chroms = 1:22, col.to.use = "nMajor")
+#    #print("nrow(min.cons.segs.raw.cpnA.df)")
+#    #print(nrow(min.cons.segs.raw.cpnA.df))
+#    rownames(min.cons.segs.raw.cpnA.df) <- paste(min.cons.segs.raw.cpnA.df[,1], min.cons.segs.raw.cpnA.df[,2], min.cons.segs.raw.cpnA.df[,3], sep = ":") 
+#    rownames(min.cons.segs.raw.cpnB.df) <- paste(min.cons.segs.raw.cpnA.df[,1], min.cons.segs.raw.cpnA.df[,2], min.cons.segs.raw.cpnA.df[,3], sep = ":")
+#    rownames(min.cons.segs.nMinor.df) <- paste(min.cons.segs.raw.cpnA.df[,1], min.cons.segs.raw.cpnA.df[,2], min.cons.segs.raw.cpnA.df[,3], sep = ":") 
+#    rownames(min.cons.segs.nMajor.df) <- paste(min.cons.segs.raw.cpnA.df[,1], min.cons.segs.raw.cpnA.df[,2], min.cons.segs.raw.cpnA.df[,3], sep = ":")
+#
+#    for ( samp in sample.vec ) {
+#
+#        for ( seg.name in seg.name.vec ) {
+#            #print(seg.name)
+#            if (length(sample.vec) > 1) {
+#
+#                samp.seg.name <- paste0(samp, ":", seg.name)
+#
+#            } else {
+#
+#                samp.seg.name <- seg.name
+#            }
+#            #print(samp.seg.name)
+#            all.segs.df[samp.seg.name,]$orig_cpnA_raw <- min.cons.segs.raw.cpnB.df[seg.name, samp]
+#            all.segs.df[samp.seg.name,]$orig_cpnB_raw <- min.cons.segs.raw.cpnA.df[seg.name, samp]
+#            all.segs.df[samp.seg.name,]$orig_nMinor <- min.cons.segs.nMinor.df[seg.name, samp]
+#            all.segs.df[samp.seg.name,]$orig_nMajor <- min.cons.segs.nMajor.df[seg.name, samp]
+#            all.segs.df[samp.seg.name,]$orig_cnTotal <- all.segs.df[samp.seg.name,]$orig_nMinor + all.segs.df[samp.seg.name,]$orig_nMajor
+#
+#        }#end for ( seg.name in seg.name.vec ) {
+#
+#    }#end for ( samp in sample.vec ) {
+#
+#    return(all.segs.df)
+#
+#}#end addOriginalRawValuesToOutputSegmentation
 
 
 
