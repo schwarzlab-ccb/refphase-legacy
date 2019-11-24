@@ -8,102 +8,140 @@ getAllSegAllSamplePhasedRawCPNList <- function(sample.vec, ploidy.est.vec,
                                                use.xphase = FALSE,
                                                ascat.raw.cpn) {
 
-    seg.name.vec <- paste(min.cons.segs.df[ , 1], min.cons.segs.df[ , 2], min.cons.segs.df[ , 3], sep=":")
-    #Initialise all lists
-    all.samples.phased.cpn.list <- list()
-    for ( samp in sample.vec ) {
-      all.samples.phased.cpn.list[[samp]] <- list()
-      for ( seg.name in seg.name.vec ) {
-        all.samples.phased.cpn.list[[samp]][[seg.name]] <- list(chr_vec = NA,
-                                                                pos_vec = NA,
-                                                                logr_vec = NA,
-                                                                ph_cpnA_vec = NA,
-                                                                ph_cpnB_vec = NA,
-                                                                mean_ph_cpnA = NA,
-                                                                mean_ph_cpnB = NA,
-                                                                un_ph_cpn_total = NA,
-                                                                un_ph_cpn_total_mean = NA)
+  seg.name.vec <- paste(min.cons.segs.df[ , 1], min.cons.segs.df[ , 2], min.cons.segs.df[ , 3], sep=":")
+  #Initialise all lists
+  all.samples.phased.cpn.list <- list()
+  for ( samp in sample.vec ) {
+    all.samples.phased.cpn.list[[samp]] <- list()
+    for ( seg.name in seg.name.vec ) {
+      all.samples.phased.cpn.list[[samp]][[seg.name]] <- list(chr_vec = NA,
+                                                              pos_vec = NA,
+                                                              logr_vec = NA,
+                                                              ph_cpnA_vec = NA,
+                                                              ph_cpnB_vec = NA,
+                                                              mean_ph_cpnA = NA,
+                                                              mean_ph_cpnB = NA,
+                                                              un_ph_cpn_total = NA,
+                                                              un_ph_cpn_total_mean = NA)
     }#end for ( seg.name in seg.name.vec ) {
   }#end for ( samp in sample.vec ) {
+
   #Now add all phased copy number usin gthe all.se.phasing.info.list
-    for ( samp in sample.vec) {
+  for ( samp in sample.vec) {
 
-      for ( seg.name in seg.name.vec ) {
-        #We may have the problem here that some segments don't have any snps in them at all, check for this perhaps? see if fails
-          samp.b.lr.baf.df <- asas.both.lr.baf.lists[[samp]][[seg.name]]
-          if (nrow(samp.b.lr.baf.df) == 0) {
-            next
-          }
+    for ( seg.name in seg.name.vec ) {
+      #We may have the problem here that some segments don't have any snps in them at all, check for this perhaps? see if fails
+      samp.b.lr.baf.df <- asas.both.lr.baf.lists[[samp]][[seg.name]]
+      if (nrow(samp.b.lr.baf.df) == 0) {
+        next
+      }
 
-          if (!use.xphase) {
+      if (!use.xphase) {
 
-            samp.seg.cpnA.cpnB.df <- calculateSNPsRawCopyNumberAB(logr.vec = samp.b.lr.baf.df$logR,
+        samp.seg.cpnA.cpnB.df <- calculateSNPsRawCopyNumberAB(logr.vec = samp.b.lr.baf.df$logR,
                                                               baf.vec = samp.b.lr.baf.df$BAF,
                                                               tumor.ploidy = ploidy.est.vec[samp],
                                                               tumor.purity = purity.est.vec[samp],
                                                               gamma.val = gamma.val)
-          } else {
-            samp.seg.cpnA.cpnB.df <- getPhasedASCATRawCopyNumberAB(ref.ss.lr.baf.df = samp.b.lr.baf.df,
-                                                                   sample = samp,
-                                                                   sample.ph.hz.ascat.df.list = ascat.raw.cpn)
-          }
+      } else {
+        message("Sample: ", samp)
+        message("samp.b.lr.baf.df")
+        str(samp.b.lr.baf.df)
+        message("ascat.raw.cpn")
+        str(ascat.raw.cpn)
+        samp.seg.cpnA.cpnB.df <- getPhasedASCATRawCopyNumberAB(ref.ss.lr.baf.df = samp.b.lr.baf.df,
+                                                               sample = samp,
+                                                               sample.ph.hz.ascat.df.list = ascat.raw.cpn)
+        message("samp.seg.cpnA.cpnB.df")
+        str(samp.seg.cpnA.cpnB.df)
+      }
+
+			if (nrow(samp.seg.cpnA.cpnB.df) == 0) {
+				next
+      } else if (nrow(samp.b.lr.baf.df) < min.num.hz.snp.phasing) {
+
+        all.samples.phased.cpn.list[[samp]][[seg.name]]$chr_vec <- samp.b.lr.baf.df$chrom
+        all.samples.phased.cpn.list[[samp]][[seg.name]]$pos_vec <- samp.b.lr.baf.df$pos
+        all.samples.phased.cpn.list[[samp]][[seg.name]]$logr_vec <- samp.b.lr.baf.df$logR
+        all.samples.phased.cpn.list[[samp]][[seg.name]]$un_ph_cpn_total <- samp.seg.cpnA.cpnB.df[, 1] + samp.seg.cpnA.cpnB.df[, 2]
+        all.samples.phased.cpn.list[[samp]][[seg.name]]$un_ph_cpn_total_mean <- mean(samp.seg.cpnA.cpnB.df[, 1] + samp.seg.cpnA.cpnB.df[, 2])
 
 
-        if (nrow(samp.b.lr.baf.df) < min.num.hz.snp.phasing) {
+      } else {#end if (nrow(samp.b.lr.baf.df) > min.num.hz.snp.phasing) { now applying phasing to those that were phased.
 
-          all.samples.phased.cpn.list[[samp]][[seg.name]]$chr_vec <- samp.b.lr.baf.df$chrom
-          all.samples.phased.cpn.list[[samp]][[seg.name]]$pos_vec <- samp.b.lr.baf.df$pos
-          all.samples.phased.cpn.list[[samp]][[seg.name]]$logr_vec <- samp.b.lr.baf.df$logR
-          all.samples.phased.cpn.list[[samp]][[seg.name]]$un_ph_cpn_total <- samp.seg.cpnA.cpnB.df[, 1] + samp.seg.cpnA.cpnB.df[, 2]
-          all.samples.phased.cpn.list[[samp]][[seg.name]]$un_ph_cpn_total_mean <- mean(samp.seg.cpnA.cpnB.df[, 1] + samp.seg.cpnA.cpnB.df[, 2])
+        samp.seg.upper.band.cpn.vals.vec <- apply(samp.seg.cpnA.cpnB.df, 1, max)
+        samp.seg.median.upper.band.cpn <- median(samp.seg.upper.band.cpn.vals.vec)
+        message("samp.seg.cpnA.cpnB.df")
+        str(samp.seg.cpnA.cpnB.df)
+        message("samp.seg.upper.band.cpn.vals.vec")
+        str(samp.seg.upper.band.cpn.vals.vec)
+        samp.seg.cpnA.cpnB.is.upper.vec <- ifelse(samp.seg.cpnA.cpnB.df == samp.seg.upper.band.cpn.vals.vec, 1, 0)
+        phased.samp.seg.cpnA.cpnB.df <- samp.seg.cpnA.cpnB.df
+        #Get indices to phase cpnA
+        if (length(all.seg.phasing.info.list[[seg.name]]$maj_is_cpnA_idx_vec) > 0) {
 
+          is.upper.and.cpnA.in.ref.idx.vec <- all.seg.phasing.info.list[[seg.name]]$maj_is_cpnA_idx_vec
+          phased.samp.seg.cpnA.cpnB.df[is.upper.and.cpnA.in.ref.idx.vec, 1] <- samp.seg.cpnA.cpnB.df[is.upper.and.cpnA.in.ref.idx.vec, 1]
+          phased.samp.seg.cpnA.cpnB.df[is.upper.and.cpnA.in.ref.idx.vec, 2] <- samp.seg.cpnA.cpnB.df[is.upper.and.cpnA.in.ref.idx.vec, 2]
 
-        } else {#end if (nrow(samp.b.lr.baf.df) > min.num.hz.snp.phasing) { now applying phasing to those that were phased.
+        }
+        #Get indices to phase cpnB
+        if (length(all.seg.phasing.info.list[[seg.name]]$maj_is_cpnB_idx_vec) > 0) {
 
-          samp.seg.upper.band.cpn.vals.vec <- apply(samp.seg.cpnA.cpnB.df, 1, max)
-          samp.seg.median.upper.band.cpn <- median(samp.seg.upper.band.cpn.vals.vec)
-          samp.seg.cpnA.cpnB.is.upper.vec <- ifelse(samp.seg.cpnA.cpnB.df == samp.seg.upper.band.cpn.vals.vec, 1, 0)
-          phased.samp.seg.cpnA.cpnB.df <- samp.seg.cpnA.cpnB.df
-          #Get indices to phase cpnA
-          if (length(all.seg.phasing.info.list[[seg.name]]$maj_is_cpnA_idx_vec) > 0) {
+          is.lower.and.cpnB.in.ref.idx.vec <- all.seg.phasing.info.list[[seg.name]]$maj_is_cpnB_idx_vec
 
-               is.upper.and.cpnA.in.ref.idx.vec <- all.seg.phasing.info.list[[seg.name]]$maj_is_cpnA_idx_vec
-               phased.samp.seg.cpnA.cpnB.df[is.upper.and.cpnA.in.ref.idx.vec, 1] <- samp.seg.cpnA.cpnB.df[is.upper.and.cpnA.in.ref.idx.vec, 1]
-               phased.samp.seg.cpnA.cpnB.df[is.upper.and.cpnA.in.ref.idx.vec, 2] <- samp.seg.cpnA.cpnB.df[is.upper.and.cpnA.in.ref.idx.vec, 2]
+          phased.samp.seg.cpnA.cpnB.df[is.lower.and.cpnB.in.ref.idx.vec, 1] <- samp.seg.cpnA.cpnB.df[is.lower.and.cpnB.in.ref.idx.vec, 2]
+          phased.samp.seg.cpnA.cpnB.df[is.lower.and.cpnB.in.ref.idx.vec, 2] <- samp.seg.cpnA.cpnB.df[is.lower.and.cpnB.in.ref.idx.vec, 1]
 
-          }
-          #Get indices to phase cpnB
-          if (length(all.seg.phasing.info.list[[seg.name]]$maj_is_cpnB_idx_vec) > 0) {
+        }
+        #Store this information in the list:
+        all.samples.phased.cpn.list[[samp]][[seg.name]]$chr_vec <- samp.b.lr.baf.df$chrom
+        all.samples.phased.cpn.list[[samp]][[seg.name]]$pos_vec <- samp.b.lr.baf.df$pos
+        all.samples.phased.cpn.list[[samp]][[seg.name]]$logr_vec <- samp.b.lr.baf.df$logR
+        all.samples.phased.cpn.list[[samp]][[seg.name]]$ph_cpnA_vec <- as.numeric(phased.samp.seg.cpnA.cpnB.df[,1])
+        all.samples.phased.cpn.list[[samp]][[seg.name]]$ph_cpnB_vec <- as.numeric(phased.samp.seg.cpnA.cpnB.df[,2])
+        all.samples.phased.cpn.list[[samp]][[seg.name]]$mean_ph_cpnA <- mean(as.numeric(phased.samp.seg.cpnA.cpnB.df[,1]))
+        all.samples.phased.cpn.list[[samp]][[seg.name]]$mean_ph_cpnB <- mean(as.numeric(phased.samp.seg.cpnA.cpnB.df[,2]))
 
-               is.lower.and.cpnB.in.ref.idx.vec <- all.seg.phasing.info.list[[seg.name]]$maj_is_cpnB_idx_vec
+      }#end if(nrow(samp.b.lr.baf.df) > min.num.hz.snp.phasing)
+    }#end for ( seg.name in chr.start.end.string.vec ) {
+  }#end for   for ( samp in sample.vec) {
 
-               phased.samp.seg.cpnA.cpnB.df[is.lower.and.cpnB.in.ref.idx.vec, 1] <- samp.seg.cpnA.cpnB.df[is.lower.and.cpnB.in.ref.idx.vec, 2]
-               phased.samp.seg.cpnA.cpnB.df[is.lower.and.cpnB.in.ref.idx.vec, 2] <- samp.seg.cpnA.cpnB.df[is.lower.and.cpnB.in.ref.idx.vec, 1]
+  #Now let's check all the samples have the segments have the same number of raw cpn points
+  for ( seg.name in seg.name.vec ) {
+    chr.len <- length(all.samples.phased.cpn.list[[1]][[seg.name]]$chr_vec)
+    pos.len <- length(all.samples.phased.cpn.list[[1]][[seg.name]]$pos_vec)
+    logr.len <- length(all.samples.phased.cpn.list[[1]][[seg.name]]$logr_vec)
+    ph.cpnA.len <- length(all.samples.phased.cpn.list[[1]][[seg.name]]$ph_cpnA_vec )
+    ph.cpnB.len <- length(all.samples.phased.cpn.list[[1]][[seg.name]]$ph_cpnB_vec )
 
-          }
-          #Store this information in the list:
-          all.samples.phased.cpn.list[[samp]][[seg.name]]$chr_vec <- samp.b.lr.baf.df$chrom
-          all.samples.phased.cpn.list[[samp]][[seg.name]]$pos_vec <- samp.b.lr.baf.df$pos
-          all.samples.phased.cpn.list[[samp]][[seg.name]]$logr_vec <- samp.b.lr.baf.df$logR
-          all.samples.phased.cpn.list[[samp]][[seg.name]]$ph_cpnA_vec <- as.numeric(phased.samp.seg.cpnA.cpnB.df[,1])
-          all.samples.phased.cpn.list[[samp]][[seg.name]]$ph_cpnB_vec <- as.numeric(phased.samp.seg.cpnA.cpnB.df[,2])
-          all.samples.phased.cpn.list[[samp]][[seg.name]]$mean_ph_cpnA <- mean(as.numeric(phased.samp.seg.cpnA.cpnB.df[,1]))
-          all.samples.phased.cpn.list[[samp]][[seg.name]]$mean_ph_cpnB <- mean(as.numeric(phased.samp.seg.cpnA.cpnB.df[,2]))
+    if ( ! (length(unique(ph.cpnA.len, ph.cpnB.len)) == 1) ){
 
-        }#end if(nrow(samp.b.lr.baf.df) > min.num.hz.snp.phasing)
-      }#end for ( seg.name in chr.start.end.string.vec ) {
-    }#end for   for ( samp in sample.vec) {
+      print("chr.len")
+      print(chr.len)
+      print("pos.len")
+      print(pos.len)
+      print("logr.len")
+      print(logr.len)
+      print("ph.cpnA.len")
+      print(ph.cpnA.len)
+      print("ph.cpnB.len")
+      print(ph.cpnB.len)
+      stop("Not all vectors the same length...")
+    }
+    seg.num  <- ph.cpnA.len
+    for ( samp in sample.vec) {
 
-    #Now let's check all the samples have the segments have the same number of raw cpn points
-    for ( seg.name in seg.name.vec ) {
       chr.len <- length(all.samples.phased.cpn.list[[1]][[seg.name]]$chr_vec)
       pos.len <- length(all.samples.phased.cpn.list[[1]][[seg.name]]$pos_vec)
       logr.len <- length(all.samples.phased.cpn.list[[1]][[seg.name]]$logr_vec)
       ph.cpnA.len <- length(all.samples.phased.cpn.list[[1]][[seg.name]]$ph_cpnA_vec )
       ph.cpnB.len <- length(all.samples.phased.cpn.list[[1]][[seg.name]]$ph_cpnB_vec )
 
-      if ( ! (length(unique(ph.cpnA.len, ph.cpnB.len)) == 1) ){
+      if( ! all(c(ph.cpnA.len, ph.cpnB.len) == seg.num)) {
 
+        print(samp)
+        print(seg.name)
         print("chr.len")
         print(chr.len)
         print("pos.len")
@@ -114,40 +152,15 @@ getAllSegAllSamplePhasedRawCPNList <- function(sample.vec, ploidy.est.vec,
         print(ph.cpnA.len)
         print("ph.cpnB.len")
         print(ph.cpnB.len)
-        stop("Not all vectors the same length...")
+        stop("Not equal to what it should be")
+
       }
-      seg.num  <- ph.cpnA.len
-      for ( samp in sample.vec) {
 
-        chr.len <- length(all.samples.phased.cpn.list[[1]][[seg.name]]$chr_vec)
-        pos.len <- length(all.samples.phased.cpn.list[[1]][[seg.name]]$pos_vec)
-        logr.len <- length(all.samples.phased.cpn.list[[1]][[seg.name]]$logr_vec)
-        ph.cpnA.len <- length(all.samples.phased.cpn.list[[1]][[seg.name]]$ph_cpnA_vec )
-        ph.cpnB.len <- length(all.samples.phased.cpn.list[[1]][[seg.name]]$ph_cpnB_vec )
+    }#end  for ( samp in sample.vec) {
 
-        if( ! all(c(ph.cpnA.len, ph.cpnB.len) == seg.num)) {
+  }#end for ( seg.name in seg.name.vec ) {
 
-          print(samp)
-          print(seg.name)
-          print("chr.len")
-          print(chr.len)
-          print("pos.len")
-          print(pos.len)
-          print("logr.len")
-          print(logr.len)
-          print("ph.cpnA.len")
-          print(ph.cpnA.len)
-          print("ph.cpnB.len")
-          print(ph.cpnB.len)
-          stop("Not equal to what it should be")
-
-        }
-
-      }#end  for ( samp in sample.vec) {
-
-    }#end for ( seg.name in seg.name.vec ) {
-
-    return(all.samples.phased.cpn.list)
+  return(all.samples.phased.cpn.list)
 }
 
 

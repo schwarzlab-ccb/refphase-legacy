@@ -386,29 +386,6 @@ plotAllSampleBAFsAndMSAIAcrossGenomeForPaperFigures <- function(full.joint.segs.
 }#end plotAllSampleBAFsAcrossGenome(...)
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 plotAllSampleBAFsAcrossGenome <- function(sample.vec, patient.phased.BAF.df.list, cpnA.allele.color = '#de2d2699', cpnB.allele.color= '#3182bd99') {
 
   samp.BAF.df <- patient.phased.BAF.df.list[[1]]
@@ -436,17 +413,11 @@ plotAllSampleBAFsAcrossGenome <- function(sample.vec, patient.phased.BAF.df.list
 
     #Set out border size for sub plot
     if (samp == first.samp) {
-
       par(mar = c(2, 3, 4, 3))
-
     } else if (samp == last.samp) {
-
       par(mar = c(4, 3, 2, 3))
-
     } else {
-
       par(mar = c(3, 3, 3, 3))
-
     }
 
     samp.BAF.df <- patient.phased.BAF.df.list[[samp]]
@@ -454,11 +425,9 @@ plotAllSampleBAFsAcrossGenome <- function(sample.vec, patient.phased.BAF.df.list
     samp.BAF.df$mphase_segmented_BAF <- 0.5
 
     if(nrow(samp.BAF.df[grepl("none", samp.BAF.df$sample_phased_by_this_sample),]) > 0) {
-
       samp.BAF.df[grepl("none", samp.BAF.df$sample_phased_by_this_sample),]$ph_median_segmented_BAF <- 0.5
-
-
     }
+
     rownames(samp.BAF.df) <- 1:nrow(samp.BAF.df)
     plot(chrom.segs.to.plot.df[, 2], samp.BAF.df$BAF,
         col = samp.BAF.df$color_to_plot,

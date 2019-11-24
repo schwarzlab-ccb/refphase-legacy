@@ -613,27 +613,17 @@ getMixturePhasingResultsForSegment <- function(sample.to.phase.seg,
     for ( samp in all.passing.samples.vec ) {
 
       ss.lr.baf.df <- asas.lr.baf.lists[[samp]][[seg.name]]
-      # ss.cpnA.cpnB.df <- calculateSNPsRawCopyNumberAB(logr.vec = ss.lr.baf.df$logR,
-      #                                                 baf.vec = ss.lr.baf.df$BAF,
-      #                                                 tumor.ploidy = ploidy.est.vec[samp],
-      #                                                 tumor.purity = purity.est.vec[samp],
-      #                                                 gamma.val = gamma.val)
 
       if (!use.xphase) {
-
         ss.cpnA.cpnB.df <- calculateSNPsRawCopyNumberAB(logr.vec = ss.lr.baf.df$logR,
-                                                            baf.vec = ss.lr.baf.df$BAF,
-                                                            tumor.ploidy = ploidy.est.vec[samp],
-                                                            tumor.purity = purity.est.vec[samp],
-                                                            gamma.val = gamma.val)
-
+                                                        baf.vec = ss.lr.baf.df$BAF,
+                                                        tumor.ploidy = ploidy.est.vec[samp],
+                                                        tumor.purity = purity.est.vec[samp],
+                                                        gamma.val = gamma.val)
       } else {
-
-          ##
-          ss.cpnA.cpnB.df <- getPhasedASCATRawCopyNumberAB(ref.ss.lr.baf.df = ss.lr.baf.df,
-                                                              sample = samp,
-                                                              sample.ph.hz.ascat.df.list = PH_ALL_SAMP_ASCAT_RAW_CPN_DF_LIST)
-
+        ss.cpnA.cpnB.df <- getPhasedASCATRawCopyNumberAB(ref.ss.lr.baf.df = ss.lr.baf.df,
+                                                         sample = samp,
+                                                         sample.ph.hz.ascat.df.list = PH_ALL_SAMP_ASCAT_RAW_CPN_DF_LIST)
       }
 
       ss.SNP.cpnA <- ss.cpnA.cpnB.df[SNP.idx, current.maj.cpn.col.idx]

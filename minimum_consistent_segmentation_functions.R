@@ -290,9 +290,10 @@ createFullyAnnotatedJointSegmentation <- function(f.joint.segs.df) {
   correct.order.cols <- c( "sample","chr","startpos","endpos","n.het","cnTotal","nMajor","nMinor","Ploidy","ACF","nAraw","nBraw","patient","sample_name","cpn_call","arm_or_focal_event","arm_event_present","within_chr_arm","uniq_id")
   f.joint.segs.df.new <- all.samp.w.metadata.conv.df[, correct.order.cols]
 
-  message("Getting proportion of chromosome arms in selected genome covered by segments from each (and all) samples:")
-  overlaps.between.samples.df <- compareOverlapsBetweenSamples(sample.vec, f.joint.segs.df, chrom.info.df, chrs.to.use.vec= CHRS_TO_USE_VEC)
-  print(overlaps.between.samples.df)
+  message("Getting proportion of chromosome arms in selected genome covered by segments from each (and all) samples")
+  # overlaps.between.samples.df <- compareOverlapsBetweenSamples(sample.vec, f.joint.segs.df, chrom.info.df, chrs.to.use.vec= CHRS_TO_USE_VEC)
+  # print(overlaps.between.samples.df)
+
   #So the question is here are we going to allow single base bair segments?
   message("Calculating intersections using GRanges.")
   intersection.grs.list <- getAllPatientSamplesAndIntersectionGRangesList(sample.vec, f.joint.segs.df)

@@ -1270,6 +1270,13 @@ ascat_set_logrsegmented <- function(segs, all_snps) {
       mean_logr <- mean(samp_data[seg_data_idx, "logR"], na.rm = TRUE)
       all_snps[[samp_idx]][seg_data_idx, "logRsegmented"] <- mean_logr
     }
+
+    # Deal with NAs
+    logr_na <- is.na(all_snps[[samp_idx]]$logRsegmented)
+    if (any(logr_na)) {
+      message("Found NA values in logR segmented, setting to 1.0")
+      all_snps[[samp_idx]][logr_na, "logRsegmented"] <- 1.0
+    }
   }
 
   return(all_snps)
@@ -1588,7 +1595,7 @@ cleanAndErrorCheckSNPsParallel <- function(all.samp.SNP.list, mcs.seg.to.use.df,
 #   ..$ logR         : num [1:938946] -0.049 -0.161 -0.161 -0.542 -0.46 -0.46 -0.46 -0.166 -0.047 -0.013 ...
 #   ..$ BAFsegmented : num [1:938946] 0.231 0.231 0.231 0.231 0.231 ...
 #   ..$ logRsegmented: num [1:938946] -0.327 -0.327 -0.327 -0.327 -0.327 ...
-read_snps_sequenza <- function(input_files, segs, samples) {
+read_snps_sequenza <- function(input_files, segs, samples, het_only = TRUE) {
 
   library(readr)
 
@@ -1609,18 +1616,31 @@ read_snps_sequenza <- function(input_files, segs, samples) {
     #               "tumor.strand")
     # Using readr
     message("Reading SNP data for sample: ", sample)
-    col_types <- "ci---d-dc-----"  # Skip unnecessary columns
-    col_names <- c("chromosome", "position", "depth.ratio", "Bf", "zygosity.normal")
+    col_types <- "cic--dddc--c--"  # Skip unnecessary columns
+    col_names <- c("chromosome", "position", "base.ref", "depth.ratio", "Af", "Bf", "zygosity.normal", "AB.normal")
     seqz_data <- read_tsv(input_file, col_types = col_types,
                           progress = TRUE, col_names = col_names,
                           skip = 1)
 
+    # Only keep heterozygous positions
+    if (isTRUE(het_only)) {
+      germline_het <- seqz_data$zygosity.normal == "het"
+      seqz_data <- seqz_data[germline_het,]
+    }
+
     message("Creating SNP data frame.")
     chrom <- chrom2integer(seqz_data$chromosome)
     pos <- seqz_data$position
+
+    # Bf is always < Af, so we need to check the AB.normal to see if we need to flip it.
+    # This is probably not the perfect thing to do. Look into this topic more.
+    flip_baf <- nchar(seqz_data$AB.normal) > 0 & seqz_data$base.ref != substr(seqz_data$AB.normal, 1, 1)
+    baf <- seqz_data$Bf 
+    baf[flip_baf] <- seqz_data$Af[flip_baf]
+
     all_snps[[sample]] <- data.frame(chrom = chrom,
                                      pos = pos,
-                                     BAF = seqz_data$Bf,
+                                     BAF = baf,
                                      logR = log2(seqz_data$depth.ratio),
                                      zygosity.normal = seqz_data$zygosity.normal,
                                      snp_pos = paste0(chrom, "_", pos),
@@ -1629,6 +1649,7 @@ read_snps_sequenza <- function(input_files, segs, samples) {
 
     # Mask non-hz SNPs with NA
     all_snps[[sample]]$BAF[all_snps[[sample]]$zygosity.normal != "het"] <- NA
+
 
   }
 
@@ -1686,9 +1707,6 @@ read_snps_sequenza <- function(input_files, segs, samples) {
 # $ failedarrays        : NULL
 snps_to_ascat_bc <- function(snps, sample_name) {
 
-  na_snps <- is.na(snps$logR) | is.na(snps$logRsegmented) | is.na(snps$BAFsegmented)
-  snps <- snps[!na_snps,]
-
   bafseg <- matrix(snps$BAFsegmented, ncol = 1, dimnames = list(as.character(seq_along(snps$BAFsegmented))))
   bafseg <- bafseg[!is.na(snps$BAFsegmented),, drop=FALSE]
 
@@ -1717,7 +1735,7 @@ snps_to_ascat_bc <- function(snps, sample_name) {
   colnames(ascat_bc$Tumor_BAF) <- "BAF"
   colnames(ascat_bc$Tumor_LogR) <- sample_name
 
-  str(ascat_bc)
+  #str(ascat_bc)
 
   # Validate our created object
   validate_ascat_bc_input(ascat_bc)

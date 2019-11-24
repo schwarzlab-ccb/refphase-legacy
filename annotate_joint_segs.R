@@ -200,23 +200,6 @@ annotate_joint_segs <- function(segs, germline_snps) {
 	#   A_LTX121_SU_T1-R1:1:145109583:145477446        1 145109583-145477446      *
 	#
 
-	#FIXME, potential improvement that could be written in would be to, once a SNP is being used
-	#remove it from the pool of potential snps to be used as a potenial start and end. However, this might not
-	#matter to much.
-
-  #int.anno.seg.df$nearest_preceding_snp_quick <- NA
-  #int.anno.seg.df$nearest_following_snp_quick <- NA
-
-
-  #int.anno.seg.df$nearest_preceding_snp_quick[!is.na(before)] <- start(all.snp.grs[before[!is.na(before)]])
-  #int.anno.seg.df$nearest_following_snp_quick[!is.na(before)] <- start(all.snp.grs[before[!is.na(before)]])
-  ##int.anno.seg.df$nearest_following_snp_quick[!is.na(bef
-
-  #message("before")
-  #str(before)
-  #message("after")
-  #str(after)
-
   # Calculate all of these in one step, much faster than doing it one at a time
 	message("Checking all nearest SNPs (follow)")
   before <- follow(all.int.grs, all.snp.grs)
@@ -262,6 +245,7 @@ annotate_joint_segs <- function(segs, germline_snps) {
 			int.anno.seg.df[i,]$nearest_preceding_snp <- near_snp_start
 		}
 	}
+  message("done")
 
 	int.anno.seg.df[is.na(int.anno.seg.df$start_snp_idx) | is.na(int.anno.seg.df$end_snp_idx), c("Start_Position", "End_Position", "start_snp_idx", "end_snp_idx", "nearest_preceding_snp", "nearest_following_snp") ]
 	int.anno.seg.df[int.anno.seg.df$start_is_pos %in% FALSE, ]$Start_Position <- int.anno.seg.df[int.anno.seg.df$start_is_pos %in% FALSE, ]$nearest_following_snp
