@@ -144,17 +144,17 @@ if (is.null(current.dir)) {
 } else {
 	current.dir <- paste0(current.dir, "/")
 }
-source(file.path(current.dir, "utility_MPhase_functions.R"))
-source(file.path(current.dir, "minimum_consistent_segmentation_functions.R"))
-source(file.path(current.dir, "data_input_and_QC_functions_v2.R"))
-source(file.path(current.dir, "consensus_phasing_from_multiple_samples_functions_v2.R"))
-source(file.path(current.dir, "generation_of_phased_and_total_cpn_functions_v2.R"))
-source(file.path(current.dir, "MSAI_detection_functions.R"))
-source(file.path(current.dir, "cancer_cell_fraction_calculation_functions_v2.R"))
-source(file.path(current.dir, "final_output_segmentation_file_generation_functions_v3.R"))
+source(file.path(current.dir, "utils.R"))
+source(file.path(current.dir, "minimum_consistent_segmentation.R"))
+source(file.path(current.dir, "input_and_qc.R"))
+source(file.path(current.dir, "consensus_phasing.R"))
+source(file.path(current.dir, "copy_number.R"))
+source(file.path(current.dir, "msai.R"))
+source(file.path(current.dir, "cancer_cell_fraction.R"))
+source(file.path(current.dir, "prepare_output_segmentation.R"))
 source(file.path(current.dir, "new_seg_joining_functions.R"))
-source(file.path(current.dir, "cpn_heterogeneity_plotting_functions_v2.R"))
-source(file.path(current.dir, "MEDICC_input_creation_functions.R"))
+source(file.path(current.dir, "plot_cpn_heterogeneity.R"))
+source(file.path(current.dir, "output_medicc.R"))
 source(file.path(current.dir, "ascat.R"))
 
 # New files to reduce the length of this script
