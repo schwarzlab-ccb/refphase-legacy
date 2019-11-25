@@ -1,8 +1,8 @@
-##This is a new version 
-##Params:
-##
-##Returns:
-##
+# This is a new version 
+# Params:
+# 
+# Returns:
+# 
 getAllSegsAIorMSAIDetectionFromBAFListLTNPD <- function(seg.name.vec, sample.vec, asas.SNPS.lr.and.or.baf.lists, all.seg.phasing.info.list, MSAI.BAF.LTPND.pval.thresh) {
 
   all.seg.MSAI.by.BAF.ltnpd.present.list <- list()

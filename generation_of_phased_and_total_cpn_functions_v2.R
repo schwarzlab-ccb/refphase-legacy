@@ -9,6 +9,7 @@ getAllSegAllSamplePhasedRawCPNList <- function(sample.vec, ploidy.est.vec,
                                                ascat.raw.cpn) {
 
   seg.name.vec <- paste(min.cons.segs.df[ , 1], min.cons.segs.df[ , 2], min.cons.segs.df[ , 3], sep=":")
+
   #Initialise all lists
   all.samples.phased.cpn.list <- list()
   for ( samp in sample.vec ) {
@@ -44,16 +45,16 @@ getAllSegAllSamplePhasedRawCPNList <- function(sample.vec, ploidy.est.vec,
                                                               tumor.purity = purity.est.vec[samp],
                                                               gamma.val = gamma.val)
       } else {
-        message("Sample: ", samp)
-        message("samp.b.lr.baf.df")
-        str(samp.b.lr.baf.df)
-        message("ascat.raw.cpn")
-        str(ascat.raw.cpn)
+        #message("Sample: ", samp)
+        #message("samp.b.lr.baf.df")
+        #str(samp.b.lr.baf.df)
+        #message("ascat.raw.cpn")
+        #str(ascat.raw.cpn)
         samp.seg.cpnA.cpnB.df <- getPhasedASCATRawCopyNumberAB(ref.ss.lr.baf.df = samp.b.lr.baf.df,
                                                                sample = samp,
                                                                sample.ph.hz.ascat.df.list = ascat.raw.cpn)
-        message("samp.seg.cpnA.cpnB.df")
-        str(samp.seg.cpnA.cpnB.df)
+        #message("samp.seg.cpnA.cpnB.df")
+        #str(samp.seg.cpnA.cpnB.df)
       }
 
 			if (nrow(samp.seg.cpnA.cpnB.df) == 0) {
@@ -71,10 +72,10 @@ getAllSegAllSamplePhasedRawCPNList <- function(sample.vec, ploidy.est.vec,
 
         samp.seg.upper.band.cpn.vals.vec <- apply(samp.seg.cpnA.cpnB.df, 1, max)
         samp.seg.median.upper.band.cpn <- median(samp.seg.upper.band.cpn.vals.vec)
-        message("samp.seg.cpnA.cpnB.df")
-        str(samp.seg.cpnA.cpnB.df)
-        message("samp.seg.upper.band.cpn.vals.vec")
-        str(samp.seg.upper.band.cpn.vals.vec)
+        #message("samp.seg.cpnA.cpnB.df")
+        #str(samp.seg.cpnA.cpnB.df)
+        #message("samp.seg.upper.band.cpn.vals.vec")
+        #str(samp.seg.upper.band.cpn.vals.vec)
         samp.seg.cpnA.cpnB.is.upper.vec <- ifelse(samp.seg.cpnA.cpnB.df == samp.seg.upper.band.cpn.vals.vec, 1, 0)
         phased.samp.seg.cpnA.cpnB.df <- samp.seg.cpnA.cpnB.df
         #Get indices to phase cpnA
