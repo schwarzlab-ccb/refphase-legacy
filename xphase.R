@@ -91,13 +91,8 @@ genome <- conf$genome  # hg19 or hg38
 #as all will cover the same genomic area)
 
 #Right we need a free run folder:
-#free.run.dir <- file.path(output.directory.base.path, "free_run/")
-qc.choice.dir <- file.path(output.directory.base.path, "run_qc_choice/")
-#rescue.run.dir <- file.path(output.directory.base.path, "rescue_runs/")
-
-#dir.create(free.run.dir, recursive = TRUE, showWarnings = FALSE)
+qc.choice.dir <- file.path(output.directory.base.path, "run_qc_choice")
 dir.create(qc.choice.dir, recursive = TRUE, showWarnings = FALSE)
-#dir.create(rescue.run.dir, recursive = TRUE, showWarnings = FALSE)
 
 ###GLOBAL FLAG that alters the behaviour of some hacked functions so that they work with MPhase and XPhase
 USING_XPHASE <- FALSE 
@@ -251,35 +246,34 @@ chrom.info.df <- read.table(info.path, stringsAsFactors = FALSE, sep = "\t", hea
 # We don't need this until much later, don't try to load it now
 #access.df <- read.table(access.path, sep="\t", header=F, stringsAsFactors=F)
 
-#Paths for saving/loading objects depending on OVERWRITE_FLAG
-#Reading in data object paths
+#Paths for saving/loading objects
+if (!is.na(conf$debug_dir)) {
+  input.snp.file.rds.path <- file.path(conf$debug_dir, "input_snp_file.rds")
+  all.samp.SNP.list.path <- file.path(conf$debug_dir, "all_samp_SNP_list.rds")
+  asas.SNPS.lr.and.or.baf.lists.path <- file.path(conf$debug_dir, "asas_SNPS_lr_and_or_baf_lists_lists.rds")
+  asas.SNPs.w.both.lr.baf.snp.lists.path <- file.path(conf$debug_dir, "asas_SNPs_w_both_lr_baf_snp_lists.rds")
+  min.cons.segs.df.write.path <- file.path(conf$debug_dir, "min_cons_segs_df.txt")
+  sorted.all.bp.all.samps.segs.anno.df.path <- file.path(conf$debug_dir, "sorted_all_bp_all_samps_segs_anno.df.rds")
+  min.cons.segs.df.path <- file.path(conf$debug_dir, "min_cons_segs_df.rds")
+  processed.orig.cpn.segs.df.path <- file.path(conf$debug_dir, "processed_orig_cpn_segs_df.rds")
 
-
-input.snp.file.RDS.path <- paste0(PLOT_OUTPUT_DIR, patient, "_input_snp_file.RDS")
-all.samp.SNP.list.path <- paste0(PLOT_OUTPUT_DIR, patient, "_all_samp_SNP_list.RDS")
-asas.SNPS.lr.and.or.baf.lists.path <- paste0(PLOT_OUTPUT_DIR, patient, "_asas_SNPS_lr_and_or_baf_lists_lists.RDS")
-asas.SNPs.w.both.lr.baf.snp.lists.path <- paste0(PLOT_OUTPUT_DIR, patient, "_asas_SNPs_w_both_lr_baf_snp_lists.RDS")
-min.cons.segs.df.write.path <- paste0(PLOT_OUTPUT_DIR, patient, "_min_cons_segs_df.txt")
-sorted.all.bp.all.samps.segs.anno.df.path <- paste0(PLOT_OUTPUT_DIR, patient, "_sorted_all_bp_all_samps_segs_anno.df.RDS")
-min.cons.segs.df.path <- paste0(PLOT_OUTPUT_DIR, patient, "_min_cons_segs_df.RDS")
-processed.orig.cpn.segs.df.path <- paste0(PLOT_OUTPUT_DIR, patient, "_processed_orig_cpn_segs_df.RDS")
-
-ploidy.est.vec.path <- paste0(PLOT_OUTPUT_DIR, patient, "_ploidy_est_vec.RDS")
-purity.est.vec.path <- paste0(PLOT_OUTPUT_DIR, patient, "_purity_est_vec.RDS")
-#Analysis object paths
-all.seg.phasing.info.list.path <- paste0(PLOT_OUTPUT_DIR, patient, "_all_seg_phasing_info_list.RDS")
-anno.seg.df.path <- paste0(PLOT_OUTPUT_DIR, patient, "_anno_seg_df_path.RDS")
-patient.phased.BAF.df.list.path <- paste0(PLOT_OUTPUT_DIR, patient, "_phased_BAF_df_list.RDS")
-all.seg.MSAI.by.BAF.ltnpd.present.list.path <- paste0(PLOT_OUTPUT_DIR, patient, "_all_seg_MSAI_by_BAF_ltnpd_present_list.RDS")
-all.samp.non.hz.logr.and.tot.cpn.df.list.path <- paste0(PLOT_OUTPUT_DIR, patient, "_all_samp_non_hz_logr_and_tot_cpn_df_list.RDS")
-asas.ph.raw.cpn.lists.path <- paste0(PLOT_OUTPUT_DIR, patient, "_asas_ph_raw_cpn_lists.RDS")
-samps.int.cpn.raw.cpn.by.chr.list.path <- paste0(PLOT_OUTPUT_DIR, patient, "_samps_int_cpn_raw_cpn_by_chr_list.RDS")
-all.seg.CCF.list.path <- paste0(PLOT_OUTPUT_DIR, patient, "_all_seg_CCF_list.RDS")
-all.seg.int.ob.xp.cpn.df.list.path <- paste0(PLOT_OUTPUT_DIR, patient, "_all_seg_int_ob_xp_cpn_df_list.RDS")
-all.seg.CCF.diff.from.exp.list.path <- paste0(PLOT_OUTPUT_DIR, patient, "_all_seg_CCF_diff_from_exp_list.RDS")
-all.seg.clonal.in.all.samps.list.path <- paste0(PLOT_OUTPUT_DIR, patient, "_all_seg_clonal_in_all_samps_list.RDS")
-all.seg.greater.than.two.diff.list.path <- paste0(PLOT_OUTPUT_DIR, patient, "_all_seg_greater_than_two_diff_list.RDS")
-pt.snp.file.paths.path <- paste0(PLOT_OUTPUT_DIR, patient, "_pt_snp_file_paths_df.RDS")
+  ploidy.est.vec.path <- file.path(conf$debug_dir, "ploidy_est_vec.rds")
+  purity.est.vec.path <- file.path(conf$debug_dir, "purity_est_vec.rds")
+  #Analysis object paths
+  all.seg.phasing.info.list.path <- file.path(conf$debug_dir, "all_seg_phasing_info_list.rds")
+  anno.seg.df.path <- file.path(conf$debug_dir, "anno_seg_df_path.rds")
+  patient.phased.BAF.df.list.path <- file.path(conf$debug_dir, "phased_BAF_df_list.rds")
+  all.seg.MSAI.by.BAF.ltnpd.present.list.path <- file.path(conf$debug_dir, "all_seg_MSAI_by_BAF_ltnpd_present_list.rds")
+  all.samp.non.hz.logr.and.tot.cpn.df.list.path <- file.path(conf$debug_dir, "all_samp_non_hz_logr_and_tot_cpn_df_list.rds")
+  asas.ph.raw.cpn.lists.path <- file.path(conf$debug_dir, "asas_ph_raw_cpn_lists.rds")
+  samps.int.cpn.raw.cpn.by.chr.list.path <- file.path(conf$debug_dir, "samps_int_cpn_raw_cpn_by_chr_list.rds")
+  all.seg.CCF.list.path <- file.path(conf$debug_dir, "all_seg_CCF_list.rds")
+  all.seg.int.ob.xp.cpn.df.list.path <- file.path(conf$debug_dir, "all_seg_int_ob_xp_cpn_df_list.rds")
+  all.seg.CCF.diff.from.exp.list.path <- file.path(conf$debug_dir, "all_seg_CCF_diff_from_exp_list.rds")
+  all.seg.clonal.in.all.samps.list.path <- file.path(conf$debug_dir, "all_seg_clonal_in_all_samps_list.rds")
+  all.seg.greater.than.two.diff.list.path <- file.path(conf$debug_dir, "all_seg_greater_than_two_diff_list.rds")
+  pt.snp.file.paths.path <- file.path(conf$debug_dir, "pt_snp_file_paths_df.rds")
+}
 
 # -------------------------------------------------------------------------
 # Main code starts here
@@ -290,27 +284,12 @@ pt.snp.file.paths.path <- paste0(PLOT_OUTPUT_DIR, patient, "_pt_snp_file_paths_d
 #if (conf$overwrite) {
 use_cached_input <- FALSE
 if (!use_cached_input) {
-
   input_data <- read_input(seg.file.path, snp.file.path, conf$input_format)
 	saveRDS(input_data, file = file.path(PLOT_OUTPUT_DIR, "input_data.rds"))
-
 } else {
   message("Loading cached input (may take a minute)")
 	input_data <- readRDS(file.path(PLOT_OUTPUT_DIR, "input_data.rds"))
   message("done!")
-#  # Load in cached versions of the input data instead of parsing the
-#  # segmentation and snp files again
-#  message("Loading cached input files")
-#	all.samp.SNP.list <- readRDS(file = all.samp.SNP.list.path)
-#	asas.SNPS.lr.and.or.baf.lists <- readRDS(file = asas.SNPS.lr.and.or.baf.lists.path)
-#	asas.SNPs.w.both.lr.baf.snp.lists <- readRDS(file = asas.SNPs.w.both.lr.baf.snp.lists.path)
-#	f.joint.segs.df <- readRDS(file = processed.orig.cpn.segs.df.path)
-#	min.cons.segs.df <- readRDS(file = min.cons.segs.df.path)
-#	ploidy.est.vec <- readRDS(file = ploidy.est.vec.path)
-#	pt.snp.file.paths.df <- readRDS(file = pt.snp.file.paths.path)
-#	purity.est.vec <- readRDS(file = purity.est.vec.path)
-#	sorted.all.bp.all.samps.segs.anno.df <- readRDS( file = sorted.all.bp.all.samps.segs.anno.df.path)
-
 }
 
 # Unwrap the list returned from the read_input() function
@@ -319,27 +298,26 @@ anno.seg.df <- input_data$anno.seg.df
 asas.SNPS.lr.and.or.baf.lists <- input_data$asas.SNPS.lr.and.or.baf.lists
 asas.SNPs.w.both.lr.baf.snp.lists <- input_data$asas.SNPs.w.both.lr.baf.snp.lists
 f.joint.segs.df <- input_data$f.joint.segs.df
-gl.snp.df <- input_data$gl.snp.df
 min.cons.segs.df <- input_data$min.cons.segs.df
 ploidy.est.vec <- input_data$ploidy.est.vec
 pt.snp.file.paths.df <- input_data$pt.snp.file.paths.df
 purity.est.vec <- input_data$purity.est.vec
 sorted.all.bp.all.samps.segs.anno.df <- input_data$sorted.all.bp.all.samps.segs.anno.df
 
-#if (isTRUE(conf$overwrite)) {
-#  # Save input data for later debugging
-#  message("Save output for later")
-#	 saveRDS(all.samp.SNP.list, file = all.samp.SNP.list.path)
-#	 saveRDS(anno.seg.df, file = anno.seg.df.path)
-#	 saveRDS(asas.SNPS.lr.and.or.baf.lists, file = asas.SNPS.lr.and.or.baf.lists.path)
-#	 saveRDS(asas.SNPs.w.both.lr.baf.snp.lists, file = asas.SNPs.w.both.lr.baf.snp.lists.path)
-#	 saveRDS(f.joint.segs.df, file = processed.orig.cpn.segs.df.path)
-#	 saveRDS(min.cons.segs.df, file = min.cons.segs.df.path)
-#	 saveRDS(ploidy.est.vec, file = ploidy.est.vec.path)
-#	 saveRDS(pt.snp.file.paths.df, file = pt.snp.file.paths.path)
-#	 saveRDS(purity.est.vec, file = purity.est.vec.path)
-#	 saveRDS(sorted.all.bp.all.samps.segs.anno.df, file = sorted.all.bp.all.samps.segs.anno.df.path)
-#}
+if (!is.na(conf$debug_dir)) {
+  # Save input data for later debugging
+  message("Save output for later")
+  saveRDS(all.samp.SNP.list, file = all.samp.SNP.list.path)
+  saveRDS(anno.seg.df, file = anno.seg.df.path)
+  saveRDS(asas.SNPS.lr.and.or.baf.lists, file = asas.SNPS.lr.and.or.baf.lists.path)
+  saveRDS(asas.SNPs.w.both.lr.baf.snp.lists, file = asas.SNPs.w.both.lr.baf.snp.lists.path)
+  saveRDS(f.joint.segs.df, file = processed.orig.cpn.segs.df.path)
+  saveRDS(min.cons.segs.df, file = min.cons.segs.df.path)
+  saveRDS(ploidy.est.vec, file = ploidy.est.vec.path)
+  saveRDS(pt.snp.file.paths.df, file = pt.snp.file.paths.path)
+  saveRDS(purity.est.vec, file = purity.est.vec.path)
+  saveRDS(sorted.all.bp.all.samps.segs.anno.df, file = sorted.all.bp.all.samps.segs.anno.df.path)
+}
 
 message("Number of rows in each sample (asas.SNPs.w.both.lr.baf.snp.lists)")
 snps_per_segment <- sapply(asas.SNPs.w.both.lr.baf.snp.lists, function(x) { sapply(x, nrow) })
@@ -384,7 +362,6 @@ if (total.num.of.hz.sites.per.sample > 300000) {
 seg.name.vec <- paste(min.cons.segs.df[, 1], min.cons.segs.df[, 2], min.cons.segs.df[, 3], sep = ":")
 sample.vec <- names(asas.SNPs.w.both.lr.baf.snp.lists)
 
-if (OVERWRITE_FLAG == TRUE) {
 
 	message("Getting phasing to apply to all samples using getCombinedBAFDipTestPhasingParallel...")
 	all.seg.phasing.info.list <- getCombinedBAFDipTestPhasingParallel(asas.lr.baf.lists = asas.SNPs.w.both.lr.baf.snp.lists,
@@ -401,7 +378,8 @@ if (OVERWRITE_FLAG == TRUE) {
 
  	#Also both seem to be broken as there is never anything returned by samp_most_significant_by_diptest in either.
 
-	saveRDS(all.seg.phasing.info.list, file = all.seg.phasing.info.list.path)
+  if (!is.na(conf$debug_dir))
+    saveRDS(all.seg.phasing.info.list, file = all.seg.phasing.info.list.path)
 
 
 	#Todo unsure of what to do with the baf logr lists which have positions that only have logr here, at the moment exclude them but how
@@ -414,7 +392,8 @@ if (OVERWRITE_FLAG == TRUE) {
 	if(length(patient.phased.BAF.df.list) <= 1) {
 		stop("Error in generating phased BAF dataframes")
 	}
-	saveRDS(patient.phased.BAF.df.list, file = patient.phased.BAF.df.list.path)
+  if (!is.na(conf$debug_dir))
+    saveRDS(patient.phased.BAF.df.list, file = patient.phased.BAF.df.list.path)
 
 	#Now we have the phasing, we want to check whether, using it, we think that there is sufficient separation
 	#of the bands of allelic balance to consider a segment "allelically imbalanced"
@@ -425,17 +404,9 @@ if (OVERWRITE_FLAG == TRUE) {
 	#TBKW NEW WORK:
 	message("Starting new TBKW edit... begun on 16/08/2019 to recall copy number using phasing.")
 
-  ret <- list()
-  if (conf$input_format == "ASCAT") {
-    ret <- annotate_joint_segs(anno.seg.df, gl.snp.df)
-  } else {
-    # sequenza format doesn't have germline information, we can fake it with
-    # the 1st sample for now
-    ret <- annotate_joint_segs(anno.seg.df, all.samp.SNP.list[[1]])
-  }
+  ret <- annotate_joint_segs(anno.seg.df, all.samp.SNP.list[[1]])
   all.samp.j.seg.df <- ret$all.samp.j.seg.df
   phased.baf.info.df <- ret$phased.baf.info.df
-  gl.hz.snp.df <- ret$gl.hz.snp.df
 
 	#Note there could be an issue here if not every segment contains a BAF point...
 	#But, if we're using hte intersection this should be fine? Not sure on this point.
@@ -466,7 +437,7 @@ if (OVERWRITE_FLAG == TRUE) {
     ascat.bc.phased <- phase_ascat(ascat_bc = ascat.bc,
                                    phased_bafs = patient.phased.BAF.df.list[[samp]],
                                    segs = all.samp.j.seg.df)
-    str(ascat.bc.phased)
+    #str(ascat.bc.phased)
 
 		#OK so now let's do the fixed solution run... 
 		samp.ploidy <- ploidy.est.vec[samp]
@@ -540,10 +511,8 @@ if (OVERWRITE_FLAG == TRUE) {
 
 	}#for (samp in sample.vec) {
 
-}#end if (OVERWRITE_FLAG == TRUE) {
 
 message("Now 'USING_XPHASE'...")
-if (OVERWRITE_FLAG == TRUE) {
 	
 	#So now we're going to construct a list of dataframes that for every heterozygous SNP has
 	#chrom
@@ -573,9 +542,9 @@ if (OVERWRITE_FLAG == TRUE) {
       # reading an existing ascat.bc object
       ascat.bc <- snps_to_ascat_bc(all.samp.SNP.list[[samp]], samp)
 
-      is_homozygous <- all.samp.SNP.list[[samp]]$zygosity.normal == "hom"
+      is_homozygous <- all.samp.SNP.list[[samp]]$germline_zygosity == "hom"
       is_heterozygous <- !is_homozygous
-      stopifnot(length(ascat.bc$Tumor_BAF$BAF) == length(is_homozygous))
+      #stopifnot(length(ascat.bc$Tumor_BAF$BAF) == length(is_homozygous))
     }
 
     # Validate the input immediately
@@ -652,9 +621,9 @@ if (OVERWRITE_FLAG == TRUE) {
 	ph.ploidy.est.vec <- c()
 
 	for (samp in sample.vec) {
-		ph.purity.est.vec <- c(ph.purity.est.vec, unique(ph.f.joint.segs.df[ph.f.joint.segs.df$sample %in%samp,]$ACF))
-		ph.ploidy.est.vec <- c(ph.ploidy.est.vec, unique(ph.f.joint.segs.df[ph.f.joint.segs.df$sample %in%samp,]$Ploidy))
-	}#end for (samp in sample.vec) {
+		ph.purity.est.vec <- c(ph.purity.est.vec, unique(ph.f.joint.segs.df[ph.f.joint.segs.df$sample == samp,]$ACF))
+		ph.ploidy.est.vec <- c(ph.ploidy.est.vec, unique(ph.f.joint.segs.df[ph.f.joint.segs.df$sample == samp,]$Ploidy))
+	}
 
 	names(ph.purity.est.vec) <- sample.vec
 	names(ph.ploidy.est.vec) <- sample.vec
@@ -668,7 +637,6 @@ if (OVERWRITE_FLAG == TRUE) {
 
 	ptm <- proc.time()
 	print("Phased cleanAndErrorCheckSNPsParallel first")
-	#source(paste0(current.dir, "data_input_and_QC_functions_v2.R"))
 	ph.asas.SNPs.w.both.lr.baf.snp.lists <- cleanAndErrorCheckSNPsParallel(all.samp.SNP.list,
 																		mcs.seg.to.use.df =ph.min.cons.segs.df,
 																		allow.logr.only.flag = FALSE,
@@ -677,12 +645,14 @@ if (OVERWRITE_FLAG == TRUE) {
 	if (length(unique(sapply(ph.asas.SNPs.w.both.lr.baf.snp.lists, length))) != 1) {
 		stop("Not all segments are present in all samples' snp assignations, likely something has gone wrong, is the parallelisation working correctly?")
 	}
-	#print(ph.asas.SNPs.w.both.lr.baf.snp.lists.path)
-	saveRDS(ph.asas.SNPs.w.both.lr.baf.snp.lists, file = ph.asas.SNPs.w.both.lr.baf.snp.lists.path)
+
+  if (!is.na(conf$debug_dir))
+    saveRDS(ph.asas.SNPs.w.both.lr.baf.snp.lists, file = ph.asas.SNPs.w.both.lr.baf.snp.lists.path)
+
 	time.taken <- proc.time() - ptm
 	print("time.taken")
 	print(time.taken)
-	##
+
 	#SNPs that only have LogR are permitted in these lists, but it also contains all the SNPs with both BAF and LogR
 	ptm <- proc.time()
 	message("Phased cleanAndErrorCheckSNPsParallel second")
@@ -696,7 +666,9 @@ if (OVERWRITE_FLAG == TRUE) {
 		stop("Not all segments are present in all samples' snp assignations, likely something has gone wrong, is the parallelisation working correctly?")
 	}
 
-	saveRDS(ph.asas.SNPS.lr.and.or.baf.lists, file = ph.asas.SNPS.lr.and.or.baf.lists.path)
+  if (!is.na(conf$debug_dir))
+    saveRDS(ph.asas.SNPS.lr.and.or.baf.lists, file = ph.asas.SNPS.lr.and.or.baf.lists.path)
+
 	time.taken <- proc.time() - ptm
 	print("time.taken")
 	print(time.taken)
@@ -718,7 +690,6 @@ if (OVERWRITE_FLAG == TRUE) {
 	                                            allow.dip.test.without.ASCAT.to.phase = ALLOW_DIPTEST_ALONE_PH_FLAG
 	                                            )
 
-	#saveRDS(ph.all.seg.phasing.info.list, file = ph.all.seg.phasing.info.list.path)
 
 	#Todo unsure of what to do with the baf logr lists which have positions that only have logr here, at the moment exclude them but how
 	#does that affect later run
@@ -729,7 +700,6 @@ if (OVERWRITE_FLAG == TRUE) {
                                                          )
 
 	
-}#end if (OVERWRITE_FLAG == TRUE) {
 
 #So now we havve generated all input information based on the updated phased ASCAT run, let's reset the
 #vairable names to allow the subclonality code to continue to work:
@@ -760,9 +730,6 @@ asas.SNPS.lr.and.or.baf.lists <- ph.asas.SNPS.lr.and.or.baf.lists
 unph.ph.patient.phased.BAF.df.list <- patient.phased.BAF.df.list
 patient.phased.BAF.df.list <- ph.patient.phased.BAF.df.list
 
-print(warnings())
-
-if (OVERWRITE_FLAG == TRUE) {
 
 	#Detect MSAI in the original BAF before it is processed alongside logr to get the Raw allele specifc cpn to be used in the rest of the analysis.
 	message("************************************************************************")
@@ -842,7 +809,8 @@ if (OVERWRITE_FLAG == TRUE) {
 	}#end for (seg.name in intersection.seg.name.vec) {
 
 	orig.intersection.mcs.w.MSAI.df.path <- paste0(PLOT_OUTPUT_DIR, patient, "_orig_intersection_mcs_w_MSAI_df.RDS")
-	saveRDS(orig.intersection.mcs.w.MSAI.df, file = orig.intersection.mcs.w.MSAI.df.path)
+  if (!is.na(conf$debug_dir))
+    saveRDS(orig.intersection.mcs.w.MSAI.df, file = orig.intersection.mcs.w.MSAI.df.path)
 
 
 	pre.MPhase.MEDICC.FASTA.file.list <- makeMEDICCInputListsFromSegmentationDF(segs.to.make.MEDICC.input.df = orig.intersection.mcs.w.MSAI.df,
@@ -856,7 +824,8 @@ if (OVERWRITE_FLAG == TRUE) {
 											)
 
 	pre.MPhase.MEDICC.FASTA.file.list.path <- paste0(PLOT_OUTPUT_DIR, patient, "_pre_MPhase_MEDICC_FASTA_file_list.RDS")
-	saveRDS(pre.MPhase.MEDICC.FASTA.file.list, file = pre.MPhase.MEDICC.FASTA.file.list.path)
+  if (!is.na(conf$debug_dir))
+    saveRDS(pre.MPhase.MEDICC.FASTA.file.list, file = pre.MPhase.MEDICC.FASTA.file.list.path)
 
 
 	#Todo add another method of detecting MSAI using only the BAF and a paired T test.
@@ -874,7 +843,8 @@ if (OVERWRITE_FLAG == TRUE) {
 																				purity.est.vec = purity.est.vec,
 																				gamma.val = GAMMA_VAL,
 																				data.format.to.use = data.format.to.use)
-	saveRDS(all.samp.non.hz.logr.and.tot.cpn.df.list, file = all.samp.non.hz.logr.and.tot.cpn.df.list.path)
+  if (!is.na(conf$debug_dir))
+    saveRDS(all.samp.non.hz.logr.and.tot.cpn.df.list, file = all.samp.non.hz.logr.and.tot.cpn.df.list.path)
 
 
 	#TBKW edit, so this is where we want to update the raw copy number to reflect what
@@ -891,7 +861,8 @@ if (OVERWRITE_FLAG == TRUE) {
 																min.num.hz.snp.phasing = MIN_NUM_HZ_SNP_PHASING,
                                 use.xphase = USING_XPHASE,
                                 ascat.raw.cpn = PH_ALL_SAMP_ASCAT_RAW_CPN_DF_LIST)
-	saveRDS(asas.ph.raw.cpn.lists, file = asas.ph.raw.cpn.lists.path)
+  if (!is.na(conf$debug_dir))
+    saveRDS(asas.ph.raw.cpn.lists, file = asas.ph.raw.cpn.lists.path)
 
 	#Let's get the CCF
 	message("Checking all minimum consistent segments are present in each sample...")
@@ -918,7 +889,8 @@ if (OVERWRITE_FLAG == TRUE) {
 																								 seg.name.vec = seg.name.vec,
 																								 cpnX.vec=c("cpnA", "cpnB"),
 																								 reduced.seg.flag = FALSE)
-	saveRDS(samps.int.cpn.raw.cpn.by.chr.list, file = samps.int.cpn.raw.cpn.by.chr.list.path)
+  if (!is.na(conf$debug_dir))
+    saveRDS(samps.int.cpn.raw.cpn.by.chr.list, file = samps.int.cpn.raw.cpn.by.chr.list.path)
 
 	for (cpnX in c("cpnA", "cpnB")) {
 	  #Here is where we're going to have iniatalise on all the lists
@@ -1034,34 +1006,18 @@ if (OVERWRITE_FLAG == TRUE) {
 	}#end for (cpnX in c("cpnA", "cpnB")) {
 
 	#Save CCF data:
-	saveRDS(all.seg.CCF.list, file = all.seg.CCF.list.path)
-	saveRDS(all.seg.int.ob.xp.cpn.df.list, file = all.seg.int.ob.xp.cpn.df.list.path)
-	saveRDS(all.seg.CCF.diff.from.exp.list, file = all.seg.CCF.diff.from.exp.list.path)
-	saveRDS(all.seg.clonal.in.all.samps.list, file = all.seg.clonal.in.all.samps.list.path)
-	saveRDS(all.seg.greater.than.two.diff.list, file = all.seg.greater.than.two.diff.list.path)
+  if (!is.na(conf$debug_dir)) {
+    saveRDS(all.seg.CCF.list, file = all.seg.CCF.list.path)
+    saveRDS(all.seg.int.ob.xp.cpn.df.list, file = all.seg.int.ob.xp.cpn.df.list.path)
+    saveRDS(all.seg.CCF.diff.from.exp.list, file = all.seg.CCF.diff.from.exp.list.path)
+    saveRDS(all.seg.clonal.in.all.samps.list, file = all.seg.clonal.in.all.samps.list.path)
+    saveRDS(all.seg.greater.than.two.diff.list, file = all.seg.greater.than.two.diff.list.path)
+  }
 
-
-} else if (OVERWRITE_FLAG == FALSE) {
-
-	all.seg.phasing.info.list <- readRDS(file = all.seg.phasing.info.list.path)
-	patient.phased.BAF.df.list <- readRDS(file = patient.phased.BAF.df.list.path)
-	all.seg.MSAI.by.BAF.ltnpd.present.list <- readRDS(file = all.seg.MSAI.by.BAF.ltnpd.present.list.path)
-	all.samp.non.hz.logr.and.tot.cpn.df.list <- readRDS(file = all.samp.non.hz.logr.and.tot.cpn.df.list.path)
-	asas.ph.raw.cpn.lists <- readRDS(file = asas.ph.raw.cpn.lists.path)
-	samps.int.cpn.raw.cpn.by.chr.list <- readRDS(file = samps.int.cpn.raw.cpn.by.chr.list.path)
-	all.seg.CCF.list <- readRDS(file = all.seg.CCF.list.path)
-	all.seg.int.ob.xp.cpn.df.list <- readRDS(file = all.seg.int.ob.xp.cpn.df.list.path)
-	all.seg.CCF.diff.from.exp.list <- readRDS(file = all.seg.CCF.diff.from.exp.list.path)
-	all.seg.clonal.in.all.samps.list <- readRDS(file = all.seg.clonal.in.all.samps.list.path)
-	all.seg.greater.than.two.diff.list <- readRDS(file = all.seg.greater.than.two.diff.list.path)
-
-}
-#Todo remove the dataframe initialisation from the function and modify it to work on a segment by segment basis.
 
 
 
 #Make a table that contains all the relevant information: subclonal calls... gain and loss vs ploidy etc etc etc
-if (OVERWRITE_INIT_MCS_ADD_INFO_FLAG == TRUE) {
 
 	#Let's initialise the first joint output:
 	message("Initialising minimum consistent segmentation (MCS) output dataframe...")
@@ -1073,18 +1029,6 @@ if (OVERWRITE_INIT_MCS_ADD_INFO_FLAG == TRUE) {
 
 	#This adds the raw cn for both segments that could be phased and those that couldn't
 	message("Adding new copy number calls to MCS output based on the phased raw copy number...")
-	# new.cpn.full.joint.segs.df <- addNewRawAndIntCPNCallsToFinalSegmentation(seg.name.vec = names(asas.ph.raw.cpn.lists[[1]]),
-	# 																		sample.vec = names(purity.est.vec),
-	# 																		all.samp.logr.df.list = all.samp.non.hz.logr.and.tot.cpn.df.list,
-	# 																		all.samp.ph.BAF.df.list = patient.phased.BAF.df.list,
-	# 																		all.seg.CCF.vals.list = all.seg.CCF.list,
-	# 																		asas.lr.baf.lists = asas.SNPs.w.both.lr.baf.snp.lists,
-	# 																		all.seg.df = empty.full.joint.segs.df,
-	# 																		cpnX.vec = c("cpnA", "cpnB")
-	# 																		)
-
-	# source(paste0(current.dir, "/final_output_segmentation_file_generation_functions_v3.R"))
-	# source(paste0(current.dir, "/utility_MPhase_functions.R"))
 	new.cpn.full.joint.segs.df <- addNewRawAndIntCPNCallsToFinalSegmentationParallel(seg.name.vec = names(asas.ph.raw.cpn.lists[[1]]),
 																			sample.vec = names(purity.est.vec),
 																			all.samp.logr.df.list = all.samp.non.hz.logr.and.tot.cpn.df.list,
@@ -1115,8 +1059,6 @@ if (OVERWRITE_INIT_MCS_ADD_INFO_FLAG == TRUE) {
 	                                )
 
 	message("Adding total copy number estimates to MCS output for segments with only logr information...")
-	#source(paste0(current.dir, "/final_output_segmentation_file_generation_functions_v3.R"))
-	#source(paste0(current.dir, "/utility_MPhase_functions.R"))
 	full.joint.segs.df.w.cpn.vs.ploidy.df <- addLogrDefinedCPNEventsToOutputSegmentationParallel(sample.vec = names(purity.est.vec),
 	                                                        							seg.name.vec = names(asas.ph.raw.cpn.lists[[1]]),
 	                                                        							all.seg.df = clonality.and.ccf.joint.segs.df,
@@ -1132,7 +1074,6 @@ if (OVERWRITE_INIT_MCS_ADD_INFO_FLAG == TRUE) {
 
 	#print(head(full.joint.segs.df.w.cpn.vs.ploidy.df[,"cpn_event_vs_ploidy"]))
 	message("Adding cpn event vs ploidy by logr measures to MCS output...")
-	#source(paste0(current.dir, "/final_output_segmentation_file_generation_functions_v3.R"))
 	full.joint.segs.logr.vs.ploidy.clonality.df <- determineAcrossSampleClonalityOfLogrEventsVsPloidy(sample.vec = names(purity.est.vec),
 	                                                        							seg.name.vec = names(asas.ph.raw.cpn.lists[[1]]),
 	                                                        							all.seg.df = full.joint.segs.df.w.cpn.vs.ploidy.df,
@@ -1208,12 +1149,6 @@ if (OVERWRITE_INIT_MCS_ADD_INFO_FLAG == TRUE) {
 	full.joint.segs.df.path <- paste0(PLOT_OUTPUT_DIR, patient, "_full_joint_segs_df.RDS")
 	saveRDS(full.joint.segs.df, file=full.joint.segs.df.path)
 
-} else if (OVERWRITE_INIT_MCS_ADD_INFO_FLAG == FALSE) {
-
-	full.joint.segs.df.path <- paste0(PLOT_OUTPUT_DIR, patient, "_full_joint_segs_df.RDS")
-	full.joint.segs.df <- readRDS(file = full.joint.segs.df.path)
-
-}#end  else if (OVERWRITE_INIT_MCS_ADD_INFO_FLAG == FALSE) {
 
 PLOTTING_FLAG <- FALSE
 if (PLOTTING_FLAG) {

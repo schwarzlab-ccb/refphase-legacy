@@ -1275,8 +1275,8 @@ ascat_set_logrsegmented <- function(segs, all_snps) {
     # Deal with NAs
     logr_na <- is.na(all_snps[[samp_idx]]$logRsegmented)
     if (any(logr_na)) {
-      message("Found NA values in logR segmented, setting to 1.0")
-      all_snps[[samp_idx]][logr_na, "logRsegmented"] <- 1.0
+      message("Found NA values in logR segmented, setting to 0.0")
+      all_snps[[samp_idx]][logr_na, "logRsegmented"] <- 0.0
     }
   }
 

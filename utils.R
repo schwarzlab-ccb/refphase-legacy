@@ -206,3 +206,4 @@ chrom2integer <- function(chrom) {
                     gsub("X", "23",
                     gsub("chr", "", chrom, fixed = TRUE), fixed = TRUE), fixed = TRUE)))
 }
+
