@@ -1109,6 +1109,7 @@ readInASCAT <- function(sample_table, segs, samples) {
                             pos = ascat_bc$SNPpos$pos,
                             BAF = baf,
                             logR = ascat_bc$Tumor_LogR[[1]],
+                            germline_zygosity = ifelse(is_heterozygous, "het", "hom"),
                             logRsegmented = as.numeric(ascat_bc$Tumor_LogR_segmented),
                             snp_pos = paste0(chrom, "_", ascat_bc$SNPpos$pos),
                             row.names = paste0(chrom, "_", ascat_bc$SNPpos$pos),
@@ -1165,47 +1166,47 @@ keep_common_snps <- function(all_snps) {
 #   ..$ BAFsegmented : num [1:938946] 0.231 0.231 0.231 0.231 0.231 ...
 #   ..$ logRsegmented: num [1:938946] -0.327 -0.327 -0.327 -0.327 -0.327 ...
 #
-readInGermlineFromASCAT <- function(ascat_bc_rds_path, snp_pos_vec) {
-
-  cat("Starting to read sample", ascat_bc_rds_path, "\n")
-
-  if(grepl("RData", ascat_bc_rds_path)) {
-    message("ascat.bc object in RData file, loading...")
-    load(ascat_bc_rds_path)
-    ascat_bc <- ascat.bc
-  } else {
-    ascat_bc <- readRDS(ascat_bc_rds_path)
-  }
-
-  # First check to see which SNPs are heterozygous
-  normal_baf <- ascat_bc$Germline_BAF[[1]]
-  is_homozygous <- normal_baf < 0.3 | normal_baf > 0.7
-  is_heterozygous <- !(is.na(normal_baf) | is_homozygous)
-  cat("# of heterozygous SNPs:", sum(is_heterozygous), "\n")
-
-  # Mask non-heterozygous SNPs with NA
-  baf <- ascat_bc$Germline_BAF[[1]]
-  baf[!is_heterozygous] <- NA
-
-  chrom <- chrom2integer(as.character(ascat_bc$SNPpos$chr))
-  gl_data_df <- data.frame(chrom = chrom,
-                          pos = ascat_bc$SNPpos$pos,
-                          BAF = baf,
-                          logR = ascat_bc$Germline_LogR[[1]],
-                          # FIXME: huge hack. BAFsegmented does not contain all SNPs, so we
-                          # substitute the original BAFs here. This is only used for plotting I
-                          # think, so it shouldn't alter the CN estimation.
-                          BAFsegmented = rep(as.numeric(NA), length(baf)),
-                          #samp_data$BAFsegmented = ascat_bc$Tumor_BAF_segmented[is_heterozygous]
-                          logRsegmented = as.numeric(ascat_bc$Tumor_LogR_segmented),
-                          snp_pos = paste0(chrom, "_", ascat_bc$SNPpos$pos),
-                          row.names = paste0(chrom, "_", ascat_bc$SNPpos$pos),
-                          stringsAsFactors = FALSE)
-
-  final_gl_data_df <- gl_data_df[row.names(gl_data_df) %in% snp_pos_vec,]
-
-  return(gl_data_df)
-}
+# readInGermlineFromASCAT <- function(ascat_bc_rds_path, snp_pos_vec) {
+# 
+#   cat("Starting to read sample", ascat_bc_rds_path, "\n")
+# 
+#   if(grepl("RData", ascat_bc_rds_path)) {
+#     message("ascat.bc object in RData file, loading...")
+#     load(ascat_bc_rds_path)
+#     ascat_bc <- ascat.bc
+#   } else {
+#     ascat_bc <- readRDS(ascat_bc_rds_path)
+#   }
+# 
+#   # First check to see which SNPs are heterozygous
+#   normal_baf <- ascat_bc$Germline_BAF[[1]]
+#   is_homozygous <- normal_baf < 0.3 | normal_baf > 0.7
+#   is_heterozygous <- !(is.na(normal_baf) | is_homozygous)
+#   cat("# of heterozygous SNPs:", sum(is_heterozygous), "\n")
+# 
+#   # Mask non-heterozygous SNPs with NA
+#   baf <- ascat_bc$Germline_BAF[[1]]
+#   baf[!is_heterozygous] <- NA
+# 
+#   chrom <- chrom2integer(as.character(ascat_bc$SNPpos$chr))
+#   gl_data_df <- data.frame(chrom = chrom,
+#                           pos = ascat_bc$SNPpos$pos,
+#                           BAF = baf,
+#                           logR = ascat_bc$Germline_LogR[[1]],
+#                           # FIXME: huge hack. BAFsegmented does not contain all SNPs, so we
+#                           # substitute the original BAFs here. This is only used for plotting I
+#                           # think, so it shouldn't alter the CN estimation.
+#                           BAFsegmented = rep(as.numeric(NA), length(baf)),
+#                           #samp_data$BAFsegmented = ascat_bc$Tumor_BAF_segmented[is_heterozygous]
+#                           logRsegmented = as.numeric(ascat_bc$Tumor_LogR_segmented),
+#                           snp_pos = paste0(chrom, "_", ascat_bc$SNPpos$pos),
+#                           row.names = paste0(chrom, "_", ascat_bc$SNPpos$pos),
+#                           stringsAsFactors = FALSE)
+# 
+#   final_gl_data_df <- gl_data_df[row.names(gl_data_df) %in% snp_pos_vec,]
+# 
+#   return(gl_data_df)
+# }
 
 
 # Since the ASCAT data files I have don't include a BAFsegmented value, I
@@ -1600,7 +1601,6 @@ read_snps_sequenza <- function(input_files, segs, samples, het_only = TRUE) {
   library(readr)
 
   all_snps <- list()
-  gl_snps <- list()
 
   for (sample in samples) {
 
@@ -1616,7 +1616,8 @@ read_snps_sequenza <- function(input_files, segs, samples, het_only = TRUE) {
     #               "tumor.strand")
     # Using readr
     message("Reading SNP data for sample: ", sample)
-    col_types <- "cic--dddc--c--"  # Skip unnecessary columns
+    # Skip unnecessary columns
+    col_types <- "cic--dddc--c--"
     col_names <- c("chromosome", "position", "base.ref", "depth.ratio", "Af", "Bf", "zygosity.normal", "AB.normal")
     seqz_data <- read_tsv(input_file, col_types = col_types,
                           progress = TRUE, col_names = col_names,
@@ -1642,15 +1643,13 @@ read_snps_sequenza <- function(input_files, segs, samples, het_only = TRUE) {
                                      pos = pos,
                                      BAF = baf,
                                      logR = log2(seqz_data$depth.ratio),
-                                     zygosity.normal = seqz_data$zygosity.normal,
+                                     germline_zygosity = seqz_data$zygosity.normal,
                                      snp_pos = paste0(chrom, "_", pos),
                                      row.names = paste0(chrom, "_", pos),
                                      stringsAsFactors = FALSE)
 
     # Mask non-hz SNPs with NA
-    all_snps[[sample]]$BAF[all_snps[[sample]]$zygosity.normal != "het"] <- NA
-
-
+    all_snps[[sample]]$BAF[all_snps[[sample]]$germline_zygosity != "het"] <- NA
   }
 
   all_snps <- ascat_set_bafsegmented(segs, all_snps)
@@ -1659,7 +1658,7 @@ read_snps_sequenza <- function(input_files, segs, samples, het_only = TRUE) {
 
   str(all_snps)
 
-  return(list(all_samples = all_snps, germline = gl_snps))
+  return(all_snps)
 }
 
 

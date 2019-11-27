@@ -1,9 +1,9 @@
-annotate_joint_segs <- function(segs, germline_snps) {
+annotate_joint_segs <- function(segs, snps) {
 
   anno.seg.df <- segs
 
 	#So determine which SNPs are hz:
-	snp.file.df <- germline_snps
+	snp.file.df <- snps
 
 	snp.file.df$snp_pos <- paste0(snp.file.df$chrom, "_", snp.file.df$pos)
 	snp.file.df$snp_idx <- seq_len(nrow(snp.file.df))
@@ -30,22 +30,24 @@ annotate_joint_segs <- function(segs, germline_snps) {
 	#Differences can be seen here and are noted when the gl.snp.df has been read in
 
   
-	#get germline column
+#	#get germline column
 	gl.col.name <- "BAF"
-	logr.only.snp.df <- snp.file.df[is.na(snp.file.df[,gl.col.name]),]
+#	logr.only.snp.df <- snp.file.df[is.na(snp.file.df[,gl.col.name]),]
 	actual.snp.file.df <- snp.file.df[! is.na(snp.file.df[, gl.col.name]),]
+#
+#  gl.homo.snp.df <- data.frame()
+#  gl.hz.snp.df <- data.frame()
+#  if (conf$input_format == "ASCAT") {
+#    gl.homo.snp.df <- actual.snp.file.df[! is.na(actual.snp.file.df[,gl.col.name]) & (as.numeric(actual.snp.file.df[,gl.col.name]) > 0.7 | as.numeric(actual.snp.file.df[,gl.col.name]) < 0.3) ,]
+#    gl.hz.snp.df <- actual.snp.file.df[! is.na(actual.snp.file.df[,gl.col.name]) & (as.numeric(actual.snp.file.df[,gl.col.name]) <= 0.7 &  as.numeric(actual.snp.file.df[,gl.col.name]) >= 0.3),]
+#  } else {
+  gl.homo.snp.df <- actual.snp.file.df[actual.snp.file.df$zygosity.normal != "het",]
+  gl.hz.snp.df <- actual.snp.file.df[actual.snp.file.df$zygosity.normal == "het",]
+  logr.only.snp.df <- snp.file.df[is.na(snp.file.df[,gl.col.name]),]
 
-  gl.homo.snp.df <- data.frame()
-  gl.hz.snp.df <- data.frame()
-  if (conf$input_format == "ASCAT") {
-    gl.homo.snp.df <- actual.snp.file.df[! is.na(actual.snp.file.df[,gl.col.name]) & (as.numeric(actual.snp.file.df[,gl.col.name]) > 0.7 | as.numeric(actual.snp.file.df[,gl.col.name]) < 0.3) ,]
-    gl.hz.snp.df <- actual.snp.file.df[! is.na(actual.snp.file.df[,gl.col.name]) & (as.numeric(actual.snp.file.df[,gl.col.name]) <= 0.7 &  as.numeric(actual.snp.file.df[,gl.col.name]) >= 0.3),]
-  } else {
-    gl.homo.snp.df <- actual.snp.file.df[actual.snp.file.df$zygosity.normal != "het",]
-    gl.hz.snp.df <- actual.snp.file.df[actual.snp.file.df$zygosity.normal == "het",]
-  }
-
-	gl.hz.snp.df$hz_snp_idx <- seq_len(nrow(gl.hz.snp.df))
+#  }
+#
+#	gl.hz.snp.df$hz_snp_idx <- seq_len(nrow(gl.hz.snp.df))
 
 	#Note anno seg is sorted.all.bp.all.samps.segs.anno.df
 	anno.seg.df$start_pos <- paste0(anno.seg.df$Chromosome, "_", anno.seg.df$Start_Position)
@@ -201,11 +203,8 @@ annotate_joint_segs <- function(segs, germline_snps) {
 	#
 
   # Calculate all of these in one step, much faster than doing it one at a time
-	message("Checking all nearest SNPs (follow)")
   before <- follow(all.int.grs, all.snp.grs)
-	message("Checking all nearest SNPs (precede)")
   after <- precede(all.int.grs, all.snp.grs)
-	message("Checking all nearest SNPs (near)")
   nearby <- nearest(all.int.grs, all.snp.grs)
 
 	message("Setting nearest preceding/following SNP")

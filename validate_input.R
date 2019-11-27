@@ -8,7 +8,7 @@
 # SNP validation (logR, BAF and more)
 # -------------------------------------------------------------------------
 
-validate_snp_all_samples <- function(tumor_snps, germline_snps) {
+validate_snp_all_samples <- function(tumor_snps) {
   message("Validating SNP data for all samples.")
 
   samples <- names(tumor_snps)

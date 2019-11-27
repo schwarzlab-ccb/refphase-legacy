@@ -15,20 +15,7 @@ read_input <- function(seg_file, snp_file, input_format) {
 	purity.est.vec <- f.joint.segs.df[ ! duplicated(f.joint.segs.df$sample), 'ACF']
 	names(purity.est.vec) <- unique(f.joint.segs.df$sample)
 
-	if (data.format.to.use == "MEDICC") {
-		cat("data format is MEDICC, reading in sites text file...\n")
-
-		if (file.exists(input.snp.file.RDS.path)) {
-			snp.file.df <- readRDS(input.snp.file.RDS.path)
-		} else {
-			snp.file.df <- read.table(snp.file.path, stringsAsFactors = FALSE, sep = "\t", header = TRUE)
-			saveRDS(snp.file.df, file = input.snp.file.RDS.path)
-		}
-		all.samp.SNP.list <- readInMEDICCInputFormatParallel(snp.file.df = snp.file.df,
-															processed.orig.cpn.segs.df = f.joint.segs.df,
-															sample.vec = sample.vec)
-    # What about gl.snp.df?
-	} else if (data.format.to.use == "ASCAT") {
+  if (data.format.to.use == "ASCAT") {
     # Parse a bunch of rds files containing ascat.bc objects
     pt.snp.file.paths.df <- read.delim(snp.file.path,
                               stringsAsFactors = FALSE,
@@ -52,10 +39,10 @@ read_input <- function(seg_file, snp_file, input_format) {
     #shown in the data...
 
     #Making the assumption here that all regions that were analysed had 
-    gl.snp.df <- readInGermlineFromASCAT(ascat_bc_rds_path = pt.snp.file.paths.df[1,]$samp_ascat_bc_path,
-    									snp_pos_vec = paste0(all.samp.SNP.list[[1]]$chrom
-    														,"_"
-    														,all.samp.SNP.list[[1]]$pos))
+    #gl.snp.df <- readInGermlineFromASCAT(ascat_bc_rds_path = pt.snp.file.paths.df[1,]$samp_ascat_bc_path,
+    #									snp_pos_vec = paste0(all.samp.SNP.list[[1]]$chrom
+    #														,"_"
+    #														,all.samp.SNP.list[[1]]$pos))
 
 	} else if (data.format.to.use == "sequenza") {
 
@@ -72,11 +59,11 @@ read_input <- function(seg_file, snp_file, input_format) {
     }
     names(input_files) <- rownames(pt.snp.file.paths.df)
 
-    sequenza_input <- read_snps_sequenza(input_files = input_files,
+    # Read in SNPS, keeping homozygous positions
+    all.samp.SNP.list <- read_snps_sequenza(input_files = input_files,
                                          segs = f.joint.segs.df,
-                                         samples = sample.vec)
-    all.samp.SNP.list <- sequenza_input$all_samples
-    gl.snp.df <- sequenza_input$germline
+                                         samples = sample.vec,
+                                         het_only = FALSE)
 
     message("Finished parsing sequenza input.\n")
 
@@ -87,7 +74,7 @@ read_input <- function(seg_file, snp_file, input_format) {
 
   # Immediately validate input SNP information (BAF, logR and more)
   if (conf$validate_input)
-    validate_snp_all_samples(all.samp.SNP.list, gl.snp.df)
+    validate_snp_all_samples(all.samp.SNP.list)
 
 	#So we need the centromere postions for each arm:
 	#Add in p_end and q_start
@@ -155,7 +142,6 @@ read_input <- function(seg_file, snp_file, input_format) {
               asas.SNPS.lr.and.or.baf.lists=asas.SNPS.lr.and.or.baf.lists,
               asas.SNPs.w.both.lr.baf.snp.lists=asas.SNPs.w.both.lr.baf.snp.lists,
               f.joint.segs.df=f.joint.segs.df,
-              gl.snp.df=gl.snp.df,
               min.cons.segs.df=min.cons.segs.df,
               ploidy.est.vec=ploidy.est.vec,
 							pt.snp.file.paths.df=pt.snp.file.paths.df,
