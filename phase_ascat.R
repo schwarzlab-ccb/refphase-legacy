@@ -1,13 +1,13 @@
 # Apply phasing to an existing ascat.bc object and recalculate all necessary
 # values within the object
-phase_ascat <- function(ascat_bc, phased_bafs, segs) {
+phase_ascat <- function(ascat_bc, phased_bafs, segs, phased_baf_info) {
 
   #So let's get the phased BAF:
   samp.pha.baf.df <- phased_bafs
 
   #So we're going to need the indices of the BAF snps...
-  samp.pha.baf.df$snp_pos <- phased.baf.info.df$snp_pos
-  samp.pha.baf.df$snp_idx <- phased.baf.info.df$snp_idx
+  samp.pha.baf.df$snp_pos <- phased_baf_info$snp_pos
+  samp.pha.baf.df$snp_idx <- phased_baf_info$snp_idx
 
   #So now we need the segments that refer to this sample (as these are joint segments
   #these should all be same for each sample regardless.)
@@ -136,7 +136,7 @@ phase_ascat <- function(ascat_bc, phased_bafs, segs) {
   message("Setting LogR segmented")
   ascat_bc[["Tumor_LogR_segmented"]][,1] <- tum.logr.segmented.vec
   message("tum.baf.segmented.vec length =", length(tum.baf.segmented.vec))
-  message("ascat.bc[[Tumor_BAF_segmented]][[1]] length =", nrow(ascat.bc[["Tumor_BAF_segmented"]][[1]]))
+  message("ascat.bc[[Tumor_BAF_segmented]][[1]] length =", nrow(ascat_bc[["Tumor_BAF_segmented"]][[1]]))
   #ascat.bc[["Tumor_BAF_segmented"]][[1]][,1] <- tum.baf.segmented.vec
   #ascat.bc[["Tumor_BAF_segmented"]][[1]] <- matrix(tum.baf.segmented.vec, nrow=1, dimnames(list(as.character(seq_along(snps$BAFsegmented)))))
   #print(tum.baf.segmented.vec)

@@ -20,13 +20,12 @@ getCombinedBAFDipTestPhasing <- function(asas.lr.baf.lists,
   for ( seg.name in seg.name.vec ) {
     message(seg.name)
     first.ss.lr.baf.df <- asas.lr.baf.lists[[sample.vec[1]]][[seg.name]]
+
     if (nrow(first.ss.lr.baf.df) < min.num.hz.snp.phasing) {
+      next
+    }
 
-      next;#If phasng not possible for this segment then move onto the next
-      
-    }#end if( nrow(ref.ss.lr.baf.df) < min.hz.snp.phasing)
     #For each sample how good is it at phasing all samples for this segment.
-
     all.samp.seg.phasing.ability.list <- getAssessmentOfEachSamplesAbilityToPhaseAllOthersForSeg(asas.lr.baf.lists = asas.lr.baf.lists,
                                                                                                 sample.vec = sample.vec,
                                                                                                 seg.name = seg.name,

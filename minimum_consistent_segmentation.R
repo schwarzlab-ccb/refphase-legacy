@@ -90,7 +90,7 @@ getChromosomeArmsGRangeList <- function(current.chr, chrom.info.df) {
 #And various design decisions regarding whether we should maintain the capability of covering
 #the entire genome in copy number segments should be mulled over, currently, as they are 
 #are clearly marked and easily dropped I would be in favour of keeping them.
-createFullyAnnotatedJointSegmentation <- function(f.joint.segs.df) {
+createFullyAnnotatedJointSegmentation <- function(f.joint.segs.df, samples) {
 
   all.samp.grs <- makeGRangesFromDataFrame(f.joint.segs.df,
                                keep.extra.columns=FALSE,
@@ -206,7 +206,7 @@ createFullyAnnotatedJointSegmentation <- function(f.joint.segs.df) {
       curr.chr.arm.gr <- chr.gr.list[[i]]
       all.samp.overlap.grs <- getOverlapGRanges(curr.chr.arm.gr, all.samp.w.metadata.grs)
 
-      for (samp in sample.vec) {
+      for (samp in samples) {
 
         arm.level.events.present <- list()
         for (j in 1:length(gain.loss.name.list)) {
@@ -274,8 +274,8 @@ createFullyAnnotatedJointSegmentation <- function(f.joint.segs.df) {
           }
           #Next is there one segment with at least 50% of the arm in it:
         }#end for (cpn.event.vec in gain.loss.name.list) {
-      }#end for (samp in sample.vec) {
-  }#end for ( chr in CHRS_TO_USE_VEC ) {
+      }
+  }
 
   all.samp.w.metadata.df <- as.data.frame(all.samp.w.metadata.grs)
   all.samp.w.metadata.df <- all.samp.w.metadata.df[with(all.samp.w.metadata.df, order(sample, seqnames, start)), ]
@@ -296,7 +296,7 @@ createFullyAnnotatedJointSegmentation <- function(f.joint.segs.df) {
 
   #So the question is here are we going to allow single base bair segments?
   message("Calculating intersections using GRanges.")
-  intersection.grs.list <- getAllPatientSamplesAndIntersectionGRangesList(sample.vec, f.joint.segs.df)
+  intersection.grs.list <- getAllPatientSamplesAndIntersectionGRangesList(samples, f.joint.segs.df)
   intersection.grs <- intersection.grs.list[["overall_intersection"]]
   non.ones.all.samp.intersection.grs <- removeSingleBasePairSegmentsFromIntersectionGranges(intersection.grs)
 
@@ -367,38 +367,38 @@ createFullyAnnotatedJointSegmentation <- function(f.joint.segs.df) {
                             starts.in.df.are.0based=FALSE)
 
     this.seg.name <- paste0(as.character(seqnames(curr.all.bp.chr.gr)), ":", start(curr.all.bp.chr.gr), ":", end(curr.all.bp.chr.gr))
-    this.seg.samp.seg.names.vec <- paste(sample.vec, ":", this.seg.name, sep="")
+    this.seg.samp.seg.names.vec <- paste(samples, ":", this.seg.name, sep="")
     info.cols.vec <- c("overlap_w_n_samps","num_segs_maps_to_in_samp" ,"in_intersection", "in_disjoin_only", "in_arm_setdiff")
 
-    all.samp.this.seg.bp.df <- data.frame(matrix(FALSE, length(sample.vec), length(info.cols.vec),
+    all.samp.this.seg.bp.df <- data.frame(matrix(FALSE, length(samples), length(info.cols.vec),
                             dimnames = list(this.seg.samp.seg.names.vec, info.cols.vec)),
                             stringsAsFactors = FALSE,
                             check.names = FALSE)
 
-    names(this.seg.samp.seg.names.vec) <- sample.vec
+    names(this.seg.samp.seg.names.vec) <- samples
     all.samp.overlap.grs <- getOverlapGRanges(curr.all.bp.chr.gr, all.samp.w.metadata.grs)
 
     if (length(all.samp.overlap.grs) > 0) {
 
-      all.samp.overlap.df <- as.data.frame(all.samp.overlap.grs, row.names = NULL)[0,][1:length(sample.vec),]
+      all.samp.overlap.df <- as.data.frame(all.samp.overlap.grs, row.names = NULL)[0,][1:length(samples),]
       rownames(all.samp.overlap.df) <- this.seg.samp.seg.names.vec
 
       matching.grs.sample.vec <- unique(all.samp.overlap.grs$sample)
-      non.matching.sample.vec <- sample.vec[ ! sample.vec %in% matching.grs.sample.vec]
+      non.matching.sample.vec <- samples[ ! samples %in% matching.grs.sample.vec]
       all.samp.this.seg.bp.df[, "overlap_w_n_samps"] <- length(matching.grs.sample.vec)
 
     } else {
 
       all.samp.overlap.df <- as.data.frame(all.samp.overlap.grs)[1,]
       matching.grs.sample.vec <- c()
-      non.matching.sample.vec <- sample.vec
+      non.matching.sample.vec <- samples
     }
 
-    if (all(sample.vec %in% matching.grs.sample.vec)) {
+    if (all(samples %in% matching.grs.sample.vec)) {
 
       all.samp.this.seg.bp.df[, "in_intersection"] <- TRUE
 
-    } else if ( any(sample.vec %in% matching.grs.sample.vec) ) {#So now this means there's at least one segment missing
+    } else if ( any(samples %in% matching.grs.sample.vec) ) {#So now this means there's at least one segment missing
 
       all.samp.this.seg.bp.df[, "in_disjoin_only"] <- TRUE
 

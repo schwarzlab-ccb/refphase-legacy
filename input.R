@@ -9,13 +9,13 @@ read_input <- function(seg_file, snp_file, input_format) {
 
 	f.joint.segs.df <- reformatInitialSegmentationInput(f.joint.segs.df = init.f.joint.segs.df)
 
-	sample.vec <<- unique(f.joint.segs.df$sample)
+	sample.vec <- unique(f.joint.segs.df$sample)
 	ploidy.est.vec <- f.joint.segs.df[ ! duplicated(f.joint.segs.df$sample), 'Ploidy']
 	names(ploidy.est.vec) <- unique(f.joint.segs.df$sample)
 	purity.est.vec <- f.joint.segs.df[ ! duplicated(f.joint.segs.df$sample), 'ACF']
 	names(purity.est.vec) <- unique(f.joint.segs.df$sample)
 
-  if (data.format.to.use == "ASCAT") {
+  if (input_format == "ASCAT") {
     # Parse a bunch of rds files containing ascat.bc objects
     pt.snp.file.paths.df <- read.delim(snp.file.path,
                               stringsAsFactors = FALSE,
@@ -44,7 +44,7 @@ read_input <- function(seg_file, snp_file, input_format) {
     #														,"_"
     #														,all.samp.SNP.list[[1]]$pos))
 
-	} else if (data.format.to.use == "sequenza") {
+	} else if (input_format == "sequenza") {
 
     pt.snp.file.paths.df <- read.delim(snp.file.path,
                               stringsAsFactors = FALSE,
@@ -68,8 +68,7 @@ read_input <- function(seg_file, snp_file, input_format) {
     message("Finished parsing sequenza input.\n")
 
 	} else {
-		print(data.format.to.use)
-		stop(paste0("Incorrect snp data input format (", data.format.to.use, ")"))
+		stop(paste0("Incorrect snp data input format (", input_format, ")"))
 	}
 
   # Immediately validate input SNP information (BAF, logR and more)
@@ -81,7 +80,7 @@ read_input <- function(seg_file, snp_file, input_format) {
 
 	#TBKW  20190818 edit so here is where the joint segmentation stuff has been dumped into a function to allow multiple
 	#calls. Absolutely needs refactoring. 
-	sorted.all.bp.all.samps.segs.anno.df <- createFullyAnnotatedJointSegmentation(f.joint.segs.df = f.joint.segs.df)
+	sorted.all.bp.all.samps.segs.anno.df <- createFullyAnnotatedJointSegmentation(f.joint.segs.df = f.joint.segs.df, samples = sample.vec)
 	#TBKW edit for xphase version
 	anno.seg.df <- sorted.all.bp.all.samps.segs.anno.df
 	# sorted.all.bp.all.samps.segs.anno.df.path <- paste0(PLOT_OUTPUT_DIR, patient, "_sorted_all_bp_all_samps_segs_anno_df.RDS")
@@ -98,8 +97,9 @@ read_input <- function(seg_file, snp_file, input_format) {
 	message("cleanAndErrorCheckSNPsParallel first")
 	asas.SNPs.w.both.lr.baf.snp.lists <- cleanAndErrorCheckSNPsParallel(all.samp.SNP.list,
 																		mcs.seg.to.use.df =min.cons.segs.df,
+                                    samples = sample.vec,
 																		allow.logr.only.flag = FALSE,
-																		data.type = data.format.to.use)
+																		data.type = input_format)
 
   #message("asas.SNPs.w.both.lr.baf.snp.lists output")
   #str(asas.SNPs.w.both.lr.baf.snp.lists)
@@ -119,8 +119,9 @@ read_input <- function(seg_file, snp_file, input_format) {
 
 	asas.SNPS.lr.and.or.baf.lists <- cleanAndErrorCheckSNPsParallel(all.samp.SNP.list,
 																	mcs.seg.to.use.df =min.cons.segs.df,
+                                  samples = sample.vec,
 																	allow.logr.only.flag = TRUE,
-																	data.type = data.format.to.use)
+																	data.type = input_format)
 
   #message("asas.SNPS.lr.and.or.baf.lists output")
   #str(asas.SNPS.lr.and.or.baf.lists)

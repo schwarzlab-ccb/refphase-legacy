@@ -319,13 +319,13 @@ if (!is.na(conf$debug_dir)) {
   saveRDS(sorted.all.bp.all.samps.segs.anno.df, file = sorted.all.bp.all.samps.segs.anno.df.path)
 }
 
-message("Number of rows in each sample (asas.SNPs.w.both.lr.baf.snp.lists)")
-snps_per_segment <- sapply(asas.SNPs.w.both.lr.baf.snp.lists, function(x) { sapply(x, nrow) })
-print(snps_per_segment)
-message("Segments with enough hz positions: >= ", MIN_NUM_HZ_SNP_PHASING)
-print(snps_per_segment[apply(snps_per_segment >= MIN_NUM_HZ_SNP_PHASING, 1, all),])
-message("segments that have < min number of hz positions:")
-print(rownames(snps_per_segment)[apply(snps_per_segment < MIN_NUM_HZ_SNP_PHASING, 1, any)])
+#message("Number of rows in each sample (asas.SNPs.w.both.lr.baf.snp.lists)")
+#snps_per_segment <- sapply(asas.SNPs.w.both.lr.baf.snp.lists, function(x) { sapply(x, nrow) })
+#print(snps_per_segment)
+#message("Segments with enough hz positions: >= ", MIN_NUM_HZ_SNP_PHASING)
+#print(snps_per_segment[apply(snps_per_segment >= MIN_NUM_HZ_SNP_PHASING, 1, all),])
+#message("segments that have < min number of hz positions:")
+#print(rownames(snps_per_segment)[apply(snps_per_segment < MIN_NUM_HZ_SNP_PHASING, 1, any)])
 
 message("FIXME: WGII calculation is never used again and not saved, disabling it for now")
 #TODO move this up
@@ -436,7 +436,8 @@ sample.vec <- names(asas.SNPs.w.both.lr.baf.snp.lists)
 
     ascat.bc.phased <- phase_ascat(ascat_bc = ascat.bc,
                                    phased_bafs = patient.phased.BAF.df.list[[samp]],
-                                   segs = all.samp.j.seg.df)
+                                   segs = all.samp.j.seg.df,
+                                   phased_baf_info = phased.baf.info.df)
     #str(ascat.bc.phased)
 
 		#OK so now let's do the fixed solution run... 
@@ -614,7 +615,7 @@ message("Now 'USING_XPHASE'...")
 	ph.f.joint.segs.df <- ph.f.joint.segs.df[ph.f.joint.segs.df$startpos < ph.f.joint.segs.df$endpos,]
 	rownames(ph.f.joint.segs.df) <- 1:nrow(ph.f.joint.segs.df)
 
-	ph.sorted.all.bp.all.samps.segs.anno.df <- createFullyAnnotatedJointSegmentation(f.joint.segs.df = ph.f.joint.segs.df)
+	ph.sorted.all.bp.all.samps.segs.anno.df <- createFullyAnnotatedJointSegmentation(f.joint.segs.df = ph.f.joint.segs.df, samples = sample.vec)
 
 	#we need to update the purity and ploidy for each sample:
 	ph.purity.est.vec <- c()
@@ -639,6 +640,7 @@ message("Now 'USING_XPHASE'...")
 	print("Phased cleanAndErrorCheckSNPsParallel first")
 	ph.asas.SNPs.w.both.lr.baf.snp.lists <- cleanAndErrorCheckSNPsParallel(all.samp.SNP.list,
 																		mcs.seg.to.use.df =ph.min.cons.segs.df,
+                                    samples = sample.vec,
 																		allow.logr.only.flag = FALSE,
 																		data.type = data.format.to.use)
 
@@ -659,6 +661,7 @@ message("Now 'USING_XPHASE'...")
 
 	ph.asas.SNPS.lr.and.or.baf.lists <- cleanAndErrorCheckSNPsParallel(all.samp.SNP.list,
 																	mcs.seg.to.use.df =ph.min.cons.segs.df,
+                                  samples = sample.vec,
 																	allow.logr.only.flag = TRUE,
 																	data.type = data.format.to.use)
 
