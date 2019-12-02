@@ -282,7 +282,7 @@ if (!is.na(conf$debug_dir)) {
 # Load in the data:
 
 #if (conf$overwrite) {
-use_cached_input <- FALSE
+use_cached_input <- TRUE
 if (!use_cached_input) {
   input_data <- read_input(seg.file.path, snp.file.path, conf$input_format)
 	saveRDS(input_data, file = file.path(PLOT_OUTPUT_DIR, "input_data.rds"))
@@ -319,13 +319,15 @@ if (!is.na(conf$debug_dir)) {
   saveRDS(sorted.all.bp.all.samps.segs.anno.df, file = sorted.all.bp.all.samps.segs.anno.df.path)
 }
 
-#message("Number of rows in each sample (asas.SNPs.w.both.lr.baf.snp.lists)")
-#snps_per_segment <- sapply(asas.SNPs.w.both.lr.baf.snp.lists, function(x) { sapply(x, nrow) })
+message("Number of rows in each sample (asas.SNPs.w.both.lr.baf.snp.lists)")
+snps_per_segment <- sapply(asas.SNPs.w.both.lr.baf.snp.lists, function(x) { sapply(x, nrow) })
 #print(snps_per_segment)
-#message("Segments with enough hz positions: >= ", MIN_NUM_HZ_SNP_PHASING)
-#print(snps_per_segment[apply(snps_per_segment >= MIN_NUM_HZ_SNP_PHASING, 1, all),])
+message("Segments with enough hz positions: >= ", MIN_NUM_HZ_SNP_PHASING)
+print(snps_per_segment[apply(snps_per_segment >= MIN_NUM_HZ_SNP_PHASING, 1, all),])
+message(sum(apply(snps_per_segment >= MIN_NUM_HZ_SNP_PHASING, 1, all)), "/", nrow(snps_per_segment))
 #message("segments that have < min number of hz positions:")
 #print(rownames(snps_per_segment)[apply(snps_per_segment < MIN_NUM_HZ_SNP_PHASING, 1, any)])
+#message("Number of segments: ", nrow(snps_per_segment[apply(snps_per_segment < MIN_NUM_HZ_SNP_PHASING, 1, any),]))
 
 message("FIXME: WGII calculation is never used again and not saved, disabling it for now")
 #TODO move this up
@@ -474,6 +476,7 @@ sample.vec <- names(asas.SNPs.w.both.lr.baf.snp.lists)
 		#checking.cont.range <- missing.logr.segmented.idx.vec - c(missing.logr.segmented.idx.vec[2:length(missing.logr.segmented.idx.vec)], missing.logr.segmented.idx.vec[length(missing.logr.segmented.idx.vec)] + 1)  
 
     message("Running ASCAT")
+    validate_ascat_bc_input(ascat.bc.phased)
 		ascat.output = ascat.runAscat(ascat.bc.phased, gamma = 1, rho_manual = samp.purity, psi_manual = samp.ploidy)
 		setwd(base.dir)
 

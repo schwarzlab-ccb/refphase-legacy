@@ -47,7 +47,7 @@ generateAllSamplesByChromIntCPNUnderlyingRawValuesLists <- function(asas.ph.raw.
 
       return(sample.chr.int.cpn.raw.vals.list)
 
-}#end generateAllSamplesChromsIntCpnAvgRawValuesList <- function()
+}
 
 
 ##
@@ -145,6 +145,7 @@ calculateWhetherSegCPNDiffFromIntegerExpectedAndAllMatchingSampCPN <- function(a
 ##Returns:
 ##
 getSegObsExpCPNBySampleDF <- function(asas.ph.raw.cpn.lists, sample.vec, seg.name, cpnX.vec = c("cpnA", "cpnB"), reduced.seg.flag = FALSE) {
+  str(asas.ph.raw.cpn.lists)
 
       num.samples <- length(sample.vec)
       s.samps.obs.exp.cpn.df <- data.frame(round_int_cpnA = numeric(num.samples),#rounded
@@ -168,13 +169,14 @@ getSegObsExpCPNBySampleDF <- function(asas.ph.raw.cpn.lists, sample.vec, seg.nam
 
 
               } else {
-                mean.cpnX <- mean(asas.ph.raw.cpn.lists[[seg.name]][[paste0(cpnX,"_orig_ph_obs_",cpnX,"_vec")]])
+                mean.cpnX <- mean(asas.ph.raw.cpn.lists[[seg.name]][[paste0(cpnX,"_orig_ph_obs_",cpnX,"_vec")]], na.rm = TRUE)
                 s.samps.obs.exp.cpn.df[samp, paste0("round_int_",cpnX)] <- round(mean.cpnX)
               }
-              #print("mean.cpnX")
-              #print(mean.cpnX)
+              message("cpn: ", cpnX, "sample: ", samp, "mean: ", mean.cpnX)
+              print("mean.cpnX")
+              print(mean.cpnX)
               #Calculate observed
-              if ( mean.cpnX < 0 ) {
+              if ( is.na(mean.cpnX) | mean.cpnX < 0 ) {
 
                     s.samps.obs.exp.cpn.df[samp, paste0("mean_obs_",cpnX)]  <- 0
 
@@ -186,12 +188,11 @@ getSegObsExpCPNBySampleDF <- function(asas.ph.raw.cpn.lists, sample.vec, seg.nam
               #Calculate expected
               s.samps.obs.exp.cpn.df[samp, paste0("exp_",cpnX)] <- max(0, s.samps.obs.exp.cpn.df[samp, paste0("round_int_",cpnX)])
 
-        }#End for ( samp in sample.vec ) {
+        }
           
-      }#end for ( cpnX in cpnX.vec ) {
+      }
       return(s.samps.obs.exp.cpn.df)
-
-}#end getSegObsExpCPNBySampleDF <- function(...
+}
 
 
 

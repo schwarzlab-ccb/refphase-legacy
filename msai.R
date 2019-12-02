@@ -280,9 +280,8 @@ testPairOfSamplesSegForMSAIWithCPN <- function(seg.name, samp.one, samp.two, asa
 
        }
 
-  }#end if (tTestWithErrorHandling(phased.s.one.s.cpnA.cpnB.df[, 1], phased.s.one.s.cpnA.cpnB.df[, 2], paired=TRUE)$p.val < 0.001 &
-       #tTestWithErrorHandling(phased.s.two.s.cpnA.cpnB.df[, 1], phased.s.two.s.cpnA.cpnB.df[,2], paired=TRUE)$p.val < 0.001) {
+  }
 
   return(FALSE)
 
-}#testPairOfSamplesSegForMSAIWithCPN function(....)
+}

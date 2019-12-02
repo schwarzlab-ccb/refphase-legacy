@@ -123,9 +123,25 @@ validate_ascat_bc_input <- function(bc) {
   # -------------------------------------------------------------------------
   # 1) Are the columns in the expected order (check for types of data and
   # column names)
+  #   > x <- readRDS("ascat_bc.rds")
+  # > lapply(x, class)
+  # $Tumor_LogR [1] "data.frame"
+  # $Tumor_BAF [1] "data.frame"
+  # $Tumor_LogR_segmented [1] "matrix"
+  # $Tumor_BAF_segmented [1] "list"
+  # $Germline_LogR [1] "data.frame"
+  # $Germline_BAF [1] "data.frame"
+  # $SNPpos [1] "data.frame"
+  # $ch [1] "list"
+  # $chr [1] "list"
+  # $chrs [1] "character"
+  # $samples [1] "character"
+  # $gender [1] "character"
+  # $sexchromosomes [1] "character"
+  # $failedarrays [1] "NULL"
   expected_cols <- list(Tumor_LogR = data.frame(),
                         Tumor_BAF = data.frame(),
-                        Tumor_LogR_segmented = numeric(),
+                        Tumor_LogR_segmented = matrix(),
                         Tumor_BAF_segmented = list(),
                         Germline_LogR = data.frame(),
                         Germline_BAF = data.frame(),
@@ -135,18 +151,27 @@ validate_ascat_bc_input <- function(bc) {
                         chrs = character(),
                         samples = character(),
                         gender = character(),
-                        sexchromosomes = character(),
-                        failedarrays = character())
+                        sexchromosomes = character())
+
+  # We don't care about the type of this one too much, it just needs to be present
+                        #failedarrays = character())
 
   # Do we need all of the columns?
   stopifnot(all(names(expected_cols) %in% names(bc)))
+  stopifnot("failedarrays" %in% names(bc))
 
   # # Check types
-  # for (expected_col in names(expected_cols))
-  #   stopifnot(class(seg[,expected_col]) == class(expected_cols[[expected_col]]))
+  for (expected_col in names(expected_cols)) {
+    if(class(bc[[expected_col]]) != class(expected_cols[[expected_col]])) {
+      message(expected_col, " doesn't have the correct class. Expected: ", class(expected_cols[[expected_col]]), " Found: ", class(bc[[expected_col]]))
+      stopifnot(FALSE)
+    }
+  }
 
   # -------------------------------------------------------------------------
   # 2) Are any chromosome names not in the format 1-24 (check for NAs)
+  stopifnot(all(bc$chrs %in% as.character(1:24)))
+  stopifnot(all(bc$SNPpos$chrs %in% as.character(1:24)))
   
 
   # -------------------------------------------------------------------------
@@ -181,6 +206,7 @@ validate_ascat_bc_input <- function(bc) {
   # -------------------------------------------------------------------------
   # 9) Are there positions present for all expected chromosomes if none present
   # for any autosome error, else note that 23/24 are missing 
+  stopifnot(as.character(1:22) %in% unique(bc$SNPpos$chrs))
 }
 
 # -------------------------------------------------------------------------

@@ -1704,15 +1704,16 @@ read_snps_sequenza <- function(input_files, segs, samples, het_only = TRUE) {
 snps_to_ascat_bc <- function(snps, sample_name) {
 
   bafseg <- matrix(snps$BAFsegmented, ncol = 1, dimnames = list(as.character(seq_along(snps$BAFsegmented))))
-  bafseg <- bafseg[!is.na(snps$BAFsegmented),, drop=FALSE]
+  # Remove positions with NA in BAF
+  bafseg <- bafseg[!is.na(snps$BAF),, drop=FALSE]
 
   ascat_bc <- list(Tumor_LogR = data.frame(sample = snps$logR),
                    Tumor_BAF = data.frame(sample = snps$BAF),
                    Tumor_LogR_segmented = matrix(snps$logRsegmented, ncol = 1,
 																						     dimnames = list(as.character(seq_along(snps$logRsegmented)))),
                    Tumor_BAF_segmented = list(bafseg),
-                   Germline_LogR = NA,
-                   Germline_BAF = NA,
+                   Germline_LogR = data.frame(),
+                   Germline_BAF = data.frame(),
                    SNPpos = data.frame(chrs = as.character(snps$chrom),
                                        pos = snps$pos),
                    ch = NA,
@@ -1729,9 +1730,6 @@ snps_to_ascat_bc <- function(snps, sample_name) {
   #colnames(ascat_bc$Germline_BAF) <- "BAF"
   colnames(ascat_bc$Tumor_BAF) <- "BAF"
   colnames(ascat_bc$Tumor_LogR) <- sample_name
-
-  # Validate our created object
-  validate_ascat_bc_input(ascat_bc)
 
   return(ascat_bc)
 }
