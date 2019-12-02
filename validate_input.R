@@ -1,6 +1,6 @@
 # A collection of functions to ensure that our input data matches what the
 # script expects.
-# 
+#
 # It is broken down into functions to validate the segmentation, the input
 # baf/logR data, and both of those datasets together.
 
@@ -28,7 +28,9 @@ validate_snp_all_samples <- function(tumor_snps) {
 
   # -------------------------------------------------------------------------
   # 1) Positions are identical in all input files (both for Tumor and Germline)
-  stopifnot(all(sapply(tumor_snps[-1], FUN = function(x, y) { identical(rownames(x), rownames(y)) }, tumor_snps[[1]])))
+  stopifnot(all(sapply(tumor_snps[-1], FUN = function(x, y) {
+    identical(rownames(x), rownames(y))
+  }, tumor_snps[[1]])))
 
   # Checks 2 and 3 are not necessary if the above check passes.
 
@@ -53,7 +55,6 @@ validate_snp_all_samples <- function(tumor_snps) {
   }
 
   message("Validation passed.")
-  
 }
 
 validate_snp_input <- function(snp_data) {
@@ -61,20 +62,23 @@ validate_snp_input <- function(snp_data) {
   # -------------------------------------------------------------------------
   # 1) Are the columns in the expected order (check for types of data and
   # column names)
-  expected_cols <- list(chrom = integer(),
-                        pos = integer(),
-                        BAF = numeric(),
-                        logR = numeric(),
-                        BAFsegmented = numeric(),
-                        logRsegmented = numeric())
-                        #snp_pos = character())
+  expected_cols <- list(
+    chrom = integer(),
+    pos = integer(),
+    BAF = numeric(),
+    logR = numeric(),
+    BAFsegmented = numeric(),
+    logRsegmented = numeric()
+  )
+  # snp_pos = character())
 
   # Make sure we have (at least) the columns that we need
   stopifnot(all(names(expected_cols) %in% names(snp_data)))
 
   # Check types
-  for (expected_col in names(expected_cols))
-    stopifnot(class(snp_data[,expected_col]) == class(expected_cols[[expected_col]]))
+  for (expected_col in names(expected_cols)) {
+    stopifnot(class(snp_data[, expected_col]) == class(expected_cols[[expected_col]]))
+  }
 
   # -------------------------------------------------------------------------
   # 2) Are any chromosome names not in the format 1-24 (check for NAs)
@@ -104,18 +108,18 @@ validate_snp_input <- function(snp_data) {
   # -------------------------------------------------------------------------
   # 8) Are there any duplicate positions
   stopifnot(anyDuplicated(snp_data[, c("chrom", "pos")]) == 0)
-  
+
   # -------------------------------------------------------------------------
   # 9) Are there positions present for all expected chromosomes if none present
   # for any autosome error
   stopifnot(all(1:22 %in% snp_data$chrom))
 
-  # else note that 23/24 are missing 
-  if (!all(c(23, 24) %in% snp_data$chrom))
+  # else note that 23/24 are missing
+  if (!all(c(23, 24) %in% snp_data$chrom)) {
     warning("No segment in either sex chromosome (23 or 24)")
-  
-  return(TRUE)
+  }
 
+  return(TRUE)
 }
 
 # Validate raw ASCAT bc file
@@ -139,22 +143,24 @@ validate_ascat_bc_input <- function(bc) {
   # $gender [1] "character"
   # $sexchromosomes [1] "character"
   # $failedarrays [1] "NULL"
-  expected_cols <- list(Tumor_LogR = data.frame(),
-                        Tumor_BAF = data.frame(),
-                        Tumor_LogR_segmented = matrix(),
-                        Tumor_BAF_segmented = list(),
-                        Germline_LogR = data.frame(),
-                        Germline_BAF = data.frame(),
-                        SNPpos = data.frame(),
-                        ch = list(),
-                        chr = list(),
-                        chrs = character(),
-                        samples = character(),
-                        gender = character(),
-                        sexchromosomes = character())
+  expected_cols <- list(
+    Tumor_LogR = data.frame(),
+    Tumor_BAF = data.frame(),
+    Tumor_LogR_segmented = matrix(),
+    Tumor_BAF_segmented = list(),
+    Germline_LogR = data.frame(),
+    Germline_BAF = data.frame(),
+    SNPpos = data.frame(),
+    ch = list(),
+    chr = list(),
+    chrs = character(),
+    samples = character(),
+    gender = character(),
+    sexchromosomes = character()
+  )
 
   # We don't care about the type of this one too much, it just needs to be present
-                        #failedarrays = character())
+  # failedarrays = character())
 
   # Do we need all of the columns?
   stopifnot(all(names(expected_cols) %in% names(bc)))
@@ -162,7 +168,7 @@ validate_ascat_bc_input <- function(bc) {
 
   # # Check types
   for (expected_col in names(expected_cols)) {
-    if(class(bc[[expected_col]]) != class(expected_cols[[expected_col]])) {
+    if (class(bc[[expected_col]]) != class(expected_cols[[expected_col]])) {
       message(expected_col, " doesn't have the correct class. Expected: ", class(expected_cols[[expected_col]]), " Found: ", class(bc[[expected_col]]))
       stopifnot(FALSE)
     }
@@ -172,7 +178,7 @@ validate_ascat_bc_input <- function(bc) {
   # 2) Are any chromosome names not in the format 1-24 (check for NAs)
   stopifnot(all(bc$chrs %in% as.character(1:24)))
   stopifnot(all(bc$SNPpos$chrs %in% as.character(1:24)))
-  
+
 
   # -------------------------------------------------------------------------
   # 3) Are all positions of SNPs positive integers
@@ -185,15 +191,15 @@ validate_ascat_bc_input <- function(bc) {
 
   # -------------------------------------------------------------------------
   # 5) Are there any NA values in the LogR columns for any regions
-  warning(all(!is.na(bc[["Tumor_LogR"]][,1])))
-  warning(all(!is.na(bc[["Tumor_LogR_segmented"]][,1])))
-  warning(all(!is.na(bc[["Tumor_BAF_segmented"]][[1]][,1])))
+  warning(all(!is.na(bc[["Tumor_LogR"]][, 1])))
+  warning(all(!is.na(bc[["Tumor_LogR_segmented"]][, 1])))
+  warning(all(!is.na(bc[["Tumor_BAF_segmented"]][[1]][, 1])))
 
   # -------------------------------------------------------------------------
   # 6) Are there any Inf or -Inf values in the LogR columns
-  warning(all(is.finite(bc[["Tumor_LogR"]][,1])))
-  warning(all(is.finite(bc[["Tumor_LogR_segmented"]][,1])))
-  warning(all(is.finite(bc[["Tumor_BAF_segmented"]][[1]][,1])))
+  warning(all(is.finite(bc[["Tumor_LogR"]][, 1])))
+  warning(all(is.finite(bc[["Tumor_LogR_segmented"]][, 1])))
+  warning(all(is.finite(bc[["Tumor_BAF_segmented"]][[1]][, 1])))
 
   # -------------------------------------------------------------------------
   # 7) Given the chosen reference genome are the positions for each chromosome
@@ -202,10 +208,10 @@ validate_ascat_bc_input <- function(bc) {
   # -------------------------------------------------------------------------
   # 8) Are there any duplicate positions
   stopifnot(anyDuplicated(bc$SNPpos) == 0)
-  
+
   # -------------------------------------------------------------------------
   # 9) Are there positions present for all expected chromosomes if none present
-  # for any autosome error, else note that 23/24 are missing 
+  # for any autosome error, else note that 23/24 are missing
   stopifnot(as.character(1:22) %in% unique(bc$SNPpos$chrs))
 }
 
@@ -216,53 +222,56 @@ validate_ascat_bc_input <- function(bc) {
 # Call this on the table with segmentations for all samples
 validate_seg_all_samples <- function(segs) {
   # Run validate_seg_input() on each sample separately
-  samples <- unique(segs[,"sample"])
+  samples <- unique(segs[, "sample"])
   for (sample in samples) {
-    validate_seg_input(segs[segs[,"sample"] == sample,])
+    validate_seg_input(segs[segs[, "sample"] == sample, ])
   }
 }
 
-# 
+#
 validate_seg_input <- function(seg) {
   # -------------------------------------------------------------------------
   # 1) Are the columns in the expected order (check for types of data and
   # column names)
-  expected_cols <- list(sample = character(),
-                        chr = integer(),
-                        startpos = integer(),
-                        endpos = integer(),
-                        n.het = integer(),
-                        cnTotal = integer(),
-                        nMajor = integer(),
-                        nMinor = integer(),
-                        Ploidy = numeric(),
-                        ACF = numeric(),
-                        nAraw = numeric(),
-                        nBraw = numeric(),
-                        callState = character())
+  expected_cols <- list(
+    sample = character(),
+    chr = integer(),
+    startpos = integer(),
+    endpos = integer(),
+    n.het = integer(),
+    cnTotal = integer(),
+    nMajor = integer(),
+    nMinor = integer(),
+    Ploidy = numeric(),
+    ACF = numeric(),
+    nAraw = numeric(),
+    nBraw = numeric(),
+    callState = character()
+  )
 
   # Do we need all of the columns?
   stopifnot(identical(names(seg), names(expected_cols)))
 
   # Check types
   for (expected_col in names(expected_cols)) {
-    if (expected_col %in% c("nAraw", "nBraw", "callState"))
+    if (expected_col %in% c("nAraw", "nBraw", "callState")) {
       next
-    #message("column: ", expected_col, "\tsegmentation: ", class(seg[,expected_col]), "\texpected: ", class(expected_cols[[expected_col]]))
-    stopifnot(class(seg[,expected_col]) == class(expected_cols[[expected_col]]))
+    }
+    # message("column: ", expected_col, "\tsegmentation: ", class(seg[,expected_col]), "\texpected: ", class(expected_cols[[expected_col]]))
+    stopifnot(class(seg[, expected_col]) == class(expected_cols[[expected_col]]))
   }
 
   # -------------------------------------------------------------------------
   # 2) Are any chromosome names not in the format 1-24 (check for NAs)
 
   # No NA's
-  stopifnot(all(!is.na(seg[,"chr"])))
+  stopifnot(all(!is.na(seg[, "chr"])))
 
   # Must be in 1-24
-  stopifnot(seg[,"chr"] %in% 1:24)
+  stopifnot(seg[, "chr"] %in% 1:24)
 
   # Must not be missing a chromosome in 1-22
-  stopifnot(all(1:22 %in% seg[,"chr"]))
+  stopifnot(all(1:22 %in% seg[, "chr"]))
 
   # -------------------------------------------------------------------------
   # 3) Within a chromosome are all segment start positions <= end positions
@@ -276,7 +285,7 @@ validate_seg_input <- function(seg) {
   # 5) Are all segments (by chromosomes and positions) in the correct (1-24..
   # 1-200000) sorted order
   # FIXME
-  #stopifnot(!is.unsorted(order(seg[,c("chr", "startpos", "endpos")])))
+  # stopifnot(!is.unsorted(order(seg[,c("chr", "startpos", "endpos")])))
 
   # -------------------------------------------------------------------------
   # 6) Do any segments within the same chromosome overlap
@@ -285,8 +294,9 @@ validate_seg_input <- function(seg) {
   # 7) Do all chromosomes have at least one segment present, if none for an
   # autosome error, if none for a sex chromosome flag
   # NOTE: already checked autosomes in step 2)
-  if (!any(c(23, 24) %in% seg[,"chr"]))
+  if (!any(c(23, 24) %in% seg[, "chr"])) {
     warning("No segment in either sex chromosome (23 or 24)")
+  }
 
   # 8) Given the chosen reference genome are the positions for each chromosome
   # possible
@@ -294,5 +304,4 @@ validate_seg_input <- function(seg) {
 
   message("Segment input validation passed.")
   return(TRUE)
-
 }

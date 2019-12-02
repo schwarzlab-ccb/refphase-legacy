@@ -1,20 +1,22 @@
-#Sourced automatically by the xphase.R script when it is run interactively
-conf <- list(patient = "CB1001",
-             dip_test = FALSE,
-             output_dir = "../../output/CB1001/xphase-modified",
-             medicc_output_dir = "../../output/CB1001/xphase-modified",
-             input_format = "ASCAT",
-             snp_data = "../../input/modified-nb-schulte/CB1001.paths.tsv",
-             snp_data_prefix = "..",
-             seg_data = "../../input/modified-nb-schulte/CB1001.seg.modified.fixedpos",
-             overwrite = TRUE,
-             gamma = 1,
-             cores = 1,
-             segment_type = "intersection",
-             genome = "hg38",
-             seed = 2134234,
-             help = FALSE,
-             id = "1b151cc1")
+# Sourced automatically by the xphase.R script when it is run interactively
+conf <- list(
+  patient = "CB1001",
+  dip_test = FALSE,
+  output_dir = "../../output/CB1001/xphase-modified",
+  medicc_output_dir = "../../output/CB1001/xphase-modified",
+  input_format = "ASCAT",
+  snp_data = "../../input/modified-nb-schulte/CB1001.paths.tsv",
+  snp_data_prefix = "..",
+  seg_data = "../../input/modified-nb-schulte/CB1001.seg.modified.fixedpos",
+  overwrite = TRUE,
+  gamma = 1,
+  cores = 1,
+  segment_type = "intersection",
+  genome = "hg38",
+  seed = 2134234,
+  help = FALSE,
+  id = "1b151cc1"
+)
 
 # conf <- list(patient = "LTX121",
 #              dip_test = FALSE,
@@ -32,4 +34,3 @@ conf <- list(patient = "CB1001",
 #              seed = 2134234,
 #              help = FALSE,
 #              conf = "1b151cc2")
-

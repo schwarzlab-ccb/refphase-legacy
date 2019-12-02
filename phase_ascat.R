@@ -1,72 +1,70 @@
 # Apply phasing to an existing ascat.bc object and recalculate all necessary
 # values within the object
 phase_ascat <- function(ascat_bc, phased_bafs, segs, phased_baf_info) {
-
   message("*** phased_bafs ***")
   str(phased_bafs)
 
   message("*** phased_baf_info ***")
   str(phased_baf_info)
 
-  #So let's get the phased BAF:
+  # So let's get the phased BAF:
   samp.pha.baf.df <- phased_bafs
 
-  #So we're going to need the indices of the BAF snps...
+  # So we're going to need the indices of the BAF snps...
   samp.pha.baf.df$snp_pos <- phased_baf_info$snp_pos
   samp.pha.baf.df$snp_idx <- phased_baf_info$snp_idx
 
-  #So now we need the segments that refer to this sample (as these are joint segments
-  #these should all be same for each sample regardless.)
+  # So now we need the segments that refer to this sample (as these are joint segments
+  # these should all be same for each sample regardless.)
   samp.seg.df <- segs
 
-  #Let's do the LogR
-  tum.logr.vec <- ascat_bc[["Tumor_LogR"]][,1]
+  # Let's do the LogR
+  tum.logr.vec <- ascat_bc[["Tumor_LogR"]][, 1]
   if (any(is.na(tum.logr.vec))) {
     message("There are NA values in the ascat.bc Tumor_LogR field which need to be removed. Revisit generation of this input. For changing the NAs to 0.")
     na.idx.vec <- which(is.na(tum.logr.vec))
     tum.logr.vec[na.idx.vec] <- 0
   }
 
-  tum.logr.segmented.vec <- ascat_bc[["Tumor_LogR_segmented"]][,1]
-  if(any(is.na(tum.logr.segmented.vec))) {
+  tum.logr.segmented.vec <- ascat_bc[["Tumor_LogR_segmented"]][, 1]
+  if (any(is.na(tum.logr.segmented.vec))) {
     message("There are NA values in the ascat.bc Tumor_LogR_segmented field which need to be removed. Revisit generation of this input. For changing the NAs to 0.")
     na.segmented.idx.vec <- which(is.na(tum.logr.segmented.vec))
     tum.logr.segmented.vec[na.segmented.idx.vec] <- 0
   }
 
   for (i in 1:nrow(samp.seg.df)) {
-    tum.logr.segmented.vec[samp.seg.df[i,]$start_snp_idx:samp.seg.df[i,]$end_snp_idx] <- mean(tum.logr.vec[samp.seg.df[i,]$start_snp_idx:samp.seg.df[i,]$end_snp_idx])
+    tum.logr.segmented.vec[samp.seg.df[i, ]$start_snp_idx:samp.seg.df[i, ]$end_snp_idx] <- mean(tum.logr.vec[samp.seg.df[i, ]$start_snp_idx:samp.seg.df[i, ]$end_snp_idx])
   }
 
   # Let's do the BAF recalculation
-  tum.baf.segmented.vec <- ascat_bc[["Tumor_BAF_segmented"]][[1]][,1]
+  tum.baf.segmented.vec <- ascat_bc[["Tumor_BAF_segmented"]][[1]][, 1]
   names(tum.baf.segmented.vec) <- rownames(ascat_bc[["Tumor_BAF_segmented"]][[1]])
 
   message("********************************* Disable BAF segmentation update ***********")
-  #baf_segmented <- ascat_set_bafsegmented(tum.baf.segmented.vec, samp.seg.df)
-  #ascat_set_bafsegmented(ascat_bc, samp.pha.baf.df, samp.seg.df)
+  # baf_segmented <- ascat_set_bafsegmented(tum.baf.segmented.vec, samp.seg.df)
+  # ascat_set_bafsegmented(ascat_bc, samp.pha.baf.df, samp.seg.df)
   baf_segmented <- tum.baf.segmented.vec
 
-  if(any(is.na(tum.logr.segmented.vec))) {
+  if (any(is.na(tum.logr.segmented.vec))) {
     message("There are NA values in the tum.logr.segmented.vec after applying phasing which need to be removed. Revisit generation of this input. For changing the NAs to 0.")
     na.segmented.idx.vec <- which(is.na(tum.logr.segmented.vec))
     tum.logr.segmented.vec[na.segmented.idx.vec] <- 0
   }
 
-  #First let's do the free runs:
+  # First let's do the free runs:
   message("Setting LogR segmented")
-  ascat_bc[["Tumor_LogR_segmented"]][,1] <- tum.logr.segmented.vec
-  #message("tum.baf.segmented.vec length =", length(tum.baf.segmented.vec))
+  ascat_bc[["Tumor_LogR_segmented"]][, 1] <- tum.logr.segmented.vec
+  # message("tum.baf.segmented.vec length =", length(tum.baf.segmented.vec))
   message("ascat.bc[[Tumor_BAF_segmented]][[1]] length =", nrow(ascat_bc[["Tumor_BAF_segmented"]][[1]]))
-  #ascat_bc[["Tumor_BAF_segmented"]][[1]]
-  #ascat_bc[["Tumor_BAF_segmented"]][[1]] <- matrix(baf_segmented, nrow=1, dimnames(list(as.character(seq_along(baf_segmented)))))
+  # ascat_bc[["Tumor_BAF_segmented"]][[1]]
+  # ascat_bc[["Tumor_BAF_segmented"]][[1]] <- matrix(baf_segmented, nrow=1, dimnames(list(as.character(seq_along(baf_segmented)))))
 
   ascat_phased <- ascat_bc
 
-  #End of section generating the spoofed ascat.bc object that utilises the phasing information. This should be made into a function.
+  # End of section generating the spoofed ascat.bc object that utilises the phasing information. This should be made into a function.
 
   return(ascat_phased)
-
 }
 
 ascat_set_bafsegmented <- function(ascat, phased_snps, segs) {
@@ -74,7 +72,7 @@ ascat_set_bafsegmented <- function(ascat, phased_snps, segs) {
   str(phased_snps)
   str(segs)
 
-  for (i in seq_len(nrow(segs))) { 
+  for (i in seq_len(nrow(segs))) {
   }
 
   return(ascat)
@@ -98,7 +96,7 @@ ascat_set_bafsegmented <- function(ascat, phased_snps, segs) {
 #  str(snps)
 #  str(segs)
 #
-#  for (i in seq_len(nrow(segs))) { 
+#  for (i in seq_len(nrow(segs))) {
 #
 #    seg <- segs[i,]
 #    snps_idx_for_seg <- snps$snp_idx >= seg$start_snp_idx & snps$snp_idx <= seg$end_snp_idx
@@ -113,13 +111,13 @@ ascat_set_bafsegmented <- function(ascat, phased_snps, segs) {
 #    message("segidx: ", i, "\tmean = ", mean_baf_seg)
 #    message("segidx: ", i, "\tmean notfphased = ", mean_baf_seg2)
 
-    #baf_seg <- 
+# baf_seg <-
 
-    #baf_seg <- mean(
+# baf_seg <- mean(
 
-    #snp_idx <- as.integer(names(bafs))
+# snp_idx <- as.integer(names(bafs))
 
-    #baf_seg <- baf[snp_idx >= seg$start_snp_idx & snp_idx <= seg$end_snp_idx]
+# baf_seg <- baf[snp_idx >= seg$start_snp_idx & snp_idx <= seg$end_snp_idx]
 
 
 #    #So first get the indices of the BAF indices within the segment
@@ -176,7 +174,7 @@ ascat_set_bafsegmented <- function(ascat, phased_snps, segs) {
 #    #So we actually
 #    #So we'll actually work out the gl correction factor here?
 #
-#    #Let's get the equivalent germline snps 
+#    #Let's get the equivalent germline snps
 #    #Default should be to make the BAF segmented 0.5 if we don't have any info w/regards to hz snps
 #    seg.md.ph.BAF.vec <- c()
 #    # We could attempt to add in a germline correction here...
@@ -201,7 +199,7 @@ ascat_set_bafsegmented <- function(ascat, phased_snps, segs) {
 #    if (length(seg.md.ph.BAF.vec) > 0) {
 #      seg.BAF.segmented.val <- rep(mean(seg.md.ph.BAF.vec, na.rm=TRUE), length(seg.min.hz.snp.idx:seg.max.hz.snp.idx))
 #    } else {
-#      seg.BAF.segmented.val <- rep(0.5, length(seg.min.hz.snp.idx:seg.max.hz.snp.idx)) 
+#      seg.BAF.segmented.val <- rep(0.5, length(seg.min.hz.snp.idx:seg.max.hz.snp.idx))
 #    }
 #
 #    #Now let's update the segmented baf values with the correct indices in the vector
@@ -217,4 +215,4 @@ ascat_set_bafsegmented <- function(ascat, phased_snps, segs) {
 #
 #  baf_segmented
 #
-#}
+# }
