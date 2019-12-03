@@ -404,7 +404,6 @@ if (total.num.of.hz.sites.per.sample > 300000) {
 seg.name.vec <- paste(min.cons.segs.df[, 1], min.cons.segs.df[, 2], min.cons.segs.df[, 3], sep = ":")
 sample.vec <- names(asas.SNPs.w.both.lr.baf.snp.lists)
 
-
 message("Getting phasing to apply to all samples using getCombinedBAFDipTestPhasingParallel...")
 all.seg.phasing.info.list <- getCombinedBAFDipTestPhasingParallel(
   asas.lr.baf.lists = asas.SNPs.w.both.lr.baf.snp.lists,
@@ -425,7 +424,6 @@ if (!is.na(conf$debug_dir)) {
   saveRDS(all.seg.phasing.info.list, file = all.seg.phasing.info.list.path)
 }
 
-
 # Todo unsure of what to do with the baf logr lists which have positions that only have logr here, at the moment exclude them but how
 # does that affect later run
 message("Generating phased BAF dataframes...")
@@ -434,16 +432,18 @@ patient.phased.BAF.df.list <- createAllSegsPhasedBAFDataFrame(
   sample.to.phase.seg.list = all.seg.phasing.info.list,
   min.num.hz.snp.phasing = MIN_NUM_HZ_SNP_PHASING
 )
+
 if (length(patient.phased.BAF.df.list) <= 1) {
   stop("Error in generating phased BAF dataframes")
 }
+
 if (!is.na(conf$debug_dir)) {
   saveRDS(patient.phased.BAF.df.list, file = patient.phased.BAF.df.list.path)
 }
 
-# Now we have the phasing, we want to check whether, using it, we think that there is sufficient separation
-# of the bands of allelic balance to consider a segment "allelically imbalanced"
-# If not set the bafsegmented to 0.5
+# Now we have the phasing, we want to check whether, using it, we think that
+# there is sufficient separation of the bands of allelic balance to consider a
+# segment "allelically imbalanced" If not set the bafsegmented to 0.5
 # So we may want to reintroduce the log truncated normal stuff here...
 
 # So this is where want to create a phased ascat.bc object:
@@ -463,8 +463,7 @@ message("Running ASCAT on all samples...")
 # 1) Using the phasing information obtained from all samples, allow a free run allowing ASCAT to call whatever purity and ploidy of all samples included
 # in the run it feels is most appropriate. This will potentially provide new and improved solutions that might be better than what was fed into mphase
 # particularly if the segmentation of the input did not make use of multi-region phasing data.
-# 2)
-# Initiate list for segmentation
+# 2) Initiate list for segmentation
 ph.ascat.output.list <- list()
 ph.ascat.segs.df.list <- list()
 base.dir <- getwd()
@@ -561,8 +560,6 @@ for (samp in sample.vec) {
 } # for (samp in sample.vec) {
 
 
-message("Now 'USING_XPHASE'...")
-
 # So now we're going to construct a list of dataframes that for every heterozygous SNP has
 # chrom
 # pos
@@ -576,6 +573,7 @@ message("Now 'USING_XPHASE'...")
 # This set of raw cpn will be queried by the phasing functions.
 # I'm now in tow minds as to whether ascat needs to output total copy number...
 # This list is being used as a global innappropriately at the moment FIXME!
+message("Now 'USING_XPHASE'...")
 USING_XPHASE <- TRUE
 PH_ALL_SAMP_ASCAT_RAW_CPN_DF_LIST <- list()
 for (samp in sample.vec) {
@@ -600,7 +598,7 @@ for (samp in sample.vec) {
     validate_ascat_bc_input(ascat.bc)
   }
 
-  message("# of heterozygous SNPs:", sum(is_heterozygous))
+  message("# of heterozygous SNPs:", sum(is_heterozygous), "/", length(is_heterozygous))
 
   chr.vec <- chrom2integer(as.character(ascat.bc$SNPpos$chr))
 

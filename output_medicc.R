@@ -100,12 +100,13 @@ createMEDICCInputFiles <- function(medicc_fasta, samples, output_dir) {
 
 
 
-# Calculates the WGII, GII, FLOH and FLOH scores based on the integer copy number calls fed into it, must take a dataframe of with column names:
+# Calculates the WGII, GII, FLOH and FLOH scores based on the integer copy
+# number calls fed into it, must take a dataframe of with column names:
 # c("sample","chrom", "startpos", "endpos", "n.het", "cnTotal", "nMajor","nMinor", "Ploidy", "ACF", "nAraw", "nBraw")
-# But Ploidy and ACF may be blank as not acutally used by the the funciton.
+# But Ploidy and ACF may be blank as not acutally used by the the function.
 calculateWGII <- function(seg.df, threshold = 0.6, include.sex.chrom = FALSE) {
   colnames(seg.df) <- c("sample", "chrom", "startpos", "endpos", "n.het", "cnTotal", "nMajor", "nMinor", "Ploidy", "ACF", "nAraw", "nBraw")
-  cat("calculateWGII: segmentation data frame:\n")
+  message("calculateWGII: segmentation data frame")
   # First column is meant to be the sample name
   seg.df[, 1] <- as.character(seg.df[, 1])
   sample.vec <- unique(seg.df[, 1])
@@ -116,23 +117,23 @@ calculateWGII <- function(seg.df, threshold = 0.6, include.sex.chrom = FALSE) {
   chrom.length.vec <- setNames(rep(NA, length(unique(seg.df[, 2]))), unique(seg.df[, 2]))
 
   if (!all(seg.df[, "nMinor"] <= seg.df[, "nMajor"])) {
-    cat("Warning!! nB  not always <= nA!!  -- Correcting for internal use (only!)\n") # In case ASCAT people change the algorithm
+    warning("nB not always <= nA! Correcting for internal use (only!)")
     seg.df <- transform(seg.df,
       nMinor = ifelse(nMinor > nMajor, nMajor, nMinor),
       nMajor = ifelse(nMinor > nMajor, nMinor, nMajor)
     )
-  } # end if( ! all(seg.df[,"nMinor"] <= seg.df[,"nMajor"]) ) {
-  cat("Setting sample ploidy according to major proportion copy number. Ploidy < 2 re-set at 2\n")
+  }
+
+  message("Setting sample ploidy according to major proportion copy number. Ploidy < 2 re-set at 2")
   ploidy.mat <- calculatePloidy(seg.df)
-  # print("ploidy.mat")
-  # print(ploidy.mat)
   ploidy.vec <- setNames(ploidy.mat[, 2], rownames(ploidy.mat))
   ploidy.vec[ploidy.vec < 2] <- 2
 
   chrom.vec <- unique(seg.df[, 2])
   for (chrom in chrom.vec) {
     chrom.length.vec[chrom] <- max(as.numeric(seg.df[seg.df[, 2] %in% chrom, 4])) - min(as.numeric(seg.df[seg.df[, 2] %in% chrom, 3]))
-  } # end for(i in names(chrom.length)){ # restrict to the part that can be measured
+  }
+
   chrom.length.vec <- setNames(as.numeric(chrom.length.vec), names(chrom.length.vec))
 
   for (samp in sample.vec) {
@@ -161,7 +162,7 @@ calculateWGII <- function(seg.df, threshold = 0.6, include.sex.chrom = FALSE) {
 
     output.mat[samp, 2] <- sum(wgii.vec) / length(chrom.length.vec)
     output.mat[samp, 4] <- sum(wfloh.vec) / length(chrom.length.vec)
-  } # end for (samp in sample.vec)
+  }
 
   return(output.mat)
 }
@@ -174,7 +175,9 @@ calculatePloidy <- function(seg.df, tot.cpn.col.idx = 6, calculate.raw.ploidy = 
   num.samples <- length(sample.vec)
   out.ploidy.mat <- matrix(nrow = num.samples, ncol = 14)
   row.names(out.ploidy.mat) <- sample.vec
-  colnames(out.ploidy.mat) <- c("Major", "wMajor", "MeanRaw", 0:10) # wMajor is weighted by chromosome, MeanRaw is mean of the raw CN values from ASCAT 2.3
+  # wMajor is weighted by chromosome, MeanRaw is mean of the raw CN values from
+  # ASCAT 2.3
+  colnames(out.ploidy.mat) <- c("Major", "wMajor", "MeanRaw", 0:10)
 
   for (samp in sample.vec) {
 
@@ -186,7 +189,7 @@ calculatePloidy <- function(seg.df, tot.cpn.col.idx = 6, calculate.raw.ploidy = 
     for (tot.cpn.val in uniq.tot.cpn.val.vec) {
       samp.seg.w.cpn.val.df <- samp.seg.df[samp.seg.df[, tot.cpn.col.idx] %in% tot.cpn.val, ]
       bp.size.by.tot.cpn.vec <- c(bp.size.by.tot.cpn.vec, setNames(sum(as.numeric(samp.seg.w.cpn.val.df$endpos - samp.seg.w.cpn.val.df$startpos)), tot.cpn.val))
-    } # end for (tot.cpn.state in uniq.tot.cpn.val.vec) {
+    }
     summ.tot.cpn.by.bp.size <- (bp.size.by.tot.cpn.vec / sum(as.numeric(bp.size.by.tot.cpn.vec)))
     sort.tot.cpn.by.bp.size <- sort(summ.tot.cpn.by.bp.size, decreasing = TRUE)
     out.ploidy.mat[samp, "Major"] <- as.numeric(names(sort.tot.cpn.by.bp.size)[1])
@@ -203,22 +206,21 @@ calculatePloidy <- function(seg.df, tot.cpn.col.idx = 6, calculate.raw.ploidy = 
       chr.tot.cpn.bp.vec <- sort(tapply(chr.tot.cpn.val.bp.per.seg.vec, names(chr.tot.cpn.val.bp.per.seg.vec), sum), decreasing = TRUE)
       # Take the top value and add it to
       w.major.vec <- c(w.major.vec, setNames(names(chr.tot.cpn.bp.vec[1]), chrom))
-    } # end for (chrom in chrom.vec) {
+    }
     out.ploidy.mat[samp, "wMajor"] <- as.numeric(names(sort(table(w.major.vec))))[1]
 
     # Raw ploidy:
-
     if (calculate.raw.ploidy == TRUE) {
       samp.tot.raw.cpn.vec <- as.numeric(rowSums(samp.seg.df[, c("nAraw", "nBraw")]))
       samp.seg.size.vec <- as.numeric(samp.seg.df[, 4]) - as.numeric(samp.seg.df[, 3])
 
       out.ploidy.mat[samp, "MeanRaw"] <- sum(as.numeric(samp.tot.raw.cpn.vec) * (samp.seg.size.vec / sum(samp.seg.size.vec)))
-    } # end if (calculate.raw.ploidy == TRUE) {
-  } # end for (samp in sample.vec) {
+    }
+  }
 
   if (calculate.raw.ploidy == FALSE) {
     out.ploidy.mat <- out.ploidy.mat[, -c(3) ]
   }
 
   return(out.ploidy.mat)
-} # end calculatePloidy  <- function(seg.df, cpn.col.idx = 6) {
+}

@@ -1,23 +1,6 @@
-
 joinSegAndReturnNewArmGranges <- function(arm.idx.vec, curr.gr.idx, adj.idx, adj.segs.mat, sorted.arm.grs) {
 
-  # print("called joinSegAndReturnNewArmGranges")
-  # print("arm.idx.vec")
-  # print(arm.idx.vec)
-  # print("curr.gr.idx")
-  # print(curr.gr.idx)
-  # print("adj.segs.mat")
-  # print(adj.segs.mat)
-  # print("sorted.arm.grs")
-  # print(sorted.arm.grs)
-
   kept.arm.idxs <- arm.idx.vec[ !arm.idx.vec %in% c(curr.gr.idx, adj.segs.mat[adj.idx, "gr_idx"]) ]
-
-  # print("sorted.arm.grs[curr.gr.idx]")
-  # print(sorted.arm.grs[curr.gr.idx])
-
-  # print("adj.segs.mat[adj.idx,]")
-  # print(adj.segs.mat[adj.idx,])
 
   if (length(kept.arm.idxs) > 0) {
     kept.arm.chr.vec <- as.numeric(as.character(seqnames(sorted.arm.grs[kept.arm.idxs])))
@@ -33,14 +16,6 @@ joinSegAndReturnNewArmGranges <- function(arm.idx.vec, curr.gr.idx, adj.idx, adj
   new.seg.start <- min(adj.segs.mat[adj.idx, "startpos"], start(sorted.arm.grs[curr.gr.idx]))
   new.seg.end <- max(adj.segs.mat[adj.idx, "endpos"], end(sorted.arm.grs[curr.gr.idx]))
 
-  # print("new.seg.chr")
-  # print(new.seg.chr)
-  # print("new.seg.start")
-  # print(new.seg.start)
-  # print("new.seg.end")
-  # print(new.seg.end)
-
-
   new.arm.chr.vec <- c(new.seg.chr, kept.arm.chr.vec)
   new.arm.start.vec <- c(new.seg.start, kept.arm.start.vec)
   new.arm.end.vec <- c(new.seg.end, kept.arm.end.vec)
@@ -50,21 +25,15 @@ joinSegAndReturnNewArmGranges <- function(arm.idx.vec, curr.gr.idx, adj.idx, adj
     ranges = IRanges(new.arm.start.vec, new.arm.end.vec),
     strand = rep("*", length(new.arm.chr.vec))
   )
-  # print("new.arm.grs")
-  # print(new.arm.grs)
 
   return(new.arm.grs)
-} # end joinSegAndReturnNewArmGranges
+}
+
 
 # Try to join using phasing
 attemptToJoinSegbyPhasedCPN <- function(curr.seg.mat, adj.segs.mat, samp.arm.sites.df, arm.idx.vec, curr.gr.idx, sorted.arm.grs, cpnX.string, MIN_PH_CPN) {
-  # print("called attemptToJoinSegbyPhasedCPN")
-  new.unsorted.arm.grs <- sorted.arm.grs
 
-  # print("curr.seg.mat")
-  # print(curr.seg.mat)
-  # print("adj.segs.mat")
-  # print(adj.segs.mat)
+  new.unsorted.arm.grs <- sorted.arm.grs
 
   for (k in 1:nrow(adj.segs.mat)) {
     if (curr.seg.mat[, "num_ph_cpn"] >= MIN_PH_CPN & adj.segs.mat[k, "num_ph_cpn"] >= MIN_PH_CPN) {
@@ -74,15 +43,9 @@ attemptToJoinSegbyPhasedCPN <- function(curr.seg.mat, adj.segs.mat, samp.arm.sit
       adj.ph.cpn.vec <- samp.arm.sites.df[samp.arm.sites.df$pos >= adj.segs.mat[k, "startpos"]
       & samp.arm.sites.df$pos <= adj.segs.mat[k, "endpos"], cpnX.string]
 
-      # print("!!!!!!!!!PHASED COPY NUMBER JOINING ATTEMPTED!!!!!!!!!!!!!!!")
-      # print(curr.seg.mat[, "num_ph_cpn"])
-      # print(adj.segs.mat[k,  "num_ph_cpn"])
       ph.p.val <- wilcoxTestWithErrorHandling(cur.ph.cpn.vec, adj.ph.cpn.vec)$p.val
 
       if (ph.p.val > PVAL_THRESH_TO_JOIN_PH_SEGS) {
-        # print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-        # print("!!!!!!!!!!!!!!!!!!! SEGS ARE JOINED !!!!!!!!!!!!!!!!!!!!!!!!")
-        # print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
         # Join segment and make a new set of granges for the arm
         new.unsorted.arm.grs <- joinSegAndReturnNewArmGranges(
           arm.idx.vec = arm.idx.vec,
@@ -92,54 +55,35 @@ attemptToJoinSegbyPhasedCPN <- function(curr.seg.mat, adj.segs.mat, samp.arm.sit
           sorted.arm.grs = sorted.arm.grs
         )
         return(new.unsorted.arm.grs)
-      } else { # if (ph.p.val > PVAL_THRESH_TO_JOIN_PH_SEGS) {=
-        # print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-        # print("!!!!!!!!!!!!!!!!!! SEGS STAY SEPARATE !!!!!!!!!!!!!!!!!!!!!!")
-        # print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
       }
-    } # if ( curr.seg.mat[,"num_ph_cpn"] >= MIN_PH_CPN & adj.segs.mat[ k,"num_ph_cpn"] >= MIN_PH_CPN)){
-  } # for (k in 1:nrow(adj.segs.mat)) {
+    }
+  }
 
   return(new.unsorted.arm.grs)
-} # end attemptToJoinSegbyPhasedCPN
+}
+
 
 # If join return
 attemptToJoinSegbyTotalCPN <- function(curr.seg.mat, adj.segs.mat, samp.arm.sites.df, arm.idx.vec, curr.gr.idx, sorted.arm.grs, NUM_TOT_CPN) {
-  # print("called attemptToJoinSegbyTotalCPN")
   new.unsorted.arm.grs <- sorted.arm.grs
-
-  # print("curr.seg.mat")
-  # print(curr.seg.mat)
-  # print("adj.segs.mat")
-  # print(adj.segs.mat)
-
 
   for (k in 1:nrow(adj.segs.mat)) {
 
     # If joining by phased copy number is possible don't join
-
     if (curr.seg.mat[, "num_tot_cpn"] >= NUM_TOT_CPN & adj.segs.mat[k, "num_tot_cpn"] >= NUM_TOT_CPN) {
       join.by.phased.cpn.not.possible <- curr.seg.mat[, "num_ph_cpn"] < MIN_PH_CPN | adj.segs.mat[k, "num_ph_cpn"] < MIN_PH_CPN
-      if (join.by.phased.cpn.not.possible == FALSE) {
 
-        # print("NOT ATTEMPTING TO JOIN BY TOT CPN AS ALREADY ATTEMPTED PHASED.")
-      } else {
+      if (isTRUE(join.by.phased.cpn.not.possible)) {
         cur.tot.cpn.vec <- rle(samp.arm.sites.df[samp.arm.sites.df$pos >= curr.seg.mat[, "startpos"]
         & samp.arm.sites.df$pos <= curr.seg.mat[, "endpos"], "tot_raw_un_ph_cpn"])$values
 
         adj.tot.cpn.vec <- rle(samp.arm.sites.df[samp.arm.sites.df$pos >= adj.segs.mat[k, "startpos"]
         & samp.arm.sites.df$pos <= adj.segs.mat[k, "endpos"], "tot_raw_un_ph_cpn"])$values
 
-        # print("!!!!!!!!!PHASED TOTAL NUMBER JOINING ATTEMPTED!!!!!!!!!!!!!!")
-        # print(curr.seg.mat[, "num_tot_cpn"])
-        # print(adj.segs.mat[k,  "num_tot_cpn"])
         tot.p.val <- wilcoxTestWithErrorHandling(cur.tot.cpn.vec, adj.tot.cpn.vec)$p.val
 
         if (tot.p.val > PVAL_THRESH_TO_JOIN_TOT_SEGS) {
 
-          # print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-          # print("!!!!!!!!!!!!!!!!!!! SEGS ARE JOINED !!!!!!!!!!!!!!!!!!!!!!!!")
-          # print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
           new.unsorted.arm.grs <- joinSegAndReturnNewArmGranges(
             arm.idx.vec = arm.idx.vec,
             curr.gr.idx = curr.gr.idx,
@@ -149,28 +93,17 @@ attemptToJoinSegbyTotalCPN <- function(curr.seg.mat, adj.segs.mat, samp.arm.site
           )
 
           return(new.unsorted.arm.grs)
-        } else {
-
-          # print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-          # print("!!!!!!!!!!!!!!!!!! SEGS STAY SEPARATE !!!!!!!!!!!!!!!!!!!!!!")
-          # print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-        } # if (ph.p.val > PVAL_THRESH_TO_JOIN_PH_SEGS) {
-      } # end 	if (join.by.phased.cpn.not.possible == TRUE) {
-    } # end for (k in 1:nrow(adj.segs.mat)) {
-  } # end for (k in 1:nrow(adj.segs.mat)) {
+        }
+      }
+    }
+  }
 
   return(new.unsorted.arm.grs)
-} # end attemptToJoinSegbyTotalCPN
+}
 
 
 attemptToJoinSegbyMeanTotalCPNAlone <- function(curr.seg.mat, adj.segs.mat, samp.arm.sites.df, arm.idx.vec, curr.gr.idx, sorted.arm.grs, NUM_TOT_CPN, CPN_AVG_THRESH) {
-  # print("called attemptToJoinSegbyMeanTotalCPNAlone")
   new.unsorted.arm.grs <- sorted.arm.grs
-
-  # print("curr.seg.mat")
-  # print(curr.seg.mat)
-  # print("adj.segs.mat")
-  # print(adj.segs.mat)
 
   # Allow joining by means...
   for (k in 1:nrow(adj.segs.mat)) {
@@ -191,40 +124,20 @@ attemptToJoinSegbyMeanTotalCPNAlone <- function(curr.seg.mat, adj.segs.mat, samp
         )
 
         return(new.unsorted.arm.grs)
-      } # end if ( abs(curr.seg.mean - adj.seg.mean) <= 0.1 | abs(curr.seg.median - adj.seg.median) <= 0.1 ) {
-    } else {
-
-      # print("Pair of segs do not qualify for mean joining.")
-    } # if (curr.seg.mat[1 ,"num_tot_cpn"] > 0 & curr.seg.mat[1 ,"num_tot_cpn"] < NUM_TOT_CPN & any(adj.segs.mat[, "num_tot_cpn"] > 0)) {
-  } # end for (k in 1:nrow(adj.segs.mat)) {
+      }
+    }
+  }
 
   return(new.unsorted.arm.grs)
-} # end attemptToJoinSegbyMeanTotalCPNAlone
+}
 
 
 joinBlankSegsToMostConfidentCall <- function(curr.seg.mat, adj.segs.mat, samp.arm.sites.df, arm.idx.vec, curr.gr.idx, sorted.arm.grs) {
 
-  # print("called joinBlankSegsToMostConfidentCall")
-  # print("arm.idx.vec")
-  # print(arm.idx.vec)
-  # print("curr.gr.idx")
-  # print(curr.gr.idx)
-  # print("adj.segs.mat")
-  # print(adj.segs.mat)
-  # print("sorted.arm.grs")
-  # print(sorted.arm.grs)
-
   new.unsorted.arm.grs <- sorted.arm.grs
-
   adj.segs.mat <- adj.segs.mat[order(adj.segs.mat[, "num_ph_cpn"], adj.segs.mat[, "num_tot_cpn"]), , drop = FALSE]
-
-  # print("adj.segs.mat")
-  # print(adj.segs.mat)
-
   adj.segs.mat <- adj.segs.mat[1, , drop = FALSE]
 
-  # print("adj.segs.mat")
-  # print(adj.segs.mat)
   # Allow joining by means...
   for (k in 1:nrow(adj.segs.mat)) {
     if (curr.seg.mat[, "num_tot_cpn"] == 0) {
@@ -237,11 +150,8 @@ joinBlankSegsToMostConfidentCall <- function(curr.seg.mat, adj.segs.mat, samp.ar
       )
 
       return(new.unsorted.arm.grs)
-    } else {
-
-      # print("No blank segs to join.")
-    } # if (curr.seg.mat[1 ,"num_tot_cpn"] > 0 & curr.seg.mat[1 ,"num_tot_cpn"] < NUM_TOT_CPN & any(adj.segs.mat[, "num_tot_cpn"] > 0)) {
-  } # end for (k in 1:nrow(adj.segs.mat)) {
+    }
+  }
 
   return(new.unsorted.arm.grs)
 }
@@ -280,6 +190,7 @@ wilcoxTestWithErrorHandling <- function(x, y = NULL,
       message(err)
       write(paste(err$message, "\n"), stderr())
       write("\n", stderr())
+
       if (grepl("NULL", err$message) & "NULL" %in% errors.not.permitted) {
         stop("t.test ERROR with a NULL")
       } else if (grepl("enough", err$message) & "enough" %in% errors.not.permitted) {
@@ -289,18 +200,7 @@ wilcoxTestWithErrorHandling <- function(x, y = NULL,
       } else if (grepl("enough|constant|NULL", err$message) & "other" %in% errors.not.permitted) {
         stop(err$message)
       }
-      # cat("\n")
-      # paste("Input for wilcox test")
-      # print("x")
-      # print(x)
-      # print("y")
-      # print(y)
-      # print("mu")
-      # print(mu)
-      # print("paired")
-      # print(paired)
-      # print("conf.level")
-      # print(conf.level)
+
       test.results <- list()
       test.results[["stat"]] <- 1
       test.results[["conf.int"]] <- c(NA, NA)
@@ -314,21 +214,12 @@ wilcoxTestWithErrorHandling <- function(x, y = NULL,
   }
 
   return(test.results)
-} # end wilcoxTestWithErrorHandling
-
+}
 
 
 creatingArmJoiningInfoMatrixAndGranges <- function(arm.grs, samp.arm.sites.df, cpnX.string) {
-  # print("calledcreatingArmJoiningInfoMatrixAndGranges")
-  # print("here1")
-  # print(head(samp.arm.sites.df))
-  require("GenomicRanges")
   proc.arm.grs <- arm.grs
-  # print("proc.arm.grs")
-  # print(proc.arm.grs)
   proc.arm.grs$seg_width <- GenomicRanges::width(proc.arm.grs)
-  # print("proc.arm.grs")
-  # print(proc.arm.grs)
   joining.vals.mat.col.names.vec <- c(
     "chrom", "startpos", "endpos", "gr_idx",
     "num_ph_cpn", "mean_ph_cpn", "median_ph_cpn",
@@ -338,50 +229,35 @@ creatingArmJoiningInfoMatrixAndGranges <- function(arm.grs, samp.arm.sites.df, c
   colnames(joining.vals.mat) <- joining.vals.mat.col.names.vec
 
   for (idx in 1:length(proc.arm.grs)) {
-    # print("idx")
-    # print(idx)
     # Get the idx of the grange in the sorted by size arm grs list
-    # print(as.numeric(as.character(GenomicRanges::seqnames(proc.arm.grs[idx]))))
-    # print(GenomicRanges::start(proc.arm.grs[idx]))
-    # print(GenomicRanges::end(proc.arm.grs[idx]))
     joining.vals.mat[idx, "chrom"] <- as.numeric(as.character(GenomicRanges::seqnames(proc.arm.grs[idx])))
     joining.vals.mat[idx, "startpos"] <- GenomicRanges::start(proc.arm.grs[idx])
     joining.vals.mat[idx, "endpos"] <- GenomicRanges::end(proc.arm.grs[idx])
-    # print("samp.arm.sites.df")
-    # print(head(samp.arm.sites.df))
     seg.sites.info.df <- samp.arm.sites.df[samp.arm.sites.df$chrom == as.numeric(as.character(GenomicRanges::seqnames(proc.arm.grs[idx])))
     & samp.arm.sites.df$pos >= GenomicRanges::start(proc.arm.grs[idx])
     & samp.arm.sites.df$pos <= GenomicRanges::end(proc.arm.grs[idx]), ]
 
-    # print("head(seg.sites.info.df)")
-    # print(head(seg.sites.info.df))
     seg.ph.cpn.sites.df <- seg.sites.info.df[!is.na(seg.sites.info.df[, cpnX.string]), ]
-    # print("cpnX.string")
-    # print(cpnX.string)
-    # print("head(seg.ph.cpn.sites.df)")
-    # print(head(seg.ph.cpn.sites.df))
     num.ph.cpn <- length(seg.ph.cpn.sites.df[, cpnX.string])
-    # print("num.ph.cpn")
-    # print(num.ph.cpn)
 
     if (num.ph.cpn > 0) {
       joining.vals.mat[idx, "num_ph_cpn"] <- num.ph.cpn
       joining.vals.mat[idx, "mean_ph_cpn"] <- mean(seg.ph.cpn.sites.df[, cpnX.string])
       joining.vals.mat[idx, "median_ph_cpn"] <- median(seg.ph.cpn.sites.df[, cpnX.string])
-      # print(joining.vals.mat)
-    } # end if (num.ph.cpn > 0) {
-    # using run length encodings here as we have the issue that many logr values, due to being 1000G positiosn
-    # are often very close together and thus are, in reality, a single datapoint...
+    }
+
+    # using run length encodings here as we have the issue that many logr
+    # values, due to being 1000G positiosn are often very close together and
+    # thus are, in reality, a single datapoint...
     # Could be a problem with very low coverage samples...?todo, check this
     num.tot.cpn <- length(rle(seg.sites.info.df$tot_raw_un_ph_cpn)$values)
 
     if (num.tot.cpn > 0) {
-      # print("in num tot")
       joining.vals.mat[idx, "num_tot_cpn"] <- num.tot.cpn
       joining.vals.mat[idx, "mean_tot_cpn"] <- mean(base::rle(seg.sites.info.df$tot_raw_un_ph_cpn)$values)
       joining.vals.mat[idx, "median_tot_cpn"] <- median(base::rle(seg.sites.info.df$tot_raw_un_ph_cpn)$values)
-    } # end if (num.tot.cpn > 0) {
-  } # end for ( ord.idx in 1:length(all.segs.considered.idx.vec) ) {
+    }
+  }
 
   proc.arm.grs$num_ph_cpn <- joining.vals.mat[, "num_ph_cpn"]
   proc.arm.grs$num_tot_cpn <- joining.vals.mat[, "num_tot_cpn"]
@@ -390,7 +266,7 @@ creatingArmJoiningInfoMatrixAndGranges <- function(arm.grs, samp.arm.sites.df, c
   joining.vals.mat[, "gr_idx"] <- 1:nrow(joining.vals.mat)
 
   return(list(joining.vals.mat, sorted.arm.grs))
-} # end creatingArmJoiningInfoMatrix <- function(arm.grs, samp.arm.sites.df) {
+}
 
 
 attemptToJoinOneSegmentWithinChromArm <- function(current.arm.grs, joining.vals.mat, samp.arm.sites.df, sorted.arm.grs, cpnX.string, MIN_PH_CPN, NUM_TOT_CPN, CPN_AVG_THRESH) {
@@ -409,11 +285,7 @@ attemptToJoinOneSegmentWithinChromArm <- function(current.arm.grs, joining.vals.
     sort.non.na.gr.pre.and.fol.idx.vec <- sort(precede.and.follow.gr.idx.vec[ !is.na(precede.and.follow.gr.idx.vec)])
     curr.seg.mat <- joining.vals.mat[joining.vals.mat[, "gr_idx"] == curr.ord.idx, , drop = FALSE]
 
-    # print("curr.seg.mat")
-    # print(curr.seg.mat)
     adj.segs.mat <- joining.vals.mat[sort.non.na.gr.pre.and.fol.idx.vec, , drop = FALSE]
-    # print("adj.segs.mat")
-    # print(adj.segs.mat)
 
     new.unsorted.arm.grs <- attemptToJoinSegbyPhasedCPN(
       curr.seg.mat = curr.seg.mat,
@@ -427,13 +299,9 @@ attemptToJoinOneSegmentWithinChromArm <- function(current.arm.grs, joining.vals.
     )
 
     if (length(new.unsorted.arm.grs) != length(current.arm.grs)) {
-
-      # print("Joined segs using phased cpn.")
       current.arm.grs <- new.unsorted.arm.grs
       next
     }
-    # print("length(current.arm.grs)")
-    # print(length(current.arm.grs))
     new.unsorted.arm.grs <- attemptToJoinSegbyTotalCPN(
       curr.seg.mat = curr.seg.mat,
       adj.segs.mat = adj.segs.mat,
@@ -443,12 +311,7 @@ attemptToJoinOneSegmentWithinChromArm <- function(current.arm.grs, joining.vals.
       sorted.arm.grs = current.arm.grs,
       NUM_TOT_CPN = NUM_TOT_CPN
     )
-    # print("length(new.unsorted.arm.grs)")
-    # print(length(new.unsorted.arm.grs))
-    # print("Returning from attemptToJoinSegbyTotalCPN")
     if (length(new.unsorted.arm.grs) != length(current.arm.grs)) {
-
-      # print("Joined segs using tot cpn.")
       current.arm.grs <- new.unsorted.arm.grs
       next
     }
@@ -463,14 +326,12 @@ attemptToJoinOneSegmentWithinChromArm <- function(current.arm.grs, joining.vals.
       NUM_TOT_CPN = NUM_TOT_CPN,
       CPN_AVG_THRESH = CPN_AVG_THRESH
     )
-    # print("Returning from current.arm.grs")
-    if (length(new.unsorted.arm.grs) != length(current.arm.grs)) {
 
-      # print("Joined segs using mean tot cpn.")
+    if (length(new.unsorted.arm.grs) != length(current.arm.grs)) {
       current.arm.grs <- new.unsorted.arm.grs
       next
     }
-    # joinBlankSegsToMostConfidentCall <- function(curr.seg.mat, adj.segs.mat, samp.arm.sites.df, arm.idx.vec, curr.gr.idx, sorted.arm.grs) {
+
     new.unsorted.arm.grs <- joinBlankSegsToMostConfidentCall(
       curr.seg.mat = curr.seg.mat,
       adj.segs.mat = adj.segs.mat,
@@ -479,13 +340,6 @@ attemptToJoinOneSegmentWithinChromArm <- function(current.arm.grs, joining.vals.
       curr.gr.idx = curr.ord.idx,
       sorted.arm.grs = current.arm.grs
     )
-    if (length(new.unsorted.arm.grs) != length(current.arm.grs)) {
-
-      # print("Joined segs using mean tot cpn.")
-      current.arm.grs <- new.unsorted.arm.grs
-      next
-    }
-
 
     if (length(new.unsorted.arm.grs) != length(current.arm.grs)) {
       current.arm.grs <- new.unsorted.arm.grs
@@ -493,10 +347,10 @@ attemptToJoinOneSegmentWithinChromArm <- function(current.arm.grs, joining.vals.
     }
 
     curr.ord.idx <- curr.ord.idx + 1
-  } # end while ( curr.gr.idx <= length(sorted.arm.grs) ) {
+  }
 
   return(current.arm.grs)
-} # end attemptToJoinOneSegmentsWithinChromArm
+}
 
 
 ## Overlap types
@@ -544,12 +398,12 @@ attemptToJoinOneSegmentWithinChromArm <- function(current.arm.grs, joining.vals.
 getOverlapGRanges <- function(query, subject, output = "gr", ...) {
   require(GenomicRanges)
   require(IRanges)
-  ## Input check
+  # Input check
   if (!((class(query) == "GRanges" & class(subject) == "GRanges") | (class(query) == "IRanges" & class(subject) == "IRanges"))) {
     stop("Query and subject need to be of same class, either GRanges or IRanges!")
   }
 
-  ## Find overlapping ranges
+  # Find overlapping ranges
   if (class(query) == "GRanges") {
     seqlengths(query) <- rep(NA, length(seqlengths(query)))
     seqlengths(subject) <- rep(NA, length(seqlengths(subject)))
@@ -560,26 +414,26 @@ getOverlapGRanges <- function(query, subject, output = "gr", ...) {
   subject <- subject[overlap.index.mat[, 2]]
   overlap.mat <- cbind(query_start = start(query), query_end = end(query), subject_start = start(subject), subject_end = end(subject))
 
-  ## Pre-queries for overlaps
+  # Pre-queries for overlaps
   startup <- overlap.mat[, "subject_start"] < overlap.mat[, "query_start"]
   enddown <- overlap.mat[, "subject_end"] > overlap.mat[, "query_end"]
   startin <- overlap.mat[, "subject_start"] >= overlap.mat[, "query_start"] & overlap.mat[, "subject_start"] <= overlap.mat[, "query_end"]
   endin <- overlap.mat[, "subject_end"] >= overlap.mat[, "query_start"] & overlap.mat[, "subject_end"] <= overlap.mat[, "query_end"]
 
-  ## Overlap types
+  # Overlap types
   olup <- startup & endin
   oldown <- startin & enddown
   inside <- startin & endin
   contained <- startup & enddown
 
-  ## Overlap types in one vector
+  # Overlap types in one vector
   overlap_type <- rep("", length(overlap.mat[, "query_start"]))
   overlap_type[olup] <- "upstream_overlap"
   overlap_type[oldown] <- "downstream_overlap"
   overlap_type[inside] <- "subject_inside_query"
   overlap_type[contained] <- "query_contained_in_subject"
 
-  ## Overlap positions
+  # Overlap positions
   overlap_start <- rep(0, length(overlap.mat[, "query_start"]))
   overlap_end <- rep(0, length(overlap.mat[, "query_start"]))
   overlap_start[olup] <- overlap.mat[, "query_start"][olup]
@@ -591,12 +445,12 @@ getOverlapGRanges <- function(query, subject, output = "gr", ...) {
   overlap_start[contained] <- overlap.mat[, "query_start"][contained]
   overlap_end[contained] <- overlap.mat[, "query_end"][contained]
 
-  ## Absolute and relative length of overlaps
+  # Absolute and relative length of overlaps
   overlap_length <- (overlap_end - overlap_start) + 1
   overlap_prop_query <- overlap_length / width(query) * 100
   overlap_prop_subject <- overlap_length / width(subject) * 100
 
-  ## Output type
+  # Output type
   oldf <- data.frame(query_hit_idx = overlap.index.mat[, 1], subject_hit_idx = overlap.index.mat[, 2], overlap.mat, overlap_start, overlap_end, overlap_length, overlap_prop_query, overlap_prop_subject, overlap_type)
   if (class(query) == "GRanges") {
     oldf <- cbind(chrom = as.character(seqnames(query)), oldf)
@@ -608,7 +462,8 @@ getOverlapGRanges <- function(query, subject, output = "gr", ...) {
     if (class(query) == "GRanges") {
       elementMetadata(query) <- cbind(as.data.frame(elementMetadata(query)), oldf, mcols(subject))
     }
-    if (class(query) == "IRanges") { # Todo add the metadata in th eiranges
+    if (class(query) == "IRanges") {
+      # Todo add the metadata in th eiranges
       query <- GRanges(seqnames = Rle(rep("dummy", length(query))), ranges = IRanges(start = oldf[, "query_start"], end = oldf[, "query_end"]), strand = Rle(strand(rep("+", length(query)))), oldf)
     }
     return(query)

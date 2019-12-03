@@ -1,8 +1,4 @@
 # This is a new version
-# Params:
-#
-# Returns:
-#
 getAllSegsAIorMSAIDetectionFromBAFListLTNPD <- function(seg.name.vec, sample.vec, asas.SNPS.lr.and.or.baf.lists, all.seg.phasing.info.list, MSAI.BAF.LTPND.pval.thresh) {
   all.seg.MSAI.by.BAF.ltnpd.present.list <- list()
   for (seg.name in seg.name.vec) {
@@ -16,17 +12,16 @@ getAllSegsAIorMSAIDetectionFromBAFListLTNPD <- function(seg.name.vec, sample.vec
         all.seg.MSAI.by.BAF.ltnpd.present.list[[seg.name]]$MSAI_detection_feasible <- FALSE
         all.seg.MSAI.by.BAF.ltnpd.present.list[[seg.name]]$MSAI_detection_info <- "no_reference_although_phasing_attempted"
         next
-      } else if (ref.samp == "mixture") { # end if ( grepl("none", ref.samp) == TRUE ) {
-
+      } else if (ref.samp == "mixture") {
         all.seg.MSAI.by.BAF.ltnpd.present.list[[seg.name]]$MSAI_detection_feasible <- TRUE
         all.seg.MSAI.by.BAF.ltnpd.present.list[[seg.name]]$MSAI_detection_info <- "mixture_phasing_using_top_ranked_samp_by_diptest" # Note might be an issue here, is it only
-        # samples that made it throigh to
+        # samples that made it through
         ref.samp <- all.seg.phasing.info.list[[seg.name]]$samp_most_significant_by_diptest
-      } else { # end if ( grepl("none", ref.samp) == TRUE ) {
+      } else {
 
         all.seg.MSAI.by.BAF.ltnpd.present.list[[seg.name]]$MSAI_detection_feasible <- TRUE
         all.seg.MSAI.by.BAF.ltnpd.present.list[[seg.name]]$MSAI_detection_info <- "phasing_from_single_sample_used" # Note might be an issue here, is it only
-      } # end else if (ref.samp == "mixture") {
+      }
       nr <- length(asas.SNPS.lr.and.or.baf.lists[[1]][[seg.name]]$BAF)
       lower.band.col.names <- paste0(sample.vec, "_ltnpd_in_lower")
       upper.band.col.names <- paste0(sample.vec, "_ltnpd_in_upper")
@@ -42,7 +37,7 @@ getAllSegsAIorMSAIDetectionFromBAFListLTNPD <- function(seg.name.vec, sample.vec
         all.samp.seg.baf.df[[samp]] <- asas.SNPS.lr.and.or.baf.lists[[samp]][[seg.name]]$BAF
         all.samp.seg.baf.df[[paste0(samp, "_ltnpd_in_lower")]] <- getLogTruncNormProbabilityDensitiesBAFvsLowerOrUpper(lower.or.upper.mu = 0.33, baf.vector = asas.SNPS.lr.and.or.baf.lists[[samp]][[seg.name]]$BAF)
         all.samp.seg.baf.df[[paste0(samp, "_ltnpd_in_upper")]] <- getLogTruncNormProbabilityDensitiesBAFvsLowerOrUpper(lower.or.upper.mu = 0.66, baf.vector = asas.SNPS.lr.and.or.baf.lists[[samp]][[seg.name]]$BAF)
-      } # end for ( samp in sample.vec ) {
+      }
 
       seg.all.samp.MSAI.results.df <- data.frame(
         sample_name = sample.vec,
@@ -71,57 +66,48 @@ getAllSegsAIorMSAIDetectionFromBAFListLTNPD <- function(seg.name.vec, sample.vec
           seg.all.samp.MSAI.results.df[test.samp, ]$MSAI_pval_passed_thresh <- TRUE
           seg.all.samp.MSAI.results.df[test.samp, ]$poss_dominant_allele <- "cpnB"
         }
-      } # end for (test.samp in sample.vec[ ! sample.vec %in% ref.samp]) {
+      }
 
       all.seg.MSAI.by.BAF.ltnpd.present.list[[seg.name]]$MSAI_present_any_sample_by_thresh <- any(seg.all.samp.MSAI.results.df$MSAI_pval_passed_thres)
       all.seg.MSAI.by.BAF.ltnpd.present.list[[seg.name]]$MSAI_by_sample_df <- seg.all.samp.MSAI.results.df
       all.seg.MSAI.by.BAF.ltnpd.present.list[[seg.name]]$all_samps_BAF_and_ltnpd_df <- seg.all.samp.MSAI.results.df
-    } else { # end if (seg.name %in% names(all.seg.phasing.info.list)) {
+    } else {
 
       all.seg.MSAI.by.BAF.ltnpd.present.list[[seg.name]]$MSAI_detection_feasible <- FALSE
       all.seg.MSAI.by.BAF.ltnpd.present.list[[seg.name]]$MSAI_detection_info <- "no_phasing_was_attempted"
       all.seg.MSAI.by.BAF.ltnpd.present.list[[seg.name]]$MSAI_present_any_sample_by_thresh <- NA
-    } # end if ( ! seg.name %in% names(all.seg.phasing.info.list)) {
-  } # end for ( seg.name in seg.name.vec ) {
+    }
+  }
 
   return(all.seg.MSAI.by.BAF.ltnpd.present.list)
-} # end getAllSegsMirroredSubclonalAllelicImbalanceDetectionFromBAFList (...)
+}
 
 
-
-
-
-
-
-##
-## Params:
-##
-## Returns:
-##
 getAllSegsMSAIDetectionFromBAFListLTNPD <- function(seg.name.vec, sample.vec, asas.SNPS.lr.and.or.baf.lists, all.seg.phasing.info.list, MSAI.BAF.LTPND.pval.thresh) {
   all.seg.MSAI.by.BAF.ltnpd.present.list <- list()
   for (seg.name in seg.name.vec) {
     all.seg.MSAI.by.BAF.ltnpd.present.list[[seg.name]] <- list()
     all.seg.MSAI.by.BAF.ltnpd.present.list[[seg.name]]$seg_name <- seg.name
-    # print(seg.name)
     if (seg.name %in% names(all.seg.phasing.info.list)) {
       ref.samp <- all.seg.phasing.info.list[[seg.name]]$samp_chosen_to_phase_seg
       # Determine whether we can detect MSAI and fill in the info fields, resent ref.samp if mixture phasing was used
+
       if (grepl("none", ref.samp) == TRUE) {
         all.seg.MSAI.by.BAF.ltnpd.present.list[[seg.name]]$MSAI_detection_feasible <- FALSE
         all.seg.MSAI.by.BAF.ltnpd.present.list[[seg.name]]$MSAI_detection_info <- "no_reference_although_phasing_attempted"
         next
-      } else if (ref.samp == "mixture") { # end if ( grepl("none", ref.samp) == TRUE ) {
+      } else if (ref.samp == "mixture") {
 
         all.seg.MSAI.by.BAF.ltnpd.present.list[[seg.name]]$MSAI_detection_feasible <- TRUE
         all.seg.MSAI.by.BAF.ltnpd.present.list[[seg.name]]$MSAI_detection_info <- "mixture_phasing_using_top_ranked_samp_by_diptest" # Note might be an issue here, is it only
         # samples that made it throigh to
         ref.samp <- all.seg.phasing.info.list[[seg.name]]$samp_most_significant_by_diptest
-      } else { # end if ( grepl("none", ref.samp) == TRUE ) {
+      } else {
 
         all.seg.MSAI.by.BAF.ltnpd.present.list[[seg.name]]$MSAI_detection_feasible <- TRUE
         all.seg.MSAI.by.BAF.ltnpd.present.list[[seg.name]]$MSAI_detection_info <- "phasing_from_single_sample_used" # Note might be an issue here, is it only
-      } # end else if (ref.samp == "mixture") {
+      }
+
       nr <- length(asas.SNPS.lr.and.or.baf.lists[[1]][[seg.name]]$BAF)
       lower.band.col.names <- paste0(sample.vec, "_ltnpd_in_lower")
       upper.band.col.names <- paste0(sample.vec, "_ltnpd_in_upper")
@@ -137,7 +123,7 @@ getAllSegsMSAIDetectionFromBAFListLTNPD <- function(seg.name.vec, sample.vec, as
         all.samp.seg.baf.df[[samp]] <- asas.SNPS.lr.and.or.baf.lists[[samp]][[seg.name]]$BAF
         all.samp.seg.baf.df[[paste0(samp, "_ltnpd_in_lower")]] <- getLogTruncNormProbabilityDensitiesBAFvsLowerOrUpper(lower.or.upper.mu = 0.33, baf.vector = asas.SNPS.lr.and.or.baf.lists[[samp]][[seg.name]]$BAF)
         all.samp.seg.baf.df[[paste0(samp, "_ltnpd_in_upper")]] <- getLogTruncNormProbabilityDensitiesBAFvsLowerOrUpper(lower.or.upper.mu = 0.66, baf.vector = asas.SNPS.lr.and.or.baf.lists[[samp]][[seg.name]]$BAF)
-      } # end for ( samp in sample.vec ) {
+      }
 
       seg.all.samp.MSAI.results.df <- data.frame(
         sample_name = sample.vec,
@@ -166,41 +152,25 @@ getAllSegsMSAIDetectionFromBAFListLTNPD <- function(seg.name.vec, sample.vec, as
           seg.all.samp.MSAI.results.df[test.samp, ]$MSAI_pval_passed_thresh <- TRUE
           seg.all.samp.MSAI.results.df[test.samp, ]$poss_dominant_allele <- "cpnB"
         }
-      } # end for (test.samp in sample.vec[ ! sample.vec %in% ref.samp]) {
+      }
 
       all.seg.MSAI.by.BAF.ltnpd.present.list[[seg.name]]$MSAI_present_any_sample_by_thresh <- any(seg.all.samp.MSAI.results.df$MSAI_pval_passed_thres)
       all.seg.MSAI.by.BAF.ltnpd.present.list[[seg.name]]$MSAI_by_sample_df <- seg.all.samp.MSAI.results.df
       all.seg.MSAI.by.BAF.ltnpd.present.list[[seg.name]]$all_samps_BAF_and_ltnpd_df <- seg.all.samp.MSAI.results.df
-    } else { # end if (seg.name %in% names(all.seg.phasing.info.list)) {
+    } else {
 
       all.seg.MSAI.by.BAF.ltnpd.present.list[[seg.name]]$MSAI_detection_feasible <- FALSE
       all.seg.MSAI.by.BAF.ltnpd.present.list[[seg.name]]$MSAI_detection_info <- "no_phasing_was_attempted"
       all.seg.MSAI.by.BAF.ltnpd.present.list[[seg.name]]$MSAI_present_any_sample_by_thresh <- NA
-    } # end if ( ! seg.name %in% names(all.seg.phasing.info.list)) {
-  } # end for ( seg.name in seg.name.vec ) {
+    }
+  }
 
   return(all.seg.MSAI.by.BAF.ltnpd.present.list)
-} # end getAllSegsMirroredSubclonalAllelicImbalanceDetectionFromBAFList (...)
+}
 
 
-
-# #Currently not used, but could be an option to allow sigmas to be set baded on read depth.. todo, test this
-# calculateBinonmialNoiseBasedOnReadDepth <- function(read.depth, mu = 0.5, pessimism.factor = 2) {
-#   #read.depth is the number of trials
-#   binomial.noise <- sqrt(read.depth * mu * (1 - mu))
-#   corrected.binomial.noise <- binomial.noise * pessimism.factor
-
-#   return(corrected.binomial.noise)
-
-# }#end calculateBinonmialNoiseBasedOnReadDepth
-
-
-##
-## Params:
-##
-## Returns:
-##
-getLogTruncNormProbabilityDensitiesBAFvsLowerOrUpper <- function(lower.or.upper.mu, sigma.to.use = 0.07280109889280519, baf.vector) { # Using the same sigma as was used in the NEJM
+# Using the same sigma as was used in the NEJM
+getLogTruncNormProbabilityDensitiesBAFvsLowerOrUpper <- function(lower.or.upper.mu, sigma.to.use = 0.07280109889280519, baf.vector) {
   nr <- length(baf.vector)
   samp.ltnpd.df <- data.frame(
     hz_snp_name = 1:nr,
@@ -232,17 +202,11 @@ getLogTruncNormProbabilityDensitiesBAFvsLowerOrUpper <- function(lower.or.upper.
 }
 
 
-## Todo, make
-## Params:
-##
-## Returns:
-##
 testPairOfSamplesSegForMSAIWithCPN <- function(seg.name, samp.one, samp.two, asas.ph.raw.cpn.lists) {
   phased.s.one.s.cpnA.cpnB.list <- asas.ph.raw.cpn.lists[[samp.one]][[seg.name]]
   phased.s.one.s.cpnA.cpnB.df <- as.matrix(cbind(phased.s.one.s.cpnA.cpnB.list$ph_cpnA_vec, phased.s.one.s.cpnA.cpnB.list$ph_cpnB_vec))
   phased.s.two.s.cpnA.cpnB.list <- asas.ph.raw.cpn.lists[[samp.one]][[seg.name]]
   phased.s.two.s.cpnA.cpnB.df <- as.matrix(cbind(phased.s.two.s.cpnA.cpnB.list$ph_cpnA_vec, phased.s.two.s.cpnA.cpnB.list$ph_cpnB_vec))
-
 
   if (tTestWithErrorHandling(phased.s.one.s.cpnA.cpnB.df[, 1], phased.s.one.s.cpnA.cpnB.df[, 2], paired = TRUE)$p.val < 0.001 &
     tTestWithErrorHandling(phased.s.two.s.cpnA.cpnB.df[, 1], phased.s.two.s.cpnA.cpnB.df[, 2], paired = TRUE)$p.val < 0.001) {
