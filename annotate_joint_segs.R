@@ -1,4 +1,5 @@
 annotate_joint_segs <- function(segs, snps) {
+  warning("TODO: check this function (annotate_joint_segs()) to be sure it works properly without germline information.")
   anno.seg.df <- segs
 
   # So determine which SNPs are hz:

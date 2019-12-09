@@ -4,7 +4,6 @@ library(optparse)
 library(digest)
 
 if (!interactive()) {
-  # options(error = traceback)
 
   option_list <- list(
     make_option(c("--patient"),
@@ -194,18 +193,16 @@ source(file.path(current.dir, "input.R"))
 source(file.path(current.dir, "validate_input.R"))
 source(file.path(current.dir, "phase_ascat.R"))
 
-##### Get relevant libraries:
-# Todo check this is the only required library.
-suppressWarnings(suppressMessages(library(diptest)))
-suppressWarnings(suppressMessages(library(gplots)))
-suppressWarnings(suppressMessages(library(gdata)))
-suppressWarnings(suppressMessages(library(GenomicRanges)))
-suppressWarnings(suppressMessages(library(doParallel)))
+suppressWarnings(suppressMessages(library("diptest")))
+suppressWarnings(suppressMessages(library("gplots")))
+suppressWarnings(suppressMessages(library("gdata")))
+suppressWarnings(suppressMessages(library("GenomicRanges")))
+suppressWarnings(suppressMessages(library("doParallel")))
 
-############### This is past the input stage and into the analysis:
-# Set constants for all analyses here... eventually these can be command line set
+# -------------------------------------------------------------------------
+# Set constants for the analysis
+# -------------------------------------------------------------------------
 MIN_NUM_HZ_SNP_PHASING <- 5
-# PLOT_OUTPUT_DIR <- NULL
 OVERWRITE_FLAG <- conf$overwrite
 PLOTTING_FLAG <- TRUE
 # POST JOINING FLAGS to run sections of code
@@ -218,35 +215,29 @@ OVERWRITE_JOINED_MCS_ADD_INFO_FLAG <- TRUE
 CALCULATE_JOINED_ARM_FOCAL_FLAG <- TRUE
 CALCULATE_FOCAL_EVENT_CLONALITY_FLAG <- TRUE
 GENERATE_GISTIC_INPUT_FLAG <- FALSE
-
 PLOT_OUTPUT_DIR <- paste(output.directory.base.path, "/", sep = "")
-if (!file.exists(PLOT_OUTPUT_DIR)) {
-  print(PLOT_OUTPUT_DIR)
-  print("Output directory doesn't exist.")
-}
-
-output_dir <- PLOT_OUTPUT_DIR
-if (!dir.exists(output_dir)) {
-  dir.create(output_dir, recursive = TRUE)
-}
-
-registerDoParallel(cores = conf$cores)
-
 INTERSECTION_OR_ARM <- intersection.or.whole.arm
 GAMMA_VAL <- as.numeric(gamma.val)
 MAX_CPN_FOR_SUBCLONALITY <- 10
-MIN_CCF_TO_CONSIDER <- 0.2 # This the median raw CCF different to the integer +/- this value.
-MIN_CPN_TO_CONSIDER <- 0.2 # This the median raw cpn different to the integer +/- this value.
-MIN_NUM_CHRS <- 2 # This is the minimum no of chromosomes used for comparisons to other other chromosomes when calling subclonal events
+# This the median raw CCF different to the integer +/- this value.
+MIN_CCF_TO_CONSIDER <- 0.2
+# This the median raw cpn different to the integer +/- this value.
+MIN_CPN_TO_CONSIDER <- 0.2 
+# This is the minimum no of chromosomes used for comparisons to other other
+# chromosomes when calling subclonal events
+MIN_NUM_CHRS <- 2
 GAIN_LOGR_THRESH <- log2(2.5 / 2)
 LOSS_LOGR_THRESH <- log2(1.5 / 2)
 AMP_LOGR_THRESH <- log2(4 / 2)
 DEEP_LOSS_LOGR_THRESH <- log2(0.5 / 2)
 PVAL_THRESH_VS_LOGR_FOR_CPN_EVENT <- 0.01
 CHRS_TO_USE_VEC <- 1:22
-CONF_INT_FOR_CPNX_BAF_VS_EXP <- 0.9999 # used for CCF ca;culations
-PW_CPNA_CPNB_DIFF_AMPLITUDE_THRESH <- 0.001 # Legacy, used for pairwise comparisons between samples
-PVAL_THRESH_TO_JOIN_PH_SEGS <- 0.001 # P value thresholds for  joining segements on phased raw cpn values
+# used for CCF ca;culations
+CONF_INT_FOR_CPNX_BAF_VS_EXP <- 0.9999 
+# Legacy, used for pairwise comparisons between samples
+PW_CPNA_CPNB_DIFF_AMPLITUDE_THRESH <- 0.001 
+# P value thresholds for  joining segements on phased raw cpn values
+PVAL_THRESH_TO_JOIN_PH_SEGS <- 0.001 
 PVAL_THRESH_TO_JOIN_TOT_SEGS <- 0.001 # Some segments don't have phased copy number but we can try and join based on the total cpn
 MIN_PROP_SNP_SEP_THRESH <- 0.75 # legacy minimum  proportion of snps to be separated by phasing, if fewer, try a more complicated phasing currently deactivated 11/09/2018
 PVAL_COMB_WILCOX_PH_THRESH <- 0.01 # threshold for testing whether the BAFs are separated across all the samples when comparing phasings
@@ -256,18 +247,30 @@ MSAI_BAF_LTNPD_PVAL_THRESHOLD <- 0.001 # P value threshold to call MSAI
 MSAI_CPNX_PVAL_THRESHOLD <- 0.001 # Legacy, can also detect MSAI from the phased copy number not ust the BAF
 PVAL_THRESH_CONVERT_GAIN_TO_AMP <- 0.01 # Legacy, but might need to be re-implemented, is an amplification significantly different to a gain in a different region?
 
-if (is.null(output.directory.base.path)) {
+
+# -------------------------------------------------------------------------
+# Create output dirs and check that input files exist
+# -------------------------------------------------------------------------
+if (!file.exists(PLOT_OUTPUT_DIR))
+  message("Output directory doesn't exist:", PLOT_OUTPUT_DIR)
+
+output_dir <- PLOT_OUTPUT_DIR
+if (!dir.exists(output_dir))
+  dir.create(output_dir, recursive = TRUE)
+
+if (is.null(output.directory.base.path))
   stop("No output path provided, aborting...")
-}
 
-# so now we need to read in the MSAI data:
-if (!file.exists(snp.file.path)) {
+# Make sure the input files exist before going too far
+if (!file.exists(snp.file.path))
   stop("No file at the snp.file.path provided")
-}
 
-if (!file.exists(seg.file.path)) {
+if (!file.exists(seg.file.path))
   stop("No file at the seg.file.path provided")
-}
+
+
+registerDoParallel(cores = conf$cores)
+
 
 # Load in the relevant genome file
 if (genome == "hg19") {
@@ -320,7 +323,7 @@ if (!is.na(conf$debug_dir)) {
 # Load in the data:
 
 # if (conf$overwrite) {
-use_cached_input <- TRUE
+use_cached_input <- FALSE
 if (!use_cached_input) {
   input_data <- read_input(seg.file.path, snp.file.path, conf$input_format)
   saveRDS(input_data, file = file.path(PLOT_OUTPUT_DIR, "input_data.rds"))
@@ -456,13 +459,20 @@ phased.baf.info.df <- ret$phased.baf.info.df
 
 # Note there could be an issue here if not every segment contains a BAF point...
 # But, if we're using hte intersection this should be fine? Not sure on this point.
-# However it doesn't really matter as ASCAT makes sure every segment whether or not it had any baf point has an allele-specific value.
+# However it doesn't really matter as ASCAT makes sure every segment whether or
+# not it had any baf point has an allele-specific value.
+message("************************************************************************")
 message("Running ASCAT on all samples...")
+message("************************************************************************")
 
-# So now there are several things we want to do here depending on the options passed to the tool
-# 1) Using the phasing information obtained from all samples, allow a free run allowing ASCAT to call whatever purity and ploidy of all samples included
-# in the run it feels is most appropriate. This will potentially provide new and improved solutions that might be better than what was fed into mphase
-# particularly if the segmentation of the input did not make use of multi-region phasing data.
+# So now there are several things we want to do here depending on the options
+# passed to the tool:
+# 1) Using the phasing information obtained from all samples, allow a free run
+#    allowing ASCAT to call whatever purity and ploidy of all samples included
+#    in the run it feels is most appropriate. This will potentially provide new
+#    and improved solutions that might be better than what was fed into mphase
+#    particularly if the segmentation of the input did not make use of
+#    multi-region phasing data.
 # 2) Initiate list for segmentation
 ph.ascat.output.list <- list()
 ph.ascat.segs.df.list <- list()
@@ -485,7 +495,6 @@ for (samp in sample.vec) {
     segs = all.samp.j.seg.df,
     phased_baf_info = phased.baf.info.df
   )
-  # str(ascat.bc.phased)
 
   # OK so now let's do the fixed solution run...
   samp.ploidy <- ploidy.est.vec[samp]
@@ -522,7 +531,9 @@ for (samp in sample.vec) {
 
   message("Running ASCAT")
   validate_ascat_bc_input(ascat.bc.phased)
+  str(ascat.bc.phased)
   ascat.output <- ascat.runAscat(ascat.bc.phased, gamma = 1, rho_manual = samp.purity, psi_manual = samp.ploidy)
+  str(ascat.output)
   setwd(base.dir)
 
   ph.ascat.output.list[[samp]] <- ascat.output
@@ -714,21 +725,18 @@ ph.asas.SNPS.lr.and.or.baf.lists <- cleanAndErrorCheckSNPsParallel(all.samp.SNP.
   data.type = data.format.to.use
 )
 
-if (length(unique(sapply(ph.asas.SNPS.lr.and.or.baf.lists, length))) != 1) {
+if (length(unique(sapply(ph.asas.SNPS.lr.and.or.baf.lists, length))) != 1)
   stop("Not all segments are present in all samples' snp assignations, likely something has gone wrong, is the parallelisation working correctly?")
-}
 
-if (!is.na(conf$debug_dir)) {
+if (!is.na(conf$debug_dir))
   saveRDS(ph.asas.SNPS.lr.and.or.baf.lists, file = ph.asas.SNPS.lr.and.or.baf.lists.path)
-}
 
 time.taken <- proc.time() - ptm
 print("time.taken")
 print(time.taken)
 
-if (length(ph.asas.SNPS.lr.and.or.baf.lists) <= 1) {
+if (length(ph.asas.SNPS.lr.and.or.baf.lists) <= 1)
   stop("Only one or fewer samples present after reading in data.")
-}
 
 message("Getting phasing to apply to all samples using getCombinedBAFDipTestPhasingParallel...")
 ph.all.seg.phasing.info.list <- getCombinedBAFDipTestPhasingParallel(
@@ -755,34 +763,28 @@ ph.patient.phased.BAF.df.list <- createAllSegsPhasedBAFDataFrame(
 )
 
 
+# # These unphased copies of the variabgles are never used
+# unph.f.joint.segs.df <- f.joint.segs.df
+# unph.sorted.all.bp.all.samps.segs.anno.df <- sorted.all.bp.all.samps.segs.anno.df
+# unph.purity.est.vec <- purity.est.vec
+# unph.ploidy.est.vec <- ploidy.est.vec
+# unph.min.cons.segs.df <- min.cons.segs.df
+# unph.seg.name.vec <- seg.name.vec
+# unph.asas.SNPs.w.both.lr.baf.snp.lists <- asas.SNPs.w.both.lr.baf.snp.lists
+# unph.asas.SNPS.lr.and.or.baf.lists <- asas.SNPS.lr.and.or.baf.lists
+# unph.ph.patient.phased.BAF.df.list <- patient.phased.BAF.df.list
 
-# So now we havve generated all input information based on the updated phased ASCAT run, let's reset the
-# vairable names to allow the subclonality code to continue to work:
-unph.f.joint.segs.df <- f.joint.segs.df
+# So now we havve generated all input information based on the updated phased
+# ASCAT run, let's reset the vairable names to allow the subclonality code to
+# continue to work:
 f.joint.segs.df <- ph.f.joint.segs.df
-
-unph.sorted.all.bp.all.samps.segs.anno.df <- sorted.all.bp.all.samps.segs.anno.df
 sorted.all.bp.all.samps.segs.anno.df <- ph.sorted.all.bp.all.samps.segs.anno.df
-
-unph.purity.est.vec <- purity.est.vec
 purity.est.vec <- ph.purity.est.vec
-
-unph.ploidy.est.vec <- ploidy.est.vec
 ploidy.est.vec <- ph.ploidy.est.vec
-
-unph.min.cons.segs.df <- min.cons.segs.df
 min.cons.segs.df <- ph.min.cons.segs.df
-
-unph.seg.name.vec <- seg.name.vec
 seg.name.vec <- ph.seg.name.vec
-
-unph.asas.SNPs.w.both.lr.baf.snp.lists <- asas.SNPs.w.both.lr.baf.snp.lists
 asas.SNPs.w.both.lr.baf.snp.lists <- ph.asas.SNPs.w.both.lr.baf.snp.lists
-
-unph.asas.SNPS.lr.and.or.baf.lists <- asas.SNPS.lr.and.or.baf.lists
 asas.SNPS.lr.and.or.baf.lists <- ph.asas.SNPS.lr.and.or.baf.lists
-
-unph.ph.patient.phased.BAF.df.list <- patient.phased.BAF.df.list
 patient.phased.BAF.df.list <- ph.patient.phased.BAF.df.list
 
 

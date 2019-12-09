@@ -1,4 +1,7 @@
 generateAllSamplesByChromIntCPNUnderlyingRawValuesLists <- function(asas.ph.raw.cpn.lists, sample.vec, seg.name.vec, cpnX.vec = c("cpnA", "cpnB"), reduced.seg.flag = FALSE) {
+
+  message("asas.ph.raw.cpn.lists")
+  str(asas.ph.raw.cpn.lists)
   sample.chr.int.cpn.raw.vals.list <- list()
   # But really the datastructure organisation overall needs to change if we speed.
   for (samp in sample.vec) {
@@ -10,10 +13,23 @@ generateAllSamplesByChromIntCPNUnderlyingRawValuesLists <- function(asas.ph.raw.
       }
 
       for (cpnX in cpnX.vec) {
+        message(samp, seg.name, cpnX, reduced.seg.flag)
         if (reduced.seg.flag == FALSE) {
           samp.seg.int.cpnX.val <- round(asas.ph.raw.cpn.lists[[samp]][[seg.name]][[paste0("mean_ph_", cpnX)]])
-
           chr <- unlist(strsplit(seg.name, split = ":"))[1]
+          cat("1\n")
+          sample.chr.int.cpn.raw.vals.list[[samp]]
+          cat("2\n")
+          sample.chr.int.cpn.raw.vals.list[[samp]][[as.character(samp.seg.int.cpnX.val)]]
+          cat("3\n")
+          sample.chr.int.cpn.raw.vals.list[[samp]][[as.character(samp.seg.int.cpnX.val)]][[chr]]
+          cat("4\n")
+          str(sample.chr.int.cpn.raw.vals.list[[samp]][[as.character(samp.seg.int.cpnX.val)]][[chr]])
+          warning("FIXME: This is a hack. Crashes when this is a single value")
+          if (length(sample.chr.int.cpn.raw.vals.list[[samp]][[as.character(samp.seg.int.cpnX.val)]][[chr]]) <= 1)
+            next
+          sample.chr.int.cpn.raw.vals.list[[samp]][[as.character(samp.seg.int.cpnX.val)]][[chr]][[paste0("all_seg_", cpnX, "_vec")]] 
+          cat("5\n")
           sample.chr.int.cpn.raw.vals.list[[samp]][[as.character(samp.seg.int.cpnX.val)]][[chr]][[paste0("all_seg_", cpnX, "_vec")]] <- c(
             sample.chr.int.cpn.raw.vals.list[[samp]][[as.character(samp.seg.int.cpnX.val)]][[chr]][[paste0("all_seg_", cpnX, "_vec")]],
             asas.ph.raw.cpn.lists[[samp]][[seg.name]][[paste0("ph_", cpnX, "_vec")]]
