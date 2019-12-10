@@ -2,7 +2,8 @@ getPhasedASCATRawCopyNumberAB <- function(ref.ss.lr.baf.df,
                                           sample,
                                           sample.ph.hz.ascat.df.list) {
   ph.raw.cpn.df <- sample.ph.hz.ascat.df.list[[sample]]
-  return(ph.raw.cpn.df[ph.raw.cpn.df$snp_pos %in% paste0(ref.ss.lr.baf.df$chrom, "_", ref.ss.lr.baf.df$pos), c("ph_ascat_nAraw", "ph_ascat_nBraw")])
+
+  ph.raw.cpn.df[ph.raw.cpn.df$snp_pos %in% paste0(ref.ss.lr.baf.df$chrom, "_", ref.ss.lr.baf.df$pos), c("ph_ascat_nAraw", "ph_ascat_nBraw")]
 }
 
 
@@ -11,7 +12,7 @@ calculateSNPsRawCopyNumberAB <- function(logr.vec, baf.vec, tumor.ploidy,
   cpnA <- (tumor.purity - 1 + baf.vec * 2^(logr.vec / gamma.val) * ((1 - tumor.purity) * 2 + tumor.purity * tumor.ploidy)) / tumor.purity
   cpnB <- (tumor.purity - 1 - (baf.vec - 1) * 2^(logr.vec / gamma.val) * ((1 - tumor.purity) * 2 + tumor.purity * tumor.ploidy)) / tumor.purity
 
-  return(cbind(cpnA, cpnB))
+  cbind(cpnA, cpnB)
 }
 
 
@@ -69,7 +70,7 @@ wilcoxTestWithErrorHandling <- function(x, y = NULL,
     test.results$p.val <- 1
   }
 
-  return(test.results)
+  test.results
 }
 
 
@@ -110,7 +111,8 @@ tTestWithErrorHandling <- function(x, y = NULL,
       return(test.results)
     }
   )
-  return(test.results)
+
+  test.results
 }
 
 
@@ -157,21 +159,21 @@ checkSegGainOrLossSignificance <- function(logr.vec, samp.to.check,
     alt.t.test.pval
   )
 
-  return(out)
+  out
 }
 
 
 calcExpectedLogR <- function(exp.intA, exp.intB, tumor.ploidy, tumor.purity) {
   exp.logr <- log2((2 * (1 - tumor.purity) + tumor.purity * (exp.intA + exp.intB)) / (2 * (1 - tumor.purity) + (tumor.purity * tumor.ploidy)))
 
-  return(exp.logr)
+  exp.logr
 }
 
 
 calcExpectedBAF <- function(exp.intA, exp.intB, tumor.purity) {
   exp.BAF <- (1 - tumor.purity + (tumor.purity * exp.intB)) / (2 - 2 * tumor.purity + tumor.purity * (exp.intA + exp.intB))
 
-  return(exp.BAF)
+  exp.BAF
 }
 
 

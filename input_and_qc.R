@@ -509,8 +509,7 @@ cleanAndErrorCheckSNPsParallel <- function(all.samp.SNP.list, mcs.seg.to.use.df,
   # have been performed
 
   min.cpn.vals.df <- mcs.seg.to.use.df[, 4:ncol(mcs.seg.to.use.df)]
-  seg.name.vec <- paste(mcs.seg.to.use.df[, 1], mcs.seg.to.use.df[, 2], mcs.seg.to.use.df[, 3], sep = ":")
-  # min.cpn.vals.df <- min.cpn.vals.df[ ! is.na(rowSums(min.cpn.vals.df)), ,drop = FALSE]
+  seg.name.vec <- paste(mcs.seg.to.use.df[, "Chromosome"], mcs.seg.to.use.df[, "Start_Position"], mcs.seg.to.use.df[, "End_Position"], sep = ":")
   working.all.samp.SNP.list <- list()
   all.samps.prob.SNPs.vec <- c()
 
@@ -522,7 +521,7 @@ cleanAndErrorCheckSNPsParallel <- function(all.samp.SNP.list, mcs.seg.to.use.df,
     sample.rep.vec <- c(sample.rep.vec, rep(samp, length(seg.name.vec)))
   }
 
-  iterable.min.cons.seg.df <- cbind(do.call("rbind", replicate(length(samples), mcs.seg.to.use.df[, 1:3], simplify = FALSE)), sample = sample.rep.vec)
+  iterable.min.cons.seg.df <- cbind(do.call("rbind", replicate(length(samples), mcs.seg.to.use.df[, c("Chromosome", "Start_Position", "End_Position")], simplify = FALSE)), sample = sample.rep.vec)
   library("gdata")
   iterable.min.cons.seg.df <- drop.levels(iterable.min.cons.seg.df)
   itx <- iter(iterable.min.cons.seg.df, by = "row")
@@ -542,15 +541,14 @@ cleanAndErrorCheckSNPsParallel <- function(all.samp.SNP.list, mcs.seg.to.use.df,
     return(me)
   }
   sites.in.each.samp.seg.list <- foreach(it.min.cons.seg.df = itx, .combine = c) %dopar% {
-    samp.SNP.df <- all.samp.SNP.list[[ it.min.cons.seg.df[, 4]]]
+    samp.SNP.df <- all.samp.SNP.list[[ it.min.cons.seg.df[, "sample"]]]
 
     if ("chr" %in% colnames(samp.SNP.df)) {
       colnames(samp.SNP.df)[colnames(samp.SNP.df) == "chr"] <- "chrom"
     }
-    samp.seg.logR.BAF.df <- samp.SNP.df[ samp.SNP.df$chrom == it.min.cons.seg.df[, 1]
-    & samp.SNP.df$pos >= it.min.cons.seg.df[, 2]
-    & samp.SNP.df$pos <= it.min.cons.seg.df[, 3], , drop = FALSE]
+    samp.seg.logR.BAF.df <- samp.SNP.df[ samp.SNP.df$chrom == it.min.cons.seg.df[, "Chromosome"] & samp.SNP.df$pos >= it.min.cons.seg.df[, "Start_Position"] & samp.SNP.df$pos <= it.min.cons.seg.df[, "End_Position"], , drop = FALSE]
     samp.prob.SNPs.vec <- c()
+
     if (data.type == "TRACERx_WGS") {
       samp.prob.SNPs.vec <- c()
     } else if (allow.logr.only.flag == FALSE & data.type == "TRACERx_exome") {
@@ -573,18 +571,17 @@ cleanAndErrorCheckSNPsParallel <- function(all.samp.SNP.list, mcs.seg.to.use.df,
     }
 
     result <- MultiResultClass(
-      samp_seg_name = paste0(it.min.cons.seg.df[, 4], "@", it.min.cons.seg.df[, 1], ":", it.min.cons.seg.df[, 2], ":", it.min.cons.seg.df[, 3]),
+      samp_seg_name = paste0(it.min.cons.seg.df[, "sample"], "@", it.min.cons.seg.df[, "Chromosome"], ":", it.min.cons.seg.df[, "Start_Position"], ":", it.min.cons.seg.df[, "End_Position"]),
       samp_seg_logR_BAF_df = samp.seg.logR.BAF.df,
       samp_prob_SNPs_vec = samp.prob.SNPs.vec
     )
     result.list <- list(result)
-    names(result.list) <- paste0(it.min.cons.seg.df[, 4], "@", it.min.cons.seg.df[, 1], ":", it.min.cons.seg.df[, 2], ":", it.min.cons.seg.df[, 3])
+    names(result.list) <- paste0(it.min.cons.seg.df[, "sample"], "@", it.min.cons.seg.df[, "Chromosome"], ":", it.min.cons.seg.df[, "Start_Position"], ":", it.min.cons.seg.df[, "End_Position"])
     result.list
   }
 
   all.samps.prob.SNPs.vec <- unique(unlist(sapply(sites.in.each.samp.seg.list, function(x) x[["samp_prob_SNPs_vec"]])))
   message("Number of problem SNPs being removed:", length(all.samps.prob.SNPs.vec))
-  print(head(all.samps.prob.SNPs.vec))
 
   if (length(all.samps.prob.SNPs.vec) > 0) {
     samp.seg.itx <- iter(sites.in.each.samp.seg.list)

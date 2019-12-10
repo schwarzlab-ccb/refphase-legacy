@@ -1,4 +1,4 @@
-generateAllSamplesByChromIntCPNUnderlyingRawValuesLists <- function(asas.ph.raw.cpn.lists, sample.vec, seg.name.vec, cpnX.vec = c("cpnA", "cpnB"), reduced.seg.flag = FALSE) {
+generateAllSamplesByChromIntCPNUnderlyingRawValuesLists <- function(asas.ph.raw.cpn.lists,sample.vec, seg.name.vec, cpnX.vec = c("cpnA", "cpnB"), reduced.seg.flag = FALSE) {
 
   #message("asas.ph.raw.cpn.lists")
   #str(asas.ph.raw.cpn.lists)
@@ -13,7 +13,7 @@ generateAllSamplesByChromIntCPNUnderlyingRawValuesLists <- function(asas.ph.raw.
       }
 
       for (cpnX in cpnX.vec) {
-        message(samp, seg.name, cpnX, reduced.seg.flag)
+        message(paste(samp, seg.name, cpnX, reduced.seg.flag, sep = " "))
         if (reduced.seg.flag == FALSE) {
           samp.seg.int.cpnX.val <- round(asas.ph.raw.cpn.lists[[samp]][[seg.name]][[paste0("mean_ph_", cpnX)]])
           chr <- unlist(strsplit(seg.name, split = ":"))[1]
@@ -47,7 +47,7 @@ generateAllSamplesByChromIntCPNUnderlyingRawValuesLists <- function(asas.ph.raw.
     }
   }
 
-  return(sample.chr.int.cpn.raw.vals.list)
+  sample.chr.int.cpn.raw.vals.list
 }
 
 
@@ -112,12 +112,11 @@ calculateWhetherSegCPNDiffFromIntegerExpectedAndAllMatchingSampCPN <- function(a
     samp.pvals.diff.from.exp.list[[samp]][[paste0(cpnX, "_num_chrs_w_match_int_cpn_vec")]] <- chrs.w.same.cpn.vec
   }
 
-  return(samp.pvals.diff.from.exp.list)
+  samp.pvals.diff.from.exp.list
 }
 
 
 getSegObsExpCPNBySampleDF <- function(asas.ph.raw.cpn.lists, sample.vec, seg.name, cpnX.vec = c("cpnA", "cpnB"), reduced.seg.flag = FALSE) {
-  #str(asas.ph.raw.cpn.lists)
 
   num.samples <- length(sample.vec)
   s.samps.obs.exp.cpn.df <- data.frame(
@@ -156,7 +155,7 @@ getSegObsExpCPNBySampleDF <- function(asas.ph.raw.cpn.lists, sample.vec, seg.nam
     }
   }
 
-  return(s.samps.obs.exp.cpn.df)
+  s.samps.obs.exp.cpn.df
 }
 
 
@@ -191,14 +190,14 @@ getCCFractionNeeded <- function(obs.val, low.exp.val, high.exp.val) {
     }
   }
 
-  return(c(CCF.to.use, (1 - CCF.to.use)))
+  c(CCF.to.use, (1 - CCF.to.use))
 }
 
 
 calcExpectedBAF <- function(exp_intA, exp_intB, tumor.purity) {
   expectedBAF <- (1 - tumor.purity + (tumor.purity * exp_intB)) / (2 - 2 * tumor.purity + tumor.purity * (exp_intA + exp_intB))
 
-  return(expectedBAF)
+  expectedBAF
 }
 
 
@@ -317,7 +316,7 @@ determineCCFClonalityOfSegment <- function(s.samps.int.ob.xp.cpn.df,
     final.all.clonal.flag <- FALSE
   }
 
-  return(final.all.clonal.flag)
+  final.all.clonal.flag
 }
 
 
@@ -361,7 +360,7 @@ getSegCPNXMeanAndAllRawCCFsDF <- function(ss.mean.cpnX.obs, ss.ph.cpnX.vals.vec,
     stringsAsFactors = FALSE
   )
 
-  return(seg.cpnX.psc.cpn.CCF.df)
+  seg.cpnX.psc.cpn.CCF.df
 }
 
 
@@ -417,7 +416,7 @@ calculateTwoValueDiffFlag <- function(s.samps.int.ob.xp.cpn.df, seg.cpnX.diff.fr
   }
 
   # Todo, make this return a single value (split into two functions ideally)
-  return(two.value.diff.flag)
+  two.value.diff.flag
 }
 
 
@@ -443,7 +442,7 @@ chooseLowHighSubclonalCPNWithOnlyTwoPossibilities <- function(s.samps.int.ob.xp.
     ss.poss.sc.cpnX.high <- max(unique(ceiling(samps.mean.cpnX.vec)))
   }
 
-  return(c(ss.poss.sc.cpnX.low, ss.poss.sc.cpnX.high))
+  c(ss.poss.sc.cpnX.low, ss.poss.sc.cpnX.high)
 }
 
 
@@ -508,5 +507,5 @@ chooseLowHighSubclonalCPNWithMoreThanTwoPossibilities <- function(s.samps.int.ob
     ss.poss.sc.cpnX.high <- max(unique(ceiling(samps.mean.cpnX.vec + min.CCF.to.consider.val)))
   }
 
-  return(c(ss.poss.sc.cpnX.low, ss.poss.sc.cpnX.high))
+  c(ss.poss.sc.cpnX.low, ss.poss.sc.cpnX.high)
 }

@@ -1,4 +1,4 @@
-# Read input data
+# Read input data: segmentation and snps with associated BAF/logR and more
 read_input <- function(seg_file, snp_file, input_format) {
   init.f.joint.segs.df <- read.table(seg.file.path, stringsAsFactors = FALSE, sep = "\t", header = TRUE)
 
@@ -97,7 +97,6 @@ read_input <- function(seg_file, snp_file, input_format) {
 
   # Minimum consistent segmentation is finished! Let's get the SNPs and their LogR and BAF values amd assign to segments.
   # All SNPs in these lists must have both a logr and baf value: all sample all seg logr baf lists is asas.lr.baf
-  ptm <- proc.time()
   message("cleanAndErrorCheckSNPsParallel first")
   asas.SNPs.w.both.lr.baf.snp.lists <- cleanAndErrorCheckSNPsParallel(all.samp.SNP.list,
     mcs.seg.to.use.df = min.cons.segs.df,
@@ -106,22 +105,12 @@ read_input <- function(seg_file, snp_file, input_format) {
     data.type = input_format
   )
 
-  # message("asas.SNPs.w.both.lr.baf.snp.lists output")
-  # str(asas.SNPs.w.both.lr.baf.snp.lists)
-
   if (length(unique(sapply(asas.SNPs.w.both.lr.baf.snp.lists, length))) != 1) {
     stop("Not all segments are present in all samples' snp assignations, likely something has gone wrong, is the parallelisation working correctly?")
   }
 
-
-  time.taken <- proc.time() - ptm
-  message("Runtime of cleanAndErrorCheckSNPsParallel:")
-  print(time.taken)
-
   # SNPs that only have LogR are permitted in these lists, but it also contains all the SNPs with both BAF and LogR
-  ptm <- proc.time()
   message("cleanAndErrorCheckSNPsParallel second")
-
   asas.SNPS.lr.and.or.baf.lists <- cleanAndErrorCheckSNPsParallel(all.samp.SNP.list,
     mcs.seg.to.use.df = min.cons.segs.df,
     samples = sample.vec,
@@ -129,16 +118,9 @@ read_input <- function(seg_file, snp_file, input_format) {
     data.type = input_format
   )
 
-  # message("asas.SNPS.lr.and.or.baf.lists output")
-  # str(asas.SNPS.lr.and.or.baf.lists)
-
   if (length(unique(sapply(asas.SNPS.lr.and.or.baf.lists, length))) != 1) {
     stop("Not all segments are present in all samples' snp assignations, likely something has gone wrong, is the parallelisation working correctly?")
   }
-
-  time.taken <- proc.time() - ptm
-  message("Runtime of cleanAndErrorCheckSNPsParallel:")
-  print(time.taken)
 
   if (length(asas.SNPs.w.both.lr.baf.snp.lists) <= 1) {
     print(str(asas.SNPs.w.both.lr.baf.snp.lists, max = 1))

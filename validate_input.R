@@ -118,8 +118,6 @@ validate_snp_input <- function(snp_data) {
   if (!all(c(23, 24) %in% snp_data$chrom)) {
     warning("No segment in either sex chromosome (23 or 24)")
   }
-
-  return(TRUE)
 }
 
 # Validate raw ASCAT bc file
@@ -303,5 +301,4 @@ validate_seg_input <- function(seg) {
   # FIXME: not implemented
 
   message("Segment input validation passed.")
-  return(TRUE)
 }

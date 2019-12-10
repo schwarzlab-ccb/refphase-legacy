@@ -329,8 +329,7 @@ createFullyAnnotatedJointSegmentation <- function(f.joint.segs.df, samples) {
     }
   }
 
-  message("Mapping the segments covering all bp of all arms back to input segments where appropriate....")
-  ptm <- proc.time()
+  message("Mapping the segments covering all bp of all arms back to input segments where appropriate...")
   itx <- iter(as.data.frame(all.bp.chr.grs), by = "row")
   results <- foreach(curr.all.bp.chr.df = itx, .combine = c) %dopar% {
     require(GenomicRanges)
@@ -400,9 +399,6 @@ createFullyAnnotatedJointSegmentation <- function(f.joint.segs.df, samples) {
     # Create a test dataframe
     return(list(cbind(all.samp.this.seg.bp.df, all.samp.overlap.df)))
   }
-  time.passed <- proc.time() - ptm
-  message("Time elapsed")
-  print(time.passed)
 
   all.bp.all.samps.segs.df <- do.call(rbind, results)
 

@@ -79,5 +79,5 @@ collapseSegsByPatientAndMinMaxMean <- function(all.segs.df,
 
   GISTIC.extended.input.df <- GISTIC.extended.input.df[with(GISTIC.extended.input.df, order(Sample, Chromosome, Start_Position)), ]
 
-  return(GISTIC.extended.input.df)
+  GISTIC.extended.input.df
 }
