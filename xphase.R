@@ -192,6 +192,10 @@ source(file.path(current.dir, "annotate_joint_segs.R"))
 source(file.path(current.dir, "input.R"))
 source(file.path(current.dir, "validate_input.R"))
 source(file.path(current.dir, "phase_ascat.R"))
+source(file.path(current.dir, "input_ascat.R"))
+source(file.path(current.dir, "input_sequenza.R"))
+source(file.path(current.dir, "input_medicc.R"))  # Not used currently
+source(file.path(current.dir, "ascat_utils.R"))
 
 suppressWarnings(suppressMessages(library("diptest")))
 suppressWarnings(suppressMessages(library("gplots")))
@@ -222,7 +226,7 @@ MAX_CPN_FOR_SUBCLONALITY <- 10
 # This the median raw CCF different to the integer +/- this value.
 MIN_CCF_TO_CONSIDER <- 0.2
 # This the median raw cpn different to the integer +/- this value.
-MIN_CPN_TO_CONSIDER <- 0.2 
+MIN_CPN_TO_CONSIDER <- 0.2
 # This is the minimum no of chromosomes used for comparisons to other other
 # chromosomes when calling subclonal events
 MIN_NUM_CHRS <- 2
@@ -233,7 +237,7 @@ DEEP_LOSS_LOGR_THRESH <- log2(0.5 / 2)
 PVAL_THRESH_VS_LOGR_FOR_CPN_EVENT <- 0.01
 CHRS_TO_USE_VEC <- 1:22
 # used for CCF ca;culations
-CONF_INT_FOR_CPNX_BAF_VS_EXP <- 0.9999 
+CONF_INT_FOR_CPNX_BAF_VS_EXP <- 0.9999
 # Legacy, used for pairwise comparisons between samples
 PW_CPNA_CPNB_DIFF_AMPLITUDE_THRESH <- 0.001 
 # P value thresholds for  joining segements on phased raw cpn values

@@ -27,7 +27,7 @@ read_input <- function(seg_file, snp_file, input_format) {
       pt.snp.file.paths.df$samp_ascat_bc_path <- file.path(conf$snp_data_prefix, pt.snp.file.paths.df$samp_ascat_bc_path)
     }
 
-    all.samp.SNP.list <- readInASCAT(
+    all.samp.SNP.list <- read_snps_ascat(
       sample_table = pt.snp.file.paths.df,
       segs = f.joint.segs.df,
       samples = sample.vec
