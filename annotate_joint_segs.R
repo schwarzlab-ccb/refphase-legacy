@@ -41,8 +41,8 @@ annotate_joint_segs <- function(segs, snps) {
   #    gl.homo.snp.df <- actual.snp.file.df[! is.na(actual.snp.file.df[,gl.col.name]) & (as.numeric(actual.snp.file.df[,gl.col.name]) > 0.7 | as.numeric(actual.snp.file.df[,gl.col.name]) < 0.3) ,]
   #    gl.hz.snp.df <- actual.snp.file.df[! is.na(actual.snp.file.df[,gl.col.name]) & (as.numeric(actual.snp.file.df[,gl.col.name]) <= 0.7 &  as.numeric(actual.snp.file.df[,gl.col.name]) >= 0.3),]
   #  } else {
-  gl.homo.snp.df <- actual.snp.file.df[actual.snp.file.df$zygosity.normal != "het", ]
-  gl.hz.snp.df <- actual.snp.file.df[actual.snp.file.df$zygosity.normal == "het", ]
+  gl.homo.snp.df <- actual.snp.file.df[actual.snp.file.df$germline_zygosity != "het", ]
+  gl.hz.snp.df <- actual.snp.file.df[actual.snp.file.df$germline_zygosity == "het", ]
   logr.only.snp.df <- snp.file.df[is.na(snp.file.df[, gl.col.name]), ]
 
   #  }

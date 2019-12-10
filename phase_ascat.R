@@ -1,3 +1,41 @@
+ascat_set_bafsegmented <- function(ascat, phased_snps, segs) {
+  message("***** Using re-implementation of code that calculates BAF segmented values for ascat.bc *****")
+
+  # Reset all BAF_segmented values to NA so we know which ones aren't updated
+  ascat$Tumor_BAF_segmented[[1]][, 1] <- 0.5
+
+  # Chromosome + position of each element in Tumor_BAF_segmented
+  ascat_bafseg_pos <- ascat$SNPpos[as.numeric(rownames(ascat$Tumor_BAF_segmented[[1]])), ]
+  str(ascat_bafseg_pos)
+
+  for (i in seq_len(nrow(segs))) {
+    seg <- segs[i, ]
+
+    idx_phased <- phased_snps$chrom == seg$Chromosome & phased_snps$pos >= seg$Start_Position & phased_snps$pos <= seg$End_Position
+    phased_snps_seg <- phased_snps[idx_phased, ]
+    pre_phased_bafs <- unique(phased_snps_seg$ph_median_segmented_BAF)
+    if (length(pre_phased_bafs) == 0)
+      pre_phased_bafs <- 0.5
+
+    idx_ascat <- ascat_bafseg_pos$chrs == seg$Chromosome & ascat_bafseg_pos$pos >= seg$Start_Position & ascat_bafseg_pos$pos <= seg$End_Position
+
+    if (any(idx_ascat)) {
+      ascat$Tumor_BAF_segmented[[1]][idx_ascat, 1] <- pre_phased_bafs
+    }
+  }
+
+  str(ascat)
+
+  message("Number of NA bafsegmented values: ", sum(is.na(ascat$Tumor_BAF_segmented[[1]][, 1])))
+  # Remove NA elements
+  bafseg <- ascat$Tumor_BAF_segmented[[1]][, 1, drop = FALSE]
+  ascat$Tumor_BAF_segmented[[1]] <- ascat$Tumor_BAF_segmented[[1]][!is.na(bafseg), 1, drop = FALSE]
+  message("Number of NA bafsegmented values: ", sum(is.na(ascat$Tumor_BAF_segmented[[1]][, 1])))
+
+  ascat
+}
+
+
 # Apply phasing to an existing ascat.bc object and recalculate all necessary
 # values within the object
 phase_ascat <- function(ascat_bc, phased_bafs, segs, phased_baf_info) {
@@ -38,12 +76,10 @@ phase_ascat <- function(ascat_bc, phased_bafs, segs, phased_baf_info) {
   }
 
   # Let's do the BAF recalculation
-  tum.baf.segmented.vec <- ascat_bc[["Tumor_BAF_segmented"]][[1]][, 1]
-  names(tum.baf.segmented.vec) <- rownames(ascat_bc[["Tumor_BAF_segmented"]][[1]])
+  #tum.baf.segmented.vec <- ascat_bc[["Tumor_BAF_segmented"]][[1]][, 1]
+  #names(tum.baf.segmented.vec) <- rownames(ascat_bc[["Tumor_BAF_segmented"]][[1]])
 
-  # baf_segmented <- ascat_set_bafsegmented(tum.baf.segmented.vec, samp.seg.df)
   ascat_bc <- ascat_set_bafsegmented(ascat_bc, samp.pha.baf.df, samp.seg.df)
-  #baf_segmented <- tum.baf.segmented.vec
 
   if (any(is.na(tum.logr.segmented.vec))) {
     message("There are NA values in the tum.logr.segmented.vec after applying phasing which need to be removed. Revisit generation of this input. For changing the NAs to 0.")
@@ -57,44 +93,6 @@ phase_ascat <- function(ascat_bc, phased_bafs, segs, phased_baf_info) {
   message("ascat.bc[[Tumor_BAF_segmented]][[1]] length =", nrow(ascat_bc[["Tumor_BAF_segmented"]][[1]]))
 
   ascat_bc
-}
-
-
-ascat_set_bafsegmented <- function(ascat, phased_snps, segs) {
-  message("***** Using re-implementation of code that calculates BAF segmented values for ascat.bc *****")
-
-  # Reset all BAF_segmented values to NA so we know which ones aren't updated
-  ascat$Tumor_BAF_segmented[[1]][, 1] <- 0.5
-
-  # Chromosome + position of each element in Tumor_BAF_segmented
-  ascat_bafseg_pos <- ascat$SNPpos[as.numeric(rownames(ascat$Tumor_BAF_segmented[[1]])), ]
-  str(ascat_bafseg_pos)
-
-  for (i in seq_len(nrow(segs))) {
-    seg <- segs[i, ]
-
-    idx_phased <- phased_snps$chrom == seg$Chromosome &phased_snps$pos >= seg$Start_Position & phased_snps$pos <= seg$End_Position
-    phased_snps_seg <- phased_snps[idx_phased, ]
-    pre_phased_bafs <- unique(phased_snps_seg$ph_median_segmented_BAF)
-    if (length(pre_phased_bafs) == 0)
-      pre_phased_bafs <- 0.5
-
-    idx_ascat <- ascat_bafseg_pos$chrs == seg$Chromosome & ascat_bafseg_pos$pos >= seg$Start_Position & ascat_bafseg_pos$pos <= seg$End_Position
-
-    if (any(idx_ascat)) {
-      ascat$Tumor_BAF_segmented[[1]][idx_ascat, 1] <- pre_phased_bafs
-    }
-  }
-
-  str(ascat)
-
-  message("Number of NA bafsegmented values: ", sum(is.na(ascat$Tumor_BAF_segmented[[1]][, 1])))
-  # Remove NA elements
-  bafseg <- ascat$Tumor_BAF_segmented[[1]][, 1, drop = FALSE]
-  ascat$Tumor_BAF_segmented[[1]] <- ascat$Tumor_BAF_segmented[[1]][!is.na(bafseg), 1, drop = FALSE]
-  message("Number of NA bafsegmented values: ", sum(is.na(ascat$Tumor_BAF_segmented[[1]][, 1])))
-
-  return(ascat)
 }
 
 
