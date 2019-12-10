@@ -3,6 +3,40 @@
 library(optparse)
 library(digest)
 
+options(stringsAsFactors = FALSE)
+
+# Returns the location of this .R script (may be needed to source other files in same dir)
+# function taken from https://github.com/molgenis/molgenis-pipelines/wiki/How-to-source-another_file.R-from-within-your-R-script
+LocationOfThisScript <- function() {
+  this.file <- NULL
+  # This file may be 'sourced'
+  for (i in -(1:sys.nframe())) {
+    if (identical(sys.function(i), base::source)) {
+      this.file <- (normalizePath(sys.frame(i)$ofile))
+    }
+  }
+
+  if (!is.null(this.file)) {
+    return(dirname(this.file))
+  }
+
+  # But it may also be called from the command line
+  cmd.args <- commandArgs(trailingOnly = FALSE)
+  cmd.args.trailing <- commandArgs(trailingOnly = TRUE)
+  cmd.args <- cmd.args[seq.int(from = 1, length.out = length(cmd.args) - length(cmd.args.trailing))]
+  res <- gsub("^(?:--file=(.*)|.*)$", "\\1", cmd.args)
+
+  # If multiple --file arguments are given, R uses the last one
+  res <- tail(res[res != ""], 1)
+  if (0 < length(res)) {
+    return(dirname(res))
+  }
+
+  # Both are not the case. Maybe we are in an R GUI?
+  return(NULL)
+}
+
+
 if (!interactive()) {
 
   option_list <- list(
@@ -84,7 +118,6 @@ if (!interactive()) {
     )
   )
 
-  # conf <- parse_args(OptionParser(option_list = option_list, convert_hyphens_to_underscores = TRUE))
   # Hack to get it working on TRACERx
   if (packageVersion("optparse") != "1.3.2") {
     conf <- parse_args(OptionParser(option_list = option_list), convert_hyphens_to_underscores = TRUE)
@@ -97,7 +130,8 @@ if (!interactive()) {
 
   dput(conf)
 } else {
-  source("debugging_conf.R")
+  current.dir <- LocationOfThisScript()
+  source(file.path(current.dir, "debugging_conf.R"))
 }
 
 message("Arguments:")
@@ -125,42 +159,6 @@ genome <- conf$genome # hg19 or hg38
 # Right we need a free run folder:
 qc.choice.dir <- file.path(output.directory.base.path, "run_qc_choice")
 dir.create(qc.choice.dir, recursive = TRUE, showWarnings = FALSE)
-
-### GLOBAL FLAG that alters the behaviour of some hacked functions so that they work with MPhase and XPhase
-USING_XPHASE <- FALSE
-
-options(stringsAsFactors = FALSE)
-
-# Returns the location of this .R script (may be needed to source other files in same dir)
-# function taken from https://github.com/molgenis/molgenis-pipelines/wiki/How-to-source-another_file.R-from-within-your-R-script
-LocationOfThisScript <- function() {
-  this.file <- NULL
-  # This file may be 'sourced'
-  for (i in -(1:sys.nframe())) {
-    if (identical(sys.function(i), base::source)) {
-      this.file <- (normalizePath(sys.frame(i)$ofile))
-    }
-  }
-
-  if (!is.null(this.file)) {
-    return(dirname(this.file))
-  }
-
-  # But it may also be called from the command line
-  cmd.args <- commandArgs(trailingOnly = FALSE)
-  cmd.args.trailing <- commandArgs(trailingOnly = TRUE)
-  cmd.args <- cmd.args[seq.int(from = 1, length.out = length(cmd.args) - length(cmd.args.trailing))]
-  res <- gsub("^(?:--file=(.*)|.*)$", "\\1", cmd.args)
-
-  # If multiple --file arguments are given, R uses the last one
-  res <- tail(res[res != ""], 1)
-  if (0 < length(res)) {
-    return(dirname(res))
-  }
-
-  # Both are not the case. Maybe we are in an R GUI?
-  return(NULL)
-}
 
 
 # We need to be able to select the intersection of all regions or a full GISTIC compatible union with defined regions that will always be covered
@@ -196,6 +194,8 @@ source(file.path(current.dir, "input_ascat.R"))
 source(file.path(current.dir, "input_sequenza.R"))
 source(file.path(current.dir, "input_medicc.R"))  # Not used currently
 source(file.path(current.dir, "ascat_utils.R"))
+source(file.path(current.dir, "ccf_from_raw_cpn.R"))
+source(file.path(current.dir, "add_info_to_output_table.R"))
 
 suppressWarnings(suppressMessages(library("diptest")))
 suppressWarnings(suppressMessages(library("gplots")))
@@ -203,54 +203,14 @@ suppressWarnings(suppressMessages(library("gdata")))
 suppressWarnings(suppressMessages(library("GenomicRanges")))
 suppressWarnings(suppressMessages(library("doParallel")))
 
+if (interactive()) {
+  browser()
+}
+
 # -------------------------------------------------------------------------
 # Set constants for the analysis
 # -------------------------------------------------------------------------
-MIN_NUM_HZ_SNP_PHASING <- 5
-OVERWRITE_FLAG <- conf$overwrite
-PLOTTING_FLAG <- TRUE
-# POST JOINING FLAGS to run sections of code
-JOINED_SEGS_ERROR_CHECKING_FLAG <- FALSE
-OVERWRITE_INIT_MCS_ADD_INFO_FLAG <- TRUE # Using joined segs on second run throughof MPhase
-OVERWRITE_ARM_INFO_FOR_JOIN_INIT_MCS_FLAG <- TRUE
-OVERWRITE_JOIN_INIT_MCS_FLAG <- TRUE
-OVERWRITE_JOINED_CCF_CALC_FLAG <- TRUE
-OVERWRITE_JOINED_MCS_ADD_INFO_FLAG <- TRUE
-CALCULATE_JOINED_ARM_FOCAL_FLAG <- TRUE
-CALCULATE_FOCAL_EVENT_CLONALITY_FLAG <- TRUE
-GENERATE_GISTIC_INPUT_FLAG <- FALSE
-PLOT_OUTPUT_DIR <- paste(output.directory.base.path, "/", sep = "")
-INTERSECTION_OR_ARM <- intersection.or.whole.arm
-GAMMA_VAL <- as.numeric(gamma.val)
-MAX_CPN_FOR_SUBCLONALITY <- 10
-# This the median raw CCF different to the integer +/- this value.
-MIN_CCF_TO_CONSIDER <- 0.2
-# This the median raw cpn different to the integer +/- this value.
-MIN_CPN_TO_CONSIDER <- 0.2
-# This is the minimum no of chromosomes used for comparisons to other other
-# chromosomes when calling subclonal events
-MIN_NUM_CHRS <- 2
-GAIN_LOGR_THRESH <- log2(2.5 / 2)
-LOSS_LOGR_THRESH <- log2(1.5 / 2)
-AMP_LOGR_THRESH <- log2(4 / 2)
-DEEP_LOSS_LOGR_THRESH <- log2(0.5 / 2)
-PVAL_THRESH_VS_LOGR_FOR_CPN_EVENT <- 0.01
-CHRS_TO_USE_VEC <- 1:22
-# used for CCF ca;culations
-CONF_INT_FOR_CPNX_BAF_VS_EXP <- 0.9999
-# Legacy, used for pairwise comparisons between samples
-PW_CPNA_CPNB_DIFF_AMPLITUDE_THRESH <- 0.001 
-# P value thresholds for  joining segements on phased raw cpn values
-PVAL_THRESH_TO_JOIN_PH_SEGS <- 0.001 
-PVAL_THRESH_TO_JOIN_TOT_SEGS <- 0.001 # Some segments don't have phased copy number but we can try and join based on the total cpn
-MIN_PROP_SNP_SEP_THRESH <- 0.75 # legacy minimum  proportion of snps to be separated by phasing, if fewer, try a more complicated phasing currently deactivated 11/09/2018
-PVAL_COMB_WILCOX_PH_THRESH <- 0.01 # threshold for testing whether the BAFs are separated across all the samples when comparing phasings
-PVAL_DIPTEST_AI_THRESH <- 0.01 # Test to decide whether there is allelic imbalance, not being used as of  11/09/2018
-ALLOW_DIPTEST_ALONE_PH_FLAG <- allow.dip.test.phasing.flag
-MSAI_BAF_LTNPD_PVAL_THRESHOLD <- 0.001 # P value threshold to call MSAI
-MSAI_CPNX_PVAL_THRESHOLD <- 0.001 # Legacy, can also detect MSAI from the phased copy number not ust the BAF
-PVAL_THRESH_CONVERT_GAIN_TO_AMP <- 0.01 # Legacy, but might need to be re-implemented, is an amplification significantly different to a gain in a different region?
-
+source(file.path(current.dir, "constants.R"))
 
 # -------------------------------------------------------------------------
 # Create output dirs and check that input files exist
@@ -275,21 +235,16 @@ if (!file.exists(seg.file.path))
 
 registerDoParallel(cores = conf$cores)
 
-
 # Load in the relevant genome file
+# We don't need this until much later, don't try to load it now
 if (genome == "hg19") {
   info.path <- file.path(current.dir, "annot", "ucsc_hg19_chrominfo.txt")
-  access.path <- file.path(current.dir, "annot", "access-10kb.hg19.bed")
 } else if (genome == "hg38") {
   info.path <- file.path(current.dir, "annot", "ucsc_hg38_chrominfo.txt")
-  access.path <- file.path(current.dir, "annot", "access-10kb.hg38.bed")
 } else {
   stop("Genome version not recognized: ", genome)
 }
-# OJO change back!
 chrom.info.df <- read.table(info.path, stringsAsFactors = FALSE, sep = "\t", header = TRUE)
-# We don't need this until much later, don't try to load it now
-# access.df <- read.table(access.path, sep="\t", header=F, stringsAsFactors=F)
 
 # Paths for saving/loading objects
 if (!is.na(conf$debug_dir)) {
@@ -322,9 +277,11 @@ if (!is.na(conf$debug_dir)) {
 
 # -------------------------------------------------------------------------
 # Main code starts here
+# -------------------------------------------------------------------------
 
 # -------------------------------------------------------------------------
 # Load in the data:
+# -------------------------------------------------------------------------
 
 # if (conf$overwrite) {
 use_cached_input <- FALSE
@@ -376,39 +333,14 @@ message(sum(apply(snps_per_segment >= MIN_NUM_HZ_SNP_PHASING, 1, all)), "/", nro
 # print(rownames(snps_per_segment)[apply(snps_per_segment < MIN_NUM_HZ_SNP_PHASING, 1, any)])
 # message("Number of segments: ", nrow(snps_per_segment[apply(snps_per_segment < MIN_NUM_HZ_SNP_PHASING, 1, any),]))
 
-message("FIXME: WGII calculation is never used again and not saved, disabling it for now")
-# TODO move this up
-# Let's come up with the original wgii score pre MPhase based on the segmentation:
-#   sample.vec <- names(asas.SNPs.w.both.lr.baf.snp.lists)
-#   cat("Samples:\n")
-#   print(sample.vec)
-#   sample.pre.Mphase.wgii.list <- list()
-#   for (samp in sample.vec) {
-#
-#   	samp.orig.seg.df <- f.joint.segs.df[f.joint.segs.df$sample == samp & ( ! f.joint.segs.df$chr %in% c(23,24)),]
-#   	samp.orig.formatted.seg.df <- samp.orig.seg.df[,c("sample","chr", "startpos", "endpos", "n.het", "cnTotal", "nMajor","nMinor", "Ploidy", "ACF", "nAraw", "nBraw")]
-#   	samp.orig.formatted.seg.df <- samp.orig.formatted.seg.df[ ! is.na(samp.orig.formatted.seg.df$nMajor),]
-#   	pre.mphase.samp.wgii <- calculateWGII(seg.df = samp.orig.formatted.seg.df)
-#   	sample.pre.Mphase.wgii.list[[samp]] <-  pre.mphase.samp.wgii
-#
-#   }#end for (samp in sample.vec) {
-
-# Based on the input and how many BAF values there are we need to set the subclonality thresholds
 message("Setting the pval thresholds for calling subclonality depending on the number of heterozygous sites assayed.")
-
-PVAL_THRESH_VS_MIN_CCF <- 0.001
-PVAL_THRESH_VS_OTH_CHRS_SAME_CPN <- 0.01 # T test p value threshold for trying to call subclonal copy numnber...
-
 total.num.of.hz.sites.per.sample <- sum(sapply(asas.SNPs.w.both.lr.baf.snp.lists[[1]], nrow))
 if (total.num.of.hz.sites.per.sample > 300000) {
   PVAL_THRESH_VS_MIN_CCF <- 0.00000001
   PVAL_THRESH_VS_OTH_CHRS_SAME_CPN <- 0.0000000001
 }
 
-# Todo, Add function definitions documentaiton
-# Todo, clarify the loops and next statements that are controlling what happens when there are less than 5 hz snps in a sample.
-# Todo, check if the mixture phasing is ever being selected... in the example with B_MET002 no mixture phasing called.
-seg.name.vec <- paste(min.cons.segs.df[, 1], min.cons.segs.df[, 2], min.cons.segs.df[, 3], sep = ":")
+seg.name.vec <- paste(min.cons.segs.df[, "Chromosome"], min.cons.segs.df[, "Start_Position"], min.cons.segs.df[, "End_Position"], sep = ":")
 sample.vec <- names(asas.SNPs.w.both.lr.baf.snp.lists)
 
 message("Getting phasing to apply to all samples using getCombinedBAFDipTestPhasingParallel...")
@@ -450,7 +382,7 @@ if (!is.na(conf$debug_dir)) {
 
 # Now we have the phasing, we want to check whether, using it, we think that
 # there is sufficient separation of the bands of allelic balance to consider a
-# segment "allelically imbalanced" If not set the bafsegmented to 0.5
+# segment "allelically imbalanced". If not set the bafsegmented to 0.5
 # So we may want to reintroduce the log truncated normal stuff here...
 
 # So this is where want to create a phased ascat.bc object:
@@ -533,11 +465,11 @@ for (samp in sample.vec) {
   # missing.logr.segmented.idx.vec <- which(is.na(ascat.bc$Tumor_LogR_segmented[,1]))
   # checking.cont.range <- missing.logr.segmented.idx.vec - c(missing.logr.segmented.idx.vec[2:length(missing.logr.segmented.idx.vec)], missing.logr.segmented.idx.vec[length(missing.logr.segmented.idx.vec)] + 1)
 
-  message("Running ASCAT")
   validate_ascat_bc_input(ascat.bc.phased)
-  str(ascat.bc.phased)
+  #str(ascat.bc.phased)
+  message("Running ASCAT")
   ascat.output <- ascat.runAscat(ascat.bc.phased, gamma = 1, rho_manual = samp.purity, psi_manual = samp.ploidy)
-  str(ascat.output)
+  #str(ascat.output)
   setwd(base.dir)
 
   ph.ascat.output.list[[samp]] <- ascat.output
@@ -570,9 +502,7 @@ for (samp in sample.vec) {
 
   seg <- samp.ph.ascat.segs.df
   save(seg, file = file.path(qc.choice.dir, paste(samp, "ascat.seg.RData", sep = ".")))
-
-  message("Next sample...")
-} # for (samp in sample.vec) {
+}
 
 
 # So now we're going to construct a list of dataframes that for every heterozygous SNP has
@@ -657,10 +587,7 @@ for (samp in sample.vec) {
   )
 }
 
-message("Setting phased output paths")
 # Paths for phased versions of data:
-ph.asas.SNPS.lr.and.or.baf.lists.path <- paste0(PLOT_OUTPUT_DIR, patient, "_ph_asas_SNPS_lr_and_or_baf_lists_lists.RDS")
-ph.asas.SNPs.w.both.lr.baf.snp.lists.path <- paste0(PLOT_OUTPUT_DIR, patient, "_ph_asas_SNPs_w_both_lr_baf_snp_lists.RDS")
 ph.min.cons.segs.df.write.path <- paste0(PLOT_OUTPUT_DIR, patient, "_ph_min_cons_segs_df.txt")
 ph.sorted.all.bp.all.samps.segs.anno.df.path <- paste0(PLOT_OUTPUT_DIR, patient, "_ph_sorted_all_bp_all_samps_segs_anno.df.RDS")
 ph.min.cons.segs.df.path <- paste0(PLOT_OUTPUT_DIR, patient, "_ph_min_cons_segs_df.RDS")
@@ -690,16 +617,15 @@ for (samp in sample.vec) {
 names(ph.purity.est.vec) <- sample.vec
 names(ph.ploidy.est.vec) <- sample.vec
 
-ph.cpn.chr.start.end.df <- ph.sorted.all.bp.all.samps.segs.anno.df[ph.sorted.all.bp.all.samps.segs.anno.df$full_sample == ph.sorted.all.bp.all.samps.segs.anno.df[1, ]$full_sample, 1:3]
+ph.cpn.chr.start.end.df <- ph.sorted.all.bp.all.samps.segs.anno.df[ph.sorted.all.bp.all.samps.segs.anno.df$full_sample == ph.sorted.all.bp.all.samps.segs.anno.df[1, ]$full_sample, c("Chromosome", "Start_Position", "End_Position")]
 ph.mock.cpn.matrix <- matrix(data = 0, nrow = nrow(ph.cpn.chr.start.end.df), ncol = length(sample.vec))
 colnames(ph.mock.cpn.matrix) <- sample.vec
 ph.min.cons.segs.df <- cbind(ph.cpn.chr.start.end.df, ph.mock.cpn.matrix)
 
-ph.seg.name.vec <- paste(ph.min.cons.segs.df[, 1], ph.min.cons.segs.df[, 2], ph.min.cons.segs.df[, 3], sep = ":")
+ph.seg.name.vec <- paste(ph.min.cons.segs.df[, "Chromosome"], ph.min.cons.segs.df[, "Start_Position"], ph.min.cons.segs.df[, "End_Position"], sep = ":")
 
-ptm <- proc.time()
-print("Phased cleanAndErrorCheckSNPsParallel first")
-ph.asas.SNPs.w.both.lr.baf.snp.lists <- cleanAndErrorCheckSNPsParallel(all.samp.SNP.list,
+ph.asas.SNPs.w.both.lr.baf.snp.lists <- cleanAndErrorCheckSNPsParallel(
+  all.samp.SNP.list,
   mcs.seg.to.use.df = ph.min.cons.segs.df,
   samples = sample.vec,
   allow.logr.only.flag = FALSE,
@@ -710,18 +636,7 @@ if (length(unique(sapply(ph.asas.SNPs.w.both.lr.baf.snp.lists, length))) != 1) {
   stop("Not all segments are present in all samples' snp assignations, likely something has gone wrong, is the parallelisation working correctly?")
 }
 
-if (!is.na(conf$debug_dir)) {
-  saveRDS(ph.asas.SNPs.w.both.lr.baf.snp.lists, file = ph.asas.SNPs.w.both.lr.baf.snp.lists.path)
-}
-
-time.taken <- proc.time() - ptm
-print("time.taken")
-print(time.taken)
-
 # SNPs that only have LogR are permitted in these lists, but it also contains all the SNPs with both BAF and LogR
-ptm <- proc.time()
-message("Phased cleanAndErrorCheckSNPsParallel second")
-
 ph.asas.SNPS.lr.and.or.baf.lists <- cleanAndErrorCheckSNPsParallel(all.samp.SNP.list,
   mcs.seg.to.use.df = ph.min.cons.segs.df,
   samples = sample.vec,
@@ -729,18 +644,18 @@ ph.asas.SNPS.lr.and.or.baf.lists <- cleanAndErrorCheckSNPsParallel(all.samp.SNP.
   data.type = data.format.to.use
 )
 
-if (length(unique(sapply(ph.asas.SNPS.lr.and.or.baf.lists, length))) != 1)
+if (!is.na(conf$debug_dir)) {
+  saveRDS(ph.asas.SNPs.w.both.lr.baf.snp.lists, file = file.path(conf$debug_dir, "ph_asas_SNPs_w_both_lr_baf_snp_lists.RDS"))
+  saveRDS(ph.asas.SNPS.lr.and.or.baf.lists, file = file.path(conf$debug_dir, "ph_asas_SNPS_lr_and_or_baf_lists_lists.RDS"))
+}
+
+if (length(unique(sapply(ph.asas.SNPS.lr.and.or.baf.lists, length))) != 1) {
   stop("Not all segments are present in all samples' snp assignations, likely something has gone wrong, is the parallelisation working correctly?")
+}
 
-if (!is.na(conf$debug_dir))
-  saveRDS(ph.asas.SNPS.lr.and.or.baf.lists, file = ph.asas.SNPS.lr.and.or.baf.lists.path)
-
-time.taken <- proc.time() - ptm
-print("time.taken")
-print(time.taken)
-
-if (length(ph.asas.SNPS.lr.and.or.baf.lists) <= 1)
+if (length(ph.asas.SNPS.lr.and.or.baf.lists) <= 1) {
   stop("Only one or fewer samples present after reading in data.")
+}
 
 message("Getting phasing to apply to all samples using getCombinedBAFDipTestPhasingParallel...")
 ph.all.seg.phasing.info.list <- getCombinedBAFDipTestPhasingParallel(
@@ -756,7 +671,6 @@ ph.all.seg.phasing.info.list <- getCombinedBAFDipTestPhasingParallel(
   allow.dip.test.without.ASCAT.to.phase = ALLOW_DIPTEST_ALONE_PH_FLAG
 )
 
-
 # Todo unsure of what to do with the baf logr lists which have positions that only have logr here, at the moment exclude them but how
 # does that affect later run
 message("Generating phased BAF dataframes...")
@@ -767,7 +681,7 @@ ph.patient.phased.BAF.df.list <- createAllSegsPhasedBAFDataFrame(
 )
 
 
-# # These unphased copies of the variabgles are never used
+# # These unphased copies of the variables are never used
 # unph.f.joint.segs.df <- f.joint.segs.df
 # unph.sorted.all.bp.all.samps.segs.anno.df <- sorted.all.bp.all.samps.segs.anno.df
 # unph.purity.est.vec <- purity.est.vec
@@ -806,7 +720,7 @@ all.seg.MSAI.by.BAF.ltnpd.present.list <- getAllSegsMSAIDetectionFromBAFListLTNP
 # saveRDS(ph.all.seg.MSAI.by.BAF.ltnpd.present.list, file = ph.all.seg.MSAI.by.BAF.ltnpd.present.list.path)
 
 
-if (PLOTTING_FLAG == TRUE) {
+if (isTRUE(PLOTTING_FLAG)) {
   png(file = paste(PLOT_OUTPUT_DIR, patient, "_MSAI_detection_BAF_phased", ".png", sep = ""), width = 1200, height = 1400)
 
   message("Plotting phased BAF across the genome...")
@@ -819,7 +733,7 @@ if (PLOTTING_FLAG == TRUE) {
     use.xphase = USING_XPHASE
   )
   dev.off()
-} else if (PLOTTING_FLAG == FALSE) {
+} else {
   message("Not plotting phased BAF as flag is FALSE")
 }
 
@@ -828,27 +742,16 @@ message("Applying LTNPD MSAI detection to the original segments...")
 # So now we want to flip segments where MSAI has been detected and they were separated in the original data:
 # So we also want to flip the raw values:
 intersection.orig.mcs.df <- sorted.all.bp.all.samps.segs.anno.df[sorted.all.bp.all.samps.segs.anno.df$in_intersection == TRUE, ]
-intersection.seg.name.vec <- paste0(
-  intersection.orig.mcs.df$Chromosome,
-  ":",
-  intersection.orig.mcs.df$Start_Position,
-  ":",
-  intersection.orig.mcs.df$End_Position
-)
+intersection.seg.name.vec <- paste(intersection.orig.mcs.df$Chromosome, intersection.orig.mcs.df$Start_Position, intersection.orig.mcs.df$End_Position, sep = ":")
 orig.intersection.mcs.w.MSAI.df <- intersection.orig.mcs.df
 unq.intersection.seg.name.vec <- unique(intersection.seg.name.vec)
 for (seg.name in unq.intersection.seg.name.vec) {
 
-  # "5:24593514:36986185" MSAI in A_LTX121
   all.samp.matching.seg.vec <- paste0(sample.vec, "@", seg.name)
-
-  # print(all.seg.MSAI.by.BAF.ltnpd.present.list[[seg.name]])
 
   if (isTRUE(all.seg.MSAI.by.BAF.ltnpd.present.list[[seg.name]]$MSAI_detection_feasible)) {
 
-    # print("here")
     seg.MPhase.MSAI.df <- all.seg.MSAI.by.BAF.ltnpd.present.list[[seg.name]]$all_samps_BAF_and_ltnpd_df
-    # print(seg.MPhase.MSAI.df)
     seg.MPhase.MSAI.ASCAT.df <- cbind(seg.MPhase.MSAI.df, intersection.orig.mcs.df[paste0(sample.vec, ":", seg.name), ])
     seg.MPhase.MSAI.ASCAT.df$samp_seg_name <- paste0(sample.vec, ":", seg.name)
     seg.MPhase.MSAI.ASCAT.df$balanced <- seg.MPhase.MSAI.ASCAT.df$nMinor == seg.MPhase.MSAI.ASCAT.df$nMajor
@@ -867,9 +770,8 @@ for (seg.name in unq.intersection.seg.name.vec) {
   }
 }
 
-orig.intersection.mcs.w.MSAI.df.path <- paste0(PLOT_OUTPUT_DIR, patient, "_orig_intersection_mcs_w_MSAI_df.RDS")
 if (!is.na(conf$debug_dir)) {
-  saveRDS(orig.intersection.mcs.w.MSAI.df, file = orig.intersection.mcs.w.MSAI.df.path)
+  saveRDS(orig.intersection.mcs.w.MSAI.df, file = paste0(PLOT_OUTPUT_DIR, patient, "_orig_intersection_mcs_w_MSAI_df.RDS"))
 }
 
 
@@ -884,9 +786,8 @@ pre.MPhase.MEDICC.FASTA.file.list <- makeMEDICCInputListsFromSegmentationDF(
   cpnB.col = "nMinor"
 )
 
-pre.MPhase.MEDICC.FASTA.file.list.path <- paste0(PLOT_OUTPUT_DIR, patient, "_pre_MPhase_MEDICC_FASTA_file_list.RDS")
 if (!is.na(conf$debug_dir)) {
-  saveRDS(pre.MPhase.MEDICC.FASTA.file.list, file = pre.MPhase.MEDICC.FASTA.file.list.path)
+  saveRDS(pre.MPhase.MEDICC.FASTA.file.list, file = paste0(PLOT_OUTPUT_DIR, patient, "_pre_MPhase_MEDICC_FASTA_file_list.RDS"))
 }
 
 
@@ -945,300 +846,30 @@ if (length(seg.name.vec) == 0) {
   stop("No shared segments for some reason, go back and check")
 }
 
-message("Calculating CCFs using phased raw cpn...")
-all.seg.CCF.list <- list()
-all.seg.int.ob.xp.cpn.df.list <- list()
-all.seg.CCF.diff.from.exp.list <- list()
-all.seg.clonal.in.all.samps.list <- list()
-all.seg.greater.than.two.diff.list <- list()
-
-samps.int.cpn.raw.cpn.by.chr.list <- generateAllSamplesByChromIntCPNUnderlyingRawValuesLists(
-  asas.ph.raw.cpn.lists = asas.ph.raw.cpn.lists,
-  sample.vec = sample.vec,
-  seg.name.vec = seg.name.vec,
-  cpnX.vec = c("cpnA", "cpnB"),
-  reduced.seg.flag = FALSE
-)
-if (!is.na(conf$debug_dir)) {
-  saveRDS(samps.int.cpn.raw.cpn.by.chr.list, file = samps.int.cpn.raw.cpn.by.chr.list.path)
-}
-
-for (cpnX in c("cpnA", "cpnB")) {
-  # Here is where we're going to have iniatalise on all the lists
-  all.seg.CCF.list[[cpnX]] <- list()
-  all.seg.int.ob.xp.cpn.df.list[[cpnX]] <- list()
-  all.seg.CCF.diff.from.exp.list[[cpnX]] <- list()
-  all.seg.clonal.in.all.samps.list[[cpnX]] <- list()
-  all.seg.greater.than.two.diff.list[[cpnX]] <- list()
-
-  for (seg.name in seg.name.vec) {
-    all.seg.CCF.list[[cpnX]][[seg.name]] <- list()
-    all.seg.int.ob.xp.cpn.df.list[[cpnX]][[seg.name]] <- list()
-    all.seg.CCF.diff.from.exp.list[[cpnX]][[seg.name]] <- list()
-    all.seg.clonal.in.all.samps.list[[cpnX]][[seg.name]] <- list()
-    all.seg.greater.than.two.diff.list[[cpnX]][[seg.name]] <- list()
-  }
-
-  for (seg.name in seg.name.vec) {
-    if (is.na(asas.ph.raw.cpn.lists[[1]][[seg.name]]$ph_cpnA_vec[1])) {
-      all.seg.CCF.list[[cpnX]][[seg.name]] <- NA
-      all.seg.int.ob.xp.cpn.df.list[[cpnX]][[seg.name]] <- NA
-      all.seg.CCF.diff.from.exp.list[[cpnX]][[seg.name]] <- NA
-      all.seg.clonal.in.all.samps.list[[cpnX]][[seg.name]] <- NA
-      all.seg.greater.than.two.diff.list[[cpnX]][[seg.name]] <- NA
-      next
-    }
-
-    # does both A and B, todo, refactor so only does one
-    s.samps.int.ob.xp.cpn.df <- getSegObsExpCPNBySampleDF(
-      asas.ph.raw.cpn.lists = asas.ph.raw.cpn.lists,
-      sample.vec = sample.vec,
-      seg.name = seg.name,
-      cpnX.vec = cpnX,
-      reduced.seg.flag = FALSE
-    )
-
-    # does only cpnX
-    seg.cpnX.diff.from.exp.list <- calculateWhetherSegCPNDiffFromIntegerExpectedAndAllMatchingSampCPN(
-      asas.ph.raw.cpn.lists = asas.ph.raw.cpn.lists,
-      s.samps.int.ob.xp.cpn.df = s.samps.int.ob.xp.cpn.df,
-      seg.name = seg.name,
-      samps.int.cpn.raw.cpn.by.chr.list = samps.int.cpn.raw.cpn.by.chr.list,
-      cpnX = cpnX,
-      chrs.can.use.for.ccf.test = CHRS_TO_USE_VEC,
-      reduced.seg.flag = FALSE
-    )
-    # does only cpnX
-    is.segment.clonal.in.all.samps.flag <- determineCCFClonalityOfSegment(
-      s.samps.int.ob.xp.cpn.df = s.samps.int.ob.xp.cpn.df,
-      seg.name = seg.name,
-      asas.ph.raw.cpn.lists = asas.ph.raw.cpn.lists,
-      all.samp.ph.BAF.df.list = patient.phased.BAF.df.list,
-      purity.est.vec = purity.est.vec,
-      cpnX = cpnX,
-      min.CCF.to.consider.val = MIN_CCF_TO_CONSIDER,
-      confidence.interval.threshold = CONF_INT_FOR_CPNX_BAF_VS_EXP
-    )
-
-    # does only cpnX
-    is.there.cpnX.difference.greater.than.two.flag <- calculateTwoValueDiffFlag(
-      s.samps.int.ob.xp.cpn.df = s.samps.int.ob.xp.cpn.df,
-      seg.cpnX.diff.from.exp.list = seg.cpnX.diff.from.exp.list,
-      cpnX = cpnX,
-      min.CCF.to.consider.val = MIN_CCF_TO_CONSIDER,
-      confidence.interval.threshold = CONF_INT_FOR_CPNX_BAF_VS_EXP,
-      min.num.other.chrs = MIN_NUM_CHRS
-    )
-
-    # does only cpnX
-    seg.psc.low.high.cpn.and.use.preset.ccf.flag.vec <- getPossibleLowAndHighSubclonalCPNStates(
-      seg.name = seg.name,
-      cpnX = cpnX,
-      s.samps.int.ob.xp.cpn.df = s.samps.int.ob.xp.cpn.df,
-      all.clonal.flag = is.segment.clonal.in.all.samps.flag,
-      two.value.diff.flag = is.there.cpnX.difference.greater.than.two.flag,
-      min.CCF.to.consider.val = MIN_CCF_TO_CONSIDER
-    )
-
-
-    seg.psc.cpnX.low <- seg.psc.low.high.cpn.and.use.preset.ccf.flag.vec[1]
-    seg.psc.cpnX.high <- seg.psc.low.high.cpn.and.use.preset.ccf.flag.vec[2]
-    seg.use.default.ccf <- as.logical(seg.psc.low.high.cpn.and.use.preset.ccf.flag.vec[3])
-
-    # update segment for each sample
-    for (samp in sample.vec) {
-      all.seg.CCF.list[[cpnX]][[seg.name]][[samp]] <- list()
-      # ss.ph.cpnX.vals.vec <- all.pw.cn.het.comp.lists[[samp]][[seg.name]][[paste0("ph_", cpnX, "_vec")]]
-      ss.ph.cpnX.vals.vec <- asas.ph.raw.cpn.lists[[samp]][[seg.name]][[paste0("ph_", cpnX, "_vec")]]
-
-      seg.samp.CCF.psc.cpn.df <- getSegCPNXMeanAndAllRawCCFsDF(
-        ss.mean.cpnX.obs = s.samps.int.ob.xp.cpn.df[samp, paste0("mean_obs_", cpnX)],
-        ss.ph.cpnX.vals.vec = ss.ph.cpnX.vals.vec,
-        seg.psc.cpnX.low = seg.psc.cpnX.low,
-        seg.psc.cpnX.high = seg.psc.cpnX.high,
-        seg.use.default.ccf.flag = seg.use.default.ccf,
-        all.clonal.flag = is.segment.clonal.in.all.samps.flag,
-        max.cpn.val = MAX_CPN_FOR_SUBCLONALITY
-      )
-
-      all.seg.CCF.list[[cpnX]][[seg.name]][[samp]][[paste0("poss_sc_", cpnX, "_low")]] <- seg.samp.CCF.psc.cpn.df$poss_sc_cpnX_low
-      all.seg.CCF.list[[cpnX]][[seg.name]][[samp]][[paste0("poss_sc_", cpnX, "_high")]] <- seg.samp.CCF.psc.cpn.df$poss_sc_cpnX_high
-      all.seg.CCF.list[[cpnX]][[seg.name]][[samp]][[paste0("mean_frac_", cpnX, "_low")]] <- seg.samp.CCF.psc.cpn.df$mean_frac_cpnX_low
-      all.seg.CCF.list[[cpnX]][[seg.name]][[samp]][[paste0("mean_frac_", cpnX, "_high")]] <- seg.samp.CCF.psc.cpn.df$mean_frac_cpnX_high
-      all.seg.CCF.list[[cpnX]][[seg.name]][[samp]][[paste0(cpnX, "_orig_ph_obs_cpnA_vec")]] <- asas.ph.raw.cpn.lists[[samp]][[seg.name]][[paste0("ph_cpnA_vec")]]
-      all.seg.CCF.list[[cpnX]][[seg.name]][[samp]][[paste0(cpnX, "_orig_ph_obs_cpnB_vec")]] <- asas.ph.raw.cpn.lists[[samp]][[seg.name]][[paste0("ph_cpnB_vec")]]
-      all.seg.CCF.list[[cpnX]][[seg.name]][[samp]][[paste0("clean_ph_obs_", cpnX, "_vec")]] <- seg.samp.CCF.psc.cpn.df$clean_ph_obs_cpnX
-      all.seg.CCF.list[[cpnX]][[seg.name]][[samp]][[paste0("frac_", cpnX, "_low_vec")]] <- seg.samp.CCF.psc.cpn.df$frac_cpnX_low
-      all.seg.CCF.list[[cpnX]][[seg.name]][[samp]][[paste0("frac_", cpnX, "_high_vec")]] <- seg.samp.CCF.psc.cpn.df$frac_cpnX_high
-    } # end  for ( samp  in sample.vec ) {
-
-    all.seg.int.ob.xp.cpn.df.list[[cpnX]][[seg.name]] <- s.samps.int.ob.xp.cpn.df
-    all.seg.clonal.in.all.samps.list[[cpnX]][[seg.name]] <- is.segment.clonal.in.all.samps.flag
-    all.seg.greater.than.two.diff.list[[cpnX]][[seg.name]] <- is.there.cpnX.difference.greater.than.two.flag
-    all.seg.CCF.diff.from.exp.list[[cpnX]][[seg.name]] <- seg.cpnX.diff.from.exp.list
-  } # for (seg.name in seg.name.vec
-} # end for (cpnX in c("cpnA", "cpnB")) {
-
-# Save CCF data:
-if (!is.na(conf$debug_dir)) {
-  saveRDS(all.seg.CCF.list, file = all.seg.CCF.list.path)
-  saveRDS(all.seg.int.ob.xp.cpn.df.list, file = all.seg.int.ob.xp.cpn.df.list.path)
-  saveRDS(all.seg.CCF.diff.from.exp.list, file = all.seg.CCF.diff.from.exp.list.path)
-  saveRDS(all.seg.clonal.in.all.samps.list, file = all.seg.clonal.in.all.samps.list.path)
-  saveRDS(all.seg.greater.than.two.diff.list, file = all.seg.greater.than.two.diff.list.path)
-}
-
-
-
+ccf_data <- ccf_from_raw_cpn(asas.ph.raw.cpn.lists, sample.vec, seg.name.vec)
+all.seg.CCF.list <- ccf_data$all.seg.CCF.list
+all.seg.CCF.diff.from.exp.list <- ccf_data$all.seg.CCF.diff.from.exp.list
 
 # Make a table that contains all the relevant information: subclonal calls... gain and loss vs ploidy etc etc etc
-
-# Let's initialise the first joint output:
-message("Initialising minimum consistent segmentation (MCS) output dataframe...")
-empty.full.joint.segs.df <- initialiseFullOutputDataframe(
-  seg.name.vec = names(asas.ph.raw.cpn.lists[[1]]),
-  ploidy.est.vec = ploidy.est.vec,
-  purity.est.vec = purity.est.vec,
-  make.row.names.seg.name.alone = FALSE
+full.joint.segs.df <- add_info_to_output_table(
+  asas.ph.raw.cpn.lists,
+  ploidy.est.vec, purity.est.vec,
+  all.samp.non.hz.logr.and.tot.cpn.df.list,
+  patient.phased.BAF.df.list,
+  asas.SNPs.w.both.lr.baf.snp.lists,
+  all.seg.CCF.list,
+  all.seg.CCF.diff.from.exp.list,
+  all.seg.phasing.info.list,
+  all.seg.MSAI.by.BAF.ltnpd.present.list
 )
 
-
-# This adds the raw cn for both segments that could be phased and those that couldn't
-message("Adding new copy number calls to MCS output based on the phased raw copy number...")
-new.cpn.full.joint.segs.df <- addNewRawAndIntCPNCallsToFinalSegmentationParallel(
-  seg.name.vec = names(asas.ph.raw.cpn.lists[[1]]),
-  sample.vec = names(purity.est.vec),
-  all.samp.logr.df.list = all.samp.non.hz.logr.and.tot.cpn.df.list,
-  all.samp.ph.BAF.df.list = patient.phased.BAF.df.list,
-  all.seg.CCF.vals.list = all.seg.CCF.list,
-  asas.lr.baf.lists = asas.SNPs.w.both.lr.baf.snp.lists,
-  all.seg.df = empty.full.joint.segs.df,
-  cpnX.vec = c("cpnA", "cpnB")
-)
-
-# print("Mapping MCS segments back to original input and copy number states...")
-full.joint.segs.w.old.cpn.vs.ploidy.df <- addOriginalSegmentInfoToFinalSegmentationNew(new.cpn.full.joint.segs.df, sorted.all.bp.all.samps.segs.anno.df)
-
-message("Adding CCF information and subclonal cpn calls to MCS output...")
-clonality.and.ccf.joint.segs.df <- addWithinSampleClonalityAndCCFToFinalSegmentation(
-  seg.name.vec = names(asas.ph.raw.cpn.lists[[1]]),
-  all.seg.CCF.vals.list = all.seg.CCF.list,
-  all.seg.CCF.diff.from.exp.list = all.seg.CCF.diff.from.exp.list,
-  all.seg.df = full.joint.segs.w.old.cpn.vs.ploidy.df # new.cpn.full.joint.segs.df
-  , sample.vec = names(purity.est.vec),
-  clonal.pval = PVAL_THRESH_VS_MIN_CCF,
-  diff.from.oth.p.val = PVAL_THRESH_VS_OTH_CHRS_SAME_CPN,
-  min.CCF.to.consider.val = MIN_CCF_TO_CONSIDER,
-  min.cpn.to.consider.val = MIN_CPN_TO_CONSIDER,
-  min.num.other.chrs = MIN_NUM_CHRS,
-  chrs.to.use.vec = CHRS_TO_USE_VEC,
-  cpnX.vec = c("cpnA", "cpnB"),
-  max.cpn.val = MAX_CPN_FOR_SUBCLONALITY
-)
-
-message("Adding total copy number estimates to MCS output for segments with only logr information...")
-full.joint.segs.df.w.cpn.vs.ploidy.df <- addLogrDefinedCPNEventsToOutputSegmentationParallel(
-  sample.vec = names(purity.est.vec),
-  seg.name.vec = names(asas.ph.raw.cpn.lists[[1]]),
-  all.seg.df = clonality.and.ccf.joint.segs.df,
-  ploidy.est.vec = ploidy.est.vec,
-  purity.est.vec = purity.est.vec,
-  all.samp.logr.df.list = all.samp.non.hz.logr.and.tot.cpn.df.list,
-  all.samp.ph.BAF.df.list = patient.phased.BAF.df.list,
-  gain.threshold = GAIN_LOGR_THRESH,
-  loss.threshold = LOSS_LOGR_THRESH,
-  amp.threshold = AMP_LOGR_THRESH,
-  deep.loss.threshold = DEEP_LOSS_LOGR_THRESH,
-  tot.cpn.vs.ploidy.pval.thresh = PVAL_THRESH_VS_LOGR_FOR_CPN_EVENT
-)
-
-# print(head(full.joint.segs.df.w.cpn.vs.ploidy.df[,"cpn_event_vs_ploidy"]))
-message("Adding cpn event vs ploidy by logr measures to MCS output...")
-full.joint.segs.logr.vs.ploidy.clonality.df <- determineAcrossSampleClonalityOfLogrEventsVsPloidy(
-  sample.vec = names(purity.est.vec),
-  seg.name.vec = names(asas.ph.raw.cpn.lists[[1]]),
-  all.seg.df = full.joint.segs.df.w.cpn.vs.ploidy.df,
-  all.samp.logr.df.list = all.samp.non.hz.logr.and.tot.cpn.df.list,
-  all.samp.ph.BAF.df.list = patient.phased.BAF.df.list,
-  gain.threshold = GAIN_LOGR_THRESH,
-  loss.threshold = LOSS_LOGR_THRESH,
-  amp.threshold = AMP_LOGR_THRESH,
-  deep.loss.threshold = DEEP_LOSS_LOGR_THRESH,
-  tot.cpn.vs.ploidy.pval.thresh = PVAL_THRESH_VS_LOGR_FOR_CPN_EVENT
-)
-
-
-message("Testing whether any gains should be reclassified as amplifications...")
-# full.joint.check.amps.vs.ploidy.clonality.df <- retestSubclonalAmps(all.seg.df = full.joint.segs.logr.vs.ploidy.clonality.df,
-# 																	all.samp.logr.df.list = all.samp.non.hz.logr.and.tot.cpn.df.list,
-# 																	all.samp.ph.BAF.df.list = patient.phased.BAF.df.list,
-# 																	gain.threshold = GAIN_LOGR_THRESH,
-# 																	amp.threshold = AMP_LOGR_THRESH,
-# 																	p.val.for.converting.gain.to.amp = PVAL_THRESH_CONVERT_GAIN_TO_AMP)
-
-# print(head(full.joint.segs.logr.vs.ploidy.clonality.df[,c("across_samp_cl_cpn_vs_ploidy_present","across_samp_sc_cpn_vs_ploidy_present")]))
-
-
-# These are kept in separate functions as the original segmentaiton was refactored so it could run when segments are rejoined at the end of the script.
-message("Adding phasing information and MSAI detection by raw cpn calls to MCS output...")
-full.joint.segs.w.phasing.df <- addPhasingInformationToOutputSegmentation(
-  sample.vec = names(purity.est.vec),
-  seg.name.vec = names(asas.ph.raw.cpn.lists[[1]]),
-  sample.to.phase.seg.list = all.seg.phasing.info.list,
-  all.pw.cn.het.comp.lists = NULL,
-  all.segs.df = full.joint.segs.logr.vs.ploidy.clonality.df
-)
-
-
-# #Now we want to add in the allelic imbalance clonal and subclonal inrormation to the final data frame.
-# print("Adding across sample clonal/subclonal summary to MCS output...")
-# full.joint.segs.w.phasing.and.raw.df <- addOriginalCPNValuesAndCallsVsPloidyToOutputSegmentation(sample.vec = sample.vec,
-#                                         seg.name.vec = names(asas.ph.raw.cpn.lists[[1]]),
-#                                         processed.orig.cpn.segs.df = processed.orig.cpn.segs.df,
-#                                         all.segs.df = full.joint.segs.w.phasing.df)
-
-message("Adding MSAI detected by LTNPD method to the MCS output...")
-full.joint.segs.w.ltnpd.MSAI.df <- addMSAIDetectionByLTNPDToOutputSegmentation(
-  sample.vec = sample.vec,
-  seg.name.vec = names(asas.ph.raw.cpn.lists[[1]]),
-  all.seg.MSAI.by.BAF.ltnpd.present.list = all.seg.MSAI.by.BAF.ltnpd.present.list,
-  all.segs.df = full.joint.segs.w.phasing.df
-) # full.joint.segs.w.phasing.and.raw.df)
-
-message("Defining any parallel gain or loss events detected via MSAI and addingto MCS output...")
-full.joint.segs.w.parallel.cpn.events.df <- addParallelEventsByMSAIToOutputSegmentation(all.segs.df = full.joint.segs.w.ltnpd.MSAI.df)
-
-message("Adding comparison between original cpn calls and MPhase copy number calling to MCS output...")
-full.joint.segs.within.and.changed.cpn.info.df <- addWithinSampleChangeToCpnAndAllelicImbalanceCalls(
-  all.seg.df = full.joint.segs.w.parallel.cpn.events.df,
-  sample.vec = sample.vec,
-  seg.name.vec = unique(seg.name.vec)
-)
-
-
-
-message("Adding across sample estimates of allelic imbalance and LOH clonality to MCS output...")
-full.joint.segs.w.across.samp.AI.stats.df <- addAcrossSampleAlleleSpecificClonalityCalls(
-  all.seg.df = full.joint.segs.within.and.changed.cpn.info.df,
-  sample.vec = sample.vec,
-  seg.name.vec = seg.name.vec
-)
-
-
-# Legacy mostly, trying to make definitions that Emilia was doing and put them ion here to ensure they were correct
-full.joint.segs.w.across.plotting.cols.df <- addPanCanColumnDefinitionToSegDF(full.joint.segs.w.across.samp.AI.stats.df)
-
-full.joint.segs.df <- full.joint.segs.w.across.plotting.cols.df
 # Remove segments without any datapoints.
 # Todo, merge these int
 # print("Removing any segments that do not have underlying datapoints, this is an artefact of the minimum consistent segmentation performed by MPhase...")
 # full.joint.segs.df <- full.joint.segs.df[full.joint.segs.df$num_un_ph_hz_sites != 0 | full.joint.segs.df$num_ph_hz_sites != 0  | full.joint.segs.df$num_non_hz_sites != 0,]
 # print("Removing segments that do not map back to any original segments")
 # full.joint.segs.df <- full.joint.segs.df[full.joint.segs.df$orig_seg_name != "NA:NA:NA",]
-
-full.joint.segs.df.path <- paste0(PLOT_OUTPUT_DIR, patient, "_full_joint_segs_df.RDS")
-saveRDS(full.joint.segs.df, file = full.joint.segs.df.path)
-
+saveRDS(full.joint.segs.df, file = paste0(PLOT_OUTPUT_DIR, patient, "_full_joint_segs_df.RDS"))
 
 PLOTTING_FLAG <- FALSE
 if (PLOTTING_FLAG) {

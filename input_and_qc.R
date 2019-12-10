@@ -504,6 +504,7 @@ snps_set_logrsegmented <- function(segs, all_snps) {
 
 
 cleanAndErrorCheckSNPsParallel <- function(all.samp.SNP.list, mcs.seg.to.use.df, samples, allow.logr.only.flag = FALSE, data.type = "MEDICC") {
+  message("Clean and error check SNPs (parallel version)")
   # Note error checking of removing NAs from the min.cons.seg.df should already
   # have been performed
 

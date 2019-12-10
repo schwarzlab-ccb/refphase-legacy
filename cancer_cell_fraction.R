@@ -1,7 +1,7 @@
 generateAllSamplesByChromIntCPNUnderlyingRawValuesLists <- function(asas.ph.raw.cpn.lists, sample.vec, seg.name.vec, cpnX.vec = c("cpnA", "cpnB"), reduced.seg.flag = FALSE) {
 
-  message("asas.ph.raw.cpn.lists")
-  str(asas.ph.raw.cpn.lists)
+  #message("asas.ph.raw.cpn.lists")
+  #str(asas.ph.raw.cpn.lists)
   sample.chr.int.cpn.raw.vals.list <- list()
   # But really the datastructure organisation overall needs to change if we speed.
   for (samp in sample.vec) {
@@ -28,7 +28,7 @@ generateAllSamplesByChromIntCPNUnderlyingRawValuesLists <- function(asas.ph.raw.
           warning("FIXME: This is a hack. Crashes when this is a single value")
           if (length(sample.chr.int.cpn.raw.vals.list[[samp]][[as.character(samp.seg.int.cpnX.val)]][[chr]]) <= 1)
             next
-          sample.chr.int.cpn.raw.vals.list[[samp]][[as.character(samp.seg.int.cpnX.val)]][[chr]][[paste0("all_seg_", cpnX, "_vec")]] 
+          sample.chr.int.cpn.raw.vals.list[[samp]][[as.character(samp.seg.int.cpnX.val)]][[chr]][[paste0("all_seg_", cpnX, "_vec")]]
           cat("5\n")
           sample.chr.int.cpn.raw.vals.list[[samp]][[as.character(samp.seg.int.cpnX.val)]][[chr]][[paste0("all_seg_", cpnX, "_vec")]] <- c(
             sample.chr.int.cpn.raw.vals.list[[samp]][[as.character(samp.seg.int.cpnX.val)]][[chr]][[paste0("all_seg_", cpnX, "_vec")]],
@@ -117,7 +117,7 @@ calculateWhetherSegCPNDiffFromIntegerExpectedAndAllMatchingSampCPN <- function(a
 
 
 getSegObsExpCPNBySampleDF <- function(asas.ph.raw.cpn.lists, sample.vec, seg.name, cpnX.vec = c("cpnA", "cpnB"), reduced.seg.flag = FALSE) {
-  str(asas.ph.raw.cpn.lists)
+  #str(asas.ph.raw.cpn.lists)
 
   num.samples <- length(sample.vec)
   s.samps.obs.exp.cpn.df <- data.frame(
@@ -129,6 +129,7 @@ getSegObsExpCPNBySampleDF <- function(asas.ph.raw.cpn.lists, sample.vec, seg.nam
     exp_cpnB = numeric(num.samples),
     stringsAsFactors = FALSE
   )
+
   rownames(s.samps.obs.exp.cpn.df) <- sample.vec
   for (cpnX in cpnX.vec) {
     for (samp in sample.vec) {
@@ -140,9 +141,10 @@ getSegObsExpCPNBySampleDF <- function(asas.ph.raw.cpn.lists, sample.vec, seg.nam
         mean.cpnX <- mean(asas.ph.raw.cpn.lists[[seg.name]][[paste0(cpnX, "_orig_ph_obs_", cpnX, "_vec")]], na.rm = TRUE)
         s.samps.obs.exp.cpn.df[samp, paste0("round_int_", cpnX)] <- round(mean.cpnX)
       }
-      message("cpn: ", cpnX, "sample: ", samp, "mean: ", mean.cpnX)
-      print("mean.cpnX")
+
+      message("reduced:", reduced.seg.flag, "\tcpn: ", cpnX, "\tsample: ", samp, "\tmean: ", mean.cpnX)
       print(mean.cpnX)
+
       # Calculate observed
       if (is.na(mean.cpnX) | mean.cpnX < 0) {
         s.samps.obs.exp.cpn.df[samp, paste0("mean_obs_", cpnX)] <- 0
