@@ -9,8 +9,7 @@ add_info_to_output_table <- function(asas.ph.raw.cpn.lists, ploidy.est.vec,
                                      all.seg.CCF.list,
                                      all.seg.CCF.diff.from.exp.list,
                                      all.seg.phasing.info.list,
-                                     all.seg.MSAI.by.BAF.ltnpd.present.list
-                                     ) {
+                                     all.seg.MSAI.by.BAF.ltnpd.present.list) {
 
   # Let's initialise the first joint output:
   message("Initialising minimum consistent segmentation (MCS) output dataframe...")

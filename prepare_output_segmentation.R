@@ -560,7 +560,6 @@ addOriginalSegmentInfoToFinalSegmentation <- function(seg.name.vec,
 
   for (samp in sample.vec) {
     for (seg.name in seg.name.vec) {
-
       if (length(sample.vec) > 1) {
         samp.seg.name <- paste0(samp, ":", seg.name)
       } else {
@@ -570,8 +569,7 @@ addOriginalSegmentInfoToFinalSegmentation <- function(seg.name.vec,
       chr.start.end.vec <- unlist(strsplit(seg.name, split = ":"))
 
       chr.samp.seg.df <- processed.orig.cpn.segs.df[processed.orig.cpn.segs.df$sample == samp
-      & as.numeric(processed.orig.cpn.segs.df$chr) == as.numeric(chr.start.end.vec[1]),
-      ,
+      & as.numeric(processed.orig.cpn.segs.df$chr) == as.numeric(chr.start.end.vec[1]), ,
       drop = FALSE
       ]
 

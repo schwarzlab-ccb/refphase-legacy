@@ -1,5 +1,4 @@
 joinSegAndReturnNewArmGranges <- function(arm.idx.vec, curr.gr.idx, adj.idx, adj.segs.mat, sorted.arm.grs) {
-
   kept.arm.idxs <- arm.idx.vec[ !arm.idx.vec %in% c(curr.gr.idx, adj.segs.mat[adj.idx, "gr_idx"]) ]
 
   if (length(kept.arm.idxs) > 0) {
@@ -32,7 +31,6 @@ joinSegAndReturnNewArmGranges <- function(arm.idx.vec, curr.gr.idx, adj.idx, adj
 
 # Try to join using phasing
 attemptToJoinSegbyPhasedCPN <- function(curr.seg.mat, adj.segs.mat, samp.arm.sites.df, arm.idx.vec, curr.gr.idx, sorted.arm.grs, cpnX.string, MIN_PH_CPN) {
-
   new.unsorted.arm.grs <- sorted.arm.grs
 
   for (k in 1:nrow(adj.segs.mat)) {
@@ -83,7 +81,6 @@ attemptToJoinSegbyTotalCPN <- function(curr.seg.mat, adj.segs.mat, samp.arm.site
         tot.p.val <- wilcoxTestWithErrorHandling(cur.tot.cpn.vec, adj.tot.cpn.vec)$p.val
 
         if (tot.p.val > PVAL_THRESH_TO_JOIN_TOT_SEGS) {
-
           new.unsorted.arm.grs <- joinSegAndReturnNewArmGranges(
             arm.idx.vec = arm.idx.vec,
             curr.gr.idx = curr.gr.idx,
@@ -133,7 +130,6 @@ attemptToJoinSegbyMeanTotalCPNAlone <- function(curr.seg.mat, adj.segs.mat, samp
 
 
 joinBlankSegsToMostConfidentCall <- function(curr.seg.mat, adj.segs.mat, samp.arm.sites.df, arm.idx.vec, curr.gr.idx, sorted.arm.grs) {
-
   new.unsorted.arm.grs <- sorted.arm.grs
   adj.segs.mat <- adj.segs.mat[order(adj.segs.mat[, "num_ph_cpn"], adj.segs.mat[, "num_tot_cpn"]), , drop = FALSE]
   adj.segs.mat <- adj.segs.mat[1, , drop = FALSE]

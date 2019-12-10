@@ -470,7 +470,6 @@ plotSampleLogRBAFCPNABsAndMSAIAcrossGenome <- function(samp,
                                                        asas.SNPS.lr.and.or.baf.lists.path,
                                                        cpnA.allele.color = "#de2d2699",
                                                        cpnB.allele.color = "#3182bd99") {
-
   print("Called plotSampleLogRBAFCPNABsAndMSAIAcrossGenome....")
   print("params: samp")
   print(samp)

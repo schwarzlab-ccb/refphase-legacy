@@ -447,4 +447,3 @@ createFullyAnnotatedJointSegmentation <- function(f.joint.segs.df, samples) {
 
   return(sorted.all.bp.all.samps.segs.anno.df)
 }
-

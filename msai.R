@@ -18,7 +18,6 @@ getAllSegsAIorMSAIDetectionFromBAFListLTNPD <- function(seg.name.vec, sample.vec
         # samples that made it through
         ref.samp <- all.seg.phasing.info.list[[seg.name]]$samp_most_significant_by_diptest
       } else {
-
         all.seg.MSAI.by.BAF.ltnpd.present.list[[seg.name]]$MSAI_detection_feasible <- TRUE
         all.seg.MSAI.by.BAF.ltnpd.present.list[[seg.name]]$MSAI_detection_info <- "phasing_from_single_sample_used" # Note might be an issue here, is it only
       }
@@ -72,7 +71,6 @@ getAllSegsAIorMSAIDetectionFromBAFListLTNPD <- function(seg.name.vec, sample.vec
       all.seg.MSAI.by.BAF.ltnpd.present.list[[seg.name]]$MSAI_by_sample_df <- seg.all.samp.MSAI.results.df
       all.seg.MSAI.by.BAF.ltnpd.present.list[[seg.name]]$all_samps_BAF_and_ltnpd_df <- seg.all.samp.MSAI.results.df
     } else {
-
       all.seg.MSAI.by.BAF.ltnpd.present.list[[seg.name]]$MSAI_detection_feasible <- FALSE
       all.seg.MSAI.by.BAF.ltnpd.present.list[[seg.name]]$MSAI_detection_info <- "no_phasing_was_attempted"
       all.seg.MSAI.by.BAF.ltnpd.present.list[[seg.name]]$MSAI_present_any_sample_by_thresh <- NA
@@ -97,13 +95,11 @@ getAllSegsMSAIDetectionFromBAFListLTNPD <- function(seg.name.vec, sample.vec, as
         all.seg.MSAI.by.BAF.ltnpd.present.list[[seg.name]]$MSAI_detection_info <- "no_reference_although_phasing_attempted"
         next
       } else if (ref.samp == "mixture") {
-
         all.seg.MSAI.by.BAF.ltnpd.present.list[[seg.name]]$MSAI_detection_feasible <- TRUE
         all.seg.MSAI.by.BAF.ltnpd.present.list[[seg.name]]$MSAI_detection_info <- "mixture_phasing_using_top_ranked_samp_by_diptest" # Note might be an issue here, is it only
         # samples that made it throigh to
         ref.samp <- all.seg.phasing.info.list[[seg.name]]$samp_most_significant_by_diptest
       } else {
-
         all.seg.MSAI.by.BAF.ltnpd.present.list[[seg.name]]$MSAI_detection_feasible <- TRUE
         all.seg.MSAI.by.BAF.ltnpd.present.list[[seg.name]]$MSAI_detection_info <- "phasing_from_single_sample_used" # Note might be an issue here, is it only
       }
@@ -158,7 +154,6 @@ getAllSegsMSAIDetectionFromBAFListLTNPD <- function(seg.name.vec, sample.vec, as
       all.seg.MSAI.by.BAF.ltnpd.present.list[[seg.name]]$MSAI_by_sample_df <- seg.all.samp.MSAI.results.df
       all.seg.MSAI.by.BAF.ltnpd.present.list[[seg.name]]$all_samps_BAF_and_ltnpd_df <- seg.all.samp.MSAI.results.df
     } else {
-
       all.seg.MSAI.by.BAF.ltnpd.present.list[[seg.name]]$MSAI_detection_feasible <- FALSE
       all.seg.MSAI.by.BAF.ltnpd.present.list[[seg.name]]$MSAI_detection_info <- "no_phasing_was_attempted"
       all.seg.MSAI.by.BAF.ltnpd.present.list[[seg.name]]$MSAI_present_any_sample_by_thresh <- NA

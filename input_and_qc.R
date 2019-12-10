@@ -612,5 +612,3 @@ cleanAndErrorCheckSNPsParallel <- function(all.samp.SNP.list, mcs.seg.to.use.df,
 
   return(working.all.samp.SNP.list)
 }
-
-

@@ -14,8 +14,9 @@ ascat_set_bafsegmented <- function(ascat, phased_snps, segs) {
     idx_phased <- phased_snps$chrom == seg$Chromosome & phased_snps$pos >= seg$Start_Position & phased_snps$pos <= seg$End_Position
     phased_snps_seg <- phased_snps[idx_phased, ]
     pre_phased_bafs <- unique(phased_snps_seg$ph_median_segmented_BAF)
-    if (length(pre_phased_bafs) == 0)
+    if (length(pre_phased_bafs) == 0) {
       pre_phased_bafs <- 0.5
+    }
 
     idx_ascat <- ascat_bafseg_pos$chrs == seg$Chromosome & ascat_bafseg_pos$pos >= seg$Start_Position & ascat_bafseg_pos$pos <= seg$End_Position
 
@@ -76,8 +77,8 @@ phase_ascat <- function(ascat_bc, phased_bafs, segs, phased_baf_info) {
   }
 
   # Let's do the BAF recalculation
-  #tum.baf.segmented.vec <- ascat_bc[["Tumor_BAF_segmented"]][[1]][, 1]
-  #names(tum.baf.segmented.vec) <- rownames(ascat_bc[["Tumor_BAF_segmented"]][[1]])
+  # tum.baf.segmented.vec <- ascat_bc[["Tumor_BAF_segmented"]][[1]][, 1]
+  # names(tum.baf.segmented.vec) <- rownames(ascat_bc[["Tumor_BAF_segmented"]][[1]])
 
   ascat_bc <- ascat_set_bafsegmented(ascat_bc, samp.pha.baf.df, samp.seg.df)
 

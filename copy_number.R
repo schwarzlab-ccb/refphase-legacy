@@ -205,10 +205,10 @@ createAllSegsPhasedBAFDataFrame <- function(asas.lr.baf.lists, sample.to.phase.s
 
   # Now we need to make sure that the asas.lr.baf.lists and
   # sample.to.phase.seg.list
-  #if (length(names(sample.to.phase.seg.list)) != length(asas.lr.baf.lists[[1]])) {
+  # if (length(names(sample.to.phase.seg.list)) != length(asas.lr.baf.lists[[1]])) {
   #  message("Segments that *will* have phasing attempted as were at least the minimum number of hz positions (", min.num.hz.snp.phasing, " positions)")
   #  message(paste(names(sample.to.phase.seg.list)[names(sample.to.phase.seg.list) %in% names(asas.lr.baf.lists[[1]])], collapse = "\n"))
-  #}
+  # }
 
   seg.name.vec <- names(sample.to.phase.seg.list)
   all.samp.ph.BAF.df.list <- list()

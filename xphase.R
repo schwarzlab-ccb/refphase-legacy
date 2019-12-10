@@ -38,7 +38,6 @@ LocationOfThisScript <- function() {
 
 
 if (!interactive()) {
-
   option_list <- list(
     make_option(c("--patient"),
       default = "CB1002",
@@ -192,7 +191,7 @@ source(file.path(current.dir, "validate_input.R"))
 source(file.path(current.dir, "phase_ascat.R"))
 source(file.path(current.dir, "input_ascat.R"))
 source(file.path(current.dir, "input_sequenza.R"))
-source(file.path(current.dir, "input_medicc.R"))  # Not used currently
+source(file.path(current.dir, "input_medicc.R")) # Not used currently
 source(file.path(current.dir, "ascat_utils.R"))
 source(file.path(current.dir, "ccf_from_raw_cpn.R"))
 source(file.path(current.dir, "add_info_to_output_table.R"))
@@ -215,22 +214,27 @@ source(file.path(current.dir, "constants.R"))
 # -------------------------------------------------------------------------
 # Create output dirs and check that input files exist
 # -------------------------------------------------------------------------
-if (!file.exists(PLOT_OUTPUT_DIR))
+if (!file.exists(PLOT_OUTPUT_DIR)) {
   message("Output directory doesn't exist:", PLOT_OUTPUT_DIR)
+}
 
 output_dir <- PLOT_OUTPUT_DIR
-if (!dir.exists(output_dir))
+if (!dir.exists(output_dir)) {
   dir.create(output_dir, recursive = TRUE)
+}
 
-if (is.null(output.directory.base.path))
+if (is.null(output.directory.base.path)) {
   stop("No output path provided, aborting...")
+}
 
 # Make sure the input files exist before going too far
-if (!file.exists(snp.file.path))
+if (!file.exists(snp.file.path)) {
   stop("No file at the snp.file.path provided")
+}
 
-if (!file.exists(seg.file.path))
+if (!file.exists(seg.file.path)) {
   stop("No file at the seg.file.path provided")
+}
 
 
 registerDoParallel(cores = conf$cores)
@@ -466,10 +470,10 @@ for (samp in sample.vec) {
   # checking.cont.range <- missing.logr.segmented.idx.vec - c(missing.logr.segmented.idx.vec[2:length(missing.logr.segmented.idx.vec)], missing.logr.segmented.idx.vec[length(missing.logr.segmented.idx.vec)] + 1)
 
   validate_ascat_bc_input(ascat.bc.phased)
-  #str(ascat.bc.phased)
+  # str(ascat.bc.phased)
   message("Running ASCAT")
   ascat.output <- ascat.runAscat(ascat.bc.phased, gamma = 1, rho_manual = samp.purity, psi_manual = samp.ploidy)
-  #str(ascat.output)
+  # str(ascat.output)
   setwd(base.dir)
 
   ph.ascat.output.list[[samp]] <- ascat.output
@@ -746,11 +750,9 @@ intersection.seg.name.vec <- paste(intersection.orig.mcs.df$Chromosome, intersec
 orig.intersection.mcs.w.MSAI.df <- intersection.orig.mcs.df
 unq.intersection.seg.name.vec <- unique(intersection.seg.name.vec)
 for (seg.name in unq.intersection.seg.name.vec) {
-
   all.samp.matching.seg.vec <- paste0(sample.vec, "@", seg.name)
 
   if (isTRUE(all.seg.MSAI.by.BAF.ltnpd.present.list[[seg.name]]$MSAI_detection_feasible)) {
-
     seg.MPhase.MSAI.df <- all.seg.MSAI.by.BAF.ltnpd.present.list[[seg.name]]$all_samps_BAF_and_ltnpd_df
     seg.MPhase.MSAI.ASCAT.df <- cbind(seg.MPhase.MSAI.df, intersection.orig.mcs.df[paste0(sample.vec, ":", seg.name), ])
     seg.MPhase.MSAI.ASCAT.df$samp_seg_name <- paste0(sample.vec, ":", seg.name)

@@ -1,7 +1,7 @@
-generateAllSamplesByChromIntCPNUnderlyingRawValuesLists <- function(asas.ph.raw.cpn.lists,sample.vec, seg.name.vec, cpnX.vec = c("cpnA", "cpnB"), reduced.seg.flag = FALSE) {
+generateAllSamplesByChromIntCPNUnderlyingRawValuesLists <- function(asas.ph.raw.cpn.lists, sample.vec, seg.name.vec, cpnX.vec = c("cpnA", "cpnB"), reduced.seg.flag = FALSE) {
 
-  #message("asas.ph.raw.cpn.lists")
-  #str(asas.ph.raw.cpn.lists)
+  # message("asas.ph.raw.cpn.lists")
+  # str(asas.ph.raw.cpn.lists)
   sample.chr.int.cpn.raw.vals.list <- list()
   # But really the datastructure organisation overall needs to change if we speed.
   for (samp in sample.vec) {
@@ -26,8 +26,9 @@ generateAllSamplesByChromIntCPNUnderlyingRawValuesLists <- function(asas.ph.raw.
           cat("4\n")
           str(sample.chr.int.cpn.raw.vals.list[[samp]][[as.character(samp.seg.int.cpnX.val)]][[chr]])
           warning("FIXME: This is a hack. Crashes when this is a single value")
-          if (length(sample.chr.int.cpn.raw.vals.list[[samp]][[as.character(samp.seg.int.cpnX.val)]][[chr]]) <= 1)
+          if (length(sample.chr.int.cpn.raw.vals.list[[samp]][[as.character(samp.seg.int.cpnX.val)]][[chr]]) <= 1) {
             next
+          }
           sample.chr.int.cpn.raw.vals.list[[samp]][[as.character(samp.seg.int.cpnX.val)]][[chr]][[paste0("all_seg_", cpnX, "_vec")]]
           cat("5\n")
           sample.chr.int.cpn.raw.vals.list[[samp]][[as.character(samp.seg.int.cpnX.val)]][[chr]][[paste0("all_seg_", cpnX, "_vec")]] <- c(
@@ -117,7 +118,6 @@ calculateWhetherSegCPNDiffFromIntegerExpectedAndAllMatchingSampCPN <- function(a
 
 
 getSegObsExpCPNBySampleDF <- function(asas.ph.raw.cpn.lists, sample.vec, seg.name, cpnX.vec = c("cpnA", "cpnB"), reduced.seg.flag = FALSE) {
-
   num.samples <- length(sample.vec)
   s.samps.obs.exp.cpn.df <- data.frame(
     round_int_cpnA = numeric(num.samples), # rounded
@@ -132,7 +132,6 @@ getSegObsExpCPNBySampleDF <- function(asas.ph.raw.cpn.lists, sample.vec, seg.nam
   rownames(s.samps.obs.exp.cpn.df) <- sample.vec
   for (cpnX in cpnX.vec) {
     for (samp in sample.vec) {
-
       if (reduced.seg.flag == FALSE) {
         mean.cpnX <- asas.ph.raw.cpn.lists[[samp]][[seg.name]][[paste0("mean_ph_", cpnX)]]
         s.samps.obs.exp.cpn.df[samp, paste0("round_int_", cpnX)] <- round(mean.cpnX)
@@ -424,7 +423,6 @@ chooseLowHighSubclonalCPNWithOnlyTwoPossibilities <- function(s.samps.int.ob.xp.
                                                               cpnX,
                                                               all.clonal.flag,
                                                               two.value.diff.flag) {
-
   samps.mean.cpnX.vec <- s.samps.int.ob.xp.cpn.df[, paste0("mean_obs_", cpnX)]
   # check whether only one state when rounding
   if (length(unique(round(samps.mean.cpnX.vec))) == 1) {

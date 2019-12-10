@@ -46,7 +46,6 @@ readInMEDICCInputFormatParallel <- function(snp.file.df, processed.orig.cpn.segs
           & ASCAT.summary$pos >= seg[j, ]$startpos
           & ASCAT.summary$pos <= seg[j, ]$endpos, ]$BAFsegmented <- 0.5
         } else {
-
           avg.seg.baf <- 0.5 - mean(abs(as.numeric(ASCAT.summary[ASCAT.summary$chr == seg[j, ]$chr
           & ASCAT.summary$pos >= seg[j, ]$startpos
           & ASCAT.summary$pos <= seg[j, ]$endpos
@@ -94,4 +93,3 @@ readInMEDICCInputFormatParallel <- function(snp.file.df, processed.orig.cpn.segs
 
   return(all.samp.SNP.list)
 }
-
