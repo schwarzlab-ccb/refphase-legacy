@@ -26,7 +26,8 @@ read_snps_ascat <- function(sample_table, segs, samples) {
       ascat_bc <- readRDS(sample_info$samp_ascat_bc_path)
     }
 
-    validate_ascat_bc_input(ascat_bc)
+    if (conf$validate_input)
+      validate_ascat_bc_input(ascat_bc)
 
     # First check to see which SNPs are heterozygous
     normal_baf <- ascat_bc$Germline_BAF[[1]]

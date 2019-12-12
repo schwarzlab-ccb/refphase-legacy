@@ -100,7 +100,7 @@ if (!interactive()) {
       help = "Set this to load intermediate data from the given directory"
     ),
     make_option("--debug-dir",
-      default = NA,
+      default = NA, type="character",
       help = "Set this to save intermediate data to the given directory for later debugging"
     ),
     make_option(c("--validate-input"),
@@ -252,6 +252,8 @@ chrom.info.df <- read.table(info.path, stringsAsFactors = FALSE, sep = "\t", hea
 
 # Paths for saving/loading objects
 if (!is.na(conf$debug_dir)) {
+  dir.create(conf$debug_dir, recursive = TRUE, showWarnings = FALSE)
+
   input.snp.file.rds.path <- file.path(conf$debug_dir, "input_snp_file.rds")
   all.samp.SNP.list.path <- file.path(conf$debug_dir, "all_samp_SNP_list.rds")
   asas.SNPS.lr.and.or.baf.lists.path <- file.path(conf$debug_dir, "asas_SNPS_lr_and_or_baf_lists_lists.rds")
@@ -441,8 +443,6 @@ for (samp in sample.vec) {
   samp.purity <- purity.est.vec[samp]
 
   setwd(qc.choice.dir)
-  # Disable for now, since it's not actually performing any function
-  # ascat.plotSegmentedData(ascat.bc)
 
   # So now somehow there's a missing value resulting from running ascat on the ascat.bc object.
   # List of 14
@@ -469,8 +469,11 @@ for (samp in sample.vec) {
   # missing.logr.segmented.idx.vec <- which(is.na(ascat.bc$Tumor_LogR_segmented[,1]))
   # checking.cont.range <- missing.logr.segmented.idx.vec - c(missing.logr.segmented.idx.vec[2:length(missing.logr.segmented.idx.vec)], missing.logr.segmented.idx.vec[length(missing.logr.segmented.idx.vec)] + 1)
 
-  validate_ascat_bc_input(ascat.bc.phased)
   # str(ascat.bc.phased)
+  if (conf$validate_input)
+    validate_ascat_bc_input(ascat.bc.phased)
+  # Disable for now, since it's not actually performing any function
+  ascat.plotSegmentedData(ascat.bc.phased)
   message("Running ASCAT")
   ascat.output <- ascat.runAscat(ascat.bc.phased, gamma = 1, rho_manual = samp.purity, psi_manual = samp.ploidy)
   # str(ascat.output)
