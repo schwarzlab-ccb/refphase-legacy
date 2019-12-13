@@ -416,6 +416,7 @@ message("***********************************************************************
 #    particularly if the segmentation of the input did not make use of
 #    multi-region phasing data.
 # 2) Initiate list for segmentation
+ph.ascat.input.list <- list()
 ph.ascat.output.list <- list()
 ph.ascat.segs.df.list <- list()
 base.dir <- getwd()
@@ -475,36 +476,38 @@ for (samp in sample.vec) {
   # Disable for now, since it's not actually performing any function
   ascat.plotSegmentedData(ascat.bc.phased)
   message("Running ASCAT")
+  ph.ascat.input.list[[samp]] <- ascat.bc.phased
   ascat.output <- ascat.runAscat(ascat.bc.phased, gamma = 1, rho_manual = samp.purity, psi_manual = samp.ploidy)
+  ph.ascat.output.list[[samp]] <- ascat.output
   # str(ascat.output)
   setwd(base.dir)
 
-  ph.ascat.output.list[[samp]] <- ascat.output
-  save(ascat.bc.phased, file = file.path(qc.choice.dir, paste(samp, "ascat.bc.RData", sep = ".")))
+  ascat.bc <- ascat.bc.phased
+  save(ascat.bc, file = file.path(qc.choice.dir, paste(samp, "ascat.bc.RData", sep = ".")))
   save(ascat.output, file = file.path(qc.choice.dir, paste(samp, "ascat.output.RData", sep = ".")))
 
   # We need to work out where the MSAI is and flip it as well...
   # Calculate number of heterozygous positions per segment
-  tmp <- ascat.output$segments_raw
+  segs_raw <- ascat.output$segments_raw
   n.het <- 0 # FIXME probably want to add these in.
   acf <- ascat.output$aberrantcellfraction
   ploidy <- ascat.output$ploidy
 
-  tmp <- cbind(tmp[, c(1:4)], n.het, tmp[, 5] + tmp[, 6], tmp[, 5:6], rep(ploidy, nrow(tmp)), rep(acf, nrow(tmp)), tmp[, 7], tmp[, 8])
-  colnames(tmp)[c(6, 9:12)] <- c("cnTotal", "Ploidy", "ACF", "nAraw", "nBraw")
-  chr <- sub("chr", "", tmp[, 2])
+  segs_raw <- cbind(segs_raw[, c(1:4)], n.het, segs_raw[, 5] + segs_raw[, 6], segs_raw[, 5:6], rep(ploidy, nrow(segs_raw)), rep(acf, nrow(segs_raw)), segs_raw[, 7], segs_raw[, 8])
+  colnames(segs_raw)[c(6, 9:12)] <- c("cnTotal", "Ploidy", "ACF", "nAraw", "nBraw")
+  chr <- sub("chr", "", segs_raw[, 2])
   chr[chr %in% c("x", "X")] <- 23
   chr[chr %in% c("y", "Y")] <- 24
-  tmp[, 2] <- as.numeric(chr)
+  segs_raw[, 2] <- as.numeric(chr)
 
   # add a column defining gain and losslength
-  callState <- rep("neutral", nrow(tmp))
-  callState[log2((tmp[, "nAraw"] + tmp[, "nBraw"]) / tmp[, "Ploidy"]) >= log2(2.5 / 2)] <- "Gain"
-  callState[log2((tmp[, "nAraw"] + tmp[, "nBraw"]) / tmp[, "Ploidy"]) <= log2(1.5 / 2)] <- "Loss"
-  callState[(tmp[, "nAraw"] + tmp[, "nBraw"]) >= ((2 * tmp[, "Ploidy"]) + 1)] <- "Amp"
-  callState[(tmp[, "nAraw"] + tmp[, "nBraw"]) <= 0.5] <- "Del"
+  callState <- rep("neutral", nrow(segs_raw))
+  callState[log2((segs_raw[, "nAraw"] + segs_raw[, "nBraw"]) / segs_raw[, "Ploidy"]) >= log2(2.5 / 2)] <- "Gain"
+  callState[log2((segs_raw[, "nAraw"] + segs_raw[, "nBraw"]) / segs_raw[, "Ploidy"]) <= log2(1.5 / 2)] <- "Loss"
+  callState[(segs_raw[, "nAraw"] + segs_raw[, "nBraw"]) >= ((2 * segs_raw[, "Ploidy"]) + 1)] <- "Amp"
+  callState[(segs_raw[, "nAraw"] + segs_raw[, "nBraw"]) <= 0.5] <- "Del"
 
-  samp.ph.ascat.segs.df <- cbind(tmp, callState)
+  samp.ph.ascat.segs.df <- cbind(segs_raw, callState)
   ph.ascat.segs.df.list[[samp]] <- samp.ph.ascat.segs.df
 
   seg <- samp.ph.ascat.segs.df
@@ -529,28 +532,31 @@ message("Now 'USING_XPHASE'...")
 USING_XPHASE <- TRUE
 PH_ALL_SAMP_ASCAT_RAW_CPN_DF_LIST <- list()
 for (samp in sample.vec) {
-  if (conf$input_format == "ASCAT") {
-    ascat.bc <- read_ascat_bc(pt.snp.file.paths.df[samp, ]$samp_ascat_bc_path)
+  #if (conf$input_format == "ASCAT") {
+  #  ascat.bc <- read_ascat_bc(pt.snp.file.paths.df[samp, ]$samp_ascat_bc_path)
 
-    normal_baf <- ascat.bc$Germline_BAF[[1]]
-    is_homozygous <- normal_baf < 0.3 | normal_baf > 0.7
-    is_heterozygous <- !(is.na(normal_baf) | is_homozygous)
-  } else {
-    # Create an ascat.bc object from the existing snp data, rather than
-    # reading an existing ascat.bc object
-    ascat.bc <- snps_to_ascat_bc(all.samp.SNP.list[[samp]], samp)
+  #  normal_baf <- ascat.bc$Germline_BAF[[1]]
+  #  is_homozygous <- normal_baf < 0.3 | normal_baf > 0.7
+  #  is_heterozygous <- !(is.na(normal_baf) | is_homozygous)
+  #} else {
+  #  # Create an ascat.bc object from the existing snp data, rather than
+  #  # reading an existing ascat.bc object
+  #  ascat.bc <- snps_to_ascat_bc(all.samp.SNP.list[[samp]], samp)
 
-    is_homozygous <- all.samp.SNP.list[[samp]]$germline_zygosity == "hom"
-    is_heterozygous <- !is_homozygous
-    # stopifnot(length(ascat.bc$Tumor_BAF$BAF) == length(is_homozygous))
-  }
+  #  is_homozygous <- all.samp.SNP.list[[samp]]$germline_zygosity == "hom"
+  #  is_heterozygous <- !is_homozygous
+  #  # stopifnot(length(ascat.bc$Tumor_BAF$BAF) == length(is_homozygous))
+  #}
 
-  # Validate the input immediately
-  if (conf$validate_input) {
-    validate_ascat_bc_input(ascat.bc)
-  }
+  ## Validate the input immediately
+  #if (conf$validate_input) {
+  #  validate_ascat_bc_input(ascat.bc)
+  #}
 
-  message("# of heterozygous SNPs:", sum(is_heterozygous), "/", length(is_heterozygous))
+  ascat.bc <- ph.ascat.input.list[[samp]]
+  keep_idx <- as.numeric(rownames(ascat.bc.phased$Tumor_BAF_segmented[[1]]))
+
+  #message("# of heterozygous SNPs:", sum(is_heterozygous), "/", length(is_heterozygous))
 
   chr.vec <- chrom2integer(as.character(ascat.bc$SNPpos$chr))
 
@@ -574,18 +580,50 @@ for (samp in sample.vec) {
 
   message("saving results")
 
+  subset_idx <- as.numeric(rownames(ascat.bc$Tumor_BAF_segmented[[1]]))
+  message("************************* subset_idx")
+  str(subset_idx)
+
+  #keep_idx <- intersect(which(is_heterozygous), subset_idx)
+  #message("het")
+  #str(which(is_heterozygous))
+  #message("keep")
+  #str(keep_idx)
+  #message("diff1")
+  #str(setdiff(which(is_heterozygous), subset_idx))
+  #message("diff2")
+  #str(setdiff(subset_idx, which(is_heterozygous)))
+
+  tmp <- list(
+    chr = chr.vec,
+    pos = ascat.bc$SNPpos$pos,
+    snp_pos = paste0(chr.vec, "_",ascat.bc$SNPpos$pos),
+    germline_BAF = ascat.bc$Germline_BAF$BAF,
+    BAF = ascat.bc$Tumor_BAF$BAF,
+    LogR = ascat.bc$Tumor_LogR[[1]],
+    ph_ascat_nAraw_w_minus = new.ph.ascat.nAraw.w.minus.vec,
+    ph_ascat_nBraw_w_minus = new.ph.ascat.nBraw.w.minus.vec,
+    ph_ascat_nAraw = new.ph.ascat.nAraw,
+    ph_ascat_nBraw = new.ph.ascat.nBraw)
+
+  message("************************* tmp")
+  str(tmp)
+
   # Keep only the positions that are in Tumor_BAF_segmented to match
   # ph_ascat_* lengths
-  subset_idx <- as.numeric(rownames(ascat.bc$Tumor_BAF_segmented[[1]]))
+  message("************************* ascat.bc")
+  str(ascat.bc)
+  message("************************* ph.ascat.output.list[[samp]]")
+  str(ph.ascat.output.list[[samp]])
 
-  stopifnot(length(subset_idx) == length(new.ph.ascat.nAraw.w.minus.vec))
+  stopifnot(length(keep_idx) == length(new.ph.ascat.nAraw.w.minus.vec))
 
   PH_ALL_SAMP_ASCAT_RAW_CPN_DF_LIST[[samp]] <- data.frame(
-    chr = chr.vec[is_heterozygous][subset_idx],
-    pos = ascat.bc$SNPpos$pos[is_heterozygous][subset_idx],
-    snp_pos = paste0(chr.vec[is_heterozygous], "_", ascat.bc$SNPpos$pos[is_heterozygous])[subset_idx],
-    BAF = ascat.bc$Tumor_BAF$BAF[is_heterozygous][subset_idx],
-    LogR = ascat.bc$Tumor_LogR[[1]][is_heterozygous][subset_idx],
+    chr = chr.vec[keep_idx],
+    pos = ascat.bc$SNPpos$pos[keep_idx],
+    snp_pos = paste0(chr.vec[keep_idx], "_", ascat.bc$SNPpos$pos[keep_idx]),
+    BAF = ascat.bc$Tumor_BAF$BAF[keep_idx],
+    LogR = ascat.bc$Tumor_LogR[[1]][keep_idx],
     ph_ascat_nAraw_w_minus = new.ph.ascat.nAraw.w.minus.vec,
     ph_ascat_nBraw_w_minus = new.ph.ascat.nBraw.w.minus.vec,
     ph_ascat_nAraw = new.ph.ascat.nAraw,
