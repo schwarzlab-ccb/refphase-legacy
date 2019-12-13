@@ -331,13 +331,10 @@ message("Number of rows in each sample (asas.SNPs.w.both.lr.baf.snp.lists)")
 snps_per_segment <- sapply(asas.SNPs.w.both.lr.baf.snp.lists, function(x) {
   sapply(x, nrow)
 })
-# print(snps_per_segment)
+
 message("Segments with enough hz positions: >= ", MIN_NUM_HZ_SNP_PHASING)
 print(snps_per_segment[apply(snps_per_segment >= MIN_NUM_HZ_SNP_PHASING, 1, all), ])
 message(sum(apply(snps_per_segment >= MIN_NUM_HZ_SNP_PHASING, 1, all)), "/", nrow(snps_per_segment))
-# message("segments that have < min number of hz positions:")
-# print(rownames(snps_per_segment)[apply(snps_per_segment < MIN_NUM_HZ_SNP_PHASING, 1, any)])
-# message("Number of segments: ", nrow(snps_per_segment[apply(snps_per_segment < MIN_NUM_HZ_SNP_PHASING, 1, any),]))
 
 message("Setting the pval thresholds for calling subclonality depending on the number of heterozygous sites assayed.")
 total.num.of.hz.sites.per.sample <- sum(sapply(asas.SNPs.w.both.lr.baf.snp.lists[[1]], nrow))
@@ -349,7 +346,7 @@ if (total.num.of.hz.sites.per.sample > 300000) {
 seg.name.vec <- paste(min.cons.segs.df[, "Chromosome"], min.cons.segs.df[, "Start_Position"], min.cons.segs.df[, "End_Position"], sep = ":")
 sample.vec <- names(asas.SNPs.w.both.lr.baf.snp.lists)
 
-message("Getting phasing to apply to all samples using getCombinedBAFDipTestPhasingParallel...")
+message("Getting phasing to apply to all samples using getCombinedBAFDipTestPhasingParallel")
 all.seg.phasing.info.list <- getCombinedBAFDipTestPhasingParallel(
   asas.lr.baf.lists = asas.SNPs.w.both.lr.baf.snp.lists,
   seg.name.vec = seg.name.vec,
@@ -393,7 +390,7 @@ if (!is.na(conf$debug_dir)) {
 
 # So this is where want to create a phased ascat.bc object:
 # TBKW NEW WORK:
-message("Starting new TBKW edit... begun on 16/08/2019 to recall copy number using phasing.")
+#message("Starting new TBKW edit... begun on 16/08/2019 to recall copy number using phasing.")
 
 ret <- annotate_joint_segs(anno.seg.df, all.samp.SNP.list[[1]])
 all.samp.j.seg.df <- ret$all.samp.j.seg.df
@@ -404,7 +401,7 @@ phased.baf.info.df <- ret$phased.baf.info.df
 # However it doesn't really matter as ASCAT makes sure every segment whether or
 # not it had any baf point has an allele-specific value.
 message("************************************************************************")
-message("Running ASCAT on all samples...")
+message("Running ASCAT on all samples")
 message("************************************************************************")
 
 # So now there are several things we want to do here depending on the options
@@ -420,6 +417,9 @@ ph.ascat.input.list <- list()
 ph.ascat.output.list <- list()
 ph.ascat.segs.df.list <- list()
 base.dir <- getwd()
+
+USING_XPHASE <- TRUE
+PH_ALL_SAMP_ASCAT_RAW_CPN_DF_LIST <- list()
 
 for (samp in sample.vec) {
   message("Preparing sample for ASCAT: ", samp)
@@ -445,46 +445,19 @@ for (samp in sample.vec) {
 
   setwd(qc.choice.dir)
 
-  # So now somehow there's a missing value resulting from running ascat on the ascat.bc object.
-  # List of 14
-  #  $ Tumor_LogR          :'data.frame':	675964 obs. of  1 variable:
-  #  $ Tumor_BAF           :'data.frame':	675964 obs. of  1 variable:
-  #  $ Tumor_LogR_segmented: num [1:675964, 1] -0.838 -0.838 -0.838 -0.838 -0.838 ...
-  #   ..- attr(*, "dimnames")=List of 2
-  #  $ Tumor_BAF_segmented :List of 1
-  #  $ Germline_LogR       :'data.frame':	675964 obs. of  1 variable:
-  #  $ Germline_BAF        :'data.frame':	675964 obs. of  1 variable:
-  #  $ SNPpos              :'data.frame':	675964 obs. of  2 variables:
-  #  $ ch                  :List of 22
-  #  $ chr                 :List of 28
-  #  $ chrs                : chr [1:22] "1" "2" "3" "4" ...
-  #  $ samples             : chr "CB1001-11-D01-X1"
-  #  $ gender              : chr "XX"
-  #  $ sexchromosomes      : chr [1:2] "X" "Y"
-  #  $ failedarrays        : NULL
-  # >
-  # ascat.bc$BAFsegmented
-  # stopifnot(all(!is.na(ascat.bc.phased$Tumor_LogR[,1])))
-  # which(is.na(ascat.bc$Tumor_LogR[,1]))
-
-  # missing.logr.segmented.idx.vec <- which(is.na(ascat.bc$Tumor_LogR_segmented[,1]))
-  # checking.cont.range <- missing.logr.segmented.idx.vec - c(missing.logr.segmented.idx.vec[2:length(missing.logr.segmented.idx.vec)], missing.logr.segmented.idx.vec[length(missing.logr.segmented.idx.vec)] + 1)
-
-  # str(ascat.bc.phased)
   if (conf$validate_input)
     validate_ascat_bc_input(ascat.bc.phased)
-  # Disable for now, since it's not actually performing any function
+
   ascat.plotSegmentedData(ascat.bc.phased)
-  message("Running ASCAT")
+
   ph.ascat.input.list[[samp]] <- ascat.bc.phased
   ascat.output <- ascat.runAscat(ascat.bc.phased, gamma = 1, rho_manual = samp.purity, psi_manual = samp.ploidy)
   ph.ascat.output.list[[samp]] <- ascat.output
-  # str(ascat.output)
   setwd(base.dir)
 
   ascat.bc <- ascat.bc.phased
-  save(ascat.bc, file = file.path(qc.choice.dir, paste(samp, "ascat.bc.RData", sep = ".")))
-  save(ascat.output, file = file.path(qc.choice.dir, paste(samp, "ascat.output.RData", sep = ".")))
+  saveRDS(ascat.bc, file = file.path(qc.choice.dir, paste(samp, "ascat.bc.rds", sep = ".")))
+  saveRDS(ascat.output, file = file.path(qc.choice.dir, paste(samp, "ascat.output.rds", sep = ".")))
 
   # We need to work out where the MSAI is and flip it as well...
   # Calculate number of heterozygous positions per segment
@@ -495,10 +468,8 @@ for (samp in sample.vec) {
 
   segs_raw <- cbind(segs_raw[, c(1:4)], n.het, segs_raw[, 5] + segs_raw[, 6], segs_raw[, 5:6], rep(ploidy, nrow(segs_raw)), rep(acf, nrow(segs_raw)), segs_raw[, 7], segs_raw[, 8])
   colnames(segs_raw)[c(6, 9:12)] <- c("cnTotal", "Ploidy", "ACF", "nAraw", "nBraw")
-  chr <- sub("chr", "", segs_raw[, 2])
-  chr[chr %in% c("x", "X")] <- 23
-  chr[chr %in% c("y", "Y")] <- 24
-  segs_raw[, 2] <- as.numeric(chr)
+
+  segs_raw[, "chr"] <- chrom2integer(segs_raw[, "chr"])
 
   # add a column defining gain and losslength
   callState <- rep("neutral", nrow(segs_raw))
@@ -511,54 +482,10 @@ for (samp in sample.vec) {
   ph.ascat.segs.df.list[[samp]] <- samp.ph.ascat.segs.df
 
   seg <- samp.ph.ascat.segs.df
-  save(seg, file = file.path(qc.choice.dir, paste(samp, "ascat.seg.RData", sep = ".")))
-}
-
-
-# So now we're going to construct a list of dataframes that for every heterozygous SNP has
-# chrom
-# pos
-# BAF
-# LogR
-# ph_ascat_nAraw_w_minus
-# ph_ascat_nBraw_w_minus
-# ph_ascat_nAraw
-# ph_ascat_nBraw
-# for for each single sample separately:
-# This set of raw cpn will be queried by the phasing functions.
-# I'm now in tow minds as to whether ascat needs to output total copy number...
-# This list is being used as a global innappropriately at the moment FIXME!
-message("Now 'USING_XPHASE'...")
-USING_XPHASE <- TRUE
-PH_ALL_SAMP_ASCAT_RAW_CPN_DF_LIST <- list()
-for (samp in sample.vec) {
-  #if (conf$input_format == "ASCAT") {
-  #  ascat.bc <- read_ascat_bc(pt.snp.file.paths.df[samp, ]$samp_ascat_bc_path)
-
-  #  normal_baf <- ascat.bc$Germline_BAF[[1]]
-  #  is_homozygous <- normal_baf < 0.3 | normal_baf > 0.7
-  #  is_heterozygous <- !(is.na(normal_baf) | is_homozygous)
-  #} else {
-  #  # Create an ascat.bc object from the existing snp data, rather than
-  #  # reading an existing ascat.bc object
-  #  ascat.bc <- snps_to_ascat_bc(all.samp.SNP.list[[samp]], samp)
-
-  #  is_homozygous <- all.samp.SNP.list[[samp]]$germline_zygosity == "hom"
-  #  is_heterozygous <- !is_homozygous
-  #  # stopifnot(length(ascat.bc$Tumor_BAF$BAF) == length(is_homozygous))
-  #}
-
-  ## Validate the input immediately
-  #if (conf$validate_input) {
-  #  validate_ascat_bc_input(ascat.bc)
-  #}
+  saveRDS(seg, file = file.path(qc.choice.dir, paste(samp, "ascat.seg.rds", sep = ".")))
 
   ascat.bc <- ph.ascat.input.list[[samp]]
-  keep_idx <- as.numeric(rownames(ascat.bc.phased$Tumor_BAF_segmented[[1]]))
-
-  #message("# of heterozygous SNPs:", sum(is_heterozygous), "/", length(is_heterozygous))
-
-  chr.vec <- chrom2integer(as.character(ascat.bc$SNPpos$chr))
+  keep_idx <- as.numeric(rownames(ascat.bc$Tumor_BAF_segmented[[1]]))
 
   ph.ascat.nAraw.w.minus.vec <- ph.ascat.output.list[[samp]]$nArawfull$nArawfull
   ph.ascat.nBraw.w.minus.vec <- ph.ascat.output.list[[samp]]$nBrawfull$nBrawfull
@@ -566,6 +493,7 @@ for (samp in sample.vec) {
   ph.ascat.nAraw[ph.ascat.nAraw < 0] <- 0
   ph.ascat.nBraw <- ph.ascat.nBraw.w.minus.vec
   ph.ascat.nBraw[ph.ascat.nBraw < 0] <- 0
+
   # Because the plotting requires flipped values make the phasing
   # and MSAI visible...
   new.ph.ascat.nAraw <- ph.ascat.nAraw
@@ -578,45 +506,9 @@ for (samp in sample.vec) {
   # new.ph.ascat.nAraw.w.minus.vec[replace.idx.vec] <- ph.ascat.nBraw.w.minus.vec[replace.idx.vec]
   # new.ph.ascat.nBraw.w.minus.vec[replace.idx.vec] <- ph.ascat.nAraw.w.minus.vec[replace.idx.vec]
 
-  message("saving results")
-
-  subset_idx <- as.numeric(rownames(ascat.bc$Tumor_BAF_segmented[[1]]))
-  message("************************* subset_idx")
-  str(subset_idx)
-
-  #keep_idx <- intersect(which(is_heterozygous), subset_idx)
-  #message("het")
-  #str(which(is_heterozygous))
-  #message("keep")
-  #str(keep_idx)
-  #message("diff1")
-  #str(setdiff(which(is_heterozygous), subset_idx))
-  #message("diff2")
-  #str(setdiff(subset_idx, which(is_heterozygous)))
-
-  tmp <- list(
-    chr = chr.vec,
-    pos = ascat.bc$SNPpos$pos,
-    snp_pos = paste0(chr.vec, "_",ascat.bc$SNPpos$pos),
-    germline_BAF = ascat.bc$Germline_BAF$BAF,
-    BAF = ascat.bc$Tumor_BAF$BAF,
-    LogR = ascat.bc$Tumor_LogR[[1]],
-    ph_ascat_nAraw_w_minus = new.ph.ascat.nAraw.w.minus.vec,
-    ph_ascat_nBraw_w_minus = new.ph.ascat.nBraw.w.minus.vec,
-    ph_ascat_nAraw = new.ph.ascat.nAraw,
-    ph_ascat_nBraw = new.ph.ascat.nBraw)
-
-  message("************************* tmp")
-  str(tmp)
-
-  # Keep only the positions that are in Tumor_BAF_segmented to match
-  # ph_ascat_* lengths
-  message("************************* ascat.bc")
-  str(ascat.bc)
-  message("************************* ph.ascat.output.list[[samp]]")
-  str(ph.ascat.output.list[[samp]])
-
   stopifnot(length(keep_idx) == length(new.ph.ascat.nAraw.w.minus.vec))
+
+  chr.vec <- chrom2integer(as.character(ascat.bc$SNPpos$chr))
 
   PH_ALL_SAMP_ASCAT_RAW_CPN_DF_LIST[[samp]] <- data.frame(
     chr = chr.vec[keep_idx],
@@ -766,7 +658,7 @@ all.seg.MSAI.by.BAF.ltnpd.present.list <- getAllSegsMSAIDetectionFromBAFListLTNP
 
 
 if (isTRUE(PLOTTING_FLAG)) {
-  png(file = paste(PLOT_OUTPUT_DIR, patient, "_MSAI_detection_BAF_phased", ".png", sep = ""), width = 1200, height = 1400)
+  png(file = file.path(PLOT_OUTPUT_DIR, "MSAI_detection_BAF_phased.png"), width = 1200, height = 1400)
 
   message("Plotting phased BAF across the genome...")
   plotAllSampleBAFsAndMSAIAcrossGenome(
@@ -814,9 +706,8 @@ for (seg.name in unq.intersection.seg.name.vec) {
 }
 
 if (!is.na(conf$debug_dir)) {
-  saveRDS(orig.intersection.mcs.w.MSAI.df, file = paste0(PLOT_OUTPUT_DIR, patient, "_orig_intersection_mcs_w_MSAI_df.RDS"))
+  saveRDS(orig.intersection.mcs.w.MSAI.df, file = file.path(conf$debug_dir, "orig_intersection_mcs_w_MSAI_df.rds"))
 }
-
 
 pre.MPhase.MEDICC.FASTA.file.list <- makeMEDICCInputListsFromSegmentationDF(
   segs.to.make.MEDICC.input.df = orig.intersection.mcs.w.MSAI.df,
@@ -830,7 +721,7 @@ pre.MPhase.MEDICC.FASTA.file.list <- makeMEDICCInputListsFromSegmentationDF(
 )
 
 if (!is.na(conf$debug_dir)) {
-  saveRDS(pre.MPhase.MEDICC.FASTA.file.list, file = paste0(PLOT_OUTPUT_DIR, patient, "_pre_MPhase_MEDICC_FASTA_file_list.RDS"))
+  saveRDS(pre.MPhase.MEDICC.FASTA.file.list, file = file.path(conf$debug_dir, "pre_MPhase_MEDICC_FASTA_file_list.rds"))
 }
 
 
@@ -912,10 +803,9 @@ full.joint.segs.df <- add_info_to_output_table(
 # full.joint.segs.df <- full.joint.segs.df[full.joint.segs.df$num_un_ph_hz_sites != 0 | full.joint.segs.df$num_ph_hz_sites != 0  | full.joint.segs.df$num_non_hz_sites != 0,]
 # print("Removing segments that do not map back to any original segments")
 # full.joint.segs.df <- full.joint.segs.df[full.joint.segs.df$orig_seg_name != "NA:NA:NA",]
-saveRDS(full.joint.segs.df, file = paste0(PLOT_OUTPUT_DIR, patient, "_full_joint_segs_df.RDS"))
+saveRDS(full.joint.segs.df, file = file.path(PLOT_OUTPUT_DIR, "full_joint_segs.rds"))
 
-PLOTTING_FLAG <- FALSE
-if (PLOTTING_FLAG) {
+if (isTRUE(PLOTTING_FLAG)) {
 
   #### Plot all genome wide plots
   message("Plotting CCFs for cpnA and cpnB across the genome using cpn definition of subclonality...")
@@ -975,7 +865,9 @@ post.MPhase.MCS.MEDICC.FASTA.files.list <- makeMEDICCInputListsFromSegmentationD
   cpnA.col = "ph_int_cpnA",
   cpnB.col = "ph_int_cpnB"
 )
-post.MPhase.MCS.MEDICC.FASTA.files.list.path <- paste0(PLOT_OUTPUT_DIR, patient, "_post_MPhase_MCS_MEDICC_FASTA_file_list.RDS")
-saveRDS(post.MPhase.MCS.MEDICC.FASTA.files.list, file = post.MPhase.MCS.MEDICC.FASTA.files.list.path)
+
+if (!is.na(conf$debug_dir)) {
+  saveRDS(post.MPhase.MCS.MEDICC.FASTA.files.list, file = file.path(conf$debug_dir, "post_MPhase_MCS_MEDICC_FASTA_file_list.rds"))
+}
 
 createMEDICCInputFiles(post.MPhase.MCS.MEDICC.FASTA.files.list, sample.vec, conf$medicc_output_dir)

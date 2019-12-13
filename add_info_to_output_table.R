@@ -12,7 +12,7 @@ add_info_to_output_table <- function(asas.ph.raw.cpn.lists, ploidy.est.vec,
                                      all.seg.MSAI.by.BAF.ltnpd.present.list) {
 
   # Let's initialise the first joint output:
-  message("Initialising minimum consistent segmentation (MCS) output dataframe...")
+  message("Initialising minimum consistent segmentation (MCS) output dataframe")
   empty.full.joint.segs.df <- initialiseFullOutputDataframe(
     seg.name.vec = names(asas.ph.raw.cpn.lists[[1]]),
     ploidy.est.vec = ploidy.est.vec,
@@ -21,7 +21,7 @@ add_info_to_output_table <- function(asas.ph.raw.cpn.lists, ploidy.est.vec,
   )
 
   # This adds the raw cn for both segments that could be phased and those that couldn't
-  message("Adding new copy number calls to MCS output based on the phased raw copy number...")
+  message("Adding new copy number calls to MCS output based on the phased raw copy number")
   new.cpn.full.joint.segs.df <- addNewRawAndIntCPNCallsToFinalSegmentationParallel(
     seg.name.vec = names(asas.ph.raw.cpn.lists[[1]]),
     sample.vec = names(purity.est.vec),
@@ -36,7 +36,7 @@ add_info_to_output_table <- function(asas.ph.raw.cpn.lists, ploidy.est.vec,
   # print("Mapping MCS segments back to original input and copy number states...")
   full.joint.segs.w.old.cpn.vs.ploidy.df <- addOriginalSegmentInfoToFinalSegmentationNew(new.cpn.full.joint.segs.df, sorted.all.bp.all.samps.segs.anno.df)
 
-  message("Adding CCF information and subclonal cpn calls to MCS output...")
+  message("Adding CCF information and subclonal cpn calls to MCS output")
   clonality.and.ccf.joint.segs.df <- addWithinSampleClonalityAndCCFToFinalSegmentation(
     seg.name.vec = names(asas.ph.raw.cpn.lists[[1]]),
     all.seg.CCF.vals.list = all.seg.CCF.list,
@@ -53,7 +53,7 @@ add_info_to_output_table <- function(asas.ph.raw.cpn.lists, ploidy.est.vec,
     max.cpn.val = MAX_CPN_FOR_SUBCLONALITY
   )
 
-  message("Adding total copy number estimates to MCS output for segments with only logr information...")
+  message("Adding total copy number estimates to MCS output for segments with only logr information")
   full.joint.segs.df.w.cpn.vs.ploidy.df <- addLogrDefinedCPNEventsToOutputSegmentationParallel(
     sample.vec = names(purity.est.vec),
     seg.name.vec = names(asas.ph.raw.cpn.lists[[1]]),
@@ -69,8 +69,7 @@ add_info_to_output_table <- function(asas.ph.raw.cpn.lists, ploidy.est.vec,
     tot.cpn.vs.ploidy.pval.thresh = PVAL_THRESH_VS_LOGR_FOR_CPN_EVENT
   )
 
-  # print(head(full.joint.segs.df.w.cpn.vs.ploidy.df[,"cpn_event_vs_ploidy"]))
-  message("Adding cpn event vs ploidy by logr measures to MCS output...")
+  message("Adding cpn event vs ploidy by logr measures to MCS output")
   full.joint.segs.logr.vs.ploidy.clonality.df <- determineAcrossSampleClonalityOfLogrEventsVsPloidy(
     sample.vec = names(purity.est.vec),
     seg.name.vec = names(asas.ph.raw.cpn.lists[[1]]),
@@ -84,7 +83,7 @@ add_info_to_output_table <- function(asas.ph.raw.cpn.lists, ploidy.est.vec,
     tot.cpn.vs.ploidy.pval.thresh = PVAL_THRESH_VS_LOGR_FOR_CPN_EVENT
   )
 
-  message("Testing whether any gains should be reclassified as amplifications...")
+  message("Testing whether any gains should be reclassified as amplifications")
   # full.joint.check.amps.vs.ploidy.clonality.df <- retestSubclonalAmps(all.seg.df = full.joint.segs.logr.vs.ploidy.clonality.df,
   # 																	all.samp.logr.df.list = all.samp.non.hz.logr.and.tot.cpn.df.list,
   # 																	all.samp.ph.BAF.df.list = patient.phased.BAF.df.list,
@@ -92,10 +91,8 @@ add_info_to_output_table <- function(asas.ph.raw.cpn.lists, ploidy.est.vec,
   # 																	amp.threshold = AMP_LOGR_THRESH,
   # 																	p.val.for.converting.gain.to.amp = PVAL_THRESH_CONVERT_GAIN_TO_AMP)
 
-  # print(head(full.joint.segs.logr.vs.ploidy.clonality.df[,c("across_samp_cl_cpn_vs_ploidy_present","across_samp_sc_cpn_vs_ploidy_present")]))
-
   # These are kept in separate functions as the original segmentaiton was refactored so it could run when segments are rejoined at the end of the script.
-  message("Adding phasing information and MSAI detection by raw cpn calls to MCS output...")
+  message("Adding phasing information and MSAI detection by raw cpn calls to MCS output")
   full.joint.segs.w.phasing.df <- addPhasingInformationToOutputSegmentation(
     sample.vec = names(purity.est.vec),
     seg.name.vec = names(asas.ph.raw.cpn.lists[[1]]),
@@ -111,7 +108,7 @@ add_info_to_output_table <- function(asas.ph.raw.cpn.lists, ploidy.est.vec,
   #                                         processed.orig.cpn.segs.df = processed.orig.cpn.segs.df,
   #                                         all.segs.df = full.joint.segs.w.phasing.df)
 
-  message("Adding MSAI detected by LTNPD method to the MCS output...")
+  message("Adding MSAI detected by LTNPD method to the MCS output")
   full.joint.segs.w.ltnpd.MSAI.df <- addMSAIDetectionByLTNPDToOutputSegmentation(
     sample.vec = sample.vec,
     seg.name.vec = names(asas.ph.raw.cpn.lists[[1]]),
@@ -119,17 +116,17 @@ add_info_to_output_table <- function(asas.ph.raw.cpn.lists, ploidy.est.vec,
     all.segs.df = full.joint.segs.w.phasing.df
   )
 
-  message("Defining any parallel gain or loss events detected via MSAI and addingto MCS output...")
+  message("Defining any parallel gain or loss events detected via MSAI and addingto MCS output")
   full.joint.segs.w.parallel.cpn.events.df <- addParallelEventsByMSAIToOutputSegmentation(all.segs.df = full.joint.segs.w.ltnpd.MSAI.df)
 
-  message("Adding comparison between original cpn calls and MPhase copy number calling to MCS output...")
+  message("Adding comparison between original cpn calls and MPhase copy number calling to MCS output")
   full.joint.segs.within.and.changed.cpn.info.df <- addWithinSampleChangeToCpnAndAllelicImbalanceCalls(
     all.seg.df = full.joint.segs.w.parallel.cpn.events.df,
     sample.vec = sample.vec,
     seg.name.vec = unique(seg.name.vec)
   )
 
-  message("Adding across sample estimates of allelic imbalance and LOH clonality to MCS output...")
+  message("Adding across sample estimates of allelic imbalance and LOH clonality to MCS output")
   full.joint.segs.w.across.samp.AI.stats.df <- addAcrossSampleAlleleSpecificClonalityCalls(
     all.seg.df = full.joint.segs.within.and.changed.cpn.info.df,
     sample.vec = sample.vec,
@@ -138,7 +135,6 @@ add_info_to_output_table <- function(asas.ph.raw.cpn.lists, ploidy.est.vec,
 
   # Legacy mostly, trying to make definitions that Emilia was doing and put them ion here to ensure they were correct
   full.joint.segs.w.across.plotting.cols.df <- addPanCanColumnDefinitionToSegDF(full.joint.segs.w.across.samp.AI.stats.df)
-
   full.joint.segs.df <- full.joint.segs.w.across.plotting.cols.df
 
   full.joint.segs.df

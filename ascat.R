@@ -190,8 +190,6 @@ ascat.runAscat <- function(ASCATobj, gamma = 0.55, rho_manual = NA, psi_manual =
     nArawfull <- NULL
     nBrawfull <- NULL
   }
-  # TBKWedit
-  message("Returning from ASCAT")
   return(list(
     nA = n1, nB = n2, aberrantcellfraction = tp, ploidy = ploidy, psi = psi, goodnessOfFit = goodnessOfFit,
     failedarrays = fa, nonaberrantarrays = naarrays, segments = seg, segments_raw = seg_raw, nArawfull = nArawfull, nBrawfull = nBrawfull
@@ -305,7 +303,7 @@ runASCAT <- function(lrr, baf, lrrsegmented, bafsegmented, gender, SNPpos, chrom
   raw_b <- baf[as.numeric(attributes(bafsegmented)$names)]
   raw_b <- ifelse(raw_b > 0.5, raw_b, 1 - raw_b)
   raw_b <- 1 - raw_b
-  message("length(raw_b): ", length(raw_b))
+  #message("length(raw_b): ", length(raw_b))
   r <- lrrsegmented[names(bafsegmented)]
 
   library(RColorBrewer)
@@ -607,8 +605,8 @@ runASCAT <- function(lrr, baf, lrrsegmented, bafsegmented, gender, SNPpos, chrom
       )
     )
     # TBKW edit...
-    message("length(raw_b): ", length(raw_b))
-    message("length(b): ", length(b))
+    #message("length(raw_b): ", length(raw_b))
+    #message("length(b): ", length(b))
     nArawfull <- ifelse(diploidprobes,
       (rho - 1 - (raw_b - 1) * 2^(r / gamma) * ((1 - rho) * 2 + rho * psi)) / rho,
       ifelse(nullprobes, 0,

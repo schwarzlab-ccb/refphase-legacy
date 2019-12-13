@@ -143,7 +143,7 @@ getAllSegAllSamplePhasedRawCPNList <- function(sample.vec, ploidy.est.vec,
     }
   }
 
-  return(all.samples.phased.cpn.list)
+  all.samples.phased.cpn.list
 }
 
 
@@ -160,8 +160,6 @@ getAllSampLogrAlonePositionsLogrAndTotalCPNDFsList <- function(sample.vec,
 
     # So what do we want to do here? if there are NAs and it's MEDICC their likely incorrect...
     if (nrow(samp.logr.baf.df[is.na(samp.logr.baf.df$BAF), ]) > 0) {
-      message("Found NAs in BAF (samp.logr.baf.df rows = ", nrow(samp.logr.baf.df), ")")
-      message("number of nas: ", sum(is.na(samp.logr.baf.df$BAF)))
 
       if (data.format.to.use != "TRACERx_exome") {
         samp.logr.df <- samp.logr.baf.df[ !is.na(samp.logr.baf.df$BAF), ]
@@ -169,15 +167,12 @@ getAllSampLogrAlonePositionsLogrAndTotalCPNDFsList <- function(sample.vec,
         samp.logr.df <- samp.logr.baf.df
       }
 
-      message("samp.logr.df = ", nrow(samp.logr.df))
     } else if (nrow(samp.logr.baf.df[samp.logr.baf.df$BAF == 2, ]) > 0) {
       message("Found BAFs == 2 (samp.logr.baf.df rows = ", nrow(samp.logr.baf.df), ")")
       samp.logr.df <- samp.logr.baf.df[ samp.logr.baf.df$BAF == 2, ]
-      message("samp.logr.df = ", nrow(samp.logr.df))
     } else {
       message("No logr only SNPs, 0 row dataframe will be passed to functions (samp.logr.baf.df rows = ", nrow(samp.logr.baf.df), ")")
       samp.logr.df <- samp.logr.baf.df[ samp.logr.baf.df$BAF == 2, ]
-      message("samp.logr.df = ", nrow(samp.logr.df))
     }
 
     if (nrow(samp.logr.baf.df) > 0) {
@@ -194,23 +189,17 @@ getAllSampLogrAlonePositionsLogrAndTotalCPNDFsList <- function(sample.vec,
     all.samp.logr.df.list[[samp]] <- samp.logr.df
   }
 
-  return(all.samp.logr.df.list)
+  all.samp.logr.df.list
 }
 
 
 # This is used to generate CCF values so needs to be added to the
 # sample.to.phase.seg.list
 createAllSegsPhasedBAFDataFrame <- function(asas.lr.baf.lists, sample.to.phase.seg.list, min.num.hz.snp.phasing = 5) {
+
   sample.vec <- names(asas.lr.baf.lists)
-
-  # Now we need to make sure that the asas.lr.baf.lists and
-  # sample.to.phase.seg.list
-  # if (length(names(sample.to.phase.seg.list)) != length(asas.lr.baf.lists[[1]])) {
-  #  message("Segments that *will* have phasing attempted as were at least the minimum number of hz positions (", min.num.hz.snp.phasing, " positions)")
-  #  message(paste(names(sample.to.phase.seg.list)[names(sample.to.phase.seg.list) %in% names(asas.lr.baf.lists[[1]])], collapse = "\n"))
-  # }
-
   seg.name.vec <- names(sample.to.phase.seg.list)
+
   all.samp.ph.BAF.df.list <- list()
 
   for (seg.name in seg.name.vec) {
@@ -263,5 +252,5 @@ createAllSegsPhasedBAFDataFrame <- function(asas.lr.baf.lists, sample.to.phase.s
     }
   }
 
-  return(all.samp.ph.BAF.df.list)
+  all.samp.ph.BAF.df.list
 }

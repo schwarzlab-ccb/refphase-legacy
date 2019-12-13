@@ -45,8 +45,8 @@ read_snps_sequenza <- function(input_files, segs, samples, het_only = TRUE) {
 
   all_snps <- list()
 
-  for (sample in samples) {
-    input_file <- input_files[[sample]]
+  for (samp in samples) {
+    input_file <- input_files[[samp]]
 
     # All data that is available in a .seqz file. We only need a subset of it
     # but this is a useful reference in case we need more info at a later date
@@ -57,7 +57,7 @@ read_snps_sequenza <- function(input_files, segs, samples, het_only = TRUE) {
     #               "GC.percent", "good.reads", "AB.normal", "AB.tumor",
     #               "tumor.strand")
     # Using readr
-    message("Reading SNP data for sample: ", sample)
+    message("Reading SNP data for sample: ", samp)
     # Skip unnecessary columns
     col_types <- "cic--dddc--c--"
     col_names <- c("chromosome", "position", "base.ref", "depth.ratio", "Af", "Bf", "zygosity.normal", "AB.normal")
@@ -73,7 +73,6 @@ read_snps_sequenza <- function(input_files, segs, samples, het_only = TRUE) {
       seqz_data <- seqz_data[germline_het, ]
     }
 
-    message("Creating SNP data frame.")
     chrom <- chrom2integer(seqz_data$chromosome)
     pos <- seqz_data$position
 
@@ -83,7 +82,7 @@ read_snps_sequenza <- function(input_files, segs, samples, het_only = TRUE) {
     baf <- seqz_data$Bf
     baf[flip_baf] <- seqz_data$Af[flip_baf]
 
-    all_snps[[sample]] <- data.frame(
+    all_snps[[samp]] <- data.frame(
       chrom = chrom,
       pos = pos,
       BAF = baf,
@@ -95,14 +94,12 @@ read_snps_sequenza <- function(input_files, segs, samples, het_only = TRUE) {
     )
 
     # Mask non-hz SNPs with NA
-    all_snps[[sample]]$BAF[all_snps[[sample]]$germline_zygosity != "het"] <- NA
+    all_snps[[samp]]$BAF[all_snps[[samp]]$germline_zygosity != "het"] <- NA
   }
 
   all_snps <- snps_set_bafsegmented(segs, all_snps)
   all_snps <- snps_set_logrsegmented(segs, all_snps)
   all_snps <- keep_common_snps(all_snps)
 
-  str(all_snps)
-
-  return(all_snps)
+  all_snps
 }
