@@ -581,7 +581,7 @@ cleanAndErrorCheckSNPsParallel <- function(all.samp.SNP.list, mcs.seg.to.use.df,
   }
 
   all.samps.prob.SNPs.vec <- unique(unlist(sapply(sites.in.each.samp.seg.list, function(x) x[["samp_prob_SNPs_vec"]])))
-  message("Number of problem SNPs being removed:", length(all.samps.prob.SNPs.vec))
+  message("Number of SNPs with NA BAF = ", length(all.samps.prob.SNPs.vec), ". These will be removed.")
 
   if (length(all.samps.prob.SNPs.vec) > 0) {
     samp.seg.itx <- iter(sites.in.each.samp.seg.list)

@@ -1090,27 +1090,21 @@ plotAllSampleCCFsAcrossGenome <- function(asas.ph.raw.cpn.lists,
                                           cpnX,
                                           use.cpn.or.ccf.thresh = "CCF",
                                           use.pass.column.to.plot = FALSE) {
+
   Colours <- colorpanel(100, "steelblue4", "#deebf7", "steelblue4")
   # First get the consensus segmentation, probably want to filter out the smallest segments:
   # filter out the segments that are unphased
   phased.joint.segs.df <- full.joint.segs.df[full.joint.segs.df$samp_used_to_phase != "too_few_SNPs", ]
-  # phased.joint.segs.df <- full.joint.segs.df
   chr.start.end.df <- phased.joint.segs.df[, c("chr", "startpos", "endpos")]
   chr.start.end.df <- apply(chr.start.end.df, 2, as.numeric)
-  # print("head(chr.start.end.df)")
 
   chr.vec <- unique(full.joint.segs.df[, "chr"])
-  # print(head(chr.start.end.df))
   chroms.length.vec <- getChromLengthsVec(chr.start.end.df)
 
   names(chroms.length.vec) <- unique(chr.start.end.df[, 1])
 
-  # print("chroms.length.vec")
-  # print(chroms.length.vec)
   chrom.segs.to.plot.df <- getCumulativeChromLengthsForPlottingDF(chr.start.end.df, chroms.length.vec, chr.vec)
 
-  # print("head(chrom.segs.to.plot.df)")
-  # print(head(chrom.segs.to.plot.df))
   min.x <- 0
   min.y <- -0.5
   max.y <- 8.5
@@ -1120,7 +1114,6 @@ plotAllSampleCCFsAcrossGenome <- function(asas.ph.raw.cpn.lists,
   num.samples <- length(sample.vec)
   first.samp <- sample.vec[1]
   last.samp <- sample.vec[length(sample.vec)]
-  # sampJoinedSeg <- funJoinAdjacentSegments(copyITHRDS$sampComparisonList) is the equivalent
 
   par(mfrow = c(num.samples, 1))
 
@@ -1150,7 +1143,6 @@ plotAllSampleCCFsAcrossGenome <- function(asas.ph.raw.cpn.lists,
     )
     box()
 
-    # "B_MET004_MT-M1"
     samp.vals.list <- asas.ph.raw.cpn.lists[[samp]]
     samp.one.vals.list <- asas.ph.raw.cpn.lists[[first.samp]]
     seg.name.vec <- phased.joint.segs.df$seg_name # names(all.seg.CCF.vals.list)
@@ -1163,15 +1155,8 @@ plotAllSampleCCFsAcrossGenome <- function(asas.ph.raw.cpn.lists,
 
       chr.start.end.vec <- unlist(strsplit(seg.name, split = ":"))
       seg.samp.cpnX.vals.list <- samp.vals.list[[seg.name]]
-      # print("str(seg.samp.cpnX.vals.list, max=1)")
-      # print(str(seg.samp.cpnX.vals.list, max=1))
       seg.samp.one.cpnX.vals.list <- samp.one.vals.list[[seg.name]]
-      # print("str(seg.samp.one.cpnX.vals.list, max=1)")
-      # print(str(seg.samp.one.cpnX.vals.list, max=1))
       seg.ccf.cpnX.frac.vec <- all.seg.CCF.vals.list[[cpnX]][[seg.name]][[samp]][[paste0("frac_", cpnX, "_low_vec")]]
-
-      # print("print(str(seg.ccf.cpnX.frac.vec))")
-      # print(str(seg.ccf.cpnX.frac.vec))
 
       seg.to.plot.df <- cbind(
         seg.samp.one.cpnX.vals.list$chr_vec,
@@ -1185,9 +1170,8 @@ plotAllSampleCCFsAcrossGenome <- function(asas.ph.raw.cpn.lists,
 
       if (is.na(seg.to.plot.df[1, 1])) {
         next
-      } # end if(is.na(seg.to.plot.df[1,1])) {
+      }
 
-      # toPlot <- cbind(logRBAFSample1$chrom,logRBAFSample1$pos,logRBAFSample1$pos,ABSample1,ABSample2)
       seg.to.plot.df[, 1:3] <- getCumulativeChromLengthsForPlottingDF(apply(seg.to.plot.df[, 1:3], 2, as.numeric), chroms.length.vec, chr.vec)
       seg.to.plot.df <- data.frame(seg.to.plot.df, stringsAsFactors = FALSE)
       colnames(seg.to.plot.df) <- c("chr", "pos", "pos", "Sample1nA", "Sample1nA", "Sample1nA", "CCF")
@@ -1197,13 +1181,12 @@ plotAllSampleCCFsAcrossGenome <- function(asas.ph.raw.cpn.lists,
       colourCode <- ifelse(round(as.numeric(seg.to.plot.df$CCF) * 100) > 100, 100, round(as.numeric(seg.to.plot.df$CCF) * 100))
       colourCode <- ifelse(colourCode == 0, 1, colourCode)
 
-
       points(
         x = as.numeric(seg.to.plot.df$pos), y = as.numeric(seg.to.plot.df$Sample1nA),
         col = Colours[colourCode],
         cex = .5,
         pch = 16
-      ) # ifelse(MSAIstatus==1,'#238b4550',ifelse(PValsPaired<0.001&totalPval<0.001,'#3182bd50','#fc927250')),cex=0.75,pch=16)
+      )
       par(lend = 1)
       segColour <- as.numeric(all.seg.CCF.vals.list[[cpnX]][[seg.name]][[samp]][[paste0("mean_frac_", cpnX, "_low")]])
       segColour <- Colours[(ifelse(segColour > 1, 1, segColour) * 100)]
@@ -1219,9 +1202,11 @@ plotAllSampleCCFsAcrossGenome <- function(asas.ph.raw.cpn.lists,
         if (sc.present & use.pass.column.to.plot == TRUE) {
           sc.present <- full.joint.segs.df[paste0(samp, ":", seg.name), paste0("within_samp_", cpnX, "_passed")]
         }
+      } else {
+        stop("Plotting option not recognized: use.cpn.or.ccf.thresh == ", use.cpn.or.ccf.thresh, " is not supported")
       }
 
-      if (sc.present == TRUE) {
+      if (isTRUE(sc.present)) {
         ccf.bar.color <- "yellow"
       } else {
         ccf.bar.color <- "#525252"
@@ -1255,7 +1240,7 @@ plotAllSampleCCFsAcrossGenome <- function(asas.ph.raw.cpn.lists,
         lwd = 3,
         lend = 2
       )
-    } # end   for ( seg.name in seg.name.vec ) {
+    }
 
     axis(side = 2, las = 1)
     abline(h = seq((min.y + 0.5), (max.y - 0.5), by = 1), lty = "dashed", lwd = 0.75, col = "gray")
@@ -1269,15 +1254,13 @@ plotAllSampleCCFsAcrossGenome <- function(asas.ph.raw.cpn.lists,
       # ,lwd=0.5
     )
 
-    for (i in sort(unique(as.numeric(chrom.segs.to.plot.df[, 1]))))
-    {
+    for (i in sort(unique(as.numeric(chrom.segs.to.plot.df[, 1])))) {
       abline(
         v = max(as.numeric(chrom.segs.to.plot.df[chrom.segs.to.plot.df[, 1] == i, 3])),
         lwd = 0.5
       )
-      # ,lty='dashed')
-    } # en
-  } # end for ( samp in sample.vec ) {
+    }
+  }
 }
 
 

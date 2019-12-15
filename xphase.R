@@ -44,7 +44,7 @@ if (!interactive()) {
       help = "Patient id"
     ),
     make_option(c("--dip-test"),
-      default = FALSE,
+      default = FALSE, action = "store_true",
       help = "Use dip test [default = %default]"
     ),
     make_option(c("--output-dir"),
@@ -52,7 +52,7 @@ if (!interactive()) {
       help = "Output directory"
     ),
     make_option(c("--medicc-output-dir"),
-      default = "../output/CB1002/mphase",
+      default = NA, type = "character",
       help = "Output directory for MEDICC input files"
     ),
     make_option(c("--input-format"),
@@ -72,11 +72,11 @@ if (!interactive()) {
       help = "Segmentation data output from ASCAT"
     ),
     make_option(c("--gamma"),
-      default = 1.0,
+      default = 1.0, type = "numeric",
       help = "Gamma (for seq=1, for arrays~=0.5 [default = %default]"
     ),
     make_option(c("-j", "--cores"),
-      default = 1,
+      default = 1, type = "integer",
       help = "CPU cores [default = %default]"
     ),
     make_option(c("--segment-type"),
@@ -134,7 +134,8 @@ if (!interactive()) {
 }
 
 message("Arguments:")
-print(t(data.frame(conf)))
+for (key in names(conf))
+  message(key, " = ", conf[[key]], " (class = ", class(conf[[key]]), ")")
 
 set.seed(conf$seed) # Why is a seed required? I'm not sure anything non-deterministic should be occurring
 
@@ -142,9 +143,9 @@ set.seed(conf$seed) # Why is a seed required? I'm not sure anything non-determin
 patient <- conf$patient
 # At the moment MPhase will only try to call MSAI and new copy number in areas of the genome identified as allelically imbalanced
 # Enable this flag to try and find more allelic imbalance but this will probably break.
-allow.dip.test.phasing.flag <- as.logical(conf$dip_test)
+allow.dip.test.phasing.flag <- conf$dip_test
 output.directory.base.path <- conf$output_dir
-data.format.to.use <- conf$input_format # Default for this is MEDICC, but can specify TRACERx_exome, TRACERx_snp_array or TRACERx_WGS
+data.format.to.use <- conf$input_format
 
 # all.samp.snp.list.path <- conf$cached_data #Points towards the snp files, of whatever format they are given that should be used based on data.format to use.
 snp.file.path <- conf$snp_data # Points towards the snp files, of whatever format they are given that should be used based on data.format to use.
@@ -197,11 +198,13 @@ source(file.path(current.dir, "ccf_from_raw_cpn.R"))
 source(file.path(current.dir, "add_info_to_output_table.R"))
 
 suppressWarnings(suppressMessages(library("diptest")))
-suppressWarnings(suppressMessages(library("gplots")))
+suppressWarnings(suppressMessages(library("doParallel")))
 suppressWarnings(suppressMessages(library("gdata")))
 suppressWarnings(suppressMessages(library("GenomicRanges")))
-suppressWarnings(suppressMessages(library("doParallel")))
+suppressWarnings(suppressMessages(library("gplots")))
 
+# When debugging interactively, we need to start the debugger after sourcing
+# the code above, so that we can set breakpoints on functions of interest
 if (interactive()) {
   browser()
 }
@@ -289,7 +292,6 @@ if (!is.na(conf$debug_dir)) {
 # Load in the data:
 # -------------------------------------------------------------------------
 
-# if (conf$overwrite) {
 use_cached_input <- FALSE
 if (!use_cached_input) {
   input_data <- read_input(seg.file.path, snp.file.path, conf$input_format)
@@ -327,11 +329,10 @@ if (!is.na(conf$debug_dir)) {
   saveRDS(sorted.all.bp.all.samps.segs.anno.df, file = sorted.all.bp.all.samps.segs.anno.df.path)
 }
 
-message("Number of rows in each sample (asas.SNPs.w.both.lr.baf.snp.lists)")
+#message("Number of rows in each sample (asas.SNPs.w.both.lr.baf.snp.lists)")
 snps_per_segment <- sapply(asas.SNPs.w.both.lr.baf.snp.lists, function(x) {
   sapply(x, nrow)
 })
-
 message("Segments with enough hz positions: >= ", MIN_NUM_HZ_SNP_PHASING)
 print(snps_per_segment[apply(snps_per_segment >= MIN_NUM_HZ_SNP_PHASING, 1, all), ])
 message(sum(apply(snps_per_segment >= MIN_NUM_HZ_SNP_PHASING, 1, all)), "/", nrow(snps_per_segment))
@@ -443,17 +444,17 @@ for (samp in sample.vec) {
   samp.ploidy <- ploidy.est.vec[samp]
   samp.purity <- purity.est.vec[samp]
 
-  setwd(qc.choice.dir)
-
   if (conf$validate_input)
     validate_ascat_bc_input(ascat.bc.phased)
 
-  ascat.plotSegmentedData(ascat.bc.phased)
-
   ph.ascat.input.list[[samp]] <- ascat.bc.phased
+
+  setwd(qc.choice.dir)
+  ascat.plotSegmentedData(ascat.bc.phased)
   ascat.output <- ascat.runAscat(ascat.bc.phased, gamma = 1, rho_manual = samp.purity, psi_manual = samp.ploidy)
-  ph.ascat.output.list[[samp]] <- ascat.output
   setwd(base.dir)
+
+  ph.ascat.output.list[[samp]] <- ascat.output
 
   ascat.bc <- ascat.bc.phased
   saveRDS(ascat.bc, file = file.path(qc.choice.dir, paste(samp, "ascat.bc.rds", sep = ".")))
@@ -462,6 +463,7 @@ for (samp in sample.vec) {
   # We need to work out where the MSAI is and flip it as well...
   # Calculate number of heterozygous positions per segment
   segs_raw <- ascat.output$segments_raw
+  message("Number of segments in ASCAT rerun: ", nrow(segs_raw))
   n.het <- 0 # FIXME probably want to add these in.
   acf <- ascat.output$aberrantcellfraction
   ploidy <- ascat.output$ploidy
@@ -484,9 +486,6 @@ for (samp in sample.vec) {
   seg <- samp.ph.ascat.segs.df
   saveRDS(seg, file = file.path(qc.choice.dir, paste(samp, "ascat.seg.rds", sep = ".")))
 
-  ascat.bc <- ph.ascat.input.list[[samp]]
-  keep_idx <- as.numeric(rownames(ascat.bc$Tumor_BAF_segmented[[1]]))
-
   ph.ascat.nAraw.w.minus.vec <- ph.ascat.output.list[[samp]]$nArawfull$nArawfull
   ph.ascat.nBraw.w.minus.vec <- ph.ascat.output.list[[samp]]$nBrawfull$nBrawfull
   ph.ascat.nAraw <- ph.ascat.nAraw.w.minus.vec
@@ -506,6 +505,8 @@ for (samp in sample.vec) {
   # new.ph.ascat.nAraw.w.minus.vec[replace.idx.vec] <- ph.ascat.nBraw.w.minus.vec[replace.idx.vec]
   # new.ph.ascat.nBraw.w.minus.vec[replace.idx.vec] <- ph.ascat.nAraw.w.minus.vec[replace.idx.vec]
 
+  ascat.bc <- ph.ascat.input.list[[samp]]
+  keep_idx <- as.numeric(rownames(ascat.bc$Tumor_BAF_segmented[[1]]))
   stopifnot(length(keep_idx) == length(new.ph.ascat.nAraw.w.minus.vec))
 
   chr.vec <- chrom2integer(as.character(ascat.bc$SNPpos$chr))
@@ -806,11 +807,9 @@ full.joint.segs.df <- add_info_to_output_table(
 saveRDS(full.joint.segs.df, file = file.path(PLOT_OUTPUT_DIR, "full_joint_segs.rds"))
 
 if (isTRUE(PLOTTING_FLAG)) {
-
-  #### Plot all genome wide plots
   message("Plotting CCFs for cpnA and cpnB across the genome using cpn definition of subclonality...")
-  png(file = paste(PLOT_OUTPUT_DIR, patient, "_CCF_w_cpn_thresh_cpnA", ".png", sep = ""), width = 1200, height = 1400)
 
+  png(file = paste(PLOT_OUTPUT_DIR, patient, "_CCF_w_cpn_thresh_cpnA", ".png", sep = ""), width = 1200, height = 1400)
   plotAllSampleCCFsAcrossGenome(
     asas.ph.raw.cpn.lists = asas.ph.raw.cpn.lists,
     full.joint.segs.df = full.joint.segs.df,
@@ -820,11 +819,9 @@ if (isTRUE(PLOTTING_FLAG)) {
     cpnX = "cpnA",
     use.cpn.or.ccf.thresh = "CPN"
   )
-
   dev.off()
 
   png(file = paste(PLOT_OUTPUT_DIR, patient, "_CCF_w_cpn_thresh_cpnB", ".png", sep = ""), width = 1200, height = 1400)
-
   plotAllSampleCCFsAcrossGenome(
     asas.ph.raw.cpn.lists = asas.ph.raw.cpn.lists,
     full.joint.segs.df = full.joint.segs.df,
@@ -835,39 +832,49 @@ if (isTRUE(PLOTTING_FLAG)) {
     use.cpn.or.ccf.thresh = "CPN"
   )
   dev.off()
+
 } else {
   message("Not plotting CCFs for cpnA and cpnB across the genome using cpn definition of subclonality as plotting flag is FALSE.")
 }
 
 # We need a .tsv version of this data for interoperability with python
 write.table(full.joint.segs.df, file = file.path(PLOT_OUTPUT_DIR, "full_joint_segs.tsv"), row.names = FALSE, sep = "\t")
-message("MPhase comparison with snpphase: Finished for now. Got the <patient>_full_joint_segs_df.RDS object.")
 
 # Write out a simplified version of the segmentation
-# From discussion with Tom: Also, just to be 100% certain, for mphase you use nMajor, nMinor and cnTotal, and for xphase you use orig_nMajor, orig_nMinor, and orig_cnTotal? And then flip the numbers if dominant_allele == cpnB
-simple_segs <- full.joint.segs.df[!is.na(full.joint.segs.df$orig_nMajor) & !full.joint.segs.df$samp_used_to_phase == "too_few_SNPs", c("sample", "chr", "startpos", "endpos", "orig_cnTotal", "orig_nMajor", "orig_nMinor", "dominant_allele")]
+# From discussion with Tom:
+#   Also, just to be 100% certain, for mphase you use nMajor, nMinor and
+#   cnTotal, and for xphase you use orig_nMajor, orig_nMinor, and orig_cnTotal?
+#   And then flip the numbers if dominant_allele == cpnB
+simple_segs <- full.joint.segs.df[!is.na(full.joint.segs.df$orig_nMajor) & full.joint.segs.df$samp_used_to_phase != "too_few_SNPs", c("sample", "chr", "startpos", "endpos", "orig_cnTotal", "orig_nMajor", "orig_nMinor", "dominant_allele")]
+# Because the dominant allele is only set when there is allelic imbalance, we
+# force it to a value (= "no_ai") here so that we don't have to deal with NAs
+# in this column
+simple_segs$dominant_allele[is.na(simple_segs$dominant_allele)] <- "no_ai"
 simple_segs$cpn_total <- simple_segs$orig_cnTotal
-simple_segs$cpnA <- ifelse(simple_segs$dominant_allele == "cpnA", simple_segs$orig_nMajor, simple_segs$orig_nMinor)
-simple_segs$cpnB <- ifelse(simple_segs$dominant_allele == "cpnA", simple_segs$orig_nMinor, simple_segs$orig_nMajor)
+simple_segs$cpn_a <- ifelse(simple_segs$dominant_allele == "cpnA", simple_segs$orig_nMajor, simple_segs$orig_nMinor)
+simple_segs$cpn_b <- ifelse(simple_segs$dominant_allele == "cpnA", simple_segs$orig_nMinor, simple_segs$orig_nMajor)
 simple_segs$is_msai <- simple_segs$dominant_allele == "cpnB"
+# Remove some columns we don't need anymore
 simple_segs[, c("orig_cnTotal", "orig_nMajor", "orig_nMinor", "dominant_allele")] <- NULL
 write.table(simple_segs, file = file.path(PLOT_OUTPUT_DIR, "segmentation.tsv"), row.names = FALSE, sep = "\t")
 
-# Hack! Hope this works...
-full.joint.segs.nona <- full.joint.segs.df[!is.na(full.joint.segs.df$ph_int_cpnA), ]
-post.MPhase.MCS.MEDICC.FASTA.files.list <- makeMEDICCInputListsFromSegmentationDF(
-  segs.to.make.MEDICC.input.df = full.joint.segs.nona,
-  sample.vec = sample.vec,
-  chrs.to.use.vec = CHRS_TO_USE_VEC,
-  chr.col = "chrom",
-  start.col = "startpos",
-  end.col = "endpos",
-  cpnA.col = "ph_int_cpnA",
-  cpnB.col = "ph_int_cpnB"
-)
+if (!is.na(conf$medicc_output_dir)) {
+  # Hack! Hope this works...
+  full.joint.segs.nona <- full.joint.segs.df[!is.na(full.joint.segs.df$ph_int_cpnA), ]
+  post.MPhase.MCS.MEDICC.FASTA.files.list <- makeMEDICCInputListsFromSegmentationDF(
+    segs.to.make.MEDICC.input.df = full.joint.segs.nona,
+    sample.vec = sample.vec,
+    chrs.to.use.vec = CHRS_TO_USE_VEC,
+    chr.col = "chrom",
+    start.col = "startpos",
+    end.col = "endpos",
+    cpnA.col = "ph_int_cpnA",
+    cpnB.col = "ph_int_cpnB"
+  )
 
-if (!is.na(conf$debug_dir)) {
-  saveRDS(post.MPhase.MCS.MEDICC.FASTA.files.list, file = file.path(conf$debug_dir, "post_MPhase_MCS_MEDICC_FASTA_file_list.rds"))
+  if (!is.na(conf$debug_dir)) {
+    saveRDS(post.MPhase.MCS.MEDICC.FASTA.files.list, file = file.path(conf$debug_dir, "post_MPhase_MCS_MEDICC_FASTA_file_list.rds"))
+  }
+
+  createMEDICCInputFiles(post.MPhase.MCS.MEDICC.FASTA.files.list, sample.vec, conf$medicc_output_dir)
 }
-
-createMEDICCInputFiles(post.MPhase.MCS.MEDICC.FASTA.files.list, sample.vec, conf$medicc_output_dir)
