@@ -50,6 +50,9 @@ addPhasingInformationToOutputSegmentation <- function(sample.vec,
                                                       all.pw.cn.het.comp.lists = NULL,
                                                       all.segs.df) {
 
+  message("Segment names: addPhasingInformationToOutputSegmentation")
+  print(seg.name.vec)
+
   # Todo, refactor to make this function work on the basis of a single segment:
   for (samp in sample.vec) {
     for (seg.name in seg.name.vec) {
@@ -61,6 +64,7 @@ addPhasingInformationToOutputSegmentation <- function(sample.vec,
 
       if (length(sample.to.phase.seg.list[[seg.name]][["samp_chosen_to_phase_seg"]]) == 0) {
         all.segs.df[samp.seg.name, ]$samp_used_to_phase <- "too_few_SNPs"
+        message("1) ", samp.seg.name, ": too_few_SNPs")
       } else {
         samp.used.to.phase <- sample.to.phase.seg.list[[seg.name]][["samp_chosen_to_phase_seg"]]
 
@@ -808,6 +812,9 @@ addWithinSampleClonalityAndCCFToFinalSegmentation <- function(seg.name.vec,
                                                               cpnX.vec = c("cpnA", "cpnB"),
                                                               reduced.seg.flag = FALSE,
                                                               max.cpn.val = 10) {
+  message("Segment names: addWithinSampleClonalityAndCCFToFinalSegmentation")
+  print(seg.name.vec)
+
   for (samp in sample.vec) {
     for (seg.name in seg.name.vec) {
       if (length(sample.vec) > 1) {
@@ -818,10 +825,14 @@ addWithinSampleClonalityAndCCFToFinalSegmentation <- function(seg.name.vec,
 
       if (!seg.name %in% names(all.seg.CCF.vals.list[[cpnX.vec[1]]])) {
         all.seg.df[samp.seg.name, ]$samp_used_to_phase <- "too_few_SNPs"
+        message("2) ", samp.seg.name, ": too_few_SNPs")
         next
       }
+      #str(all.seg.CCF.vals.list[[cpnX.vec[1]]])
       if (length(all.seg.CCF.vals.list[[cpnX.vec[1]]][[seg.name]]) == 1) {
         all.seg.df[samp.seg.name, ]$samp_used_to_phase <- "too_few_SNPs"
+        message("3) ", samp.seg.name, ": too_few_SNPs")
+        str(all.seg.CCF.vals.list[[cpnX.vec[1]]][[seg.name]])
         next
       }
 

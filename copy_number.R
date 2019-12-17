@@ -8,6 +8,8 @@ getAllSegAllSamplePhasedRawCPNList <- function(sample.vec, ploidy.est.vec,
                                                use.xphase = FALSE,
                                                ascat.raw.cpn) {
   seg.name.vec <- paste(min.cons.segs.df[, 1], min.cons.segs.df[, 2], min.cons.segs.df[, 3], sep = ":")
+  message("--getAllSegAllSamplePhasedRawCPNList")
+  print(seg.name.vec)
 
   # Initialise all lists
   all.samples.phased.cpn.list <- list()

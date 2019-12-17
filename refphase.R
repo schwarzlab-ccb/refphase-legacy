@@ -845,7 +845,8 @@ write.table(full.joint.segs.df, file = file.path(PLOT_OUTPUT_DIR, "full_joint_se
 #   Also, just to be 100% certain, for mphase you use nMajor, nMinor and
 #   cnTotal, and for xphase you use orig_nMajor, orig_nMinor, and orig_cnTotal?
 #   And then flip the numbers if dominant_allele == cpnB
-simple_segs <- full.joint.segs.df[!is.na(full.joint.segs.df$orig_nMajor) & full.joint.segs.df$samp_used_to_phase != "too_few_SNPs", c("sample", "chr", "startpos", "endpos", "orig_cnTotal", "orig_nMajor", "orig_nMinor", "dominant_allele")]
+simple_segs <- full.joint.segs.df[!is.na(full.joint.segs.df$orig_nMajor) & full.joint.segs.df$samp_used_to_phase != "too_few_SNPs",
+  c("sample", "chr", "startpos", "endpos", "orig_cnTotal", "orig_nMajor", "orig_nMinor", "dominant_allele", "samp_used_to_phase")]
 # Because the dominant allele is only set when there is allelic imbalance, we
 # force it to a value (= "no_ai") here so that we don't have to deal with NAs
 # in this column
@@ -854,8 +855,9 @@ simple_segs$cpn_total <- simple_segs$orig_cnTotal
 simple_segs$cpn_a <- ifelse(simple_segs$dominant_allele == "cpnA", simple_segs$orig_nMajor, simple_segs$orig_nMinor)
 simple_segs$cpn_b <- ifelse(simple_segs$dominant_allele == "cpnA", simple_segs$orig_nMinor, simple_segs$orig_nMajor)
 simple_segs$is_msai <- simple_segs$dominant_allele == "cpnB"
+simple_segs$is_reference <- simple_segs$sample == simple_segs$samp_used_to_phase
 # Remove some columns we don't need anymore
-simple_segs[, c("orig_cnTotal", "orig_nMajor", "orig_nMinor", "dominant_allele")] <- NULL
+simple_segs[, c("orig_cnTotal", "orig_nMajor", "orig_nMinor", "dominant_allele", "samp_used_to_phase")] <- NULL
 write.table(simple_segs, file = file.path(PLOT_OUTPUT_DIR, "segmentation.tsv"), row.names = FALSE, sep = "\t")
 
 if (!is.na(conf$medicc_output_dir)) {
