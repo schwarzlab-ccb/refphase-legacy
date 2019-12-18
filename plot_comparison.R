@@ -73,6 +73,9 @@ plot_track_cn <- function(segs, track_name, xlim) {
   # few characters
   short_track_name <- substring(track_name, 1, 5)
   plot(1, ylim = c(-1, 1), xlim = xlim, col = "white", ylab = paste0(short_track_name, "\n(", num_segs, ")"), xaxt = "n", yaxt = "n")
+
+  polygon(x = unlist(mapply(c, segs$startpos, segs$endpos, segs$endpos, segs$startpos, NA, SIMPLIFY = FALSE)), y = rep(c(rep(c(-1, 1), each = 2), NA), nrow(segs)), col = "grey90", border = NA)
+  #polygon(x = unlist(mapply(c, segs$startpos, segs$endpos, segs$endpos, segs$startpos, NA, SIMPLIFY = FALSE)), y = rep(c(-1, 1, NA), nrow(segs), each = 2), col = "grey90", border = NA)
   abline(v = unique(c(segs$startpos, segs$endpos)), lty = 2, col = "black")
   total_cn <- as.character(segs$cpn_total)
   major <- as.character(segs$cpn_a)
@@ -90,8 +93,8 @@ plot_track_cn <- function(segs, track_name, xlim) {
 plot_track_logr <- function(data_sample, segs_sample) {
   par(mar = c(0.1, 5, 0.1, 1))
   plot(data_sample$pos, data_sample$logR, ylab = "logR", xaxt = "n", col = adjustcolor("darkgrey", 0.2), pch = 20, ylim = c(min(c(-2, data_sample$logR)), max(c(2, data_sample$logR))))
-#  segments(x0 = segs_sample$startpos, y0 = segs_sample$median_non_hz_logr, x1 = segs_sample$endpos, col = "black")
-#  abline(v = unique(c(segs_sample$startpos, segs_sample$endpos)), lty = 2, col = "black")
+  #segments(x0 = segs_sample$startpos, y0 = segs_sample$median_non_hz_logr, x1 = segs_sample$endpos, col = "black")
+  abline(v = unique(c(segs_sample$startpos, segs_sample$endpos)), lty = 2, col = "black")
 #
 #  # MPhase copy numbers
 #  total_cn <- as.character(segs_sample$orig_cnTotal)
@@ -103,6 +106,7 @@ plot_track_baf <- function(data_sample, segs_sample, msai) {
   par(mar = c(0.1, 5, 0.1, 1))
 
   plot(data_sample$pos, data_sample$BAF, ylab = "BAF", col = "black", ylim = c(0, 1), pch = 20, xaxt = "n", yaxt = "n")
+
 #  plot(data_sample$pos, data_sample$BAF, ylab = "BAF", col = phasing_col, ylim = c(0, 1), pch = 20, xaxt = "n", yaxt = "n")
 
 #  phasing_col <- ifelse(data_sample$maj_is_cpnB_logic_vec == 1, "blue", "orange")
@@ -116,9 +120,9 @@ plot_track_baf <- function(data_sample, segs_sample, msai) {
 #  segments(x0 = segs_sample$startpos, y0 = segs_sample$mean_BAF + 0.5, x1 = segs_sample$endpos, col = mean_col)
 #  segments(x0 = segs_sample$startpos, y0 = -1 * segs_sample$mean_BAF + 0.5, x1 = segs_sample$endpos, col = mean_col)
 #
-#  # Segment boundaries
-#  abline(v = unique(c(segs_sample$startpos, segs_sample$endpos)), lty = 2, col = "black")
-#
+  # Segment boundaries
+  abline(v = unique(c(segs_sample$startpos, segs_sample$endpos)), lty = 2, col = "black")
+
 #  # MPhase copy numbers
 #  major_cn <- as.character(segs_sample$orig_nMajor)
 #  minor_cn <- as.character(segs_sample$orig_nMinor)
@@ -139,13 +143,13 @@ plot_track_baf <- function(data_sample, segs_sample, msai) {
 #  }
 #  cn_text(x = segs_sample$seg_center, y = 0.5, labels = ifelse(segs_sample$dominant_allele == "cpnB", "msai", ""), col = "darkgreen")
 #
-#  # Indicate which sample is the reference
-#  if (any(segs_sample$is_reference)) {
-#    segments(
-#      x0 = segs_sample$startpos[segs_sample$is_reference], y0 = -0.02,
-#      x1 = segs_sample$endpos[segs_sample$is_reference], col = "red", lwd = 4, lend = 1
-#    )
-#  }
+  # Indicate which sample is the reference
+  if (any(segs_sample$is_reference)) {
+    segments(
+      x0 = segs_sample$startpos[segs_sample$is_reference], y0 = -0.02,
+      x1 = segs_sample$endpos[segs_sample$is_reference], col = "red", lwd = 4, lend = 1
+    )
+  }
 }
 
 # --------------------------------------------------------------------------
@@ -180,7 +184,7 @@ plot_track_baf_whole_genome <- function(data_sample, segs_sample, chrom_info) {
 
 plot_sample_info <- function(sample, ploidy, cellularity) {
   par(mar = c(0, 0, 0, 0))
-  plot(c(0, 1), c(0, 1), ann = F, bty = "n", type = "n", xaxt = "n", yaxt = "n")
+  plot(c(0, 1), c(0, 1), ann = FALSE, bty = "n", type = "n", xaxt = "n", yaxt = "n")
 
   text(
     x = 0.5, y = 0.5, adj = 0.5,
@@ -191,7 +195,7 @@ plot_sample_info <- function(sample, ploidy, cellularity) {
 
 plot_chromosome_header <- function(sample, chromosome, cex = 1.5) {
   par(mar = c(0, 0, 0, 0))
-  plot(c(0, 1), c(0, 1), ann = F, bty = "n", type = "n", xaxt = "n", yaxt = "n")
+  plot(c(0, 1), c(0, 1), ann = FALSE, bty = "n", type = "n", xaxt = "n", yaxt = "n")
 
   text(
     x = 0.5, y = 0.5, adj = 0.5, labels = paste0(sample, ": ", chromosome),
@@ -228,8 +232,8 @@ get_seg_changes <- function(new_seg, old_seg) {
   stopifnot(length(gr_orig) == nrow(old_seg))
 
   ov <- findOverlaps(gr_new, gr_orig)
-  new_cns <- mcols(gr_new)[from(ov), c("cnTotal", "nMinor", "nMajor")]
-  orig_cns <- mcols(gr_orig)[to(ov), c("cnTotal", "nMinor", "nMajor")]
+  new_cns <- mcols(gr_new)[from(ov), c("cpn_total", "cpn_b", "cpn_a")]
+  orig_cns <- mcols(gr_orig)[to(ov), c("cpn_total", "cpn_b", "cpn_a")]
 
   na_row <- apply(is.na(orig_cns), 1, any) | apply(is.na(new_cns), 1, any)
 
@@ -275,8 +279,8 @@ get_seg_new_ai <- function(new_seg, old_seg) {
   stopifnot(length(gr_orig) == nrow(old_seg))
 
   ov <- findOverlaps(gr_new, gr_orig)
-  new_cns <- mcols(gr_new)[from(ov), c("cnTotal", "nMinor", "nMajor")]
-  orig_cns <- mcols(gr_orig)[to(ov), c("cnTotal", "nMinor", "nMajor")]
+  new_cns <- mcols(gr_new)[from(ov), c("cpn_total", "cpn_b", "cpn_a")]
+  orig_cns <- mcols(gr_orig)[to(ov), c("cpn_total", "cpn_b", "cpn_a")]
 
   na_row <- apply(is.na(orig_cns), 1, any) | apply(is.na(new_cns), 1, any)
 
@@ -579,15 +583,16 @@ for (chrom_to_plot in chroms) {
 #    stats["newrefphase", "cn_diff_new_ai"] <- stats["newrefphase", "cn_diff_new_ai"] + sum(segs_sample$is_new_ai, na.rm = TRUE)
 #    stats["oldrefphase", "cn_diff_new_ai"] <- stats["oldrefphase", "cn_diff_new_ai"] + sum(old_segs_sample$is_new_ai, na.rm = TRUE)
 
+    main_seg <- segs[[1]]
+    main_seg_sample <- main_seg[main_seg$sample == sample_name & main_seg$chr == chrom_to_plot,]
+
     # logR track
     screen(subfigure_idx[[1]])
-    #plot_track_logr(data_sample, segs_sample)
-    plot_track_logr(data_sample, NA)
+    plot_track_logr(data_sample, main_seg_sample)
 
     # BAF track
     screen(subfigure_idx[[2]])
-    #plot_track_baf(data_sample, segs_sample)
-    plot_track_baf(data_sample, NA)
+    plot_track_baf(data_sample, main_seg_sample)
 
     for (seg_idx in seq_along(segs)) {
       seg <- segs[[seg_idx]]
