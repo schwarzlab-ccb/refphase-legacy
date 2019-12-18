@@ -74,8 +74,10 @@ plot_track_cn <- function(segs, track_name, xlim) {
   short_track_name <- substring(track_name, 1, 5)
   plot(1, ylim = c(-1, 1), xlim = xlim, col = "white", ylab = paste0(short_track_name, "\n(", num_segs, ")"), xaxt = "n", yaxt = "n")
 
-  polygon(x = unlist(mapply(c, segs$startpos, segs$endpos, segs$endpos, segs$startpos, NA, SIMPLIFY = FALSE)), y = rep(c(rep(c(-1, 1), each = 2), NA), nrow(segs)), col = "grey90", border = NA)
-  #polygon(x = unlist(mapply(c, segs$startpos, segs$endpos, segs$endpos, segs$startpos, NA, SIMPLIFY = FALSE)), y = rep(c(-1, 1, NA), nrow(segs), each = 2), col = "grey90", border = NA)
+  # Color the background of each segment to make it clear where there are
+  # missing segments
+  polygon(x = unlist(mapply(c, segs$startpos, segs$endpos, segs$endpos, segs$startpos, NA, SIMPLIFY = FALSE)), y = rep(c(rep(c(-1, 1), each = 2), NA), nrow(segs)), col = "grey95", border = NA)
+
   abline(v = unique(c(segs$startpos, segs$endpos)), lty = 2, col = "black")
   total_cn <- as.character(segs$cpn_total)
   major <- as.character(segs$cpn_a)
@@ -105,7 +107,12 @@ plot_track_logr <- function(data_sample, segs_sample) {
 plot_track_baf <- function(data_sample, segs_sample, msai) {
   par(mar = c(0.1, 5, 0.1, 1))
 
-  plot(data_sample$pos, data_sample$BAF, ylab = "BAF", col = "black", ylim = c(0, 1), pch = 20, xaxt = "n", yaxt = "n")
+  phasing_col <- data_sample$phasing
+  phasing_col[phasing_col == "a"] <- "orange"
+  phasing_col[phasing_col == "b"] <- "blue"
+  phasing_col[phasing_col == "none"] <- "grey"
+  phasing_col <- adjustcolor(phasing_col, 0.6)
+  plot(data_sample$pos, data_sample$BAF, ylab = "BAF", col = phasing_col, ylim = c(0, 1), pch = 20, xaxt = "n", yaxt = "n")
 
 #  plot(data_sample$pos, data_sample$BAF, ylab = "BAF", col = phasing_col, ylim = c(0, 1), pch = 20, xaxt = "n", yaxt = "n")
 
@@ -133,16 +140,15 @@ plot_track_baf <- function(data_sample, segs_sample, msai) {
 #  cn_text(x = segs_sample$seg_center, y = 0.9, labels = major_cn)
 #  cn_text(x = segs_sample$seg_center, y = 0.1, labels = minor_cn)
 #
-#  # Indicate which sample is the reference
-#  segs_sample$dominant_allele[is.na(segs_sample$dominant_allele)] <- "na"
-#  if (any(segs_sample$dominant_allele == "cpnB")) {
-#    segments(
-#      x0 = segs_sample$startpos[segs_sample$dominant_allele == "cpnB"], y0 = 1.02,
-#      x1 = segs_sample$endpos[segs_sample$dominant_allele == "cpnB"], col = "darkgreen", lwd = 4, lend = 1
-#    )
-#  }
-#  cn_text(x = segs_sample$seg_center, y = 0.5, labels = ifelse(segs_sample$dominant_allele == "cpnB", "msai", ""), col = "darkgreen")
-#
+  # Indicate which sample is the reference
+  if (any(segs_sample$is_msai)) {
+    segments(
+      x0 = segs_sample$startpos[segs_sample$is_msai], y0 = 1.02,
+      x1 = segs_sample$endpos[segs_sample$is_msai], col = "darkgreen", lwd = 4, lend = 1
+    )
+  }
+  cn_text(x = segs_sample$seg_center, y = 0.5, labels = ifelse(segs_sample$is_msai, "msai", ""), col = "darkgreen")
+
   # Indicate which sample is the reference
   if (any(segs_sample$is_reference)) {
     segments(
@@ -206,11 +212,6 @@ plot_chromosome_header <- function(sample, chromosome, cex = 1.5) {
 # ------------------------------------------------------------------------
 # Calculate which segments have been changed by refphase
 get_seg_changes <- function(new_seg, old_seg) {
-
-  # cat("------ new:")
-  # str(new_seg)
-  # cat("------ old:")
-  # str(old_seg)
 
   new_seg$seg_idx <- seq(nrow(new_seg))
   gr_new <- makeGRangesFromDataFrame(new_seg,
@@ -320,6 +321,36 @@ get_seg_new_ai <- function(new_seg, old_seg) {
   return(is_changed)
 }
 
+# Do reference phasing according to the reference samples that are indicated in
+# the input segmentation seg
+# baf_threshold could possibly be changed to account for reference bias
+phase_regions <- function(snps, seg, baf_threshold = 0.5) {
+
+  for (samp in names(snps))
+    snps[[samp]]$phasing <- "none"
+
+  phased_regions <- seg[seg$is_reference, c("sample", "chr", "startpos", "endpos")]
+  str(phased_regions)
+  for (region_idx in seq_len(nrow(phased_regions))) {
+    region <- phased_regions[region_idx, ]
+
+    snp_idx_region <- which(snps[[region$sample]]$chr == region$chr & snps[[region$sample]]$pos >= region$startpos & snps[[region$sample]]$pos <= region$endpos)
+    snps[[region$sample]][snp_idx_region, "phasing"] <- ifelse(snps[[region$sample]][snp_idx_region, "BAF"] > baf_threshold, "a", "b")
+
+    # Get the phasing from our reference
+    for (samp in names(snps)) {
+      if (samp == region$sample)
+        next
+
+      snps[[samp]][snp_idx_region, "phasing"] <- snps[[region$sample]][snp_idx_region, "phasing"]
+    }
+  }
+
+  str(snps)
+
+  snps
+}
+
 # ------------------------------------------------------------------------
 # Start the main script
 # ------------------------------------------------------------------------
@@ -331,19 +362,19 @@ if (!dir.exists(conf$output_dir)) {
 # The BAF/LogR data along the genome
 snps <- readRDS(conf$snps)$all.samp.SNP.list
 
+str(snps)
+
 # A list of copy number segmentations to plot as individual tracks
 seg_input_files <- strsplit(conf$segmentations, ",")[[1]]
 seg_names <- strsplit(conf$seg_names, ",")[[1]]
-
-str(seg_input_files)
-str(seg_names)
 
 stopifnot(length(seg_input_files) == length(seg_names))
 
 segs <- list()
 for (seg_idx in seq_along(seg_input_files)) {
-  seg <- read.delim(seg_input_files[[seg_idx]], sep = "\t")
-  #seg
+  seg <- read.delim(seg_input_files[[seg_idx]], sep = "\t", stringsAsFactors = FALSE)
+
+  # First we deal with the seg format that is used for refphase
   if ("nMajor" %in% colnames(seg)) {
     colnames(seg)[colnames(seg) == "nMajor"] <- "cpn_a"
     colnames(seg)[colnames(seg) == "nMinor"] <- "cpn_b"
@@ -352,15 +383,28 @@ for (seg_idx in seq_along(seg_input_files)) {
   #colnames(seg)[colnames(seg) == "cnTotal"] <- "cpn_b"
   seg$seg_center <- seg$startpos + ((seg$endpos - seg$startpos) / 2)
   # Make sure we have the data that we need to plot
-  #stopifnot(c("sample", "chr", "startpos", "endpos", "cpn_a", "cpn_b", "is_msai", "is_reference") %in% colnames(seg))
-  stopifnot(c("sample", "chr", "startpos", "endpos", "cpn_a", "cpn_b") %in% colnames(seg))
+  if (seg_idx == 1) {
+    # We need some extra information from the first set of segmentatsions (msai + reference)
+    stopifnot(c("sample", "chr", "startpos", "endpos", "cpn_a", "cpn_b", "is_msai", "is_reference") %in% colnames(seg))
+  } else {
+    stopifnot(c("sample", "chr", "startpos", "endpos", "cpn_a", "cpn_b") %in% colnames(seg))
+  }
 
   segs[[seg_idx]] <- seg
 }
 
 str(segs)
 
+# We consider the first segmentation that is passed in as the "main"
+# segmentation, the one that matches the BAF/logR values and the one that is
+# marked on the BAF/logR plots (reference + msai events)
+main_seg <- segs[[1]]
 #chroms <- mixedsort(unique(sapply(segs, "[[", "chr")))
+
+
+# Assign phasing of regions with MSAI. I should directly carry over the phasing
+# from refphase instead of recalculating this here.
+snps <- phase_regions(snps, main_seg)
 
 chroms <- 1:22
 sample_names <- sort(names(snps))
@@ -389,17 +433,6 @@ for (chrom_to_plot in chroms) {
     message("Sample: ", sample_name, " Chromosome: ", chrom_to_plot)
     data_sample <- snps[[sample_name]]
     data_sample <- data_sample[data_sample$chr == chrom_to_plot, ]
-
-    #segs_sample <- segs[[sample_idx]]
-    #orig_segs_sample <- orig_segs[orig_segs$sample == sample_name, ]
-    #old_segs_sample <- old_segs[old_segs$sample == sample_name, ]
-
-    # message("-------------------- segs_sample")
-    # str(segs_sample)
-    # message("-------------------- orig_segs_sample")
-    # str(orig_segs_sample)
-    # message("-------------------- old_segs_sample")
-    # str(old_segs_sample)
 
     # Split the plotting area vertically (sample name + info on left, plots on right)
     screen(sample_screens[[sample_idx]])
@@ -430,34 +463,7 @@ for (chrom_to_plot in chroms) {
       track_height_fractions
     ), ncol = 4, byrow = FALSE)
 
-    #sub_split_coords_old <- matrix(c(
-    #  0, 1, 0.7, 1,
-    #  0, 1, 0.4, 0.7,
-    #  0, 1, 0.3, 0.4,
-    #  0, 1, 0.2, 0.3,
-    #  0, 1, 0.1, 0.2,
-    #  0, 1, 0, 0.1
-    #), ncol = 4, byrow = TRUE)
-    #print(sub_split_coords_old)
     subfigure_idx <- split.screen(sub_split_coords)
-    # subfigure_idx <- split.screen(c(num_subfigures, 1))
-
-#    # Remove the many NA regions
-#    segs_sample <- segs_sample[!is.na(segs_sample$nMajor), ]
-#    old_segs_sample <- old_segs_sample[!is.na(old_segs_sample$nMajor), ]
-
-    # Keep data for this sample
-#    data_sample <- data_sample[data_sample$chrom == chrom_to_plot, ]
-#    segs_sample <- segs_sample[segs_sample$chr == chrom_to_plot, ]
-#    orig_segs_sample <- orig_segs_sample[orig_segs_sample$chr == chrom_to_plot, ]
-#    old_segs_sample <- old_segs_sample[old_segs_sample$chr == chrom_to_plot, ]
-
-    # message("-------------------- segs_sample")
-    # str(segs_sample)
-    # message("-------------------- orig_segs_sample")
-    # str(orig_segs_sample)
-    # message("-------------------- old_segs_sample")
-    # str(old_segs_sample)
 
 
 #    # Adjust segment widths
@@ -542,29 +548,8 @@ for (chrom_to_plot in chroms) {
       plot_range <- c(min(data_sample$pos), max(data_sample$pos))
 #    }
 
-    message("Plot range:", plot_range[[1]], "-", plot_range[[2]])
+#    message("Plot range:", plot_range[[1]], "-", plot_range[[2]])
 
-#    # ------------------------------------------------------------------------
-#    # Swap CNs when we have MSAI
-#    if (conf$raw) {
-#      segs_sample$nMajor <- round(ifelse(segs_sample$dominant_allele == "cpnB", segs_sample$orig_cpnB_raw, segs_sample$orig_cpnA_raw), 2)
-#      segs_sample$nMinor <- round(ifelse(segs_sample$dominant_allele == "cpnB", segs_sample$orig_cpnA_raw, segs_sample$orig_cpnB_raw), 2)
-#      segs_sample$cnTotal <- round(segs_sample$nMajor + segs_sample$nMinor, 2)
-#
-#      old_segs_sample$nMajor <- round(old_segs_sample$ph_raw_cpnA, 2)
-#      old_segs_sample$nMinor <- round(old_segs_sample$ph_raw_cpnB, 2)
-#      old_segs_sample$cnTotal <- round(old_segs_sample$nMajor + old_segs_sample$nMinor, 2)
-#    } else {
-#      segs_sample$nMajor <- ifelse(segs_sample$dominant_allele == "cpnB", segs_sample$orig_nMinor, segs_sample$orig_nMajor)
-#      segs_sample$nMinor <- ifelse(segs_sample$dominant_allele == "cpnB", segs_sample$orig_nMajor, segs_sample$orig_nMinor)
-#      segs_sample$cnTotal <- segs_sample$orig_cnTotal
-#
-#      nMajor <- ifelse(old_segs_sample$dominant_allele == "cpnB", old_segs_sample$nMinor, old_segs_sample$nMajor)
-#      nMinor <- ifelse(old_segs_sample$dominant_allele == "cpnB", old_segs_sample$nMajor, old_segs_sample$nMinor)
-#      old_segs_sample$nMajor <- nMajor
-#      old_segs_sample$nMinor <- nMinor
-#    }
-#
 #    # ------------------------------------------------------------------------
 #    # Indicate which segments have changed
 #    segs_sample$is_changed <- get_seg_changes(segs_sample, orig_segs_sample)
@@ -583,7 +568,6 @@ for (chrom_to_plot in chroms) {
 #    stats["newrefphase", "cn_diff_new_ai"] <- stats["newrefphase", "cn_diff_new_ai"] + sum(segs_sample$is_new_ai, na.rm = TRUE)
 #    stats["oldrefphase", "cn_diff_new_ai"] <- stats["oldrefphase", "cn_diff_new_ai"] + sum(old_segs_sample$is_new_ai, na.rm = TRUE)
 
-    main_seg <- segs[[1]]
     main_seg_sample <- main_seg[main_seg$sample == sample_name & main_seg$chr == chrom_to_plot,]
 
     # logR track
@@ -983,3 +967,4 @@ dev.off()
 #
 # close.screen(all = TRUE)
 # dev.off()
+print(warnings())
