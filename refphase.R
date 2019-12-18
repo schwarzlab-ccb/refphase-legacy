@@ -858,7 +858,7 @@ simple_segs$is_msai <- simple_segs$dominant_allele == "cpnB"
 simple_segs$is_reference <- simple_segs$sample == simple_segs$samp_used_to_phase
 # Remove some columns we don't need anymore
 simple_segs[, c("orig_cnTotal", "orig_nMajor", "orig_nMinor", "dominant_allele", "samp_used_to_phase")] <- NULL
-write.table(simple_segs, file = file.path(PLOT_OUTPUT_DIR, "segmentation.tsv"), row.names = FALSE, sep = "\t")
+write.table(simple_segs, file = file.path(PLOT_OUTPUT_DIR, "segmentation.tsv"), row.names = FALSE, sep = "\t", quote = FALSE)
 
 if (!is.na(conf$medicc_output_dir)) {
   # Hack! Hope this works...
