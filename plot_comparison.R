@@ -946,14 +946,15 @@ chrom_info <- data.frame(
   start = chrom_starts,
   end = chrom_ends,
   center = chrom_center,
-  label = names(chrom_starts)
+  label = as.character(unique(segs$chr))
 )
+  #label = names(chrom_starts)
 
 # Whole genome plot
 output_plot <- file.path(conf$output_dir, "whole_genome.pdf")
-pdf(output_plot, width = 10, height = 3 * length(samples))
+pdf(output_plot, width = 10, height = 3 * length(snps))
 par(cex = 0.8)
-split.screen(c(length(samples), 1))
+split.screen(c(length(snps), 1))
 num_subfigures <- 2
 
 #for (sample_idx in seq_along(samples)) {
@@ -968,13 +969,14 @@ for (sample_idx in seq_along(sample_names)) {
   screen_idxs <- split.screen(split_coords)
 
   screen(screen_idxs[[1]])
-  plot_sample_info(sample_name, segs_sample$Ploidy[[1]], segs_sample$ACF[[1]])
+  #plot_sample_info(sample_name, segs_sample$Ploidy[[1]], segs_sample$ACF[[1]])
+  plot_sample_info(sample_name, 0, 0)
 
   screen(screen_idxs[[2]])
   subfigure_idx <- split.screen(c(num_subfigures, 1))
 
   # Remove the many NA regions
-  segs_sample <- segs_sample[!is.na(segs_sample$cnTotal), ]
+  segs_sample <- segs_sample[!is.na(segs_sample$cpn_total), ]
 
   # Adjust all positions to genome-wide absolute positions
   data_sample$pos <- data_sample$pos + chrom_starts[data_sample$chrom]
