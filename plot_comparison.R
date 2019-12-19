@@ -92,12 +92,21 @@ plot_track_cn <- function(segs, track_name, xlim) {
   cn_text(x = segs$seg_center, y = 0, labels = full_label, cex = 0.7, col = "black")
 }
 
-plot_track_logr <- function(data_sample, segs_sample) {
+plot_track_logr <- function(data_sample, segs_sample, max_values = 6000) {
   par(mar = c(0.1, 5, 0.1, 1))
+  # Downsample logR values to keep file sizes reasonable
+  data_sample <- data_sample[sample.int(nrow(data_sample), min(max_values, nrow(data_sample))),]
   plot(data_sample$pos, data_sample$logR, ylab = "logR", xaxt = "n", col = adjustcolor("darkgrey", 0.2), pch = 20, ylim = c(min(c(-2, data_sample$logR)), max(c(2, data_sample$logR))))
   #segments(x0 = segs_sample$startpos, y0 = segs_sample$median_non_hz_logr, x1 = segs_sample$endpos, col = "black")
   abline(v = unique(c(segs_sample$startpos, segs_sample$endpos)), lty = 2, col = "black")
-#
+
+  # # Fit a loess regression line
+  # mini_data <- data_sample[sample.int(nrow(data_sample), min(10000, nrow(data_sample))),]
+  # loess_fit <- loess(mini_data$logR ~ mini_data$pos, span = 0.05)
+  # loess_positions <- seq(min(data_sample$pos), max(data_sample$pos), length.out = 5000)
+  # loess_values <- predict(loess_fit, loess_positions)
+  # lines(loess_values, x = loess_positions, col = "red", lwd = 2)
+
 #  # MPhase copy numbers
 #  total_cn <- as.character(segs_sample$orig_cnTotal)
 #
@@ -162,6 +171,7 @@ plot_track_baf <- function(data_sample, segs_sample, msai) {
 # Whole genome versions of the tracks
 
 plot_track_logr_whole_genome <- function(data_sample, segs_sample, chrom_info) {
+
   par(mar = c(1, 5, 1, 0.1), xaxs = "i")
   plot(data_sample$pos, data_sample$logR, ylab = "logR", xaxt = "n", col = adjustcolor("darkgrey", 0.2), pch = ".", ylim = c(-2, 2))
   # lines(x = data_sample$pos, y = data_sample$logRsegmented, col=ifelse(is.na(data_sample$logRsegmented), "white", "black"))
