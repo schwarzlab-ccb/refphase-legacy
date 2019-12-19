@@ -95,6 +95,14 @@ read_snps_sequenza <- function(input_files, segs, samples, het_only = TRUE) {
 
     # Mask non-hz SNPs with NA
     all_snps[[samp]]$BAF[all_snps[[samp]]$germline_zygosity != "het"] <- NA
+
+    # Look into reference bias
+    library(data.table)
+    baf_tmp <- all_snps[[samp]]$BAF[!is.na(all_snps[[samp]]$BAF)]
+    message("Mean of BAF: ", mean(baf_tmp))
+    message("Median of BAF: ", median(baf_tmp))
+    message("Rolling mean of BAF (window 100 hz positions):")
+    print(frollmean(baf_tmp, 100))
   }
 
   all_snps <- snps_set_bafsegmented(segs, all_snps)

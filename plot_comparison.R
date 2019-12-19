@@ -175,22 +175,29 @@ plot_track_logr_whole_genome <- function(data_sample, segs_sample, chrom_info) {
   par(mar = c(1, 5, 1, 0.1), xaxs = "i")
   plot(data_sample$pos, data_sample$logR, ylab = "logR", xaxt = "n", col = adjustcolor("darkgrey", 0.2), pch = ".", ylim = c(-2, 2))
   # lines(x = data_sample$pos, y = data_sample$logRsegmented, col=ifelse(is.na(data_sample$logRsegmented), "white", "black"))
-  segments(x0 = segs_sample$startpos, y0 = segs_sample$median_non_hz_logr, x1 = segs_sample$endpos, col = "black")
+  # We don't have the meana right now
+  #segments(x0 = segs_sample$startpos, y0 = segs_sample$median_non_hz_logr, x1 = segs_sample$endpos, col = "black")
   abline(v = chrom_info$start, lty = 2, col = "black")
   cn_text(x = chrom_info$center, y = 1.5, labels = chrom_info$label, cex = 1.0)
 }
 
 plot_track_baf_whole_genome <- function(data_sample, segs_sample, chrom_info) {
   par(mar = c(2, 5, 0.1, 0.1), xaxs = "i")
-  phasing_col <- ifelse(data_sample$maj_is_cpnB_logic_vec == 1, "blue", "orange")
-  phasing_col[data_sample$sample_phased_by_this_sample == "none_no_allelic_imbalance_called"] <- "grey"
+
+  phasing_col <- data_sample$phasing
+  phasing_col[phasing_col == "a"] <- "orange"
+  phasing_col[phasing_col == "b"] <- "blue"
+  phasing_col[phasing_col == "none"] <- "grey"
   phasing_col <- adjustcolor(phasing_col, 0.6)
+  #phasing_col <- ifelse(data_sample$maj_is_cpnB_logic_vec == 1, "blue", "orange")
+  #phasing_col[data_sample$sample_phased_by_this_sample == "none_no_allelic_imbalance_called"] <- "grey"
+  #phasing_col <- adjustcolor(phasing_col, 0.6)
   plot(data_sample$pos, data_sample$BAF, ylab = "BAF", col = phasing_col, ylim = c(0, 1), pch = ".")
 
-  # Mean segments
-  mean_col <- ifelse(segs_sample$within_samp_cl_AI_present, "black", NA)
-  segments(x0 = segs_sample$startpos, y0 = segs_sample$mean_BAF + 0.5, x1 = segs_sample$endpos, col = mean_col)
-  segments(x0 = segs_sample$startpos, y0 = -1 * segs_sample$mean_BAF + 0.5, x1 = segs_sample$endpos, col = mean_col)
+#  # Mean segments
+#  mean_col <- ifelse(segs_sample$within_samp_cl_AI_present, "black", NA)
+#  segments(x0 = segs_sample$startpos, y0 = segs_sample$mean_BAF + 0.5, x1 = segs_sample$endpos, col = mean_col)
+#  segments(x0 = segs_sample$startpos, y0 = -1 * segs_sample$mean_BAF + 0.5, x1 = segs_sample$endpos, col = mean_col)
 
   # Chromosome boundaries
   abline(v = chrom_info$start, lty = 2, col = "black")
@@ -410,7 +417,6 @@ str(segs)
 # marked on the BAF/logR plots (reference + msai events)
 main_seg <- segs[[1]]
 #chroms <- mixedsort(unique(sapply(segs, "[[", "chr")))
-
 
 # Assign phasing of regions with MSAI. I should directly carry over the phasing
 # from refphase instead of recalculating this here.
@@ -693,13 +699,6 @@ dev.off()
 # chrom_center <- chrom_starts + (chrom_ends - chrom_starts) / 2
 # segs$chrom_startpos <- chrom_starts[segs$chr]
 #
-# # Chromosome start and end positions in genome-wide absolute positions
-# chrom_info <- data.frame(
-#   start = chrom_starts,
-#   end = chrom_ends,
-#   center = chrom_center,
-#   label = names(chrom_starts)
-# )
 #
 # num_subfigures <- 6 # BAF and logR subfigures only + copy numbers
 #
@@ -933,48 +932,65 @@ dev.off()
 # stats$patient <- conf$patient_id
 # write.table(stats, file = stats_file, sep = "\t", col.names = NA)
 #
-# # Whole genome plot
-# output_plot <- file.path(conf$output_dir, "whole_genome.pdf")
-# pdf(output_plot, width = 10, height = 3 * length(samples))
-# par(cex = 0.8)
-# split.screen(c(length(samples), 1))
-# num_subfigures <- 2
-#
-# for (sample_idx in seq_along(samples)) {
-#   sample_name <- samples[[sample_idx]]
-#   data_sample <- baf_logr[[sample_idx]]
-#   segs_sample <- segs[segs$sample == sample_name, ]
-#
-#   # Split the plotting area vertically (sample name + info on left, plots on right)
-#   screen(sample_idx)
-#   split_coords <- matrix(c(0, 0.1, 0, 1, 0.1, 1, 0, 1), ncol = 4, byrow = TRUE)
-#   screen_idxs <- split.screen(split_coords)
-#
-#   screen(screen_idxs[[1]])
-#   plot_sample_info(sample_name, segs_sample$Ploidy[[1]], segs_sample$ACF[[1]])
-#
-#   screen(screen_idxs[[2]])
-#   subfigure_idx <- split.screen(c(num_subfigures, 1))
-#
-#   # Remove the many NA regions
-#   segs_sample <- segs_sample[!is.na(segs_sample$cnTotal), ]
-#
-#   # Adjust all positions to genome-wide absolute positions
-#   data_sample$pos <- data_sample$pos + chrom_starts[data_sample$chrom]
-#   segs_sample$startpos <- segs_sample$startpos + segs_sample$chrom_startpos
-#   segs_sample$endpos <- segs_sample$endpos + segs_sample$chrom_startpos
-#   segs_sample$seg_center <- segs_sample$seg_center + segs_sample$chrom_startpos
-#
-#   # logR track
-#   screen(subfigure_idx[[1]])
-#   plot_track_logr_whole_genome(data_sample, segs_sample, chrom_info)
-#
-#   # BAF track
-#   screen(subfigure_idx[[2]])
-#   plot_track_baf_whole_genome(data_sample, segs_sample, chrom_info)
-# }
-#
-#
-# close.screen(all = TRUE)
-# dev.off()
+
+# Convert chromosomal positions to absolute positions for plotting the whole genome
+segs <- main_seg
+chrom_ends <- cumsum(as.numeric(by(segs$endpos, segs$chr, max)))
+chrom_starts <- c(0, chrom_ends[-length(chrom_ends)])
+names(chrom_starts) <- names(chrom_ends)
+chrom_center <- chrom_starts + (chrom_ends - chrom_starts) / 2
+segs$chrom_startpos <- chrom_starts[segs$chr]
+
+# Chromosome start and end positions in genome-wide absolute positions
+chrom_info <- data.frame(
+  start = chrom_starts,
+  end = chrom_ends,
+  center = chrom_center,
+  label = names(chrom_starts)
+)
+
+# Whole genome plot
+output_plot <- file.path(conf$output_dir, "whole_genome.pdf")
+pdf(output_plot, width = 10, height = 3 * length(samples))
+par(cex = 0.8)
+split.screen(c(length(samples), 1))
+num_subfigures <- 2
+
+#for (sample_idx in seq_along(samples)) {
+for (sample_idx in seq_along(sample_names)) {
+  sample_name <- sample_names[[sample_idx]]
+  data_sample <- snps[[sample_name]]
+  segs_sample <- segs[segs$sample == sample_name, ]
+
+  # Split the plotting area vertically (sample name + info on left, plots on right)
+  screen(sample_idx)
+  split_coords <- matrix(c(0, 0.1, 0, 1, 0.1, 1, 0, 1), ncol = 4, byrow = TRUE)
+  screen_idxs <- split.screen(split_coords)
+
+  screen(screen_idxs[[1]])
+  plot_sample_info(sample_name, segs_sample$Ploidy[[1]], segs_sample$ACF[[1]])
+
+  screen(screen_idxs[[2]])
+  subfigure_idx <- split.screen(c(num_subfigures, 1))
+
+  # Remove the many NA regions
+  segs_sample <- segs_sample[!is.na(segs_sample$cnTotal), ]
+
+  # Adjust all positions to genome-wide absolute positions
+  data_sample$pos <- data_sample$pos + chrom_starts[data_sample$chrom]
+  segs_sample$startpos <- segs_sample$startpos + segs_sample$chrom_startpos
+  segs_sample$endpos <- segs_sample$endpos + segs_sample$chrom_startpos
+  segs_sample$seg_center <- segs_sample$seg_center + segs_sample$chrom_startpos
+
+  # logR track
+  screen(subfigure_idx[[1]])
+  plot_track_logr_whole_genome(data_sample, segs_sample, chrom_info)
+
+  # BAF track
+  screen(subfigure_idx[[2]])
+  plot_track_baf_whole_genome(data_sample, segs_sample, chrom_info)
+}
+close.screen(all = TRUE)
+dev.off()
+
 print(warnings())

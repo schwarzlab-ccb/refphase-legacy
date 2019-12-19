@@ -441,6 +441,7 @@ keep_common_snps <- function(all_snps) {
 # have ASCAT calling the region balanced)
 snps_set_bafsegmented <- function(segs, all_snps) {
   message("Calculating segmented BAF values.")
+  warning("Centering BAF values at 0.475 rather than 0.5 to account for reference bias. This value was chosen based on mean BAF across all samples in this cohort."
 
   sample_names <- names(all_snps)
   for (samp_idx in seq_along(all_snps)) {
@@ -462,7 +463,8 @@ snps_set_bafsegmented <- function(segs, all_snps) {
       if (is.na(seg$nMajor) | is.na(seg$nMinor) | seg$nMajor == seg$nMinor) {
         all_snps[[samp_idx]][seg_data_idx, "BAFsegmented"] <- 0.5
       } else {
-        mean_baf <- 0.5 - mean(abs(samp_data[seg_data_idx, "BAF"] - 0.5), na.rm = TRUE)
+        center_baf <- 0.475  # not 0.5, to account for reference bias
+        mean_baf <- center_baf - mean(abs(samp_data[seg_data_idx, "BAF"] - center_baf), na.rm = TRUE)
         all_snps[[samp_idx]][seg_data_idx, "BAFsegmented"] <- mean_baf
       }
     }
