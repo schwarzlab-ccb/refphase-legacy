@@ -809,7 +809,7 @@ saveRDS(full.joint.segs.df, file = file.path(PLOT_OUTPUT_DIR, "full_joint_segs.r
 if (isTRUE(PLOTTING_FLAG)) {
   message("Plotting CCFs for cpnA and cpnB across the genome using cpn definition of subclonality...")
 
-  png(file = paste(PLOT_OUTPUT_DIR, patient, "_CCF_w_cpn_thresh_cpnA", ".png", sep = ""), width = 1200, height = 1400)
+  png(file = file.path(PLOT_OUTPUT_DIR, "CCF_w_cpn_thresh_cpnA.png"), width = 1200, height = 1400)
   plotAllSampleCCFsAcrossGenome(
     asas.ph.raw.cpn.lists = asas.ph.raw.cpn.lists,
     full.joint.segs.df = full.joint.segs.df,
@@ -821,7 +821,7 @@ if (isTRUE(PLOTTING_FLAG)) {
   )
   dev.off()
 
-  png(file = paste(PLOT_OUTPUT_DIR, patient, "_CCF_w_cpn_thresh_cpnB", ".png", sep = ""), width = 1200, height = 1400)
+  png(file = file.path(PLOT_OUTPUT_DIR, "CCF_w_cpn_thresh_cpnB.png"), width = 1200, height = 1400)
   plotAllSampleCCFsAcrossGenome(
     asas.ph.raw.cpn.lists = asas.ph.raw.cpn.lists,
     full.joint.segs.df = full.joint.segs.df,
@@ -848,7 +848,7 @@ write.table(full.joint.segs.df, file = file.path(PLOT_OUTPUT_DIR, "full_joint_se
 #simple_segs <- full.joint.segs.df[!is.na(full.joint.segs.df$orig_nMajor) & full.joint.segs.df$samp_used_to_phase != "too_few_SNPs",
 #simple_segs <- full.joint.segs.df[!is.na(full.joint.segs.df$n.het),
 simple_segs <- full.joint.segs.df[!is.na(full.joint.segs.df$cnTotal) & !is.na(full.joint.segs.df$orig_cnTotal),
-  c("sample", "chr", "startpos", "endpos", "orig_cnTotal", "orig_nMajor", "orig_nMinor", "dominant_allele", "samp_used_to_phase")]
+  c("sample", "chr", "startpos", "endpos", "orig_cnTotal", "orig_nMajor", "orig_nMinor", "dominant_allele", "samp_used_to_phase", "Ploidy", "ACF")]
 # Because the dominant allele is only set when there is allelic imbalance, we
 # force it to a value (= "no_ai") here so that we don't have to deal with NAs
 # in this column
@@ -858,9 +858,17 @@ simple_segs$cpn_a <- ifelse(simple_segs$dominant_allele == "cpnA", simple_segs$o
 simple_segs$cpn_b <- ifelse(simple_segs$dominant_allele == "cpnA", simple_segs$orig_nMinor, simple_segs$orig_nMajor)
 simple_segs$is_msai <- simple_segs$dominant_allele == "cpnB"
 simple_segs$is_reference <- simple_segs$sample == simple_segs$samp_used_to_phase
+simple_segs$ploidy <- simple_segs$Ploidy
+simple_segs$purity <- simple_segs$ACF
 # Remove some columns we don't need anymore
-simple_segs[, c("orig_cnTotal", "orig_nMajor", "orig_nMinor", "dominant_allele", "samp_used_to_phase")] <- NULL
+simple_segs[, c("orig_cnTotal", "orig_nMajor", "orig_nMinor", "dominant_allele", "samp_used_to_phase", "Ploidy", "ACF")] <- NULL
 write.table(simple_segs, file = file.path(PLOT_OUTPUT_DIR, "segmentation.tsv"), row.names = FALSE, sep = "\t", quote = FALSE)
+
+# Write an extra table with sample-wide information like purity and ploidy
+sample_info <- unique(full.joint.segs.df[, c("sample", "Ploidy", "ACF")])
+colnames(sample_info)[colnames(sample_info) == "Ploidy"] <- "ploidy"
+colnames(sample_info)[colnames(sample_info) == "ACF"] <- "purity"
+write.table(sample_info, file = file.path(PLOT_OUTPUT_DIR, "sample_info.tsv"), row.names = FALSE, sep = "\t", quote = FALSE)
 
 if (!is.na(conf$medicc_output_dir)) {
   # Hack! Hope this works...

@@ -18,6 +18,10 @@ option_list <- list(
     default = "",
     help = "Comma-separated list of segmentation names that match the files in --segmentations"
   ),
+  make_option("--sample-info",
+    default = "",
+    help = "Per-sample information including purity and ploidy"
+  ),
   make_option(c("-p", "--patient-id"),
     default = "",
     help = "Patient ID"
@@ -121,7 +125,7 @@ plot_track_baf <- function(data_sample, segs_sample, msai) {
   phasing_col[phasing_col == "b"] <- "blue"
   phasing_col[phasing_col == "none"] <- "grey"
   phasing_col <- adjustcolor(phasing_col, 0.6)
-  plot(data_sample$pos, data_sample$BAF, ylab = "BAF", col = phasing_col, ylim = c(0, 1), pch = 20, xaxt = "n", yaxt = "n")
+  plot(data_sample$pos, data_sample$BAF, ylab = "BAF", col = phasing_col, ylim = c(0, 1), pch = 20, yaxt = "n")
 
 #  plot(data_sample$pos, data_sample$BAF, ylab = "BAF", col = phasing_col, ylim = c(0, 1), pch = 20, xaxt = "n", yaxt = "n")
 
@@ -430,7 +434,7 @@ for (seg_idx in seq_along(seg_input_files)) {
   segs[[seg_idx]] <- seg
 }
 
-str(segs)
+sample_info <- read.delim(conf$sample_inf, sep = "\t", stringsAsFactors = FALSE, row.names = "sample")
 
 # We consider the first segmentation that is passed in as the "main"
 # segmentation, the one that matches the BAF/logR values and the one that is
@@ -477,8 +481,7 @@ for (chrom_to_plot in chroms) {
 
     screen(screen_idxs[[1]])
     #plot_sample_info(sample_name, segs_sample$Ploidy[[1]], segs_sample$ACF[[1]])
-    warning("FIXME: add proper ploidy and purity to sample label")
-    plot_sample_info(sample_name, 0, 0)
+    plot_sample_info(sample_name, sample_info[sample_name, "ploidy"], sample_info[sample_name, "purity"])
 
     screen(screen_idxs[[2]])
 
