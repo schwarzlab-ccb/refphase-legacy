@@ -125,7 +125,7 @@ plot_track_baf <- function(data_sample, segs_sample, msai) {
   phasing_col[phasing_col == "b"] <- "blue"
   phasing_col[phasing_col == "none"] <- "grey"
   phasing_col <- adjustcolor(phasing_col, 0.6)
-  plot(data_sample$pos, data_sample$BAF, ylab = "BAF", col = phasing_col, ylim = c(0, 1), pch = 20, yaxt = "n")
+  plot(data_sample$pos, data_sample$BAF, ylab = "BAF", col = phasing_col, ylim = c(0, 1), pch = 20, yaxt = "n", xaxt = "n")
 
 #  plot(data_sample$pos, data_sample$BAF, ylab = "BAF", col = phasing_col, ylim = c(0, 1), pch = 20, xaxt = "n", yaxt = "n")
 
@@ -315,7 +315,7 @@ phase_regions <- function(snps, seg, baf_threshold = 0.5) {
     snps[[samp]]$phasing <- "none"
 
   phased_regions <- seg[seg$is_reference, c("sample", "chr", "startpos", "endpos")]
-  str(phased_regions)
+  #str(phased_regions)
   for (region_idx in seq_len(nrow(phased_regions))) {
     region <- phased_regions[region_idx, ]
 
@@ -331,7 +331,7 @@ phase_regions <- function(snps, seg, baf_threshold = 0.5) {
     }
   }
 
-  str(snps)
+  #str(snps)
 
   snps
 }
@@ -403,7 +403,7 @@ if (!dir.exists(conf$output_dir)) {
 # The BAF/LogR data along the genome
 snps <- readRDS(conf$snps)$all.samp.SNP.list
 
-str(snps)
+#str(snps)
 
 # A list of copy number segmentations to plot as individual tracks
 seg_input_files <- strsplit(conf$segmentations, ",")[[1]]
@@ -480,7 +480,6 @@ for (chrom_to_plot in chroms) {
     screen_idxs <- split.screen(split_coords)
 
     screen(screen_idxs[[1]])
-    #plot_sample_info(sample_name, segs_sample$Ploidy[[1]], segs_sample$ACF[[1]])
     plot_sample_info(sample_name, sample_info[sample_name, "ploidy"], sample_info[sample_name, "purity"])
 
     screen(screen_idxs[[2]])
@@ -569,8 +568,7 @@ for (sample_idx in seq_along(sample_names)) {
   screen_idxs <- split.screen(split_coords)
 
   screen(screen_idxs[[1]])
-  #plot_sample_info(sample_name, segs_sample$Ploidy[[1]], segs_sample$ACF[[1]])
-  plot_sample_info(sample_name, 0, 0)
+  plot_sample_info(sample_name, sample_info[sample_name, "ploidy"], sample_info[sample_name, "purity"])
 
   screen(screen_idxs[[2]])
   split_coords <- matrix(c(0, 1, 0.7, 1,

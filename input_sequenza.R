@@ -82,6 +82,10 @@ read_snps_sequenza <- function(input_files, segs, samples, het_only = TRUE) {
     baf <- seqz_data$Bf
     baf[flip_baf] <- seqz_data$Af[flip_baf]
 
+    warning("Hack to adjust for BAF reference bias (mean BAF is ~ 0.475)")
+    baf <- baf + (0.5 - 0.475)
+    baf[baf > 1.0] <- 1.0
+
     all_snps[[samp]] <- data.frame(
       chrom = chrom,
       pos = pos,
@@ -97,12 +101,12 @@ read_snps_sequenza <- function(input_files, segs, samples, het_only = TRUE) {
     all_snps[[samp]]$BAF[all_snps[[samp]]$germline_zygosity != "het"] <- NA
 
     # Look into reference bias
-    library(data.table)
-    baf_tmp <- all_snps[[samp]]$BAF[!is.na(all_snps[[samp]]$BAF)]
-    message("Mean of BAF: ", mean(baf_tmp))
-    message("Median of BAF: ", median(baf_tmp))
-    message("Rolling mean of BAF (window 100 hz positions):")
-    print(frollmean(baf_tmp, 100))
+    #library(data.table)
+    #baf_tmp <- all_snps[[samp]]$BAF[!is.na(all_snps[[samp]]$BAF)]
+    #message("Mean of BAF: ", mean(baf_tmp))
+    #message("Median of BAF: ", median(baf_tmp))
+    #message("Rolling mean of BAF (window 100 hz positions):")
+    #print(frollmean(baf_tmp, 100))
   }
 
   all_snps <- snps_set_bafsegmented(segs, all_snps)

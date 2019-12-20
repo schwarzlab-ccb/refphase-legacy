@@ -74,6 +74,9 @@ read_input <- function(seg_file, snp_file, input_format) {
     stop(paste0("Incorrect snp data input format (", input_format, ")"))
   }
 
+  # Adjust segmentation to make sure every boundary lands on an existing SNP
+  f.joint.segs.df <- move_seg_boundaries_to_snps(f.joint.segs.df, all.samp.SNP.list[[1]])
+
   # Immediately validate input SNP information (BAF, logR and more)
   if (conf$validate_input) {
     validate_snp_all_samples(all.samp.SNP.list)
@@ -153,4 +156,33 @@ read_ascat_bc <- function(filename) {
   }
 
   ascat.bc
+}
+
+# Make sure segmentation boundaries fall on existing SNPs
+move_seg_boundaries_to_snps <- function(segs, snps, het_only = TRUE) {
+  str(segs)
+  message("Original segs")
+  print(segs)
+  if (isTRUE(het_only)) {
+    snps <- snps[snps$germline_zygosity == "het",]
+  }
+
+  for (seg_idx in seq_len(nrow(segs))) {
+    seg <- segs[seg_idx, ]
+
+    snps_in_seg <- snps[snps$chrom == seg$chr & snps$pos >= seg$startpos & snps$pos <= seg$endpos,]
+
+    if (nrow(snps_in_seg) >= 1) {
+      message("Updating segment boundary")
+
+      segs[seg_idx, "startpos"] <- min(snps_in_seg$pos)
+      segs[seg_idx, "endpos"] <- max(snps_in_seg$pos)
+    }
+  }
+
+  segs$uniq_id <- paste0(segs$sample, "@", segs$chr, ":", segs$startpos, ":", segs$endpos)
+
+  message("Updated segs")
+  print(segs)
+  segs
 }

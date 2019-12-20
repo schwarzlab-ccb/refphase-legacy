@@ -64,7 +64,7 @@ addPhasingInformationToOutputSegmentation <- function(sample.vec,
 
       if (length(sample.to.phase.seg.list[[seg.name]][["samp_chosen_to_phase_seg"]]) == 0) {
         all.segs.df[samp.seg.name, ]$samp_used_to_phase <- "too_few_SNPs"
-        message("1) ", samp.seg.name, ": too_few_SNPs")
+        #message("1) ", samp.seg.name, ": too_few_SNPs")
       } else {
         samp.used.to.phase <- sample.to.phase.seg.list[[seg.name]][["samp_chosen_to_phase_seg"]]
 
@@ -825,14 +825,14 @@ addWithinSampleClonalityAndCCFToFinalSegmentation <- function(seg.name.vec,
 
       if (!seg.name %in% names(all.seg.CCF.vals.list[[cpnX.vec[1]]])) {
         all.seg.df[samp.seg.name, ]$samp_used_to_phase <- "too_few_SNPs"
-        message("2) ", samp.seg.name, ": too_few_SNPs")
+        #message("2) ", samp.seg.name, ": too_few_SNPs")
         next
       }
       #str(all.seg.CCF.vals.list[[cpnX.vec[1]]])
       if (length(all.seg.CCF.vals.list[[cpnX.vec[1]]][[seg.name]]) == 1) {
         all.seg.df[samp.seg.name, ]$samp_used_to_phase <- "too_few_SNPs"
-        message("3) ", samp.seg.name, ": too_few_SNPs")
-        str(all.seg.CCF.vals.list[[cpnX.vec[1]]][[seg.name]])
+        #message("3) ", samp.seg.name, ": too_few_SNPs")
+        #str(all.seg.CCF.vals.list[[cpnX.vec[1]]][[seg.name]])
         next
       }
 
