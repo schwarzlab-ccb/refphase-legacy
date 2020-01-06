@@ -40,7 +40,7 @@
 #   ..$ logR         : num [1:938946] -0.049 -0.161 -0.161 -0.542 -0.46 -0.46 -0.46 -0.166 -0.047 -0.013 ...
 #   ..$ BAFsegmented : num [1:938946] 0.231 0.231 0.231 0.231 0.231 ...
 #   ..$ logRsegmented: num [1:938946] -0.327 -0.327 -0.327 -0.327 -0.327 ...
-read_snps_sequenza <- function(input_files, segs, samples, het_only = TRUE) {
+read_snps_sequenza <- function(input_files, segs, samples, het_only = TRUE, normalize_logr = TRUE) {
   library(readr)
 
   all_snps <- list()
@@ -96,6 +96,12 @@ read_snps_sequenza <- function(input_files, segs, samples, het_only = TRUE) {
       row.names = paste0(chrom, "_", pos),
       stringsAsFactors = FALSE
     )
+
+    # Crude noramlization of logR values
+    if (isTRUE(normalize_logr)) {
+      warning("Using crude noramlization of logR values: median centering")
+      all_snps[[samp]]$logR <- all_snps[[samp]]$logR - median(all_snps[[samp]]$logR, na.rm = TRUE)
+    }
 
     # Mask non-hz SNPs with NA
     all_snps[[samp]]$BAF[all_snps[[samp]]$germline_zygosity != "het"] <- NA

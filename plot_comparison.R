@@ -126,6 +126,7 @@ plot_track_baf <- function(data_sample, segs_sample, msai) {
   phasing_col[phasing_col == "none"] <- "grey"
   phasing_col <- adjustcolor(phasing_col, 0.6)
   plot(data_sample$pos, data_sample$BAF, ylab = "BAF", col = phasing_col, ylim = c(0, 1), pch = 20, yaxt = "n", xaxt = "n")
+  axis(2, seq(0, 1, by = 0.25))
 
 #  plot(data_sample$pos, data_sample$BAF, ylab = "BAF", col = phasing_col, ylim = c(0, 1), pch = 20, xaxt = "n", yaxt = "n")
 
@@ -133,7 +134,6 @@ plot_track_baf <- function(data_sample, segs_sample, msai) {
 #  phasing_col[data_sample$sample_phased_by_this_sample == "none_no_allelic_imbalance_called"] <- "grey"
 #  phasing_col <- adjustcolor(phasing_col, 0.6)
 #  plot(data_sample$pos, data_sample$BAF, ylab = "BAF", col = phasing_col, ylim = c(0, 1), pch = 20, xaxt = "n", yaxt = "n")
-#  axis(2, seq(0, 1, by = 0.25))
 #
 #  # Mean segments
 #  mean_col <- ifelse(segs_sample$orig_nMajor != segs_sample$orig_nMinor, "black", NA)

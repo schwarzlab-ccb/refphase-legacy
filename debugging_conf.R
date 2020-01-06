@@ -35,12 +35,21 @@
 #              help = FALSE,
 #              conf = "1b151cc2")
 
-conf <- list(
-  patient = "CB1001", dip_test = FALSE, output_dir = "../output/CB1001/refphase-ascat",
-  medicc_output_dir = "../output/CB1001/refphase-ascat/medicc",
-  input_format = "ASCAT", snp_data = "../input/modified-nb-schulte-2//CB1001_input_paths_df.txt",
-  snp_data_prefix = "", seg_data = "../input/modified-nb-schulte-2//CB1001.segmentation.modified",
-  gamma = 1, cores = 1, segment_type = "intersection", genome = "hg38",
-  overwrite = TRUE, cached_dir = NA, validate_input = TRUE,
-  seed = 2134234, help = FALSE, id = "d9f8bf51", debug_dir = "../output/CB1001/refphase-ascat/debug/"
-)
+# conf <- list(
+#   patient = "CB1001", dip_test = FALSE, output_dir = "../output/CB1001/refphase-ascat",
+#   medicc_output_dir = "../output/CB1001/refphase-ascat/medicc",
+#   input_format = "ASCAT", snp_data = "../input/modified-nb-schulte-2//CB1001_input_paths_df.txt",
+#   snp_data_prefix = "", seg_data = "../input/modified-nb-schulte-2//CB1001.segmentation.modified",
+#   gamma = 1, cores = 1, segment_type = "intersection", genome = "hg38",
+#   overwrite = TRUE, cached_dir = NA, validate_input = TRUE,
+#   seed = 2134234, help = FALSE, id = "d9f8bf51", debug_dir = "../output/CB1001/refphase-ascat/debug/"
+# )
+
+conf <- list(patient = "CB1003", dip_test = FALSE, output_dir = "work/refphase/output/CB1003",
+    medicc_output_dir = "work/refphase/medicc-input/CB1003",
+    input_format = "sequenza", snp_data = "work/refphase/input/CB1003.sequenza.tsv",
+    snp_data_prefix = "", seg_data = "work/refphase/input/CB1003.segmentation.tsv",
+    gamma = 1, cores = 1L, segment_type = "intersection", genome = "hg38",
+    overwrite = TRUE, cached_dir = NA, debug_dir = "work/refphase/output/CB1003/debug",
+    validate_input = TRUE, seed = 2134234, help = FALSE, id = "7be46075")
+
