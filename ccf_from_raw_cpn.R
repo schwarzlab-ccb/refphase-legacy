@@ -1,7 +1,7 @@
 ccf_from_raw_cpn <- function(asas.ph.raw.cpn.lists, sample.vec, seg.name.vec) {
-  message("*******************************************************************")
-  message("Calculating cancer cell fractions (CCFs) using phased raw cpn")
-  message("*******************************************************************")
+  loginfo("*******************************************************************")
+  loginfo("Calculating cancer cell fractions (CCFs) using phased raw cpn")
+  loginfo("*******************************************************************")
 
   samps.int.cpn.raw.cpn.by.chr.list <- generateAllSamplesByChromIntCPNUnderlyingRawValuesLists(
     asas.ph.raw.cpn.lists = asas.ph.raw.cpn.lists,

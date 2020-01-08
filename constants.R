@@ -2,7 +2,7 @@
 
 MIN_NUM_HZ_SNP_PHASING <- 5
 OVERWRITE_FLAG <- conf$overwrite
-PLOTTING_FLAG <- TRUE
+PLOTTING_FLAG <- FALSE
 # POST JOINING FLAGS to run sections of code
 JOINED_SEGS_ERROR_CHECKING_FLAG <- FALSE
 # Using joined segs on second run throughof MPhase

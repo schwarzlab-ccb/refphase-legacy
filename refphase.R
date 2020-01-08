@@ -2,6 +2,7 @@
 
 library(optparse)
 library(digest)
+library(logging)
 
 options(stringsAsFactors = FALSE)
 
@@ -111,6 +112,9 @@ if (!interactive()) {
       action = "store_false", dest = "validate_input",
       help = "Do not validate input"
     ),
+    make_option("--logging", type="character", default="DEBUG",
+      help = "Set the logging level (DEBUG, INFO, WARN, STOP) [default = %default]"
+    ),
     make_option(c("--seed"),
       default = 2134234,
       help = "Random seed"
@@ -133,12 +137,13 @@ if (!interactive()) {
   source(file.path(current.dir, "debugging_conf.R"))
 }
 
-message("Arguments:")
+logdebug("Arguments:")
 for (key in names(conf))
-  message(key, " = ", conf[[key]], " (class = ", class(conf[[key]]), ")")
+  logdebug(paste0(key, " = ", conf[[key]], " (class = ", class(conf[[key]]), ")"))
 
 set.seed(conf$seed) # Why is a seed required? I'm not sure anything non-deterministic should be occurring
 
+setLevel(conf$logging)
 
 patient <- conf$patient
 # At the moment MPhase will only try to call MSAI and new copy number in areas of the genome identified as allelically imbalanced
@@ -218,7 +223,7 @@ source(file.path(current.dir, "constants.R"))
 # Create output dirs and check that input files exist
 # -------------------------------------------------------------------------
 if (!file.exists(PLOT_OUTPUT_DIR)) {
-  message("Output directory doesn't exist:", PLOT_OUTPUT_DIR)
+  loginfo("Output directory doesn't exist:", PLOT_OUTPUT_DIR)
 }
 
 output_dir <- PLOT_OUTPUT_DIR
@@ -227,16 +232,16 @@ if (!dir.exists(output_dir)) {
 }
 
 if (is.null(output.directory.base.path)) {
-  stop("No output path provided, aborting...")
+  logstop("No output path provided, aborting...")
 }
 
 # Make sure the input files exist before going too far
 if (!file.exists(snp.file.path)) {
-  stop("No file at the snp.file.path provided")
+  logstop("No file at the snp.file.path provided")
 }
 
 if (!file.exists(seg.file.path)) {
-  stop("No file at the seg.file.path provided")
+  logstop("No file at the seg.file.path provided")
 }
 
 
@@ -297,9 +302,9 @@ if (!use_cached_input) {
   input_data <- read_input(seg.file.path, snp.file.path, conf$input_format)
   saveRDS(input_data, file = file.path(PLOT_OUTPUT_DIR, "input_data.rds"))
 } else {
-  message("Loading cached input (may take a minute)")
+  loginfo("Loading cached input (may take a minute)")
   input_data <- readRDS(file.path(PLOT_OUTPUT_DIR, "input_data.rds"))
-  message("done!")
+  loginfo("done!")
 }
 
 # Unwrap the list returned from the read_input() function
@@ -316,7 +321,7 @@ sorted.all.bp.all.samps.segs.anno.df <- input_data$sorted.all.bp.all.samps.segs.
 
 if (!is.na(conf$debug_dir)) {
   # Save input data for later debugging
-  message("Save output for later")
+  loginfo("Save output for later")
   saveRDS(all.samp.SNP.list, file = all.samp.SNP.list.path)
   saveRDS(anno.seg.df, file = anno.seg.df.path)
   saveRDS(asas.SNPS.lr.and.or.baf.lists, file = asas.SNPS.lr.and.or.baf.lists.path)
@@ -329,15 +334,15 @@ if (!is.na(conf$debug_dir)) {
   saveRDS(sorted.all.bp.all.samps.segs.anno.df, file = sorted.all.bp.all.samps.segs.anno.df.path)
 }
 
-#message("Number of rows in each sample (asas.SNPs.w.both.lr.baf.snp.lists)")
+#loginfo("Number of rows in each sample (asas.SNPs.w.both.lr.baf.snp.lists)")
 snps_per_segment <- sapply(asas.SNPs.w.both.lr.baf.snp.lists, function(x) {
   sapply(x, nrow)
 })
-message("Segments with enough hz positions: >= ", MIN_NUM_HZ_SNP_PHASING)
+loginfo(paste0("Segments with enough hz positions: >= ", MIN_NUM_HZ_SNP_PHASING))
 print(snps_per_segment[apply(snps_per_segment >= MIN_NUM_HZ_SNP_PHASING, 1, all), ])
-message(sum(apply(snps_per_segment >= MIN_NUM_HZ_SNP_PHASING, 1, all)), "/", nrow(snps_per_segment))
+loginfo(paste0(sum(apply(snps_per_segment >= MIN_NUM_HZ_SNP_PHASING, 1, all)), "/", nrow(snps_per_segment)))
 
-message("Setting the pval thresholds for calling subclonality depending on the number of heterozygous sites assayed.")
+loginfo("Setting the pval thresholds for calling subclonality depending on the number of heterozygous sites assayed.")
 total.num.of.hz.sites.per.sample <- sum(sapply(asas.SNPs.w.both.lr.baf.snp.lists[[1]], nrow))
 if (total.num.of.hz.sites.per.sample > 300000) {
   PVAL_THRESH_VS_MIN_CCF <- 0.00000001
@@ -347,7 +352,7 @@ if (total.num.of.hz.sites.per.sample > 300000) {
 seg.name.vec <- paste(min.cons.segs.df[, "Chromosome"], min.cons.segs.df[, "Start_Position"], min.cons.segs.df[, "End_Position"], sep = ":")
 sample.vec <- names(asas.SNPs.w.both.lr.baf.snp.lists)
 
-message("Getting phasing to apply to all samples using getCombinedBAFDipTestPhasingParallel")
+loginfo("Getting phasing to apply to all samples using getCombinedBAFDipTestPhasingParallel")
 all.seg.phasing.info.list <- getCombinedBAFDipTestPhasingParallel(
   asas.lr.baf.lists = asas.SNPs.w.both.lr.baf.snp.lists,
   seg.name.vec = seg.name.vec,
@@ -369,7 +374,7 @@ if (!is.na(conf$debug_dir)) {
 
 # Todo unsure of what to do with the baf logr lists which have positions that only have logr here, at the moment exclude them but how
 # does that affect later run
-message("Generating phased BAF dataframes...")
+loginfo("Generating phased BAF dataframes...")
 patient.phased.BAF.df.list <- createAllSegsPhasedBAFDataFrame(
   asas.lr.baf.lists = asas.SNPs.w.both.lr.baf.snp.lists,
   sample.to.phase.seg.list = all.seg.phasing.info.list,
@@ -391,7 +396,7 @@ if (!is.na(conf$debug_dir)) {
 
 # So this is where want to create a phased ascat.bc object:
 # TBKW NEW WORK:
-#message("Starting new TBKW edit... begun on 16/08/2019 to recall copy number using phasing.")
+#loginfo("Starting new TBKW edit... begun on 16/08/2019 to recall copy number using phasing.")
 
 ret <- annotate_joint_segs(anno.seg.df, all.samp.SNP.list[[1]])
 all.samp.j.seg.df <- ret$all.samp.j.seg.df
@@ -401,9 +406,9 @@ phased.baf.info.df <- ret$phased.baf.info.df
 # But, if we're using hte intersection this should be fine? Not sure on this point.
 # However it doesn't really matter as ASCAT makes sure every segment whether or
 # not it had any baf point has an allele-specific value.
-message("************************************************************************")
-message("Running ASCAT on all samples")
-message("************************************************************************")
+loginfo("************************************************************************")
+loginfo("Running ASCAT on all samples")
+loginfo("************************************************************************")
 
 # So now there are several things we want to do here depending on the options
 # passed to the tool:
@@ -423,7 +428,7 @@ USING_XPHASE <- TRUE
 PH_ALL_SAMP_ASCAT_RAW_CPN_DF_LIST <- list()
 
 for (samp in sample.vec) {
-  message("Preparing sample for ASCAT: ", samp)
+  loginfo(paste0("Preparing sample for ASCAT: ", samp))
 
   if (conf$input_format == "ASCAT") {
     ascat.bc <- read_ascat_bc(pt.snp.file.paths.df[samp, ]$samp_ascat_bc_path)
@@ -463,7 +468,7 @@ for (samp in sample.vec) {
   # We need to work out where the MSAI is and flip it as well...
   # Calculate number of heterozygous positions per segment
   segs_raw <- ascat.output$segments_raw
-  message("Number of segments in ASCAT rerun: ", nrow(segs_raw))
+  loginfo(paste0("Number of segments in ASCAT rerun: ", nrow(segs_raw)))
   n.het <- 0 # FIXME probably want to add these in.
   acf <- ascat.output$aberrantcellfraction
   ploidy <- ascat.output$ploidy
@@ -595,7 +600,7 @@ if (length(ph.asas.SNPS.lr.and.or.baf.lists) <= 1) {
   stop("Only one or fewer samples present after reading in data.")
 }
 
-message("Getting phasing to apply to all samples using getCombinedBAFDipTestPhasingParallel...")
+loginfo("Getting phasing to apply to all samples using getCombinedBAFDipTestPhasingParallel...")
 ph.all.seg.phasing.info.list <- getCombinedBAFDipTestPhasingParallel(
   asas.lr.baf.lists = ph.asas.SNPs.w.both.lr.baf.snp.lists,
   seg.name.vec = ph.seg.name.vec,
@@ -611,7 +616,7 @@ ph.all.seg.phasing.info.list <- getCombinedBAFDipTestPhasingParallel(
 
 # Todo unsure of what to do with the baf logr lists which have positions that only have logr here, at the moment exclude them but how
 # does that affect later run
-message("Generating phased BAF dataframes...")
+loginfo("Generating phased BAF dataframes...")
 ph.patient.phased.BAF.df.list <- createAllSegsPhasedBAFDataFrame(
   asas.lr.baf.lists = ph.asas.SNPs.w.both.lr.baf.snp.lists,
   sample.to.phase.seg.list = ph.all.seg.phasing.info.list,
@@ -645,9 +650,9 @@ patient.phased.BAF.df.list <- ph.patient.phased.BAF.df.list
 
 
 # Detect MSAI in the original BAF before it is processed alongside logr to get the Raw allele specifc cpn to be used in the rest of the analysis.
-message("************************************************************************")
-message("Performing LTNPD MSAI detection on the BAF...")
-message("************************************************************************")
+loginfo("************************************************************************")
+loginfo("Performing LTNPD MSAI detection on the BAF...")
+loginfo("************************************************************************")
 all.seg.MSAI.by.BAF.ltnpd.present.list <- getAllSegsMSAIDetectionFromBAFListLTNPD(
   seg.name.vec = seg.name.vec,
   sample.vec = sample.vec,
@@ -661,7 +666,7 @@ all.seg.MSAI.by.BAF.ltnpd.present.list <- getAllSegsMSAIDetectionFromBAFListLTNP
 if (isTRUE(PLOTTING_FLAG)) {
   png(file = file.path(PLOT_OUTPUT_DIR, "MSAI_detection_BAF_phased.png"), width = 1200, height = 1400)
 
-  message("Plotting phased BAF across the genome...")
+  loginfo("Plotting phased BAF across the genome...")
   plotAllSampleBAFsAndMSAIAcrossGenome(
     sample.vec = sample.vec,
     all.seg.MSAI.by.BAF.ltnpd.present.list = all.seg.MSAI.by.BAF.ltnpd.present.list,
@@ -672,10 +677,10 @@ if (isTRUE(PLOTTING_FLAG)) {
   )
   dev.off()
 } else {
-  message("Not plotting phased BAF as flag is FALSE")
+  loginfo("Not plotting phased BAF as flag is FALSE")
 }
 
-message("Applying LTNPD MSAI detection to the original segments...")
+loginfo("Applying LTNPD MSAI detection to the original segments...")
 # So now we have the original ASCAT segmentation and we want to make the MEDICC input from it
 # So now we want to flip segments where MSAI has been detected and they were separated in the original data:
 # So we also want to flip the raw values:
@@ -733,7 +738,7 @@ if (!is.na(conf$debug_dir)) {
 # 																										   all.seg.phasing.info.list = all.seg.phasing.info.list,
 # 																										   MSAI.BAF.LTPND.pval.thresh = MSAI_BAF_LTNPD_PVAL_THRESHOLD)
 
-message("Generating datapoints with LogR total cpn dataframes...")
+loginfo("Generating datapoints with LogR total cpn dataframes...")
 # This is where the SNP filtering occurs. We can fix this by adding by passing an option of which data type is being analysed...
 all.samp.non.hz.logr.and.tot.cpn.df.list <- getAllSampLogrAlonePositionsLogrAndTotalCPNDFsList(
   sample.vec = sample.vec,
@@ -751,7 +756,7 @@ if (!is.na(conf$debug_dir)) {
 # TBKW edit, so this is where we want to update the raw copy number to reflect what
 # ASCAT has outputted
 # Add this the unphaseable stuff too maybe? Not necessary.
-message("Applying phasing to all samples to get phased raw cpn...")
+loginfo("Applying phasing to all samples to get phased raw cpn...")
 asas.ph.raw.cpn.lists <- getAllSegAllSamplePhasedRawCPNList(
   sample.vec = sample.vec,
   ploidy.est.vec = ploidy.est.vec,
@@ -769,7 +774,7 @@ if (!is.na(conf$debug_dir)) {
 }
 
 # Let's get the CCF
-message("Checking all minimum consistent segments are present in each sample...")
+loginfo("Checking all minimum consistent segments are present in each sample...")
 seg.name.vec <- names(asas.ph.raw.cpn.lists[[1]])
 
 # Check to make sure that all segments are present in all samples... might not be necessary todo, check.
@@ -807,7 +812,7 @@ full.joint.segs.df <- add_info_to_output_table(
 saveRDS(full.joint.segs.df, file = file.path(PLOT_OUTPUT_DIR, "full_joint_segs.rds"))
 
 if (isTRUE(PLOTTING_FLAG)) {
-  message("Plotting CCFs for cpnA and cpnB across the genome using cpn definition of subclonality...")
+  loginfo("Plotting CCFs for cpnA and cpnB across the genome using cpn definition of subclonality...")
 
   png(file = file.path(PLOT_OUTPUT_DIR, "CCF_w_cpn_thresh_cpnA.png"), width = 1200, height = 1400)
   plotAllSampleCCFsAcrossGenome(
@@ -834,7 +839,7 @@ if (isTRUE(PLOTTING_FLAG)) {
   dev.off()
 
 } else {
-  message("Not plotting CCFs for cpnA and cpnB across the genome using cpn definition of subclonality as plotting flag is FALSE.")
+  loginfo("Not plotting CCFs for cpnA and cpnB across the genome using cpn definition of subclonality as plotting flag is FALSE.")
 }
 
 # We need a .tsv version of this data for interoperability with python
@@ -865,7 +870,7 @@ simple_segs[, c("orig_cnTotal", "orig_nMajor", "orig_nMinor", "dominant_allele",
 write.table(simple_segs, file = file.path(PLOT_OUTPUT_DIR, "segmentation.tsv"), row.names = FALSE, sep = "\t", quote = FALSE)
 
 # Write an extra table with sample-wide information like purity and ploidy
-sample_info <- unique(full.joint.segs.df[, c("sample", "Ploidy", "ACF")])
+sample_info <- na.omit(unique(full.joint.segs.df[, c("sample", "Ploidy", "ACF")]))
 colnames(sample_info)[colnames(sample_info) == "Ploidy"] <- "ploidy"
 colnames(sample_info)[colnames(sample_info) == "ACF"] <- "purity"
 write.table(sample_info, file = file.path(PLOT_OUTPUT_DIR, "sample_info.tsv"), row.names = FALSE, sep = "\t", quote = FALSE)

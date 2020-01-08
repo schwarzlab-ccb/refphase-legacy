@@ -411,7 +411,7 @@ getOverlapGRanges <- function(query, subject, output = "gr", ...) {
 # Subset snp data frames to keep only those snps that are present in all of the
 # others
 keep_common_snps <- function(all_snps) {
-  message("Subsetting to shared SNPs only")
+  logdebug("Subsetting to shared SNPs only")
 
   samples <- names(all_snps)
 
@@ -440,7 +440,7 @@ keep_common_snps <- function(all_snps) {
 # and whether a segment should be phased at all (it won't be if all samples
 # have ASCAT calling the region balanced)
 snps_set_bafsegmented <- function(segs, all_snps) {
-  message("Calculating segmented BAF values.")
+  logdebug("Calculating segmented BAF values.")
   #warning("Centering BAF values at 0.475 rather than 0.5 to account for reference bias. This value was chosen based on mean BAF across all samples in this cohort.")
 
   sample_names <- names(all_snps)
@@ -476,7 +476,7 @@ snps_set_bafsegmented <- function(segs, all_snps) {
 
 
 snps_set_logrsegmented <- function(segs, all_snps) {
-  message("Calculating segmented logR values.")
+  logdebug("Calculating segmented logR values.")
 
   sample_names <- names(all_snps)
   for (samp_idx in seq_along(all_snps)) {
@@ -497,7 +497,7 @@ snps_set_logrsegmented <- function(segs, all_snps) {
     # Deal with NAs
     logr_na <- is.na(all_snps[[samp_idx]]$logRsegmented)
     if (any(logr_na)) {
-      message("Found NA values in logR segmented, setting to 0.0")
+      logdebug("Found NA values in logR segmented, setting to 0.0")
       all_snps[[samp_idx]][logr_na, "logRsegmented"] <- 0.0
     }
   }
@@ -507,7 +507,7 @@ snps_set_logrsegmented <- function(segs, all_snps) {
 
 
 cleanAndErrorCheckSNPsParallel <- function(all.samp.SNP.list, mcs.seg.to.use.df, samples, allow.logr.only.flag = FALSE, data.type = "MEDICC") {
-  message("Clean and error check SNPs (parallel version)")
+  logdebug("Clean and error check SNPs (parallel version)")
   # Note error checking of removing NAs from the min.cons.seg.df should already
   # have been performed
 
@@ -528,7 +528,7 @@ cleanAndErrorCheckSNPsParallel <- function(all.samp.SNP.list, mcs.seg.to.use.df,
   library("gdata")
   iterable.min.cons.seg.df <- drop.levels(iterable.min.cons.seg.df)
   itx <- iter(iterable.min.cons.seg.df, by = "row")
-  message("Starting parallel assignation of snps to segs:")
+  logdebug("Starting parallel assignation of snps to segs:")
   # Create class which holds multiple results for each loop iteration.
   # Each loop iteration populates two properties: $result1 and $result2.
   # For a great tutorial on S3 classes, see:
@@ -584,7 +584,7 @@ cleanAndErrorCheckSNPsParallel <- function(all.samp.SNP.list, mcs.seg.to.use.df,
   }
 
   all.samps.prob.SNPs.vec <- unique(unlist(sapply(sites.in.each.samp.seg.list, function(x) x[["samp_prob_SNPs_vec"]])))
-  message("Number of SNPs with NA BAF = ", length(all.samps.prob.SNPs.vec), ". These will be removed.")
+  logdebug(paste0("Number of SNPs with NA BAF = ", length(all.samps.prob.SNPs.vec), ". These will be removed."))
 
   if (length(all.samps.prob.SNPs.vec) > 0) {
     samp.seg.itx <- iter(sites.in.each.samp.seg.list)

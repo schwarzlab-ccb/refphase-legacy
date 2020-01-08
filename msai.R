@@ -4,7 +4,7 @@ getAllSegsAIorMSAIDetectionFromBAFListLTNPD <- function(seg.name.vec, sample.vec
   for (seg.name in seg.name.vec) {
     all.seg.MSAI.by.BAF.ltnpd.present.list[[seg.name]] <- list()
     all.seg.MSAI.by.BAF.ltnpd.present.list[[seg.name]]$seg_name <- seg.name
-    message(seg.name)
+    #message(seg.name)
     if (seg.name %in% names(all.seg.phasing.info.list)) {
       ref.samp <- all.seg.phasing.info.list[[seg.name]]$samp_chosen_to_phase_seg
       # Determine whether we can detect MSAI and fill in the info fields, resent ref.samp if mixture phasing was used

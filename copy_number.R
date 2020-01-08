@@ -8,8 +8,8 @@ getAllSegAllSamplePhasedRawCPNList <- function(sample.vec, ploidy.est.vec,
                                                use.xphase = FALSE,
                                                ascat.raw.cpn) {
   seg.name.vec <- paste(min.cons.segs.df[, 1], min.cons.segs.df[, 2], min.cons.segs.df[, 3], sep = ":")
-  message("--getAllSegAllSamplePhasedRawCPNList")
-  print(seg.name.vec)
+  #message("--getAllSegAllSamplePhasedRawCPNList")
+  #print(seg.name.vec)
 
   # Initialise all lists
   all.samples.phased.cpn.list <- list()
@@ -170,10 +170,10 @@ getAllSampLogrAlonePositionsLogrAndTotalCPNDFsList <- function(sample.vec,
       }
 
     } else if (nrow(samp.logr.baf.df[samp.logr.baf.df$BAF == 2, ]) > 0) {
-      message("Found BAFs == 2 (samp.logr.baf.df rows = ", nrow(samp.logr.baf.df), ")")
+      logdebug(paste0("Found BAFs == 2 (samp.logr.baf.df rows = ", nrow(samp.logr.baf.df), ")"))
       samp.logr.df <- samp.logr.baf.df[ samp.logr.baf.df$BAF == 2, ]
     } else {
-      message("No logr only SNPs, 0 row dataframe will be passed to functions (samp.logr.baf.df rows = ", nrow(samp.logr.baf.df), ")")
+      logdebug(paste0("No logr only SNPs, 0 row dataframe will be passed to functions (samp.logr.baf.df rows = ", nrow(samp.logr.baf.df), ")"))
       samp.logr.df <- samp.logr.baf.df[ samp.logr.baf.df$BAF == 2, ]
     }
 
@@ -212,7 +212,7 @@ createAllSegsPhasedBAFDataFrame <- function(asas.lr.baf.lists, sample.to.phase.s
       samp.BAF.df <- asas.lr.baf.lists[[samp]][[seg.name]]
 
       if (nrow(samp.BAF.df) < min.num.hz.snp.phasing) {
-        message("Segment has fewer than 5 heterozygous SNPs, not updating corresponding BAFs in table: ", seg.name)
+        logdebug(paste0("Segment has fewer than 5 heterozygous SNPs, not updating corresponding BAFs in table: ", seg.name))
         next
       }
 

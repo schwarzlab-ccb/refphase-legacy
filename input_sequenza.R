@@ -40,7 +40,7 @@
 #   ..$ logR         : num [1:938946] -0.049 -0.161 -0.161 -0.542 -0.46 -0.46 -0.46 -0.166 -0.047 -0.013 ...
 #   ..$ BAFsegmented : num [1:938946] 0.231 0.231 0.231 0.231 0.231 ...
 #   ..$ logRsegmented: num [1:938946] -0.327 -0.327 -0.327 -0.327 -0.327 ...
-read_snps_sequenza <- function(input_files, segs, samples, het_only = TRUE, normalize_logr = TRUE) {
+read_snps_sequenza <- function(input_files, segs, samples, het_only = TRUE, normalize_logr = TRUE, correct_reference_bias = FALSE) {
   library(readr)
 
   all_snps <- list()
@@ -57,13 +57,13 @@ read_snps_sequenza <- function(input_files, segs, samples, het_only = TRUE, norm
     #               "GC.percent", "good.reads", "AB.normal", "AB.tumor",
     #               "tumor.strand")
     # Using readr
-    message("Reading SNP data for sample: ", samp)
+    loginfo(paste0("Reading SNP data for sample: ", samp))
     # Skip unnecessary columns
     col_types <- "cic--dddc--c--"
     col_names <- c("chromosome", "position", "base.ref", "depth.ratio", "Af", "Bf", "zygosity.normal", "AB.normal")
     seqz_data <- read_tsv(input_file,
       col_types = col_types,
-      progress = TRUE, col_names = col_names,
+      progress = FALSE, col_names = col_names,
       skip = 1
     )
 
@@ -82,9 +82,12 @@ read_snps_sequenza <- function(input_files, segs, samples, het_only = TRUE, norm
     baf <- seqz_data$Bf
     baf[flip_baf] <- seqz_data$Af[flip_baf]
 
-    warning("Hack to adjust for BAF reference bias (mean BAF is ~ 0.475)")
-    baf <- baf + (0.5 - 0.475)
-    baf[baf > 1.0] <- 1.0
+    if (isTRUE(correct_reference_bias)) {
+      mean_baf <- mean(baf, na.rm = TRUE)
+      logdebug(paste0("Adjusting values to try to correct for reference bias. Mean BAF = ", mean_baf))
+      baf <- baf * (0.5 / mean_baf)
+      baf[baf > 1.0] <- 1.0
+    }
 
     all_snps[[samp]] <- data.frame(
       chrom = chrom,
@@ -99,20 +102,13 @@ read_snps_sequenza <- function(input_files, segs, samples, het_only = TRUE, norm
 
     # Crude noramlization of logR values
     if (isTRUE(normalize_logr)) {
-      warning("Using crude noramlization of logR values: median centering")
+      logwarn("Using crude normalization of logR values: median centering")
       all_snps[[samp]]$logR <- all_snps[[samp]]$logR - median(all_snps[[samp]]$logR, na.rm = TRUE)
     }
 
     # Mask non-hz SNPs with NA
     all_snps[[samp]]$BAF[all_snps[[samp]]$germline_zygosity != "het"] <- NA
 
-    # Look into reference bias
-    #library(data.table)
-    #baf_tmp <- all_snps[[samp]]$BAF[!is.na(all_snps[[samp]]$BAF)]
-    #message("Mean of BAF: ", mean(baf_tmp))
-    #message("Median of BAF: ", median(baf_tmp))
-    #message("Rolling mean of BAF (window 100 hz positions):")
-    #print(frollmean(baf_tmp, 100))
   }
 
   all_snps <- snps_set_bafsegmented(segs, all_snps)

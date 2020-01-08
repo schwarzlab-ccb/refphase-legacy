@@ -123,7 +123,7 @@ createFullyAnnotatedJointSegmentation <- function(f.joint.segs.df, samples) {
     starts.in.df.are.0based = FALSE
   )
 
-  message("Introducing breakpoints at starts and ends of centromeres in original segmentation to allow calculation of arm level events in the original.")
+  logdebug("Introducing breakpoints at starts and ends of centromeres in original segmentation to allow calculation of arm level events in the original.")
   new.all.samp.w.metadata.grs <- sort(all.samp.w.metadata.grs)
   for (chr in CHRS_TO_USE_VEC) {
     p.end.gr <- makeGRangesFromDataFrame(chrom.info.df[chrom.info.df$chrom == chr, ],
@@ -201,7 +201,7 @@ createFullyAnnotatedJointSegmentation <- function(f.joint.segs.df, samples) {
   }
 
   # So actually defining the segments that are lost or gained makes sense here..
-  message("Calculating arm level gain, loss, neutral, and LOH events in the original segmentation...")
+  logdebug("Calculating arm level gain, loss, neutral, and LOH events in the original segmentation...")
   all.samp.w.metadata.grs <- new.all.samp.w.metadata.grs
   gain.loss.name.list <- list(c("neutral"), c("gain", "amp"), c("loss", "deep_loss"), c("LOH"))
   names(gain.loss.name.list) <- c("neutral", "gain", "loss", "LOH")
@@ -278,25 +278,25 @@ createFullyAnnotatedJointSegmentation <- function(f.joint.segs.df, samples) {
   correct.order.cols <- c("sample", "chr", "startpos", "endpos", "n.het", "cnTotal", "nMajor", "nMinor", "Ploidy", "ACF", "nAraw", "nBraw", "patient", "sample_name", "cpn_call", "arm_or_focal_event", "arm_event_present", "within_chr_arm", "uniq_id")
   f.joint.segs.df.new <- all.samp.w.metadata.conv.df[, correct.order.cols]
 
-  message("Getting proportion of chromosome arms in selected genome covered by segments from each (and all) samples")
+  logdebug("Getting proportion of chromosome arms in selected genome covered by segments from each (and all) samples")
   # overlaps.between.samples.df <- compareOverlapsBetweenSamples(sample.vec, f.joint.segs.df, chrom.info.df, chrs.to.use.vec= CHRS_TO_USE_VEC)
   # print(overlaps.between.samples.df)
 
   # So the question is here are we going to allow single base bair segments?
-  message("Calculating intersections using GRanges.")
+  logdebug("Calculating intersections using GRanges.")
   intersection.grs.list <- getAllPatientSamplesAndIntersectionGRangesList(samples, f.joint.segs.df)
   intersection.grs <- intersection.grs.list[["overall_intersection"]]
   non.ones.all.samp.intersection.grs <- removeSingleBasePairSegmentsFromIntersectionGranges(intersection.grs)
 
   # disjoin gets rid of all metadata
-  message("Calculating disjoint set using GRanges.")
+  logdebug("Calculating disjoint set using GRanges.")
   dj.all.samp.grs <- disjoin(all.samp.grs)
-  message("Removing segments that are smaller by minimum width by merging with the closest segment.") # Todo revisit this potentially
+  logdebug("Removing segments that are smaller by minimum width by merging with the closest segment.") # Todo revisit this potentially
   non.ones.dj.all.samp.grs <- removeSingleBasePairSegmentsFromIntersectionGranges(dj.all.samp.grs)
 
   # Now we need to make sure that every bp of the relevant genome's non-acrocentric chromosome arms has a
   # corresponding segment, dummy or otherwise
-  message("Creating set of segments that cover all bp in the non-acrocentric selected chromosomes' arms of the selected genome.")
+  logdebug("Creating set of segments that cover all bp in the non-acrocentric selected chromosomes' arms of the selected genome.")
   all.bp.chr.grs <- NULL
   for (chr in CHRS_TO_USE_VEC) {
     curr.chr.grs <- non.ones.dj.all.samp.grs[seqnames(non.ones.dj.all.samp.grs) == chr]
@@ -329,7 +329,7 @@ createFullyAnnotatedJointSegmentation <- function(f.joint.segs.df, samples) {
     }
   }
 
-  message("Mapping the segments covering all bp of all arms back to input segments where appropriate...")
+  logdebug("Mapping the segments covering all bp of all arms back to input segments where appropriate...")
   itx <- iter(as.data.frame(all.bp.chr.grs), by = "row")
   results <- foreach(curr.all.bp.chr.df = itx, .combine = c) %dopar% {
     require(GenomicRanges)
@@ -412,7 +412,7 @@ createFullyAnnotatedJointSegmentation <- function(f.joint.segs.df, samples) {
   sorted.all.bp.all.samps.segs.anno.df <- all.bp.all.samps.segs.anno.df[with(all.bp.all.samps.segs.anno.df, order(full_sample, Chromosome, Start_Position)), ]
 
   ### Add the chromosoem arms to the segments to make later joininbg etc much easier...
-  message("Adding chromosome arm annotation to all segments original and new.")
+  logdebug("Adding chromosome arm annotation to all segments original and new.")
   all.samp.all.bp.anno.grs <- makeGRangesFromDataFrame(sorted.all.bp.all.samps.segs.anno.df[, 1:4],
     keep.extra.columns = TRUE,
     ignore.strand = FALSE,

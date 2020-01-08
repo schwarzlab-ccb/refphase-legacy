@@ -9,7 +9,7 @@
 # -------------------------------------------------------------------------
 
 validate_snp_all_samples <- function(tumor_snps) {
-  message("Validating SNP data for all samples.")
+  logdebug("Validating SNP data for all samples.")
 
   samples <- names(tumor_snps)
   # Make sure the tumor_snps list has names
@@ -20,7 +20,7 @@ validate_snp_all_samples <- function(tumor_snps) {
 
   # Check individual SNP input files
   for (sample in samples) {
-    message("Checking SNP input file: ", sample)
+    logdebug(paste0("Checking SNP input file: ", sample))
     validate_snp_input(tumor_snps[[sample]])
   }
 
@@ -54,7 +54,7 @@ validate_snp_all_samples <- function(tumor_snps) {
     stop("Not all sites are present in all samples' sites information read in or too few samples are present at this stage, this needs to be fixed before running MPhase.")
   }
 
-  message("Validation passed.")
+  logdebug("Validation passed.")
 }
 
 validate_snp_input <- function(snp_data) {
@@ -116,7 +116,7 @@ validate_snp_input <- function(snp_data) {
 
   # else note that 23/24 are missing
   if (!all(c(23, 24) %in% snp_data$chrom)) {
-    warning("No segment in either sex chromosome (23 or 24)")
+    logwarn("No segment in either sex chromosome (23 or 24)")
   }
 }
 
@@ -167,7 +167,7 @@ validate_ascat_bc_input <- function(bc) {
   # # Check types
   for (expected_col in names(expected_cols)) {
     if (class(bc[[expected_col]]) != class(expected_cols[[expected_col]])) {
-      message(expected_col, " doesn't have the correct class. Expected: ", class(expected_cols[[expected_col]]), " Found: ", class(bc[[expected_col]]))
+      logwarn(paste0(expected_col, " doesn't have the correct class. Expected: ", class(expected_cols[[expected_col]]), " Found: ", class(bc[[expected_col]])))
       stopifnot(FALSE)
     }
   }
@@ -189,15 +189,15 @@ validate_ascat_bc_input <- function(bc) {
 
   # -------------------------------------------------------------------------
   # 5) Are there any NA values in the LogR columns for any regions
-  warning(all(!is.na(bc[["Tumor_LogR"]][, 1])))
-  warning(all(!is.na(bc[["Tumor_LogR_segmented"]][, 1])))
-  warning(all(!is.na(bc[["Tumor_BAF_segmented"]][[1]][, 1])))
+  logwarn(all(!is.na(bc[["Tumor_LogR"]][, 1])))
+  logwarn(all(!is.na(bc[["Tumor_LogR_segmented"]][, 1])))
+  logwarn(all(!is.na(bc[["Tumor_BAF_segmented"]][[1]][, 1])))
 
   # -------------------------------------------------------------------------
   # 6) Are there any Inf or -Inf values in the LogR columns
-  warning(all(is.finite(bc[["Tumor_LogR"]][, 1])))
-  warning(all(is.finite(bc[["Tumor_LogR_segmented"]][, 1])))
-  warning(all(is.finite(bc[["Tumor_BAF_segmented"]][[1]][, 1])))
+  logwarn(all(is.finite(bc[["Tumor_LogR"]][, 1])))
+  logwarn(all(is.finite(bc[["Tumor_LogR_segmented"]][, 1])))
+  logwarn(all(is.finite(bc[["Tumor_BAF_segmented"]][[1]][, 1])))
 
   # -------------------------------------------------------------------------
   # 7) Given the chosen reference genome are the positions for each chromosome
@@ -293,12 +293,12 @@ validate_seg_input <- function(seg) {
   # autosome error, if none for a sex chromosome flag
   # NOTE: already checked autosomes in step 2)
   if (!any(c(23, 24) %in% seg[, "chr"])) {
-    warning("No segment in either sex chromosome (23 or 24)")
+    logwarn("No segment in either sex chromosome (23 or 24)")
   }
 
   # 8) Given the chosen reference genome are the positions for each chromosome
   # possible
   # FIXME: not implemented
 
-  message("Segment input validation passed.")
+  logdebug("Segment input validation passed.")
 }

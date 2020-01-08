@@ -12,7 +12,6 @@ getCombinedBAFDipTestPhasing <- function(asas.lr.baf.lists,
   sample.to.phase.seg.list <- list()
 
   for (seg.name in seg.name.vec) {
-    message(seg.name)
     first.ss.lr.baf.df <- asas.lr.baf.lists[[sample.vec[1]]][[seg.name]]
 
     if (nrow(first.ss.lr.baf.df) < min.num.hz.snp.phasing) {
@@ -309,7 +308,7 @@ getCombinedBAFDipTestPhasingParallel <- function(asas.lr.baf.lists,
     returnable.list
   }
 
-  message("Finished paralell portion of getCombinedBAFDipTestPhasingParallel, combining results into correct format...")
+  logdebug("Finished paralell portion of getCombinedBAFDipTestPhasingParallel, combining results into correct format...")
   sample.to.phase.seg.list <- list()
   for (seg.name in names(sample.to.phase.seg.mrc.list)) {
     if (length(sample.to.phase.seg.mrc.list[[seg.name]]) > 0) {

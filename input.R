@@ -53,7 +53,7 @@ read_input <- function(seg_file, snp_file, input_format) {
       row.names = "sample"
     )
 
-    message("Start parsing sequenza input.\n")
+    logdebug("Start parsing sequenza input.")
 
     input_files <- pt.snp.file.paths.df$seqz_file
     if (nchar(conf$snp_data_prefix) > 0) {
@@ -69,7 +69,7 @@ read_input <- function(seg_file, snp_file, input_format) {
       het_only = FALSE
     )
 
-    message("Finished parsing sequenza input.\n")
+    logdebug("Finished parsing sequenza input.")
   } else {
     stop(paste0("Incorrect snp data input format (", input_format, ")"))
   }
@@ -100,7 +100,7 @@ read_input <- function(seg_file, snp_file, input_format) {
 
   # Minimum consistent segmentation is finished! Let's get the SNPs and their LogR and BAF values amd assign to segments.
   # All SNPs in these lists must have both a logr and baf value: all sample all seg logr baf lists is asas.lr.baf
-  message("cleanAndErrorCheckSNPsParallel first")
+  logdebug("cleanAndErrorCheckSNPsParallel first")
   asas.SNPs.w.both.lr.baf.snp.lists <- cleanAndErrorCheckSNPsParallel(all.samp.SNP.list,
     mcs.seg.to.use.df = min.cons.segs.df,
     samples = sample.vec,
@@ -113,7 +113,7 @@ read_input <- function(seg_file, snp_file, input_format) {
   }
 
   # SNPs that only have LogR are permitted in these lists, but it also contains all the SNPs with both BAF and LogR
-  message("cleanAndErrorCheckSNPsParallel second")
+  logdebug("cleanAndErrorCheckSNPsParallel second")
   asas.SNPS.lr.and.or.baf.lists <- cleanAndErrorCheckSNPsParallel(all.samp.SNP.list,
     mcs.seg.to.use.df = min.cons.segs.df,
     samples = sample.vec,
@@ -160,9 +160,9 @@ read_ascat_bc <- function(filename) {
 
 # Make sure segmentation boundaries fall on existing SNPs
 move_seg_boundaries_to_snps <- function(segs, snps, het_only = TRUE) {
-  str(segs)
-  message("Original segs")
-  print(segs)
+  #str(segs)
+  logdebug("Original segs")
+  #print(segs)
   if (isTRUE(het_only)) {
     snps <- snps[snps$germline_zygosity == "het",]
   }
@@ -173,7 +173,7 @@ move_seg_boundaries_to_snps <- function(segs, snps, het_only = TRUE) {
     snps_in_seg <- snps[snps$chrom == seg$chr & snps$pos >= seg$startpos & snps$pos <= seg$endpos,]
 
     if (nrow(snps_in_seg) >= 1) {
-      message("Updating segment boundary")
+      #logdebug("Updating segment boundary")
 
       segs[seg_idx, "startpos"] <- min(snps_in_seg$pos)
       segs[seg_idx, "endpos"] <- max(snps_in_seg$pos)
@@ -182,7 +182,7 @@ move_seg_boundaries_to_snps <- function(segs, snps, het_only = TRUE) {
 
   segs$uniq_id <- paste0(segs$sample, "@", segs$chr, ":", segs$startpos, ":", segs$endpos)
 
-  message("Updated segs")
-  print(segs)
+  logdebug("Updated segs")
+  #print(segs)
   segs
 }

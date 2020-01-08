@@ -50,8 +50,8 @@ addPhasingInformationToOutputSegmentation <- function(sample.vec,
                                                       all.pw.cn.het.comp.lists = NULL,
                                                       all.segs.df) {
 
-  message("Segment names: addPhasingInformationToOutputSegmentation")
-  print(seg.name.vec)
+  #("Segment names: addPhasingInformationToOutputSegmentation")
+  #print(seg.name.vec)
 
   # Todo, refactor to make this function work on the basis of a single segment:
   for (samp in sample.vec) {
@@ -114,7 +114,7 @@ addNewRawAndIntCPNCallsToFinalSegmentationParallel <- function(seg.name.vec,
   }
   iterable.samp.seg.df <- cbind(sample = sample.rep.vec, seg_name = all.samp.seg.name.vec, stringsAsFactors = FALSE)
   itx <- iter(iterable.samp.seg.df, by = "row")
-  message("Starting addNewRawAndIntCPNCallsToFinalSegmentationParallel:")
+  logdebug("Starting addNewRawAndIntCPNCallsToFinalSegmentationParallel:")
   # Create class which holds multiple results for each loop iteration.
   # Each loop iteration populates two properties: $result1 and $result2.
   # For a great tutorial on S3 classes, see:
@@ -298,8 +298,8 @@ addNewRawAndIntCPNCallsToFinalSegmentationParallel <- function(seg.name.vec,
       }
 
       if (!samp.seg.name %in% rownames(all.seg.df)) {
-        print("Seg name not in all.seg.df:")
-        print(samp.seg.name)
+        logwarn("Seg name not in all.seg.df:")
+        logwarn(samp.seg.name)
         next
       }
 
@@ -334,8 +334,8 @@ addNewRawAndIntCPNCallsToFinalSegmentation <- function(seg.name.vec,
         }
 
         if (!samp.seg.name %in% rownames(all.seg.df)) {
-          print("Seg name not in all.seg.df:")
-          print(samp.seg.name)
+          logwarn("Seg name not in all.seg.df:")
+          logwarn(samp.seg.name)
           next
         }
         # Fill in flag that shows whether segment has been phasing and CCF valculuation process, ie has greater than min num of hz snp positions
@@ -520,7 +520,7 @@ retestSubclonalAmps <- function(all.seg.df, all.samp.ph.BAF.df.list, all.samp.lo
       }
     }
   } else {
-    print("No amps")
+    logdebug("No amps")
   }
 
   return(all.seg.df)
@@ -575,15 +575,15 @@ addOriginalSegmentInfoToFinalSegmentation <- function(seg.name.vec,
 
       # add a column defining gain and loss etc...
       if (nrow(matching.chr.samp.seg.df) == 0) {
-        print(chr.samp.seg.df)
-        print(samp)
-        print(seg.name)
-        print(matching.chr.samp.seg.df)
-        print("Error, minimum consistent region segmentation doesn't map back to any original segments")
+        logwarn(chr.samp.seg.df)
+        logwarn(samp)
+        logwarn(seg.name)
+        logwarn(matching.chr.samp.seg.df)
+        logwarn("Error, minimum consistent region segmentation doesn't map back to any original segments")
         # Which segment does it overlap most with...
         chr.samp.seg.range.df <- chr.samp.seg.df[, c("chr", "startpos", "endpos")]
         colnames(chr.samp.seg.range.df) <- c("Chromosome", "start", "end")
-        print("chr.samp.seg.range.df")
+        logdebug("chr.samp.seg.range.df")
         print(chr.samp.seg.range.df)
         ref.gen.range <- makeGRangesFromDataFrame(chr.samp.seg.range.df)
         seg.test.df <- data.frame(
@@ -593,8 +593,8 @@ addOriginalSegmentInfoToFinalSegmentation <- function(seg.name.vec,
           stringsAsFactors = FALSE
         )
         test.gen.range <- makeGRangesFromDataFrame(seg.test.df)
-        print("test.gen.range")
-        print(test.gen.range)
+        #print("test.gen.range")
+        #print(test.gen.range)
         # find overlaps:
         hit.obj <- findOverlaps(ref.gen.range, test.gen.range)
         overlaps <- pintersect(ref.gen.range[queryHits(hit.obj)], test.gen.range[subjectHits(hit.obj)])
@@ -608,10 +608,10 @@ addOriginalSegmentInfoToFinalSegmentation <- function(seg.name.vec,
         if (nrow(overlap.df) > 0) {
           overlap.df <- overlap.df[with(overlap.df, order(-width)), ]
 
-          print("chr.samp.seg.df")
-          print(chr.samp.seg.df)
-          print("overlap.df")
-          print(overlap.df)
+          #print("chr.samp.seg.df")
+          #print(chr.samp.seg.df)
+          #print("overlap.df")
+          #print(overlap.df)
 
           most.overlapping.seg.df <- chr.samp.seg.df[chr.samp.seg.df$chr %in% overlap.df$seqnames &
             chr.samp.seg.df$startpos %in% overlap.df$start &
@@ -748,17 +748,17 @@ determineAcrossSampleClonalityOfLogrEventsVsPloidy <- function(sample.vec,
     } else { # So now we know that some subclonal events are present, if there is an NA present in the vector now it must be an error
 
       if (length(uniq.cpn.events.vec[is.na(uniq.cpn.events.vec)]) > 0) {
-        print("WARNING: Shouldn't be a mixture of NA and cpn event vs ploidy results for the same segment")
-        print("This may occur if one of the segments had logr values that were all the same while others segments logr values varied,this would lead to tTestWithErrorHandling returning NA for the case with constant data and a p.value for the others. If the segment is large, there may be a more serious bug.")
-        print(seg.name)
-        print(uniq.cpn.events.vec)
-        print(all.seg.df[sample.seg.vec, c(
+        logwarn("WARNING: Shouldn't be a mixture of NA and cpn event vs ploidy results for the same segment")
+        logwarn("This may occur if one of the segments had logr values that were all the same while others segments logr values varied,this would lead to tTestWithErrorHandling returning NA for the case with constant data and a p.value for the others. If the segment is large, there may be a more serious bug.")
+        logwarn(seg.name)
+        logwarn(uniq.cpn.events.vec)
+        logwarn(all.seg.df[sample.seg.vec, c(
           "num_ph_hz_sites",
           "num_un_ph_hz_sites",
           "num_non_hz_sites",
           "cpn_event_vs_ploidy"
         )])
-        print("Setting all instances of this segment's cpn_event_vs_ploidy and associated columns to NA")
+        logwarn("Setting all instances of this segment's cpn_event_vs_ploidy and associated columns to NA")
         all.seg.df[sample.seg.vec, c(
           "gain_hz_logr_pval",
           "amp_hz_logr_pval",
@@ -812,8 +812,8 @@ addWithinSampleClonalityAndCCFToFinalSegmentation <- function(seg.name.vec,
                                                               cpnX.vec = c("cpnA", "cpnB"),
                                                               reduced.seg.flag = FALSE,
                                                               max.cpn.val = 10) {
-  message("Segment names: addWithinSampleClonalityAndCCFToFinalSegmentation")
-  print(seg.name.vec)
+  logdebug("Segment names: addWithinSampleClonalityAndCCFToFinalSegmentation")
+  #print(seg.name.vec)
 
   for (samp in sample.vec) {
     for (seg.name in seg.name.vec) {
@@ -1056,7 +1056,7 @@ addLogrDefinedCPNEventsToOutputSegmentationParallel <- function(sample.vec,
   }
   iterable.samp.seg.df <- cbind(sample = sample.rep.vec, seg_name = all.samp.seg.name.vec)
   itx <- iter(iterable.samp.seg.df, by = "row")
-  message("Starting parallel addLogrDefinedCPNEventsToOutputSegmentation:")
+  logdebug("Starting parallel addLogrDefinedCPNEventsToOutputSegmentation:")
   MultiResultClass <- function() {
     me <- list(
       gain_hz_logr_pval = NA,
@@ -1151,7 +1151,7 @@ addLogrDefinedCPNEventsToOutputSegmentationParallel <- function(sample.vec,
         } else if ("deep_loss" %in% names(significant.seg.cpn.event)) {
           ret.mrc$cpn_event_vs_ploidy <- "deep_loss"
         } else {
-          print(significant.seg.cpn.event)
+          logwarn(significant.seg.cpn.event)
           stop("Error, more than one cpn event vs ploidy is signficant and neither are amp or deep_loss, likely bug present")
         }
       } else if (length(significant.seg.cpn.event) == 1) {
@@ -1274,7 +1274,7 @@ addLogrDefinedCPNEventsToOutputSegmentation <- function(sample.vec,
           } else if ("deep_loss" %in% names(significant.seg.cpn.event)) {
             all.seg.df[samp.seg.name, ]$cpn_event_vs_ploidy <- "deep_loss"
           } else {
-            print(significant.seg.cpn.event)
+            logwarn(significant.seg.cpn.event)
             stop("Error, more than one cpn event vs ploidy is signficant and neither are amp or deep_loss, likely bug present")
           }
         } else if (length(significant.seg.cpn.event) == 1) {

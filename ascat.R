@@ -72,7 +72,7 @@ ascat.runAscat <- function(ASCATobj, gamma = 0.55, rho_manual = NA, psi_manual =
   goodarrays <- NULL
   res <- vector("list", dim(ASCATobj$Tumor_LogR)[2])
   for (arraynr in 1:dim(ASCATobj$Tumor_LogR)[2]) {
-    message(paste("Sample ", ASCATobj$samples[arraynr], " (", arraynr, "/", length(ASCATobj$samples), ")", sep = ""))
+    logdebug(paste0("Sample ", ASCATobj$samples[arraynr], " (", arraynr, "/", length(ASCATobj$samples), ")"))
     lrr <- ASCATobj$Tumor_LogR[, arraynr]
     names(lrr) <- rownames(ASCATobj$Tumor_LogR)
     baf <- ASCATobj$Tumor_BAF[, arraynr]

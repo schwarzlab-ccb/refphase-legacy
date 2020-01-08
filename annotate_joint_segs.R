@@ -1,5 +1,5 @@
 annotate_joint_segs <- function(segs, snps) {
-  warning("TODO: check this function (annotate_joint_segs()) to be sure it works properly without germline information.")
+  logwarn("TODO: check this function (annotate_joint_segs()) to be sure it works properly without germline information.")
   anno.seg.df <- segs
 
   # So determine which SNPs are hz:
@@ -208,7 +208,7 @@ annotate_joint_segs <- function(segs, snps) {
   after <- precede(all.int.grs, all.snp.grs)
   nearby <- nearest(all.int.grs, all.snp.grs)
 
-  message("Setting nearest preceding/following SNP")
+  logdebug("Setting nearest preceding/following SNP")
   lacking.snp.idx.vec <- which(!(int.anno.seg.df$start_is_pos & int.anno.seg.df$end_is_pos))
   int.anno.seg.df$nearest_following_snp <- NA
   int.anno.seg.df$nearest_preceding_snp <- NA
@@ -217,7 +217,7 @@ annotate_joint_segs <- function(segs, snps) {
     if (!i %in% lacking.snp.idx.vec) {
       next
     }
-    message(" ", i, appendLF = FALSE)
+    #logdebug(paste0(" ", i))
 
     curr.arm <- int.anno.seg.df[i, ]$chr_arm
     i_grs <- all.int.grs[i]
@@ -244,7 +244,7 @@ annotate_joint_segs <- function(segs, snps) {
       int.anno.seg.df[i, ]$nearest_preceding_snp <- near_snp_start
     }
   }
-  message("done")
+  logdebug("done")
 
   int.anno.seg.df[is.na(int.anno.seg.df$start_snp_idx) | is.na(int.anno.seg.df$end_snp_idx), c("Start_Position", "End_Position", "start_snp_idx", "end_snp_idx", "nearest_preceding_snp", "nearest_following_snp") ]
   int.anno.seg.df[int.anno.seg.df$start_is_pos %in% FALSE, ]$Start_Position <- int.anno.seg.df[int.anno.seg.df$start_is_pos %in% FALSE, ]$nearest_following_snp

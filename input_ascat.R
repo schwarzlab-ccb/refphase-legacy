@@ -16,10 +16,10 @@ read_snps_ascat <- function(sample_table, segs, samples) {
 
   for (sample in samples) {
     sample_info <- sample_table[sample, ]
-    message("Starting to read sample", sample_info$samp_ascat_bc_path)
+    loginfo(paste0("Starting to read sample", sample_info$samp_ascat_bc_path))
 
     if (grepl("RData", sample_info$samp_ascat_bc_path)) {
-      message("ascat.bc object in RData file, loading...")
+      logdebug("ascat.bc object in RData file, loading...")
       load(sample_info$samp_ascat_bc_path)
       ascat_bc <- ascat.bc
     } else {
@@ -33,7 +33,7 @@ read_snps_ascat <- function(sample_table, segs, samples) {
     normal_baf <- ascat_bc$Germline_BAF[[1]]
     is_homozygous <- normal_baf < 0.3 | normal_baf > 0.7
     is_heterozygous <- !(is.na(normal_baf) | is_homozygous)
-    message("# of heterozygous SNPs: ", sum(is_heterozygous))
+    logdebug(paste0("# of heterozygous SNPs: ", sum(is_heterozygous)))
 
     # Mask non-heterozygous SNPs with NA
     baf <- ascat_bc$Tumor_BAF[[1]]
