@@ -373,9 +373,14 @@ plot_track_baf_whole_genome <- function(data_sample, segs_sample, chrom_info) {
 }
 
 # Plot CNs only in this track
-plot_track_cn_whole_genome <- function(segs, chrom_info, xlim = c(NA, NA)) {
+plot_track_cn_whole_genome <- function(segs, chrom_info, xlim = c(NA, NA), max_cn = 10) {
   par(mar = c(2, 5, 0.1, 0.1), xaxs = "i")
   num_segs <- nrow(segs)
+
+  # Set a max CN for the sake of plotting
+  segs$cpn_a <- pmin(segs$cpn_a, max_cn)
+  segs$cpn_b <- pmin(segs$cpn_b, max_cn)
+
   # We don't have much space for track names so let's just display the first
   # few characters
   plot(1, ylim = c(min(c(0, segs$cpn_a, segs$cpn_b)),

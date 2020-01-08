@@ -4,6 +4,7 @@ library(optparse)
 library(digest)
 library(logging)
 
+options(width = 200)
 options(stringsAsFactors = FALSE)
 
 # Returns the location of this .R script (may be needed to source other files in same dir)

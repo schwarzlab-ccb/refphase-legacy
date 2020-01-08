@@ -59,8 +59,8 @@ read_snps_sequenza <- function(input_files, segs, samples, het_only = TRUE, norm
     # Using readr
     loginfo(paste0("Reading SNP data for sample: ", samp))
     # Skip unnecessary columns
-    col_types <- "cic--dddc--c--"
-    col_names <- c("chromosome", "position", "base.ref", "depth.ratio", "Af", "Bf", "zygosity.normal", "AB.normal")
+    col_types <- "cicdddddc--c--"
+    col_names <- c("chromosome", "position", "base.ref", "depth.normal", "depth.tumor", "depth.ratio", "Af", "Bf", "zygosity.normal", "AB.normal")
     seqz_data <- read_tsv(input_file,
       col_types = col_types,
       progress = FALSE, col_names = col_names,
@@ -102,8 +102,12 @@ read_snps_sequenza <- function(input_files, segs, samples, het_only = TRUE, norm
 
     # Crude noramlization of logR values
     if (isTRUE(normalize_logr)) {
-      logwarn("Using crude normalization of logR values: median centering")
-      all_snps[[samp]]$logR <- all_snps[[samp]]$logR - median(all_snps[[samp]]$logR, na.rm = TRUE)
+      logwarn("Using crude normalization of logR values: divide depth by total reads for each sample before calculating logR")
+      sum_normal <- sum(seqz_data$depth.normal, na.rm = TRUE)
+      sum_tumor <- sum(seqz_data$depth.tumor, na.rm = TRUE)
+      norm_normal <- seqz_data$depth.normal / sum_normal
+      norm_tumor <- seqz_data$depth.tumor / sum_tumor
+      all_snps[[samp]]$logR <- log2(norm_tumor) - log2(norm_normal)
     }
 
     # Mask non-hz SNPs with NA

@@ -751,8 +751,8 @@ determineAcrossSampleClonalityOfLogrEventsVsPloidy <- function(sample.vec,
         logwarn("WARNING: Shouldn't be a mixture of NA and cpn event vs ploidy results for the same segment")
         logwarn("This may occur if one of the segments had logr values that were all the same while others segments logr values varied,this would lead to tTestWithErrorHandling returning NA for the case with constant data and a p.value for the others. If the segment is large, there may be a more serious bug.")
         logwarn(seg.name)
-        logwarn(uniq.cpn.events.vec)
-        logwarn(all.seg.df[sample.seg.vec, c(
+        message(uniq.cpn.events.vec)
+        message(all.seg.df[sample.seg.vec, c(
           "num_ph_hz_sites",
           "num_un_ph_hz_sites",
           "num_non_hz_sites",

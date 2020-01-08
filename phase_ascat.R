@@ -25,7 +25,7 @@ ascat_set_bafsegmented <- function(ascat, phased_snps, segs) {
   }
 
   if (any(is.na(ascat$Tumor_BAF_segmented[[1]][, 1]))) {
-    message("Number of NA bafsegmented values: ", sum(is.na(ascat$Tumor_BAF_segmented[[1]][, 1])), " (they will be removed)")
+    logdebug(paste0("Number of NA bafsegmented values: ", sum(is.na(ascat$Tumor_BAF_segmented[[1]][, 1])), " (they will be removed)"))
     # Remove NA elements
     bafseg <- ascat$Tumor_BAF_segmented[[1]][, 1, drop = FALSE]
     ascat$Tumor_BAF_segmented[[1]] <- ascat$Tumor_BAF_segmented[[1]][!is.na(bafseg), 1, drop = FALSE]
@@ -51,14 +51,14 @@ phase_ascat <- function(ascat_bc, phased_bafs, segs, phased_baf_info) {
 
   tum.logr.vec <- ascat_bc[["Tumor_LogR"]][, 1]
   if (any(is.na(tum.logr.vec))) {
-    message("There are NA values in the ascat.bc Tumor_LogR field which need to be removed. Revisit generation of this input. For changing the NAs to 0.")
+    logwarn("There are NA values in the ascat.bc Tumor_LogR field which need to be removed. Revisit generation of this input. For changing the NAs to 0.")
     na.idx.vec <- which(is.na(tum.logr.vec))
     tum.logr.vec[na.idx.vec] <- 0
   }
 
   tum.logr.segmented.vec <- ascat_bc[["Tumor_LogR_segmented"]][, 1]
   if (any(is.na(tum.logr.segmented.vec))) {
-    message("There are NA values in the ascat.bc Tumor_LogR_segmented field which need to be removed. Revisit generation of this input. For changing the NAs to 0.")
+    logwarn("There are NA values in the ascat.bc Tumor_LogR_segmented field which need to be removed. Revisit generation of this input. For changing the NAs to 0.")
     na.segmented.idx.vec <- which(is.na(tum.logr.segmented.vec))
     tum.logr.segmented.vec[na.segmented.idx.vec] <- 0
   }
@@ -69,7 +69,7 @@ phase_ascat <- function(ascat_bc, phased_bafs, segs, phased_baf_info) {
   ascat_bc <- ascat_set_bafsegmented(ascat_bc, samp.pha.baf.df, samp.seg.df)
 
   if (any(is.na(tum.logr.segmented.vec))) {
-    message("There are NA values in the tum.logr.segmented.vec after applying phasing which need to be removed. Revisit generation of this input. For changing the NAs to 0.")
+    logwarn("There are NA values in the tum.logr.segmented.vec after applying phasing which need to be removed. Revisit generation of this input. For changing the NAs to 0.")
     na.segmented.idx.vec <- which(is.na(tum.logr.segmented.vec))
     tum.logr.segmented.vec[na.segmented.idx.vec] <- 0
   }
