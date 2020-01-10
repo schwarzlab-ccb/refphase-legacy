@@ -83,9 +83,9 @@ read_snps_sequenza <- function(input_files, segs, samples, het_only = TRUE, norm
     baf[flip_baf] <- seqz_data$Af[flip_baf]
 
     if (isTRUE(correct_reference_bias)) {
-      mean_baf <- mean(baf, na.rm = TRUE)
-      logdebug(paste0("Adjusting values to try to correct for reference bias. Mean BAF = ", mean_baf))
-      baf <- baf * (0.5 / mean_baf)
+      baf_bias <- median(baf, na.rm = TRUE)
+      logdebug(paste0("Adjusting values to try to correct for reference bias. Median BAF = ", baf_bias))
+      baf <- baf * (0.5 / biaf_bias)
       baf[baf > 1.0] <- 1.0
     }
 

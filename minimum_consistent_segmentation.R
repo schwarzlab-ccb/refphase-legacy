@@ -17,7 +17,7 @@ reformatInitialSegmentationInput <- function(f.joint.segs.df) {
   f.joint.segs.df$uniq_id <- paste0(f.joint.segs.df$sample, "@", f.joint.segs.df$chr, ":", f.joint.segs.df$startpos, ":", f.joint.segs.df$endpos)
   rownames(f.joint.segs.df) <- 1:nrow(f.joint.segs.df)
   return(f.joint.segs.df)
-} # end reformatInitialSegmentationInput <- function(f.joint.segs.df) {
+}
 
 
 # TBKW As of 20190818 this function is used
@@ -282,11 +282,11 @@ createFullyAnnotatedJointSegmentation <- function(f.joint.segs.df, samples) {
   # overlaps.between.samples.df <- compareOverlapsBetweenSamples(sample.vec, f.joint.segs.df, chrom.info.df, chrs.to.use.vec= CHRS_TO_USE_VEC)
   # print(overlaps.between.samples.df)
 
-  # So the question is here are we going to allow single base bair segments?
-  logdebug("Calculating intersections using GRanges.")
-  intersection.grs.list <- getAllPatientSamplesAndIntersectionGRangesList(samples, f.joint.segs.df)
-  intersection.grs <- intersection.grs.list[["overall_intersection"]]
-  non.ones.all.samp.intersection.grs <- removeSingleBasePairSegmentsFromIntersectionGranges(intersection.grs)
+  ## So the question is here are we going to allow single base bair segments?
+  #logdebug("Calculating intersections using GRanges.")
+  #intersection.grs.list <- getAllPatientSamplesAndIntersectionGRangesList(samples, f.joint.segs.df)
+  #intersection.grs <- intersection.grs.list[["overall_intersection"]]
+  #non.ones.all.samp.intersection.grs <- removeSingleBasePairSegmentsFromIntersectionGranges(intersection.grs)
 
   # disjoin gets rid of all metadata
   logdebug("Calculating disjoint set using GRanges.")
