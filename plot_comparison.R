@@ -89,6 +89,14 @@ plot_track_cn <- function(segs, track_name, xlim) {
   full_label <- paste(total_cn, major, minor, sep = "\n")
 
   cn_text(x = segs$seg_center, y = 0, labels = full_label, cex = 0.7, col = "black")
+
+  # Indicate if the CN has changed
+  if (any(segs$is_changed)) {
+    segments(
+      x0 = segs$startpos[segs$is_changed], y0 = -0.98,
+      x1 = segs$endpos[segs$is_changed], col = "yellow", lwd = 4, lend = 1
+    )
+  }
 }
 
 plot_track_logr <- function(data_sample, segs_sample, max_values = 6000) {
@@ -114,14 +122,10 @@ plot_track_baf <- function(data_sample, segs_sample, msai) {
   plot(data_sample$pos, data_sample$BAF, ylab = "BAF", col = phasing_col, ylim = c(0, 1), pch = 20, yaxt = "n", xaxt = "n")
   axis(2, seq(0, 1, by = 0.25))
 
-#  plot(data_sample$pos, data_sample$BAF, ylab = "BAF", col = phasing_col, ylim = c(0, 1), pch = 20, xaxt = "n", yaxt = "n")
-
-#  phasing_col <- ifelse(data_sample$maj_is_cpnB_logic_vec == 1, "blue", "orange")
-#  phasing_col[data_sample$sample_phased_by_this_sample == "none_no_allelic_imbalance_called"] <- "grey"
-#  phasing_col <- adjustcolor(phasing_col, 0.6)
-#  plot(data_sample$pos, data_sample$BAF, ylab = "BAF", col = phasing_col, ylim = c(0, 1), pch = 20, xaxt = "n", yaxt = "n")
-#
 #  # Mean segments
+  #phasing_col <- ifelse(data_sample$maj_is_cpnB_logic_vec == 1, "blue", "orange")
+  #phasing_col[data_sample$sample_phased_by_this_sample == "none_no_allelic_imbalance_called"] <- "grey"
+  #phasing_col <- adjustcolor(phasing_col, 0.6)
 #  mean_col <- ifelse(segs_sample$orig_nMajor != segs_sample$orig_nMinor, "black", NA)
 #  segments(x0 = segs_sample$startpos, y0 = segs_sample$mean_BAF + 0.5, x1 = segs_sample$endpos, col = mean_col)
 #  segments(x0 = segs_sample$startpos, y0 = -1 * segs_sample$mean_BAF + 0.5, x1 = segs_sample$endpos, col = mean_col)
@@ -129,16 +133,6 @@ plot_track_baf <- function(data_sample, segs_sample, msai) {
   # Segment boundaries
   abline(v = unique(c(segs_sample$startpos, segs_sample$endpos)), lty = 2, col = "black")
 
-#  # MPhase copy numbers
-#  major_cn <- as.character(segs_sample$orig_nMajor)
-#  minor_cn <- as.character(segs_sample$orig_nMinor)
-#
-#  # major_cn <- as.character(segs_sample$nMajor)
-#  # minor_cn <- as.character(segs_sample$nMinor)
-#
-#  cn_text(x = segs_sample$seg_center, y = 0.9, labels = major_cn)
-#  cn_text(x = segs_sample$seg_center, y = 0.1, labels = minor_cn)
-#
   # Indicate which sample is the reference
   if (any(segs_sample$is_msai)) {
     segments(
@@ -182,7 +176,16 @@ plot_chromosome_header <- function(sample, chromosome, cex = 1.5) {
 
 # ------------------------------------------------------------------------
 # Calculate which segments have been changed by refphase
+#
+# Returns a logical vector the length of new_seg, indicating which segments in
+# the new segmentation do not have the same copy number as the corresponding
+# segment region in the old segmentation
 get_seg_changes <- function(new_seg, old_seg) {
+
+  print("new_seg")
+  str(new_seg)
+  print("old_seg")
+  str(old_seg)
 
   new_seg$seg_idx <- seq(nrow(new_seg))
   gr_new <- makeGRangesFromDataFrame(new_seg,
@@ -207,25 +210,26 @@ get_seg_changes <- function(new_seg, old_seg) {
   new_cns <- mcols(gr_new)[from(ov), c("cpn_total", "cpn_b", "cpn_a")]
   orig_cns <- mcols(gr_orig)[to(ov), c("cpn_total", "cpn_b", "cpn_a")]
 
+  print(cbind(new_cns, orig_cns))
+
   na_row <- apply(is.na(orig_cns), 1, any) | apply(is.na(new_cns), 1, any)
 
   orig_cns <- orig_cns[!na_row, ]
   new_cns <- new_cns[!na_row, ]
 
-  # write.csv(cbind(ov[!na_row, ], new_cns, orig_cns), file="all_cns.csv")
-
-  message("# of segments not changed=", nrow(new_cns))
+  message("# of segments=", nrow(new_cns))
   seg_changed <- apply(as.matrix(orig_cns) != as.matrix(new_cns), 1, any)
-  # message("# of segments changed=", sum(seg_changed))
   message("# of segments not changed=", sum(!seg_changed))
 
   new_changed <- by(seg_changed, from(ov)[!na_row], any)
   message("# of segments changed=", sum(unlist(new_changed)))
 
   changed_idx <- mcols(gr_new)[from(ov)[!na_row], "seg_idx"][new_changed]
-  # print(changed_idx)
-  is_changed <- FALSE
+  is_changed <- rep(FALSE, nrow(new_seg))
   is_changed[new_seg$seg_idx %in% changed_idx] <- TRUE
+
+  message("is changed?")
+  print(cbind(new_seg, is_changed=is_changed))
 
   return(is_changed)
 }
@@ -259,8 +263,6 @@ get_seg_new_ai <- function(new_seg, old_seg) {
   orig_cns <- orig_cns[!na_row, ]
   new_cns <- new_cns[!na_row, ]
 
-  # write.csv(cbind(ov[!na_row, ], new_cns, orig_cns), file="all_cns.csv")
-
   message("# of segments not changed=", nrow(new_cns))
   orig_cns <- as.matrix(orig_cns)
   new_cns <- as.matrix(new_cns)
@@ -274,14 +276,12 @@ get_seg_new_ai <- function(new_seg, old_seg) {
   seg_changed <- orig_balanced & new_not_balanced
   print(seg_changed)
   print("--------------------------")
-  # message("# of segments changed=", sum(seg_changed))
   message("# of segments not changed=", sum(!seg_changed))
 
   new_changed <- by(seg_changed, from(ov)[!na_row], any)
   message("# of segments changed=", sum(unlist(new_changed)))
 
   changed_idx <- mcols(gr_new)[from(ov)[!na_row], "seg_idx"][new_changed]
-  # print(changed_idx)
   is_changed <- FALSE
   is_changed[new_seg$seg_idx %in% changed_idx] <- TRUE
 
@@ -301,7 +301,6 @@ phase_regions <- function(snps, seg, baf_threshold = 0.5) {
     snps[[samp]]$phasing <- "none"
 
   phased_regions <- seg[seg$is_reference, c("sample", "chr", "startpos", "endpos")]
-  #str(phased_regions)
   for (region_idx in seq_len(nrow(phased_regions))) {
     region <- phased_regions[region_idx, ]
 
@@ -316,8 +315,6 @@ phase_regions <- function(snps, seg, baf_threshold = 0.5) {
       snps[[samp]][snp_idx_region, "phasing"] <- snps[[region$sample]][snp_idx_region, "phasing"]
     }
   }
-
-  #str(snps)
 
   snps
 }
@@ -346,9 +343,6 @@ plot_track_baf_whole_genome <- function(data_sample, segs_sample, chrom_info) {
   phasing_col[phasing_col == "b"] <- "blue"
   phasing_col[phasing_col == "none"] <- "grey"
   phasing_col <- adjustcolor(phasing_col, 0.6)
-  #phasing_col <- ifelse(data_sample$maj_is_cpnB_logic_vec == 1, "blue", "orange")
-  #phasing_col[data_sample$sample_phased_by_this_sample == "none_no_allelic_imbalance_called"] <- "grey"
-  #phasing_col <- adjustcolor(phasing_col, 0.6)
   plot(data_sample$pos, data_sample$BAF, ylab = "BAF", col = phasing_col, ylim = c(0, 1), pch = ".", xaxt = "n")
 
 #  # Mean segments
@@ -414,7 +408,9 @@ for (seg_idx in seq_along(seg_input_files)) {
     colnames(seg)[colnames(seg) == "nMinor"] <- "cpn_b"
     seg <- cbind(seg, cpn_total = seg$cpn_a + seg$cpn_b)
   }
-  #colnames(seg)[colnames(seg) == "cnTotal"] <- "cpn_b"
+  if ("cnTotal" %in% colnames(seg)) {
+    colnames(seg)[colnames(seg) == "cnTotal"] <- "cpn_total"
+  }
   seg$seg_center <- seg$startpos + ((seg$endpos - seg$startpos) / 2)
   # Make sure we have the data that we need to plot
   if (seg_idx == 1) {
@@ -508,9 +504,16 @@ for (chrom_to_plot in chroms) {
     screen(subfigure_idx[[2]])
     plot_track_baf(data_sample, main_seg_sample)
 
+    seg_orig <- segs[[2]]
     for (seg_idx in seq_along(segs)) {
       seg <- segs[[seg_idx]]
       seg_chrom <- seg[seg$sample == sample_name & seg$chr == chrom_to_plot, ]
+      seg_orig_chrom <- seg_orig[seg_orig$sample == sample_name & seg_orig$chr == chrom_to_plot, ]
+
+      seg_chrom$is_changed <- rep(FALSE, nrow(seg_chrom))
+      if (seg_idx == 1) {
+        seg_chrom$is_changed <- get_seg_changes(seg_chrom, seg_orig_chrom)
+      }
 
       # Orig CNs
       screen(subfigure_idx[[2 + seg_idx]])
