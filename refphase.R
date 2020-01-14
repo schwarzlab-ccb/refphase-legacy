@@ -457,7 +457,8 @@ for (samp in sample.vec) {
 
   setwd(qc.choice.dir)
   ascat.plotSegmentedData(ascat.bc.phased)
-  ascat.output <- ascat.runAscat(ascat.bc.phased, gamma = 1, rho_manual = samp.purity, psi_manual = samp.ploidy)
+  #ascat.output <- ascat.runAscat(ascat.bc.phased, gamma = 1, rho_manual = samp.purity, psi_manual = samp.ploidy)
+  ascat.output <- ascat.runAscat(ascat.bc.phased, gamma = 1)
   setwd(base.dir)
 
   ph.ascat.output.list[[samp]] <- ascat.output

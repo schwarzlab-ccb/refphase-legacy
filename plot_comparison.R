@@ -103,7 +103,7 @@ plot_track_logr <- function(data_sample, segs_sample, max_values = 6000) {
   par(mar = c(0.1, 5, 0.1, 1))
   # Downsample logR values to keep file sizes reasonable
   data_sample <- data_sample[sample.int(nrow(data_sample), min(max_values, nrow(data_sample))),]
-  plot(data_sample$pos, data_sample$logR, ylab = "logR", xaxt = "n", col = adjustcolor("darkgrey", 0.2), pch = 20, ylim = c(min(c(-2, data_sample$logR)), max(c(2, data_sample$logR))))
+  plot(data_sample$pos, data_sample$logR, ylab = "logR", xaxt = "n", col = adjustcolor("darkgrey", 0.2), pch = 16, cex = 0.75, ylim = c(min(c(-2, data_sample$logR)), max(c(2, data_sample$logR))))
   abline(v = unique(c(segs_sample$startpos, segs_sample$endpos)), lty = 2, col = "black")
 
   # Fit a loess regression line
@@ -119,7 +119,7 @@ plot_track_baf <- function(data_sample, segs_sample, msai) {
   phasing_col[phasing_col == "b"] <- "blue"
   phasing_col[phasing_col == "none"] <- "grey"
   phasing_col <- adjustcolor(phasing_col, 0.6)
-  plot(data_sample$pos, data_sample$BAF, ylab = "BAF", col = phasing_col, ylim = c(0, 1), pch = 20, yaxt = "n", xaxt = "n")
+  plot(data_sample$pos, data_sample$BAF, ylab = "BAF", col = phasing_col, ylim = c(0, 1), pch = 16, cex = 0.75, yaxt = "n", xaxt = "n")
   axis(2, seq(0, 1, by = 0.25))
 
 #  # Mean segments

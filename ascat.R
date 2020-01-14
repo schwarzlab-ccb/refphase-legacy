@@ -254,7 +254,8 @@ make_segments <- function(r, b) {
 create_distance_matrix <- function(segments, gamma) {
   s <- segments
   psi_pos <- seq(1, 6, 0.05)
-  rho_pos <- seq(0.1, 1.05, 0.01)
+  #rho_pos <- seq(0.1, 1.05, 0.01)
+  rho_pos <- seq(0.1, 1.00, 0.01)
   d <- matrix(nrow = length(psi_pos), ncol = length(rho_pos))
   rownames(d) <- psi_pos
   colnames(d) <- rho_pos
@@ -326,10 +327,16 @@ runASCAT <- function(lrr, baf, lrrsegmented, bafsegmented, gender, SNPpos, chrom
   par(mar = c(5, 5, 0.5, 0.5), cex = 0.75, cex.lab = 2, cex.axis = 2)
 
   hmcol <- rev(colorRampPalette(brewer.pal(10, "RdBu"))(256))
-  image(log(d), col = hmcol, axes = F, xlab = "Ploidy", ylab = "Aberrant cell fraction")
+  ploidy_points <- as.numeric(rownames(d))
+  purity_points <- as.numeric(colnames(d))
+  image(x = ploidy_points, y = purity_points, z = log(d), col = hmcol, xlab = "Ploidy", ylab = "Aberrant cell fraction")
 
-  axis(1, at = seq(0, 1, by = 1 / 5), label = seq(1, 6, by = 1))
-  axis(2, at = seq(0, 1 / 1.05, by = 1 / 3 / 1.05), label = seq(0.1, 1, by = 3 / 10))
+  #axis(1, at = ploidy_points, label = ploidy_points)
+  #axis(2, at = purity_points, label = purity_points)
+
+  #axis(1, at = seq(0, 1, by = 1 / 5), label = seq(1, 6, by = 1))
+  ##axis(2, at = seq(0, 1 / 1.05, by = 1 / 3 / 1.05), label = seq(0.1, 1, by = 3 / 10))
+  #axis(2, at = seq(0, 1, by = 1 / 3 ), label = seq(0.1, 1, by = 3 / 10))
 
   TheoretMaxdist <- sum(rep(0.25, dim(s)[1]) * s[, "length"] * ifelse(s[, "b"] == 0.5, 0.05, 1), na.rm = T)
 
@@ -347,6 +354,7 @@ runASCAT <- function(lrr, baf, lrrsegmented, bafsegmented, gender, SNPpos, chrom
   MINPLOIDY <- 1.5
   MAXPLOIDY <- 5.5
   # MINRHO = 0.05 ## TBKW: set in XPhase this is set in  Changed this to 0.15 from 0.2, 2015-02-11. Got several ok samples that could go lower from TRACERx ### Changed again to 0.10, 2015-05-05
+  MINRHO <- 0.05 ## TBKW: set in XPhase this is set in  Changed this to 0.15 from 0.2, 2015-02-11. Got several ok samples that could go lower from TRACERx ### Changed again to 0.10, 2015-05-05
   MINGOODNESSOFFIT <- 80
   MINPERCZERO <- 0.02
   MINPERCZEROABB <- 0.1
@@ -378,33 +386,73 @@ runASCAT <- function(lrr, baf, lrrsegmented, bafsegmented, gender, SNPpos, chrom
     }
     #### end edit
 
+    # zeroth step, take global min
+    d_allowed <- d[as.numeric(rownames(d)) >= MINPLOIDY & as.numeric(rownames(d)) <= MAXPLOIDY, as.numeric(colnames(d)) >= MINRHO]
+    str(d_allowed)
+    m <- min(d_allowed)
+    min_index <- which(d_allowed == m, arr.ind = TRUE)
+    i <- min_index[1, "row"]
+    j <- min_index[1, "col"]
+    psi <- as.numeric(rownames(d_allowed)[i])
+    rho <- as.numeric(colnames(d_allowed)[j])
+    nA <- (rho - 1 - (s[, "b"] - 1) * 2^(s[, "r"] / gamma) * ((1 - rho) * 2 + rho * psi)) / rho
+    nB <- (rho - 1 + s[, "b"] * 2^(s[, "r"] / gamma) * ((1 - rho) * 2 + rho * psi)) / rho
+
+    logdebug(paste("Absolute best m:", m))
+    logdebug(paste("Absolute best psi:", psi, MINPLOIDY, MAXPLOIDY))
+    logdebug(paste("Absolute best rho:", rho, MINRHO))
+    # ploidy is recalculated based on results, to avoid bias (due to differences in normalization of LogR)
+    ploidy <- sum((nA + nB) * s[, "length"]) / sum(s[, "length"])
+    percentzero <- (sum((round(nA) == 0) * s[, "length"]) + sum((round(nB) == 0) * s[, "length"])) / sum(s[, "length"])
+    goodnessOfFit <- (1 - m / TheoretMaxdist) * 100
+    logdebug(paste("ploidy:", ploidy, MINPLOIDY, MAXPLOIDY))
+    logdebug(paste("percentzero:", percentzero, MINPERCZERO))
+    logdebug(paste("goodnessOfFit:", goodnessOfFit, MINGOODNESSOFFIT))
+    logdebug(paste("nonaberrant:", nonaberrant))
+    #if (!nonaberrant & ploidy > MINPLOIDY & ploidy < MAXPLOIDY & rho >= MINRHO & goodnessOfFit > MINGOODNESSOFFIT & percentzero > MINPERCZERO) {
+    if (!nonaberrant & ploidy > MINPLOIDY & ploidy < MAXPLOIDY & rho >= MINRHO & goodnessOfFit > MINGOODNESSOFFIT) {
+      min_index <- which(d == m, arr.ind = TRUE)
+      i <- min_index[1, "row"]
+      j <- min_index[1, "col"]
+      nropt <- nropt + 1
+      optima[[nropt]] <- c(m, i, j, ploidy, goodnessOfFit)
+      localmin[nropt] <- m
+    }
+
+    logdebug(paste0("0) Number of optimal solutions selected: ", nropt))
+
     # first, try with all filters
-    for (i in 4:(dim(d)[1] - 3)) {
-      for (j in 4:(dim(d)[2] - 3)) {
-        m <- d[i, j]
-        seld <- d[(i - 3):(i + 3), (j - 3):(j + 3)]
-        seld[4, 4] <- max(seld)
-        if (min(seld) > m) {
-          psi <- as.numeric(rownames(d)[i])
-          rho <- as.numeric(colnames(d)[j])
-          nA <- (rho - 1 - (s[, "b"] - 1) * 2^(s[, "r"] / gamma) * ((1 - rho) * 2 + rho * psi)) / rho
-          nB <- (rho - 1 + s[, "b"] * 2^(s[, "r"] / gamma) * ((1 - rho) * 2 + rho * psi)) / rho
+    # if no solution, drop the percentzero > MINPERCZERO filter (allow non-aberrant solutions - but limit the ploidy options)
+    if (nropt == 0) {
+      for (i in 4:(nrow(d) - 3)) {
+        for (j in 4:(ncol(d) - 3)) {
+          m <- d[i, j]
+          seld <- d[(i - 3):(i + 3), (j - 3):(j + 3)]
+          seld[4, 4] <- max(seld)
+          if (min(seld) > m) {
+            psi <- as.numeric(rownames(d)[i])
+            rho <- as.numeric(colnames(d)[j])
+            nA <- (rho - 1 - (s[, "b"] - 1) * 2^(s[, "r"] / gamma) * ((1 - rho) * 2 + rho * psi)) / rho
+            nB <- (rho - 1 + s[, "b"] * 2^(s[, "r"] / gamma) * ((1 - rho) * 2 + rho * psi)) / rho
 
-          # ploidy is recalculated based on results, to avoid bias (due to differences in normalization of LogR)
-          ploidy <- sum((nA + nB) * s[, "length"]) / sum(s[, "length"])
+            # ploidy is recalculated based on results, to avoid bias (due to differences in normalization of LogR)
+            ploidy <- sum((nA + nB) * s[, "length"]) / sum(s[, "length"])
 
-          percentzero <- (sum((round(nA) == 0) * s[, "length"]) + sum((round(nB) == 0) * s[, "length"])) / sum(s[, "length"])
+            percentzero <- (sum((round(nA) == 0) * s[, "length"]) + sum((round(nB) == 0) * s[, "length"])) / sum(s[, "length"])
 
-          goodnessOfFit <- (1 - m / TheoretMaxdist) * 100
+            goodnessOfFit <- (1 - m / TheoretMaxdist) * 100
 
-          if (!nonaberrant & ploidy > MINPLOIDY & ploidy < MAXPLOIDY & rho >= MINRHO & goodnessOfFit > MINGOODNESSOFFIT & percentzero > MINPERCZERO) {
-            nropt <- nropt + 1
-            optima[[nropt]] <- c(m, i, j, ploidy, goodnessOfFit)
-            localmin[nropt] <- m
+            if (!nonaberrant & ploidy > MINPLOIDY & ploidy < MAXPLOIDY & rho >= MINRHO & goodnessOfFit > MINGOODNESSOFFIT & percentzero > MINPERCZERO) {
+              nropt <- nropt + 1
+              optima[[nropt]] <- c(m, i, j, ploidy, goodnessOfFit)
+              localmin[nropt] <- m
+            }
           }
         }
       }
     }
+
+    logdebug(paste0("1) Number of optimal solutions selected: ", nropt))
 
     # if no solution, drop the percentzero > MINPERCZERO filter (allow non-aberrant solutions - but limit the ploidy options)
     if (nropt == 0) {
@@ -439,6 +487,7 @@ runASCAT <- function(lrr, baf, lrrsegmented, bafsegmented, gender, SNPpos, chrom
         }
       }
     }
+    logdebug(paste0("2) Number of optimal solutions selected: ", nropt))
 
     # if still no solution, allow solutions with 100% aberrant cells (include the borders with rho = 1), but in first instance, keep the percentzero > 0.01 filter
     if (nropt == 0) {
@@ -478,6 +527,7 @@ runASCAT <- function(lrr, baf, lrrsegmented, bafsegmented, gender, SNPpos, chrom
         }
       }
     }
+    logdebug(paste0("3) Number of optimal solutions selected: ", nropt))
 
     # if still no solution, drop the percentzero > MINPERCENTZERO filter, but strict ploidy borders
     if (nropt == 0) {
@@ -512,6 +562,7 @@ runASCAT <- function(lrr, baf, lrrsegmented, bafsegmented, gender, SNPpos, chrom
         }
       }
     }
+    logdebug(paste0("4) Number of optimal solutions selected: ", nropt))
   }
 
   if (!is.na(rho_manual)) {
@@ -553,7 +604,8 @@ runASCAT <- function(lrr, baf, lrrsegmented, bafsegmented, gender, SNPpos, chrom
           }
           ploidy_opt1 <- optima[[i]][4]
           goodnessOfFit_opt1 <- optima[[i]][5]
-          points((psi_opt1 - 1) / 5, (rho_opt1 - 0.1) / 0.95, col = "green", pch = "X", cex = 2)
+          #points((psi_opt1 - 1) / 5, (rho_opt1 - 0.1) / 0.95, col = "green", pch = "X", cex = 2)
+          points(psi_opt1, rho_opt1, col = "green", pch = "X", cex = 2)
         }
       }
     } else {
@@ -561,7 +613,8 @@ runASCAT <- function(lrr, baf, lrrsegmented, bafsegmented, gender, SNPpos, chrom
       psi_opt1 <- optima[[1]][3]
       ploidy_opt1 <- optima[[1]][4]
       goodnessOfFit_opt1 <- optima[[1]][5]
-      points((psi_opt1 - 1) / 5, (rho_opt1 - 0.1) / 0.95, col = "green", pch = "X", cex = 2)
+      #points((psi_opt1 - 1) / 5, (rho_opt1 - 0.1) / 0.95, col = "green", pch = "X", cex = 2)
+      points(psi_opt1, rho_opt1, col = "green", pch = "X", cex = 2)
     }
   }
 
