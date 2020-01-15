@@ -97,6 +97,10 @@ if (!interactive()) {
       action = "store_false", dest = "overwrite",
       help = "Do not overwrite previous output"
     ),
+    make_option("--reestimate-purity-ploidy",
+      default = FALSE, action = "store_true",
+      help = "Re-estimate purity and ploidy of each sample using ASCAT [default = %default]"
+    ),
     make_option("--cached-dir",
       default = NA,
       help = "Set this to load intermediate data from the given directory"
@@ -457,8 +461,12 @@ for (samp in sample.vec) {
 
   setwd(qc.choice.dir)
   ascat.plotSegmentedData(ascat.bc.phased)
-  #ascat.output <- ascat.runAscat(ascat.bc.phased, gamma = 1, rho_manual = samp.purity, psi_manual = samp.ploidy)
-  ascat.output <- ascat.runAscat(ascat.bc.phased, gamma = 1)
+  if (isTRUE(conf$reestimate_purity_ploidy)) {
+    loginfo("Allowing re-estimation of purity and ploidy.")
+    samp.purity <- NA
+    samp.ploidy <- NA
+  }
+  ascat.output <- ascat.runAscat(ascat.bc.phased, gamma = 1, rho_manual = samp.purity, psi_manual = samp.ploidy)
   setwd(base.dir)
 
   ph.ascat.output.list[[samp]] <- ascat.output
