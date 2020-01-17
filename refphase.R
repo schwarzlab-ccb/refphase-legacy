@@ -89,6 +89,10 @@ if (!interactive()) {
       default = "hg38",
       help = "Human genome version [default = %default] (supports hg19 and hg38)"
     ),
+    make_option("--no-normalize-logr",
+      default = FALSE, action = "store_true",
+      help = "Disable normalization of counts before calculating logR (seqz input only) [default = %default]"
+    ),
     make_option(c("--overwrite"),
       default = TRUE, action = "store_true",
       help = "Overwrite output [default = %default]"
@@ -463,8 +467,9 @@ for (samp in sample.vec) {
   ascat.plotSegmentedData(ascat.bc.phased)
   if (isTRUE(conf$reestimate_purity_ploidy)) {
     loginfo("Allowing re-estimation of purity and ploidy.")
-    samp.purity <- NA
-    samp.ploidy <- NA
+    # We allow +/- 0.2 purity and +/- 1 ploidy
+    samp.purity <- c(samp.purity - 0.2, samp.purity + 0.2)
+    samp.ploidy <- c(samp.ploidy - 1, samp.ploidy + 1)
   }
   ascat.output <- ascat.runAscat(ascat.bc.phased, gamma = 1, rho_manual = samp.purity, psi_manual = samp.ploidy)
   setwd(base.dir)
@@ -869,8 +874,10 @@ simple_segs <- full.joint.segs.df[!is.na(full.joint.segs.df$cnTotal) & !is.na(fu
 # in this column
 simple_segs$dominant_allele[is.na(simple_segs$dominant_allele)] <- "no_ai"
 simple_segs$cpn_total <- simple_segs$orig_cnTotal
-simple_segs$cpn_a <- ifelse(simple_segs$dominant_allele == "cpnA", simple_segs$orig_nMajor, simple_segs$orig_nMinor)
-simple_segs$cpn_b <- ifelse(simple_segs$dominant_allele == "cpnA", simple_segs$orig_nMinor, simple_segs$orig_nMajor)
+#simple_segs$cpn_a <- ifelse(simple_segs$dominant_allele == "cpnA", simple_segs$orig_nMajor, simple_segs$orig_nMinor)
+#simple_segs$cpn_b <- ifelse(simple_segs$dominant_allele == "cpnA", simple_segs$orig_nMinor, simple_segs$orig_nMajor)
+simple_segs$cpn_a <- ifelse(simple_segs$dominant_allele == "cpnB", simple_segs$orig_nMinor, simple_segs$orig_nMajor)
+simple_segs$cpn_b <- ifelse(simple_segs$dominant_allele == "cpnB", simple_segs$orig_nMajor, simple_segs$orig_nMinor)
 simple_segs$is_msai <- simple_segs$dominant_allele == "cpnB"
 simple_segs$is_reference <- simple_segs$sample == simple_segs$samp_used_to_phase
 simple_segs$ploidy <- simple_segs$Ploidy

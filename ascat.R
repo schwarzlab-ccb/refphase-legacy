@@ -8,7 +8,7 @@
 # plots SNP array data
 # input: an ASCAT object (e.g. from ASCAT.ASPCF) and plots the SNP array data before and after segmentation
 ascat.plotSegmentedData <- function(ASCATobj) {
-  for (arraynr in 1:dim(ASCATobj$Tumor_LogR)[2]) {
+  for (arraynr in seq_len(ncol(ASCATobj$Tumor_LogR))) {
     Select_nonNAs <- rownames(ASCATobj$Tumor_BAF_segmented[[arraynr]])
     AllIDs <- 1:dim(ASCATobj$Tumor_LogR)[1]
     names(AllIDs) <- rownames(ASCATobj$Tumor_LogR)
@@ -22,7 +22,7 @@ ascat.plotSegmentedData <- function(ASCATobj) {
     points(r, col = "green")
     abline(v = 0.5, lty = 1, col = "lightgrey")
     chrk_tot_len <- 0
-    for (j in 1:length(ASCATobj$ch)) {
+    for (j in seq_len(length(ASCATobj$ch))) {
       chrk <- intersect(ASCATobj$ch[[j]], HetIDs)
       chrk_tot_len_prev <- chrk_tot_len
       chrk_tot_len <- chrk_tot_len + length(chrk)
@@ -37,7 +37,7 @@ ascat.plotSegmentedData <- function(ASCATobj) {
     points(1 - beta, col = "green")
     abline(v = 0.5, lty = 1, col = "lightgrey")
     chrk_tot_len <- 0
-    for (j in 1:length(ASCATobj$ch)) {
+    for (j in seq_len(length(ASCATobj$ch))) {
       chrk <- intersect(ASCATobj$ch[[j]], HetIDs)
       chrk_tot_len_prev <- chrk_tot_len
       chrk_tot_len <- chrk_tot_len + length(chrk)
@@ -70,8 +70,8 @@ ascat.plotSegmentedData <- function(ASCATobj) {
 # note: for copy number only probes, nA contains the copy number value and nB = 0.
 ascat.runAscat <- function(ASCATobj, gamma = 0.55, rho_manual = NA, psi_manual = NA) {
   goodarrays <- NULL
-  res <- vector("list", dim(ASCATobj$Tumor_LogR)[2])
-  for (arraynr in 1:dim(ASCATobj$Tumor_LogR)[2]) {
+  res <- vector("list", ncol(ASCATobj$Tumor_LogR))
+  for (arraynr in seq_len(ncol(ASCATobj$Tumor_LogR))) {
     logdebug(paste0("Sample ", ASCATobj$samples[arraynr], " (", arraynr, "/", length(ASCATobj$samples), ")"))
     lrr <- ASCATobj$Tumor_LogR[, arraynr]
     names(lrr) <- rownames(ASCATobj$Tumor_LogR)
@@ -85,7 +85,7 @@ ascat.runAscat <- function(ASCATobj, gamma = 0.55, rho_manual = NA, psi_manual =
     if (ASCATobj$samples[arraynr] %in% ASCATobj$failedarrays) {
       failedqualitycheck <- T
     }
-    if (is.na(rho_manual)) {
+    if (all(is.na(rho_manual))) {
       res[[arraynr]] <- runASCAT(
         lrr, baf, lrrsegm, bafsegm, ASCATobj$gender[arraynr], ASCATobj$SNPpos, ASCATobj$ch, ASCATobj$chrs, ASCATobj$sexchromosomes, failedqualitycheck,
         paste(ASCATobj$samples[arraynr], ".sunrise.png", sep = ""), paste(ASCATobj$samples[arraynr], ".ASCATprofile.png", sep = ""),
@@ -97,7 +97,7 @@ ascat.runAscat <- function(ASCATobj, gamma = 0.55, rho_manual = NA, psi_manual =
         lrr, baf, lrrsegm, bafsegm, ASCATobj$gender[arraynr], ASCATobj$SNPpos, ASCATobj$ch, ASCATobj$chrs, ASCATobj$sexchromosomes, failedqualitycheck,
         paste(ASCATobj$samples[arraynr], ".sunrise.png", sep = ""), paste(ASCATobj$samples[arraynr], ".ASCATprofile.png", sep = ""),
         paste(ASCATobj$samples[arraynr], ".rawprofile.png", sep = ""), paste(ASCATobj$samples[arraynr], ".aberrationreliability.png", sep = ""),
-        gamma, rho_manual[arraynr], psi_manual[arraynr]
+        gamma, rho_manual, psi_manual
       )
     }
     if (!is.na(res[[arraynr]]$rho)) {
@@ -353,8 +353,30 @@ runASCAT <- function(lrr, baf, lrrsegmented, bafsegmented, gender, SNPpos, chrom
 
   MINPLOIDY <- 1.5
   MAXPLOIDY <- 5.5
-  # MINRHO = 0.05 ## TBKW: set in XPhase this is set in  Changed this to 0.15 from 0.2, 2015-02-11. Got several ok samples that could go lower from TRACERx ### Changed again to 0.10, 2015-05-05
-  MINRHO <- 0.05 ## TBKW: set in XPhase this is set in  Changed this to 0.15 from 0.2, 2015-02-11. Got several ok samples that could go lower from TRACERx ### Changed again to 0.10, 2015-05-05
+  MINRHO <- 0.05  # TBKW: set in XPhase this is set in  Changed this to 0.15 from 0.2, 2015-02-11. Got several ok samples that could go lower from TRACERx ### Changed again to 0.10, 2015-05-05
+  MAXRHO <- 0.95
+
+  # Tweak the limits if we have passed in a range of manual rho values
+  if (length(rho_manual) > 1) {
+    MINRHO <- max(MINRHO, rho_manual[[1]])
+    MAXRHO <- min(MAXRHO, rho_manual[[2]])
+    # Reset rho_manual
+    rho_manual <- NA
+  }
+
+  # Tweak the limits if we have passed in a range of manual psi/plidy values
+  if (length(psi_manual) > 1) {
+    MINPLOIDY <- max(MINPLOIDY, psi_manual[[1]])
+    MAXPLOIDY <- min(MAXPLOIDY, psi_manual[[2]])
+    # Reset psi_manual
+    psi_manual <- NA
+  }
+
+  # Highlight the region that we consider to contain reasonable purity and
+  # ploidy estimates
+  rect(xleft = MINPLOIDY, ybottom = MINRHO, xright = MAXPLOIDY, ytop = MAXRHO,
+       col = adjustcolor("yellow", 0.1), border = NA)
+
   MINGOODNESSOFFIT <- 80
   MINPERCZERO <- 0.02
   MINPERCZEROABB <- 0.1
@@ -386,9 +408,10 @@ runASCAT <- function(lrr, baf, lrrsegmented, bafsegmented, gender, SNPpos, chrom
     }
     #### end edit
 
-    # zeroth step, take global min
-    d_allowed <- d[as.numeric(rownames(d)) >= MINPLOIDY & as.numeric(rownames(d)) <= MAXPLOIDY, as.numeric(colnames(d)) >= MINRHO]
-    str(d_allowed)
+    # zeroth step, take global min inside the range of purity and ploidy values
+    # that we want
+    d_allowed <- d[as.numeric(rownames(d)) >= MINPLOIDY & as.numeric(rownames(d)) <= MAXPLOIDY,
+                   as.numeric(colnames(d)) >= MINRHO & as.numeric(colnames(d)) <= MAXRHO]
     m <- min(d_allowed)
     min_index <- which(d_allowed == m, arr.ind = TRUE)
     i <- min_index[1, "row"]
@@ -400,7 +423,7 @@ runASCAT <- function(lrr, baf, lrrsegmented, bafsegmented, gender, SNPpos, chrom
 
     logdebug(paste("Absolute best m:", m))
     logdebug(paste("Absolute best psi:", psi, MINPLOIDY, MAXPLOIDY))
-    logdebug(paste("Absolute best rho:", rho, MINRHO))
+    logdebug(paste("Absolute best rho:", rho, MINRHO, MAXRHO))
     # ploidy is recalculated based on results, to avoid bias (due to differences in normalization of LogR)
     ploidy <- sum((nA + nB) * s[, "length"]) / sum(s[, "length"])
     percentzero <- (sum((round(nA) == 0) * s[, "length"]) + sum((round(nB) == 0) * s[, "length"])) / sum(s[, "length"])
@@ -410,7 +433,8 @@ runASCAT <- function(lrr, baf, lrrsegmented, bafsegmented, gender, SNPpos, chrom
     logdebug(paste("goodnessOfFit:", goodnessOfFit, MINGOODNESSOFFIT))
     logdebug(paste("nonaberrant:", nonaberrant))
     #if (!nonaberrant & ploidy > MINPLOIDY & ploidy < MAXPLOIDY & rho >= MINRHO & goodnessOfFit > MINGOODNESSOFFIT & percentzero > MINPERCZERO) {
-    if (!nonaberrant & ploidy > MINPLOIDY & ploidy < MAXPLOIDY & rho >= MINRHO & goodnessOfFit > MINGOODNESSOFFIT) {
+    #if (!nonaberrant & ploidy > MINPLOIDY & ploidy < MAXPLOIDY & rho >= MINRHO & goodnessOfFit > MINGOODNESSOFFIT) {
+    if (!nonaberrant) {
       min_index <- which(d == m, arr.ind = TRUE)
       i <- min_index[1, "row"]
       j <- min_index[1, "col"]
@@ -605,7 +629,7 @@ runASCAT <- function(lrr, baf, lrrsegmented, bafsegmented, gender, SNPpos, chrom
           ploidy_opt1 <- optima[[i]][4]
           goodnessOfFit_opt1 <- optima[[i]][5]
           #points((psi_opt1 - 1) / 5, (rho_opt1 - 0.1) / 0.95, col = "green", pch = "X", cex = 2)
-          points(psi_opt1, rho_opt1, col = "green", pch = "X", cex = 2)
+          points(psi_opt1, rho_opt1, col = "green", pch = 4, cex = 2)
         }
       }
     } else {
@@ -614,7 +638,7 @@ runASCAT <- function(lrr, baf, lrrsegmented, bafsegmented, gender, SNPpos, chrom
       ploidy_opt1 <- optima[[1]][4]
       goodnessOfFit_opt1 <- optima[[1]][5]
       #points((psi_opt1 - 1) / 5, (rho_opt1 - 0.1) / 0.95, col = "green", pch = "X", cex = 2)
-      points(psi_opt1, rho_opt1, col = "green", pch = "X", cex = 2)
+      points(psi_opt1, rho_opt1, col = "green", pch = 4, cex = 2)
     }
   }
 

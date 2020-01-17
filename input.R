@@ -66,7 +66,8 @@ read_input <- function(seg_file, snp_file, input_format) {
       input_files = input_files,
       segs = f.joint.segs.df,
       samples = sample.vec,
-      het_only = FALSE
+      het_only = FALSE,
+      normalize_logr = !isTRUE(conf$no_normalize_logr)
     )
 
     logdebug("Finished parsing sequenza input.")
