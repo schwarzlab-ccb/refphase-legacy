@@ -354,7 +354,8 @@ runASCAT <- function(lrr, baf, lrrsegmented, bafsegmented, gender, SNPpos, chrom
   MINPLOIDY <- 1.5
   MAXPLOIDY <- 5.5
   MINRHO <- 0.05  # TBKW: set in XPhase this is set in  Changed this to 0.15 from 0.2, 2015-02-11. Got several ok samples that could go lower from TRACERx ### Changed again to 0.10, 2015-05-05
-  MAXRHO <- 0.95
+  #MAXRHO <- 0.95
+  MAXRHO <- 0.85
 
   # Tweak the limits if we have passed in a range of manual rho values
   if (length(rho_manual) > 1) {
