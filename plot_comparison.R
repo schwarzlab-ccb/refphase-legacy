@@ -187,7 +187,7 @@ get_seg_changes <- function(new_seg, old_seg) {
   print("old_seg")
   str(old_seg)
 
-  new_seg$seg_idx <- seq(nrow(new_seg))
+  new_seg$seg_idx <- seq_len(nrow(new_seg))
   gr_new <- makeGRangesFromDataFrame(new_seg,
     keep.extra.columns = TRUE,
     ignore.strand = FALSE,
@@ -217,18 +217,16 @@ get_seg_changes <- function(new_seg, old_seg) {
   orig_cns <- orig_cns[!na_row, ]
   new_cns <- new_cns[!na_row, ]
 
-  message("# of segments=", nrow(new_cns))
-  seg_changed <- apply(as.matrix(orig_cns) != as.matrix(new_cns), 1, any)
-  message("# of segments not changed=", sum(!seg_changed))
+  # Default to saying that the region is changed, and then identify the regions
+  # that have NOT been changed. Should deal with regions that have no
+  # overlapping segment in the original.
+  is_changed <- rep(TRUE, nrow(new_seg))
 
-  new_changed <- by(seg_changed, from(ov)[!na_row], any)
-  message("# of segments changed=", sum(unlist(new_changed)))
+  seg_not_changed <- apply(as.matrix(orig_cns) == as.matrix(new_cns), 1, all)
+  new_not_changed <- by(seg_not_changed, from(ov)[!na_row], all)
 
-  changed_idx <- mcols(gr_new)[from(ov)[!na_row], "seg_idx"][new_changed]
-  is_changed <- rep(FALSE, nrow(new_seg))
-  is_changed[new_seg$seg_idx %in% changed_idx] <- TRUE
+  is_changed[] <- !unlist(new_not_changed)
 
-  message("is changed?")
   print(cbind(new_seg, is_changed=is_changed))
 
   return(is_changed)
