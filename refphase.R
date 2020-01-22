@@ -466,10 +466,11 @@ for (samp in sample.vec) {
   setwd(qc.choice.dir)
   ascat.plotSegmentedData(ascat.bc.phased)
   if (isTRUE(conf$reestimate_purity_ploidy)) {
+    purity_range <- 0.2
+    ploidy_range <- 1
     loginfo("Allowing re-estimation of purity and ploidy.")
-    # We allow +/- 0.2 purity and +/- 1 ploidy
-    samp.purity <- c(samp.purity - 0.2, samp.purity + 0.2)
-    samp.ploidy <- c(samp.ploidy - 1, samp.ploidy + 1)
+    samp.purity <- c(samp.purity - purity_range, samp.purity + purity_range)
+    samp.ploidy <- c(samp.ploidy - ploidy_range, samp.ploidy + ploidy_range)
   }
   ascat.output <- ascat.runAscat(ascat.bc.phased, gamma = 1, rho_manual = samp.purity, psi_manual = samp.ploidy)
   setwd(base.dir)
@@ -893,17 +894,21 @@ colnames(sample_info)[colnames(sample_info) == "ACF"] <- "purity"
 write.table(sample_info, file = file.path(PLOT_OUTPUT_DIR, "sample_info.tsv"), row.names = FALSE, sep = "\t", quote = FALSE)
 
 if (!is.na(conf$medicc_output_dir)) {
-  # Hack! Hope this works...
-  full.joint.segs.nona <- full.joint.segs.df[!is.na(full.joint.segs.df$ph_int_cpnA), ]
+  # FIXME: move this to a separate function
+  conf$medicc_min_segment_width <- 100000
+  # Remove very small segments
+  simple_segs_filtered <- simple_segs[simple_segs$endpos - simple_segs$startpos >= conf$medicc_min_segment_width, ]
+  #full.joint.segs.nona <- full.joint.segs.df[!is.na(full.joint.segs.df$ph_int_cpnA), ]
+  #full.joint.segs.nona <- full.joint.segs.df[!is.na(full.joint.segs.df$ph_int_cpnA), ]
   post.MPhase.MCS.MEDICC.FASTA.files.list <- makeMEDICCInputListsFromSegmentationDF(
-    segs.to.make.MEDICC.input.df = full.joint.segs.nona,
+    segs.to.make.MEDICC.input.df = simple_segs_filtered,
     sample.vec = sample.vec,
     chrs.to.use.vec = CHRS_TO_USE_VEC,
-    chr.col = "chrom",
+    chr.col = "chr",
     start.col = "startpos",
     end.col = "endpos",
-    cpnA.col = "ph_int_cpnA",
-    cpnB.col = "ph_int_cpnB"
+    cpnA.col = "cpn_a",
+    cpnB.col = "cpn_b"
   )
 
   if (!is.na(conf$debug_dir)) {

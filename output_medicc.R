@@ -17,8 +17,7 @@ makeMEDICCInputListsFromSegmentationDF <- function(segs.to.make.MEDICC.input.df,
 
 
     for (samp in sample.vec) {
-      chr.samp.segs.df <- segs.to.make.MEDICC.input.df[segs.to.make.MEDICC.input.df$sample == samp
-      & segs.to.make.MEDICC.input.df[, chr.col] == chr, , drop = FALSE]
+      chr.samp.segs.df <- segs.to.make.MEDICC.input.df[segs.to.make.MEDICC.input.df$sample == samp & segs.to.make.MEDICC.input.df[, chr.col] == chr, , drop = FALSE]
 
       # So now let's format the copy number so it will fit MEDICC properly
       MEDICC.FASTA.file.list[[chr]][[samp]]$samp <- paste0(">", samp)
