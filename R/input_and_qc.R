@@ -1,51 +1,52 @@
 
 
-cleanAndErrorCheckSNPs <- function(all.samp.SNP.list, min.cons.seg.df, allow.logr.only.flag = FALSE) {
-  # TODO add check that every single all.samp.SNP.list has the same SNPs..
-  # Note error checking of removing NAs from the min.cons.seg.df should already have been performed
-  min.cpn.vals.df <- min.cons.seg.df[, 4:ncol(min.cons.seg.df)]
-  seg.name.vec <- paste(min.cons.seg.df[, 1], min.cons.segs.df[, 2], min.cons.segs.df[, 3], sep = ":")
-  sample.vec <- colnames(min.cpn.vals.df)
-  working.all.samp.SNP.list <- list()
-  all.samps.prob.SNPs.vec <- c()
-
-  for (sample in sample.vec) {
-    samp.prob.SNPs.vec <- c()
-
-    for (seg.idx in 1:nrow(min.cpn.vals.df)) {
-      samp.SNP.df <- all.samp.SNP.list[[sample]]
-
-      samp.seg.logR.BAF.df <- samp.SNP.df[ samp.SNP.df$chrom == min.cons.seg.df[seg.idx, 1]
-      & samp.SNP.df$pos >= min.cons.seg.df[seg.idx, 2]
-      & samp.SNP.df$pos <= min.cons.seg.df[seg.idx, 3], , drop = FALSE]
-
-      # Todo,
-      # There's one more case we need to consider that a only on or some samples might have a logr SNP or BAF SNP as NA but the others don't, if this were the case
-      # We'd want to remove these SNPs
-      # Todo,
-      # Another case is that we might have any of the SNPs removed might be the start or end position of the joint segs, if this is the case it might break downstream
-      # analyses, we should stop the analysis if this is the case and say clean up the input data.
-      working.all.samp.SNP.list[[sample]][[seg.name.vec[seg.idx]]] <- samp.seg.logR.BAF.df
-    }
-
-    # all.samps.prob.SNPs.vec <- c(all.samps.prob.SNPs.vec, samp.prob.SNPs.vec)
-  }
-
-  # all.samps.prob.SNPs.vec <- unique(all.samps.prob.SNPs.vec)
-  # print("Number of problem SNPs being removed:")
-  # print(length(all.samps.prob.SNPs.vec))
-  # for ( sample in sample.vec ) {
-
-  #   for (seg.idx in 1:nrow(min.cpn.vals.df)) {
-
-  #     working.all.samp.SNP.list[[sample]][[seg.name.vec[seg.idx]]] <- working.all.samp.SNP.list[[sample]][[seg.name.vec[seg.idx]]][ ! rownames(working.all.samp.SNP.list[[sample]][[seg.name.vec[seg.idx]]])%in%all.samps.prob.SNPs.vec, ,drop=FALSE]
-
-  #   }#end for (seg.idx in 1:nrow(min.cpn.vals.df))
-
-  # }#end for ( sample in sample.vec ) {
-
-  return(working.all.samp.SNP.list)
-}
+# Only using the parallel version currently
+# cleanAndErrorCheckSNPs <- function(all.samp.SNP.list, min.cons.seg.df, allow.logr.only.flag = FALSE) {
+#   # TODO add check that every single all.samp.SNP.list has the same SNPs..
+#   # Note error checking of removing NAs from the min.cons.seg.df should already have been performed
+#   min.cpn.vals.df <- min.cons.seg.df[, 4:ncol(min.cons.seg.df)]
+#   seg.name.vec <- paste(min.cons.seg.df[, 1], min.cons.segs.df[, 2], min.cons.segs.df[, 3], sep = ":")
+#   sample.vec <- colnames(min.cpn.vals.df)
+#   working.all.samp.SNP.list <- list()
+#   all.samps.prob.SNPs.vec <- c()
+#
+#   for (sample in sample.vec) {
+#     samp.prob.SNPs.vec <- c()
+#
+#     for (seg.idx in 1:nrow(min.cpn.vals.df)) {
+#       samp.SNP.df <- all.samp.SNP.list[[sample]]
+#
+#       samp.seg.logR.BAF.df <- samp.SNP.df[ samp.SNP.df$chrom == min.cons.seg.df[seg.idx, 1]
+#       & samp.SNP.df$pos >= min.cons.seg.df[seg.idx, 2]
+#       & samp.SNP.df$pos <= min.cons.seg.df[seg.idx, 3], , drop = FALSE]
+#
+#       # Todo,
+#       # There's one more case we need to consider that a only on or some samples might have a logr SNP or BAF SNP as NA but the others don't, if this were the case
+#       # We'd want to remove these SNPs
+#       # Todo,
+#       # Another case is that we might have any of the SNPs removed might be the start or end position of the joint segs, if this is the case it might break downstream
+#       # analyses, we should stop the analysis if this is the case and say clean up the input data.
+#       working.all.samp.SNP.list[[sample]][[seg.name.vec[seg.idx]]] <- samp.seg.logR.BAF.df
+#     }
+#
+#     # all.samps.prob.SNPs.vec <- c(all.samps.prob.SNPs.vec, samp.prob.SNPs.vec)
+#   }
+#
+#   # all.samps.prob.SNPs.vec <- unique(all.samps.prob.SNPs.vec)
+#   # print("Number of problem SNPs being removed:")
+#   # print(length(all.samps.prob.SNPs.vec))
+#   # for ( sample in sample.vec ) {
+#
+#   #   for (seg.idx in 1:nrow(min.cpn.vals.df)) {
+#
+#   #     working.all.samp.SNP.list[[sample]][[seg.name.vec[seg.idx]]] <- working.all.samp.SNP.list[[sample]][[seg.name.vec[seg.idx]]][ ! rownames(working.all.samp.SNP.list[[sample]][[seg.name.vec[seg.idx]]])%in%all.samps.prob.SNPs.vec, ,drop=FALSE]
+#
+#   #   }#end for (seg.idx in 1:nrow(min.cpn.vals.df))
+#
+#   # }#end for ( sample in sample.vec ) {
+#
+#   return(working.all.samp.SNP.list)
+# }
 
 
 getChromosomeArmGrange <- function(chr, chr.arm, chrom.info.df) {

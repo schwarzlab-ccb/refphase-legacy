@@ -139,7 +139,7 @@ add_info_to_output_table <- function(asas.ph.raw.cpn.lists, ploidy.est.vec,
   )
 
   # Legacy mostly, trying to make definitions that Emilia was doing and put them ion here to ensure they were correct
-  full.joint.segs.w.across.plotting.cols.df <- addPanCanColumnDefinitionToSegDF(full.joint.segs.w.across.samp.AI.stats.df)
+  full.joint.segs.w.across.plotting.cols.df <- addPanCanColumnDefinitionToSegDF(full.joint.segs.w.across.samp.AI.stats.df, seg.name.vec = seg.name.vec, sample.vec = sample.vec)
   full.joint.segs.df <- full.joint.segs.w.across.plotting.cols.df
 
   full.joint.segs.df

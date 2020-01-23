@@ -1417,7 +1417,7 @@ addAcrossSampleAlleleSpecificClonalityCalls <- function(all.seg.df, sample.vec, 
 }
 
 
-addPanCanColumnDefinitionToSegDF <- function(all.seg.df) {
+addPanCanColumnDefinitionToSegDF <- function(all.seg.df, seg.name.vec, sample.vec) {
   for (seg.name in seg.name.vec) {
     samp.seg.name.vec <- paste0(sample.vec, ":", seg.name)
 
