@@ -1,5 +1,7 @@
-annotate_joint_segs <- function(segs, snps) {
+annotate_joint_segs <- function(segs, snps, patient.phased.BAF.df.list, conf) {
   logwarn("TODO: check this function (annotate_joint_segs()) to be sure it works properly without germline information.")
+  sample.vec <- unique(segs$sample)
+
   anno.seg.df <- segs
 
   # So determine which SNPs are hz:
@@ -89,6 +91,15 @@ annotate_joint_segs <- function(segs, snps) {
   # A_LTX121_SU_T1-R1:1:144052752:145096660       50645         50595       TRUE         TRUE        TRUE       FALSE     FALSE 1_145096660          TRUE         FALSE       FALSE 1_144052752      1q
   # A_LTX121_SU_T1-R1:1:145096661:145109582          NA            NA      FALSE        FALSE       FALSE       FALSE     FALSE 1_145109582         FALSE         FALSE       FALSE 1_145096661      1q
   # A_LTX121_SU_T1-R1:1:145109583:145477446       50734         50646       TRUE         TRUE        TRUE       FALSE     FALSE 1_145477446         FALSE         FALSE        TRUE 1_145109583      1q
+
+  if (conf$genome == "hg19") {
+    info.path <- system.file("extdata", "ucsc_hg19_chrominfo.txt", package = "refphase")
+  } else if (conf$genome == "hg38") {
+    info.path <- system.file("extdata", "ucsc_hg36_chrominfo.txt", package = "refphase")
+  } else {
+    stop("Genome version not recognized: ", conf$genome)
+  }
+  chrom.info.df <- read.table(info.path, stringsAsFactors = FALSE, sep = "\t", header = TRUE)
 
   # Let's just add the arm classificaitons to all the snp positions
   snp.file.df$arm <- NA

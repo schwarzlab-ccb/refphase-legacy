@@ -121,7 +121,7 @@ getAllPatientSamplesAndIntersectionGRangesList <- function(sample.vec, f.joint.s
 }
 
 
-compareOverlapsBetweenSamples <- function(sample.vec, f.joint.segs.df, hg19.info.df, chrs.to.use.vec = CHRS_TO_USE_VEC) {
+compareOverlapsBetweenSamples <- function(sample.vec, f.joint.segs.df, hg19.info.df, chrs.to.use.vec) {
 
   # For each sample how much of the chromosome arm
   # chrs.to.use.vec <- 1:22
@@ -343,8 +343,8 @@ getOverlapGRanges <- function(query, subject, output = "gr", ...) {
 
   ## Find overlapping ranges
   if (class(query) == "GRanges") {
-    GenomicRanges::seqlengths(query) <- rep(NA, length(GenomicRanges::seqlengths(query)))
-    GenomicRanges::seqlengths(subject) <- rep(NA, length(GenomicRanges::seqlengths(subject)))
+    GenomeInfoDb::seqlengths(query) <- rep(NA, length(GenomeInfoDb::seqlengths(query)))
+    GenomeInfoDb::seqlengths(subject) <- rep(NA, length(GenomeInfoDb::seqlengths(subject)))
   }
   overlap.index.mat <- as.matrix(findOverlaps(query, subject, ...))
 

@@ -1,3 +1,4 @@
+globalVariables("samp.seg.df")
 
 # addOriginalCPNValuesAndCallsVsPloidyToOutputSegmentation <- function(sample.vec,
 #                                        seg.name.vec,
@@ -450,81 +451,81 @@ addNewRawAndIntCPNCallsToFinalSegmentation <- function(seg.name.vec,
 }
 
 
-
-retestSubclonalAmps <- function(all.seg.df, all.samp.ph.BAF.df.list, all.samp.logr.df.list, gain.threshold, amp.threshold, p.val.for.converting.gain.to.amp = 0.01) {
-  non.na.cpn.event.df <- all.seg.df[!is.na(all.seg.df$cpn_event_vs_ploidy), ]
-  amp.all.seg.df <- non.na.cpn.event.df[non.na.cpn.event.df$cpn_event_vs_ploidy == "amp", ]
-
-  if (nrow(amp.all.seg.df) > 0) {
-    # So now we want to go check if there are any sample that has a gain called in the same seg
-    for (amp.idx in 1:nrow(amp.all.seg.df)) {
-      current.amp.samp <- amp.all.seg.df[amp.idx, ]$sample_name
-      current.amp.seg.name <- amp.all.seg.df[amp.idx, ]$seg_name
-      gain.segs.matching.amp.df <- all.seg.df[all.seg.df$seg_name == current.amp.seg.name & all.seg.df$cpn_event_vs_ploidy == "gain", ]
-
-      if (nrow(gain.segs.matching.amp.df) > 0) {
-
-        # Now we now there are gains in other samples let's load in the amp logr data to enable a comparison:
-        c.a.chr.start.end.vec <- unlist(strsplit(current.amp.seg.name, split = ":"))
-
-        c.a.samp.datapoints.w.BAF.df <- all.samp.ph.BAF.df.list[[current.amp.samp]]
-        c.a.baf.lr.baf.df <- c.a.samp.datapoints.w.BAF.df[c.a.samp.datapoints.w.BAF.df$chrom == as.numeric(c.a.chr.start.end.vec[1]) &
-          c.a.samp.datapoints.w.BAF.df$pos >= as.numeric(c.a.chr.start.end.vec[2]) &
-          c.a.samp.datapoints.w.BAF.df$pos <= as.numeric(c.a.chr.start.end.vec[3]), , drop = FALSE]
-        c.a.samp.datapoints.w.logr.only.df <- all.samp.logr.df.list[[current.amp.samp]]
-
-        if (nrow(c.a.samp.datapoints.w.logr.only.df) > 0) {
-          c.a.dp.w.logr.only.df <- c.a.samp.datapoints.w.logr.only.df[c.a.samp.datapoints.w.logr.only.df$chrom == as.numeric(chr.start.end.vec[1]) &
-            c.a.samp.datapoints.w.logr.only.df$pos >= as.numeric(chr.start.end.vec[2]) &
-            c.a.samp.datapoints.w.logr.only.df$pos <= as.numeric(chr.start.end.vec[3]), , drop = FALSE]
-          if (nrow(c.a.dp.w.logr.only.df) > 0) {
-            c.a.comb.baf.lr.baf.df <- rbind(
-              c.a.baf.lr.baf.df[, c("chrom", "pos", "BAF", "BAFsegmented", "logR", "logRsegmented")],
-              c.a.dp.w.logr.only.df[, c("chrom", "pos", "BAF", "BAFsegmented", "logR", "logRsegmented")]
-            )
-          } else {
-            c.a.comb.baf.lr.baf.df <- c.a.baf.lr.baf.df
-          }
-        }
-
-        # now let's check each of these matching gains vs the amp used to select them
-        for (gain.idx in 1:nrow(gain.segs.matching.amp.df)) {
-          current.gain.samp <- gain.segs.matching.amp.df[gain.idx, ]$sample_name
-          current.gain.seg.name <- gain.segs.matching.amp.df[gain.idx, ]$seg_name
-          c.g.chr.start.end.vec <- unlist(strsplit(current.gain.seg.name, split = ":"))
-          c.g.samp.datapoints.w.BAF.df <- all.samp.ph.BAF.df.list[[current.gain.samp]]
-          c.g.baf.lr.baf.df <- c.g.samp.datapoints.w.BAF.df[c.g.samp.datapoints.w.BAF.df$chrom == as.numeric(c.g.chr.start.end.vec[1]) &
-            c.g.samp.datapoints.w.BAF.df$pos >= as.numeric(c.g.chr.start.end.vec[2]) &
-            c.g.samp.datapoints.w.BAF.df$pos <= as.numeric(c.g.chr.start.end.vec[3]), , drop = FALSE]
-          c.g.samp.datapoints.w.logr.only.df <- all.samp.logr.df.list[[current.gain.samp]]
-
-          if (nrow(c.g.samp.datapoints.w.logr.only.df) > 0) {
-            c.g.dp.w.logr.only.df <- c.g.samp.datapoints.w.logr.only.df[c.g.samp.datapoints.w.logr.only.df$chrom == as.numeric(chr.start.end.vec[1]) &
-              c.g.samp.datapoints.w.logr.only.df$pos >= as.numeric(chr.start.end.vec[2]) &
-              c.g.samp.datapoints.w.logr.only.df$pos <= as.numeric(chr.start.end.vec[3]), , drop = FALSE]
-            if (nrow(c.g.dp.w.logr.only.df) > 0) {
-              c.g.comb.baf.lr.baf.df <- rbind(
-                c.g.baf.lr.baf.df[, c("chrom", "pos", "BAF", "BAFsegmented", "logR", "logRsegmented")],
-                c.g.dp.w.logr.only.df[, c("chrom", "pos", "BAF", "BAFsegmented", "logR", "logRsegmented")]
-              )
-            } else {
-              ss.comb.baf.lr.baf.df <- ss.baf.lr.baf.df
-            }
-          }
-
-          # Now test vs the amp logr:
-          if (tTestWithErrorHandling(c.a.comb.baf.lr.baf.df$logR, c.g.comb.baf.lr.baf.df$logR)$p.val > p.val.for.converting.gain.to.amp) {
-            all.seg.df[paste0(current.gain.samp, ":", current.gain.seg.name), ]$gain_conv_to_amp <- "amp"
-          }
-        }
-      }
-    }
-  } else {
-    logdebug("No amps")
-  }
-
-  return(all.seg.df)
-}
+# Not currently being used
+#retestSubclonalAmps <- function(all.seg.df, all.samp.ph.BAF.df.list, all.samp.logr.df.list, gain.threshold, amp.threshold, p.val.for.converting.gain.to.amp = 0.01) {
+#  non.na.cpn.event.df <- all.seg.df[!is.na(all.seg.df$cpn_event_vs_ploidy), ]
+#  amp.all.seg.df <- non.na.cpn.event.df[non.na.cpn.event.df$cpn_event_vs_ploidy == "amp", ]
+#
+#  if (nrow(amp.all.seg.df) > 0) {
+#    # So now we want to go check if there are any sample that has a gain called in the same seg
+#    for (amp.idx in 1:nrow(amp.all.seg.df)) {
+#      current.amp.samp <- amp.all.seg.df[amp.idx, ]$sample_name
+#      current.amp.seg.name <- amp.all.seg.df[amp.idx, ]$seg_name
+#      gain.segs.matching.amp.df <- all.seg.df[all.seg.df$seg_name == current.amp.seg.name & all.seg.df$cpn_event_vs_ploidy == "gain", ]
+#
+#      if (nrow(gain.segs.matching.amp.df) > 0) {
+#
+#        # Now we now there are gains in other samples let's load in the amp logr data to enable a comparison:
+#        c.a.chr.start.end.vec <- unlist(strsplit(current.amp.seg.name, split = ":"))
+#
+#        c.a.samp.datapoints.w.BAF.df <- all.samp.ph.BAF.df.list[[current.amp.samp]]
+#        c.a.baf.lr.baf.df <- c.a.samp.datapoints.w.BAF.df[c.a.samp.datapoints.w.BAF.df$chrom == as.numeric(c.a.chr.start.end.vec[1]) &
+#          c.a.samp.datapoints.w.BAF.df$pos >= as.numeric(c.a.chr.start.end.vec[2]) &
+#          c.a.samp.datapoints.w.BAF.df$pos <= as.numeric(c.a.chr.start.end.vec[3]), , drop = FALSE]
+#        c.a.samp.datapoints.w.logr.only.df <- all.samp.logr.df.list[[current.amp.samp]]
+#
+#        if (nrow(c.a.samp.datapoints.w.logr.only.df) > 0) {
+#          c.a.dp.w.logr.only.df <- c.a.samp.datapoints.w.logr.only.df[c.a.samp.datapoints.w.logr.only.df$chrom == as.numeric(chr.start.end.vec[1]) &
+#            c.a.samp.datapoints.w.logr.only.df$pos >= as.numeric(chr.start.end.vec[2]) &
+#            c.a.samp.datapoints.w.logr.only.df$pos <= as.numeric(chr.start.end.vec[3]), , drop = FALSE]
+#          if (nrow(c.a.dp.w.logr.only.df) > 0) {
+#            c.a.comb.baf.lr.baf.df <- rbind(
+#              c.a.baf.lr.baf.df[, c("chrom", "pos", "BAF", "BAFsegmented", "logR", "logRsegmented")],
+#              c.a.dp.w.logr.only.df[, c("chrom", "pos", "BAF", "BAFsegmented", "logR", "logRsegmented")]
+#            )
+#          } else {
+#            c.a.comb.baf.lr.baf.df <- c.a.baf.lr.baf.df
+#          }
+#        }
+#
+#        # now let's check each of these matching gains vs the amp used to select them
+#        for (gain.idx in 1:nrow(gain.segs.matching.amp.df)) {
+#          current.gain.samp <- gain.segs.matching.amp.df[gain.idx, ]$sample_name
+#          current.gain.seg.name <- gain.segs.matching.amp.df[gain.idx, ]$seg_name
+#          c.g.chr.start.end.vec <- unlist(strsplit(current.gain.seg.name, split = ":"))
+#          c.g.samp.datapoints.w.BAF.df <- all.samp.ph.BAF.df.list[[current.gain.samp]]
+#          c.g.baf.lr.baf.df <- c.g.samp.datapoints.w.BAF.df[c.g.samp.datapoints.w.BAF.df$chrom == as.numeric(c.g.chr.start.end.vec[1]) &
+#            c.g.samp.datapoints.w.BAF.df$pos >= as.numeric(c.g.chr.start.end.vec[2]) &
+#            c.g.samp.datapoints.w.BAF.df$pos <= as.numeric(c.g.chr.start.end.vec[3]), , drop = FALSE]
+#          c.g.samp.datapoints.w.logr.only.df <- all.samp.logr.df.list[[current.gain.samp]]
+#
+#          if (nrow(c.g.samp.datapoints.w.logr.only.df) > 0) {
+#            c.g.dp.w.logr.only.df <- c.g.samp.datapoints.w.logr.only.df[c.g.samp.datapoints.w.logr.only.df$chrom == as.numeric(chr.start.end.vec[1]) &
+#              c.g.samp.datapoints.w.logr.only.df$pos >= as.numeric(chr.start.end.vec[2]) &
+#              c.g.samp.datapoints.w.logr.only.df$pos <= as.numeric(chr.start.end.vec[3]), , drop = FALSE]
+#            if (nrow(c.g.dp.w.logr.only.df) > 0) {
+#              c.g.comb.baf.lr.baf.df <- rbind(
+#                c.g.baf.lr.baf.df[, c("chrom", "pos", "BAF", "BAFsegmented", "logR", "logRsegmented")],
+#                c.g.dp.w.logr.only.df[, c("chrom", "pos", "BAF", "BAFsegmented", "logR", "logRsegmented")]
+#              )
+#            } else {
+#              ss.comb.baf.lr.baf.df <- ss.baf.lr.baf.df
+#            }
+#          }
+#
+#          # Now test vs the amp logr:
+#          if (tTestWithErrorHandling(c.a.comb.baf.lr.baf.df$logR, c.g.comb.baf.lr.baf.df$logR)$p.val > p.val.for.converting.gain.to.amp) {
+#            all.seg.df[paste0(current.gain.samp, ":", current.gain.seg.name), ]$gain_conv_to_amp <- "amp"
+#          }
+#        }
+#      }
+#    }
+#  } else {
+#    logdebug("No amps")
+#  }
+#
+#  return(all.seg.df)
+#}
 
 
 addOriginalSegmentInfoToFinalSegmentation <- function(seg.name.vec,
@@ -597,7 +598,7 @@ addOriginalSegmentInfoToFinalSegmentation <- function(seg.name.vec,
         #print(test.gen.range)
         # find overlaps:
         hit.obj <- GenomicRanges::findOverlaps(ref.gen.range, test.gen.range)
-        overlaps <- pintersect(ref.gen.range[GenomicRanges::queryHits(hit.obj)], test.gen.range[GenomicRanges::subjectHits(hit.obj)])
+        overlaps <- pintersect(ref.gen.range[S4Vectors::queryHits(hit.obj)], test.gen.range[S4Vectors::subjectHits(hit.obj)])
         overlap.df <- as.data.frame(overlaps)
         percent.overlap.vec <- width(overlaps) / width(test.gen.range[GenomicRanges::subjectHits(hit.obj)])
         overlap.df$percent_overlap <- as.numeric(percent.overlap.vec)

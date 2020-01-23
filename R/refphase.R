@@ -3,9 +3,9 @@ refphase <- function(conf) {
 
   logging::setLevel(conf$logging)
 
-  logging::logdebug("Arguments:")
+  logdebug("Arguments:")
   for (key in names(conf))
-    logging::logdebug(paste0(key, " = ", conf[[key]], " (class = ", class(conf[[key]]), ")"))
+    logdebug(paste0(key, " = ", conf[[key]], " (class = ", class(conf[[key]]), ")"))
 
   set.seed(conf$seed) # Why is a seed required? I'm not sure anything non-deterministic should be occurring
 
@@ -22,7 +22,6 @@ refphase <- function(conf) {
   seg.file.path <- conf$seg_data # Pintts towards the seg files, of whatever format they should be determined byh the data.format.to.use flag.
   gamma.val <- conf$gamma # for sequencing it's 1 and SNP array it's 0.4/0.5 but this is platform specific see ASCAT help pages.
   intersection.or.whole.arm <- conf$segment_type # Can either be intersection or whole_arm, do we take the only intersection of segments from each sample
-  genome <- conf$genome # hg19 or hg38
   # or do attempt to fill in the gaps between every segment in each sample so that the entire genome is covered (so output from any sample can run in GISTIC
   # as all will cover the same genomic area)
 
@@ -46,7 +45,7 @@ refphase <- function(conf) {
   # Create output dirs and check that input files exist
   # -------------------------------------------------------------------------
   if (!file.exists(constants$PLOT_OUTPUT_DIR)) {
-    logging::loginfo("Output directory doesn't exist:", constants$PLOT_OUTPUT_DIR)
+    loginfo("Output directory doesn't exist:", constants$PLOT_OUTPUT_DIR)
   }
 
   output_dir <- constants$PLOT_OUTPUT_DIR
@@ -55,18 +54,18 @@ refphase <- function(conf) {
   }
 
   if (is.null(output.directory.base.path)) {
-    logging::logerror("No output path provided, aborting...")
+    logerror("No output path provided, aborting...")
     stop()
   }
 
   # Make sure the input files exist before going too far
   if (!file.exists(snp.file.path)) {
-    logging::logerror("No file at the snp.file.path provided")
+    logerror("No file at the snp.file.path provided")
     stop()
   }
 
   if (!file.exists(seg.file.path)) {
-    logging::logerror("No file at the seg.file.path provided")
+    logerror("No file at the seg.file.path provided")
     stop()
   }
 
@@ -75,14 +74,6 @@ refphase <- function(conf) {
 
   # Load in the relevant genome file
   # We don't need this until much later, don't try to load it now
-  #if (genome == "hg19") {
-  #  info.path <- file.path(current.dir, "annot", "ucsc_hg19_chrominfo.txt")
-  #} else if (genome == "hg38") {
-  #  info.path <- file.path(current.dir, "annot", "ucsc_hg38_chrominfo.txt")
-  #} else {
-  #  stop("Genome version not recognized: ", genome)
-  #}
-  #chrom.info.df <- read.table(info.path, stringsAsFactors = FALSE, sep = "\t", header = TRUE)
 
   # Paths for saving/loading objects
   if (!is.na(conf$debug_dir)) {
@@ -125,12 +116,12 @@ refphase <- function(conf) {
 
   use_cached_input <- FALSE
   if (!use_cached_input) {
-    input_data <- read_input(seg.file.path, snp.file.path, conf$input_format)
+    input_data <- read_input(seg.file.path, snp.file.path, conf$input_format, chrs_to_use = constants$CHRS_TO_USE_VEC)
     saveRDS(input_data, file = file.path(constants$PLOT_OUTPUT_DIR, "input_data.rds"))
   } else {
-    logging::loginfo("Loading cached input (may take a minute)")
+    loginfo("Loading cached input (may take a minute)")
     input_data <- readRDS(file.path(constants$PLOT_OUTPUT_DIR, "input_data.rds"))
-    logging::loginfo("done!")
+    loginfo("done!")
   }
 
   # Unwrap the list returned from the read_input() function
@@ -147,7 +138,7 @@ refphase <- function(conf) {
 
   if (!is.na(conf$debug_dir)) {
     # Save input data for later debugging
-    logging::loginfo("Save output for later")
+    loginfo("Save output for later")
     saveRDS(all.samp.SNP.list, file = all.samp.SNP.list.path)
     saveRDS(anno.seg.df, file = anno.seg.df.path)
     saveRDS(asas.SNPS.lr.and.or.baf.lists, file = asas.SNPS.lr.and.or.baf.lists.path)
@@ -164,11 +155,11 @@ refphase <- function(conf) {
   snps_per_segment <- sapply(asas.SNPs.w.both.lr.baf.snp.lists, function(x) {
     sapply(x, nrow)
   })
-  logging::loginfo(paste0("Segments with enough hz positions: >= ", constants$MIN_NUM_HZ_SNP_PHASING))
+  loginfo(paste0("Segments with enough hz positions: >= ", constants$MIN_NUM_HZ_SNP_PHASING))
   print(snps_per_segment[apply(snps_per_segment >= constants$MIN_NUM_HZ_SNP_PHASING, 1, all), ])
-  logging::loginfo(paste0(sum(apply(snps_per_segment >= constants$MIN_NUM_HZ_SNP_PHASING, 1, all)), "/", nrow(snps_per_segment)))
+  loginfo(paste0(sum(apply(snps_per_segment >= constants$MIN_NUM_HZ_SNP_PHASING, 1, all)), "/", nrow(snps_per_segment)))
 
-  logging::loginfo("Setting the pval thresholds for calling subclonality depending on the number of heterozygous sites assayed.")
+  loginfo("Setting the pval thresholds for calling subclonality depending on the number of heterozygous sites assayed.")
   total.num.of.hz.sites.per.sample <- sum(sapply(asas.SNPs.w.both.lr.baf.snp.lists[[1]], nrow))
   if (total.num.of.hz.sites.per.sample > 300000) {
     constants$PVAL_THRESH_VS_MIN_CCF <- 0.00000001
@@ -178,7 +169,7 @@ refphase <- function(conf) {
   seg.name.vec <- paste(min.cons.segs.df[, "Chromosome"], min.cons.segs.df[, "Start_Position"], min.cons.segs.df[, "End_Position"], sep = ":")
   sample.vec <- names(asas.SNPs.w.both.lr.baf.snp.lists)
 
-  logging::loginfo("Getting phasing to apply to all samples using getCombinedBAFDipTestPhasingParallel")
+  loginfo("Getting phasing to apply to all samples using getCombinedBAFDipTestPhasingParallel")
   all.seg.phasing.info.list <- getCombinedBAFDipTestPhasingParallel(
     asas.lr.baf.lists = asas.SNPs.w.both.lr.baf.snp.lists,
     seg.name.vec = seg.name.vec,
@@ -200,7 +191,7 @@ refphase <- function(conf) {
 
   # Todo unsure of what to do with the baf logr lists which have positions that only have logr here, at the moment exclude them but how
   # does that affect later run
-  logging::loginfo("Generating phased BAF dataframes...")
+  loginfo("Generating phased BAF dataframes...")
   patient.phased.BAF.df.list <- createAllSegsPhasedBAFDataFrame(
     asas.lr.baf.lists = asas.SNPs.w.both.lr.baf.snp.lists,
     sample.to.phase.seg.list = all.seg.phasing.info.list,
@@ -224,7 +215,7 @@ refphase <- function(conf) {
   # TBKW NEW WORK:
   #loginfo("Starting new TBKW edit... begun on 16/08/2019 to recall copy number using phasing.")
 
-  ret <- annotate_joint_segs(anno.seg.df, all.samp.SNP.list[[1]])
+  ret <- annotate_joint_segs(anno.seg.df, all.samp.SNP.list[[1]], patient.phased.BAF.df.list, conf)
   all.samp.j.seg.df <- ret$all.samp.j.seg.df
   phased.baf.info.df <- ret$phased.baf.info.df
 
@@ -232,7 +223,7 @@ refphase <- function(conf) {
   # But, if we're using hte intersection this should be fine? Not sure on this point.
   # However it doesn't really matter as ASCAT makes sure every segment whether or
   # not it had any baf point has an allele-specific value.
-  logging::loginfo("Running ASCAT on all samples")
+  loginfo("Running ASCAT on all samples")
 
   # So now there are several things we want to do here depending on the options
   # passed to the tool:
@@ -252,7 +243,7 @@ refphase <- function(conf) {
   PH_ALL_SAMP_ASCAT_RAW_CPN_DF_LIST <- list()
 
   for (samp in sample.vec) {
-    logging::loginfo(paste0("Preparing sample for ASCAT: ", samp))
+    loginfo(paste0("Preparing sample for ASCAT: ", samp))
 
     if (conf$input_format == "ASCAT") {
       ascat.bc <- read_ascat_bc(pt.snp.file.paths.df[samp, ]$samp_ascat_bc_path)
@@ -283,7 +274,7 @@ refphase <- function(conf) {
     if (isTRUE(conf$reestimate_purity_ploidy)) {
       purity_range <- 0.2
       ploidy_range <- 1
-      logging::loginfo("Allowing re-estimation of purity and ploidy.")
+      loginfo("Allowing re-estimation of purity and ploidy.")
       samp.purity <- c(samp.purity - purity_range, samp.purity + purity_range)
       samp.ploidy <- c(samp.ploidy - ploidy_range, samp.ploidy + ploidy_range)
     }
@@ -371,7 +362,7 @@ refphase <- function(conf) {
 
   # New df contain phased ASCAT segmentation for all samples.
   ph.init.f.joint.segs.df <- do.call(rbind, ph.ascat.segs.df.list)
-  ph.f.joint.segs.df <- reformatInitialSegmentationInput(f.joint.segs.df = ph.init.f.joint.segs.df)
+  ph.f.joint.segs.df <- reformatInitialSegmentationInput(f.joint.segs.df = ph.init.f.joint.segs.df, patient = patient)
 
   # So we're going to drop the singe bp segments that we get here... with a bit of effort they are rescuable
   ph.f.joint.segs.df <- ph.f.joint.segs.df[ph.f.joint.segs.df$startpos < ph.f.joint.segs.df$endpos, ]

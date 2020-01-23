@@ -1,4 +1,4 @@
-reformatInitialSegmentationInput <- function(f.joint.segs.df) {
+reformatInitialSegmentationInput <- function(f.joint.segs.df, patient) {
   f.joint.segs.df$sample <- gsub("\\.", "-", gsub("_LogR", "", f.joint.segs.df$sample))
   f.joint.segs.df$callState <- NULL
   f.joint.segs.df$patient <- patient
@@ -424,7 +424,7 @@ createFullyAnnotatedJointSegmentation <- function(f.joint.segs.df, samples, chrs
   )
   all.samp.all.bp.anno.grs$chr_arm <- "none"
 
-  for (chr in CHRS_TO_USE_VEC) {
+  for (chr in chrs_to_use) {
     chr.gr.list <- getChromosomeArmsGRangeList(chr, chrom.info.df)
 
     if (length(chr.gr.list) == 2) {

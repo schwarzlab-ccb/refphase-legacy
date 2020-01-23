@@ -1,5 +1,5 @@
 # Read input data: segmentation and snps with associated BAF/logR and more
-read_input <- function(seg_file, snp_file, input_format) {
+read_input <- function(seg_file, snp_file, input_format, chrs_to_use) {
   init.f.joint.segs.df <- read.table(seg_file, stringsAsFactors = FALSE, sep = "\t", header = TRUE)
 
   # This function will stop the script if the input is not valid
@@ -88,7 +88,7 @@ read_input <- function(seg_file, snp_file, input_format) {
 
   # TBKW  20190818 edit so here is where the joint segmentation stuff has been dumped into a function to allow multiple
   # calls. Absolutely needs refactoring.
-  sorted.all.bp.all.samps.segs.anno.df <- createFullyAnnotatedJointSegmentation(f.joint.segs.df = f.joint.segs.df, samples = sample.vec)
+  sorted.all.bp.all.samps.segs.anno.df <- createFullyAnnotatedJointSegmentation(f.joint.segs.df = f.joint.segs.df, samples = sample.vec, chrs_to_use = chrs_to_use)
   # TBKW edit for xphase version
   anno.seg.df <- sorted.all.bp.all.samps.segs.anno.df
   # sorted.all.bp.all.samps.segs.anno.df.path <- paste0(PLOT_OUTPUT_DIR, patient, "_sorted_all_bp_all_samps_segs_anno_df.RDS")
