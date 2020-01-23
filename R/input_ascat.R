@@ -20,6 +20,7 @@ read_snps_ascat <- function(sample_table, segs, samples) {
 
     if (grepl("RData", sample_info$samp_ascat_bc_path)) {
       logdebug("ascat.bc object in RData file, loading...")
+      ascat.bc <- NULL
       load(sample_info$samp_ascat_bc_path)
       ascat_bc <- ascat.bc
     } else {
