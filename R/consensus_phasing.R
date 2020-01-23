@@ -142,7 +142,7 @@ getCombinedBAFDipTestPhasing <- function(asas.lr.baf.lists,
   return(sample.to.phase.seg.list)
 }
 
-#' @importFrom foreach %do% %dopar%
+#' @importFrom foreach foreach %do% %dopar%
 getCombinedBAFDipTestPhasingParallel <- function(asas.lr.baf.lists,
                                                  seg.name.vec,
                                                  ploidy.est.vec,
@@ -458,7 +458,7 @@ getAssessmentOfEachSamplesAbilityToPhaseAllOthersForSeg <- function(asas.lr.baf.
     ref.ss.maj.is.cpnA.idx.vec <- which(ref.ss.is.max.cpn.cpnA.cpnB.logical.df[, 1] == 1)
     ref.ss.maj.is.cpnB.idx.vec <- which(ref.ss.is.max.cpn.cpnA.cpnB.logical.df[, 2] == 1)
 
-    sample.comparison.list[[samp]]$diptest_for_AI_pval <- as.numeric(dip.test(ref.ss.lr.baf.df$BAF)$p.val)
+    sample.comparison.list[[samp]]$diptest_for_AI_pval <- as.numeric(diptest::dip.test(ref.ss.lr.baf.df$BAF)$p.val)
     sample.comparison.list[[samp]]$AI_MAD <- mean(abs(ref.ss.lr.baf.df$BAF - 0.5))
 
     # Changed to 2 due to idxing but... as only uysed for plotting ignoring.

@@ -55,16 +55,19 @@ refphase <- function(conf) {
   }
 
   if (is.null(output.directory.base.path)) {
-    logging::logstop("No output path provided, aborting...")
+    logging::logerror("No output path provided, aborting...")
+    stop()
   }
 
   # Make sure the input files exist before going too far
   if (!file.exists(snp.file.path)) {
-    logging::logstop("No file at the snp.file.path provided")
+    logging::logerror("No file at the snp.file.path provided")
+    stop()
   }
 
   if (!file.exists(seg.file.path)) {
-    logging::logstop("No file at the seg.file.path provided")
+    logging::logerror("No file at the seg.file.path provided")
+    stop()
   }
 
 
@@ -544,7 +547,7 @@ refphase <- function(conf) {
   pre.MPhase.MEDICC.FASTA.file.list <- makeMEDICCInputListsFromSegmentationDF(
     segs.to.make.MEDICC.input.df = orig.intersection.mcs.w.MSAI.df,
     sample.vec = sample.vec,
-    chrs.to.use.vec = CHRS_TO_USE_VEC,
+    chrs.to.use.vec = constants$CHRS_TO_USE_VEC,
     chr.col = "Chromosome",
     start.col = "Start_Position",
     end.col = "End_Position",
@@ -612,7 +615,7 @@ refphase <- function(conf) {
     stop("No shared segments for some reason, go back and check")
   }
 
-  ccf_data <- ccf_from_raw_cpn(asas.ph.raw.cpn.lists, sample.vec, seg.name.vec)
+  ccf_data <- ccf_from_raw_cpn(asas.ph.raw.cpn.lists, sample.vec, seg.name.vec, constants, conf)
   all.seg.CCF.list <- ccf_data$all.seg.CCF.list
   all.seg.CCF.diff.from.exp.list <- ccf_data$all.seg.CCF.diff.from.exp.list
 
@@ -712,7 +715,7 @@ refphase <- function(conf) {
     post.MPhase.MCS.MEDICC.FASTA.files.list <- makeMEDICCInputListsFromSegmentationDF(
       segs.to.make.MEDICC.input.df = simple_segs_filtered,
       sample.vec = sample.vec,
-      chrs.to.use.vec = CHRS_TO_USE_VEC,
+      chrs.to.use.vec = constants$CHRS_TO_USE_VEC,
       chr.col = "chr",
       start.col = "startpos",
       end.col = "endpos",

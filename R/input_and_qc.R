@@ -332,9 +332,9 @@ getChromosomeArmsGRangeList <- function(current.chr, chrom.info.df) {
 #
 # Also returns all the metadata in the subject, ie original columns holding non-genomic position information
 # Todo add widths for everything
+#' @import GenomicRanges
+#' @import IRanges
 getOverlapGRanges <- function(query, subject, output = "gr", ...) {
-  require(GenomicRanges)
-  require(IRanges)
 
   ## Input check
   if (!((class(query) == "GRanges" & class(subject) == "GRanges") | (class(query) == "IRanges" & class(subject) == "IRanges"))) {
@@ -505,7 +505,8 @@ snps_set_logrsegmented <- function(segs, all_snps) {
   return(all_snps)
 }
 
-#' @importFrom foreach %dopar%
+#' @importFrom foreach foreach %dopar%
+#' @import gdata
 cleanAndErrorCheckSNPsParallel <- function(all.samp.SNP.list, mcs.seg.to.use.df, samples, allow.logr.only.flag = FALSE, data.type = "MEDICC") {
   logdebug("Clean and error check SNPs (parallel version)")
   # Note error checking of removing NAs from the min.cons.seg.df should already
@@ -525,7 +526,6 @@ cleanAndErrorCheckSNPsParallel <- function(all.samp.SNP.list, mcs.seg.to.use.df,
   }
 
   iterable.min.cons.seg.df <- cbind(do.call("rbind", replicate(length(samples), mcs.seg.to.use.df[, c("Chromosome", "Start_Position", "End_Position")], simplify = FALSE)), sample = sample.rep.vec)
-  library("gdata")
   iterable.min.cons.seg.df <- drop.levels(iterable.min.cons.seg.df)
   itx <- iter(iterable.min.cons.seg.df, by = "row")
   logdebug("Starting parallel assignation of snps to segs:")

@@ -24,4 +24,5 @@ Imports:
     gplots,
     IRanges,
     logging,
-    RColorBrewer
+    RColorBrewer,
+    readr

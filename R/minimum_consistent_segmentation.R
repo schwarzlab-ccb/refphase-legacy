@@ -90,8 +90,8 @@ getChromosomeArmsGRangeList <- function(current.chr, chrom.info.df) {
 # And various design decisions regarding whether we should maintain the capability of covering
 # the entire genome in copy number segments should be mulled over, currently, as they are
 # are clearly marked and easily dropped I would be in favour of keeping them.
-#' @importFrom foreach %dopar%
-createFullyAnnotatedJointSegmentation <- function(f.joint.segs.df, samples) {
+#' @importFrom foreach foreach %dopar%
+createFullyAnnotatedJointSegmentation <- function(f.joint.segs.df, samples, chrs_to_use) {
   all.samp.grs <- makeGRangesFromDataFrame(f.joint.segs.df,
     keep.extra.columns = FALSE,
     ignore.strand = FALSE,
@@ -126,7 +126,7 @@ createFullyAnnotatedJointSegmentation <- function(f.joint.segs.df, samples) {
 
   logdebug("Introducing breakpoints at starts and ends of centromeres in original segmentation to allow calculation of arm level events in the original.")
   new.all.samp.w.metadata.grs <- sort(all.samp.w.metadata.grs)
-  for (chr in CHRS_TO_USE_VEC) {
+  for (chr in chrs_to_use) {
     p.end.gr <- makeGRangesFromDataFrame(chrom.info.df[chrom.info.df$chrom == chr, ],
       keep.extra.columns = FALSE,
       ignore.strand = FALSE,
@@ -207,7 +207,7 @@ createFullyAnnotatedJointSegmentation <- function(f.joint.segs.df, samples) {
   gain.loss.name.list <- list(c("neutral"), c("gain", "amp"), c("loss", "deep_loss"), c("LOH"))
   names(gain.loss.name.list) <- c("neutral", "gain", "loss", "LOH")
   p.or.q.vec <- c("p", "q")
-  for (chr in CHRS_TO_USE_VEC) {
+  for (chr in chrs_to_use) {
     chr.gr.list <- getChromosomeArmsGRangeList(chr, chrom.info.df)
     for (i in 1:length(chr.gr.list)) {
       curr.chr.arm.gr <- chr.gr.list[[i]]
@@ -280,8 +280,6 @@ createFullyAnnotatedJointSegmentation <- function(f.joint.segs.df, samples) {
   f.joint.segs.df.new <- all.samp.w.metadata.conv.df[, correct.order.cols]
 
   logdebug("Getting proportion of chromosome arms in selected genome covered by segments from each (and all) samples")
-  # overlaps.between.samples.df <- compareOverlapsBetweenSamples(sample.vec, f.joint.segs.df, chrom.info.df, chrs.to.use.vec= CHRS_TO_USE_VEC)
-  # print(overlaps.between.samples.df)
 
   ## So the question is here are we going to allow single base bair segments?
   #logdebug("Calculating intersections using GRanges.")
@@ -299,7 +297,7 @@ createFullyAnnotatedJointSegmentation <- function(f.joint.segs.df, samples) {
   # corresponding segment, dummy or otherwise
   logdebug("Creating set of segments that cover all bp in the non-acrocentric selected chromosomes' arms of the selected genome.")
   all.bp.chr.grs <- NULL
-  for (chr in CHRS_TO_USE_VEC) {
+  for (chr in chrs_to_use) {
     curr.chr.grs <- non.ones.dj.all.samp.grs[seqnames(non.ones.dj.all.samp.grs) == chr]
     # This is done to stop intersect merging segments that start and end right after each other:
     alternating.idx.vec <- (seq(1, length(curr.chr.grs)) %% 2) + 1 # plus one to match 1-based indexing
@@ -333,7 +331,7 @@ createFullyAnnotatedJointSegmentation <- function(f.joint.segs.df, samples) {
   logdebug("Mapping the segments covering all bp of all arms back to input segments where appropriate...")
   itx <- iter(as.data.frame(all.bp.chr.grs), by = "row")
   results <- foreach(curr.all.bp.chr.df = itx, .combine = c) %dopar% {
-    require(GenomicRanges)
+    requireNamespace("GenomicRanges", quietly = TRUE)
     curr.all.bp.chr.gr <- makeGRangesFromDataFrame(curr.all.bp.chr.df,
       keep.extra.columns = TRUE,
       ignore.strand = FALSE,

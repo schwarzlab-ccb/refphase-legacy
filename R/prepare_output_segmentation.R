@@ -95,7 +95,7 @@ addPhasingInformationToOutputSegmentation <- function(sample.vec,
   all.segs.df
 }
 
-#' @importFrom foreach %dopar%
+#' @importFrom foreach foreach %dopar%
 addNewRawAndIntCPNCallsToFinalSegmentationParallel <- function(seg.name.vec,
                                                                sample.vec,
                                                                all.samp.logr.df.list,
@@ -1013,7 +1013,7 @@ addLogrDefinedCPNEventsToOutputSegmentationParallel <- function(sample.vec,
                                      mu = 0, paired = FALSE, var.equal = FALSE, conf.level = 0.95, errors.not.permitted = "") {
     test.results <- tryCatch(
       {
-        test.results <- t.test(x = x, y = y, alternative = alternative, mu = mu, paired = paired, var.equal = var.equal, conf.level = conf.level)
+        test.results <- stats::t.test(x = x, y = y, alternative = alternative, mu = mu, paired = paired, var.equal = var.equal, conf.level = conf.level)
 
         if (is.na(test.results[["p.value"]]) | is.nan(test.results[["p.value"]])) {
           test.results[["stat"]] <- 1

@@ -311,8 +311,6 @@ runASCAT <- function(lrr, baf, lrrsegmented, bafsegmented, gender, SNPpos, chrom
   #message("length(raw_b): ", length(raw_b))
   r <- lrrsegmented[names(bafsegmented)]
 
-  library(RColorBrewer)
-
   SNPposhet <- SNPpos[names(bafsegmented), ]
   autoprobes <- !(SNPposhet[, 1] %in% sexchromosomes)
 
@@ -656,9 +654,6 @@ runASCAT <- function(lrr, baf, lrrsegmented, bafsegmented, gender, SNPpos, chrom
     if (!is.na(nonroundedprofilepng)) {
       png(filename = nonroundedprofilepng, width = 2000, height = 500, res = 200)
     }
-    else {
-      windows(10, 5)
-    }
 
     par(mar = c(0.5, 5, 5, 0.5), cex = 0.4, cex.main = 3, cex.axis = 2.5)
 
@@ -887,8 +882,6 @@ runASCAT <- function(lrr, baf, lrrsegmented, bafsegmented, gender, SNPpos, chrom
     # plot ASCAT profile
     if (!is.na(copynumberprofilespng)) {
       png(filename = copynumberprofilespng, width = 2000, height = 500, res = 200)
-    } else {
-      windows(10, 2.5)
     }
 
     par(mar = c(0.5, 5, 5, 0.5), cex = 0.4, cex.main = 3, cex.axis = 2.5)
@@ -921,8 +914,6 @@ runASCAT <- function(lrr, baf, lrrsegmented, bafsegmented, gender, SNPpos, chrom
 
     if (!is.na(aberrationreliabilitypng)) {
       png(filename = aberrationreliabilitypng, width = 2000, height = 500, res = 200)
-    } else {
-      windows(10, 2.5)
     }
 
     par(mar = c(0.5, 5, 5, 0.5), cex = 0.4, cex.main = 3, cex.axis = 2.5)

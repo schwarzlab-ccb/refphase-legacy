@@ -40,8 +40,9 @@
 #   ..$ logR         : num [1:938946] -0.049 -0.161 -0.161 -0.542 -0.46 -0.46 -0.46 -0.166 -0.047 -0.013 ...
 #   ..$ BAFsegmented : num [1:938946] 0.231 0.231 0.231 0.231 0.231 ...
 #   ..$ logRsegmented: num [1:938946] -0.327 -0.327 -0.327 -0.327 -0.327 ...
+#
+#' @importFrom readr read_tsv
 read_snps_sequenza <- function(input_files, segs, samples, het_only = TRUE, normalize_logr = TRUE, correct_reference_bias = FALSE) {
-  library(readr)
 
   all_snps <- list()
 

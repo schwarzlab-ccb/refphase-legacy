@@ -1,4 +1,4 @@
-ccf_from_raw_cpn <- function(asas.ph.raw.cpn.lists, sample.vec, seg.name.vec) {
+ccf_from_raw_cpn <- function(asas.ph.raw.cpn.lists, sample.vec, seg.name.vec, constants, conf) {
   loginfo("*******************************************************************")
   loginfo("Calculating cancer cell fractions (CCFs) using phased raw cpn")
   loginfo("*******************************************************************")
@@ -63,7 +63,7 @@ ccf_from_raw_cpn <- function(asas.ph.raw.cpn.lists, sample.vec, seg.name.vec) {
         seg.name = seg.name,
         samps.int.cpn.raw.cpn.by.chr.list = samps.int.cpn.raw.cpn.by.chr.list,
         cpnX = cpnX,
-        chrs.can.use.for.ccf.test = CHRS_TO_USE_VEC,
+        chrs.can.use.for.ccf.test = constants$CHRS_TO_USE_VEC,
         reduced.seg.flag = FALSE
       )
       # does only cpnX
@@ -74,8 +74,8 @@ ccf_from_raw_cpn <- function(asas.ph.raw.cpn.lists, sample.vec, seg.name.vec) {
         all.samp.ph.BAF.df.list = patient.phased.BAF.df.list,
         purity.est.vec = purity.est.vec,
         cpnX = cpnX,
-        min.CCF.to.consider.val = MIN_CCF_TO_CONSIDER,
-        confidence.interval.threshold = CONF_INT_FOR_CPNX_BAF_VS_EXP
+        min.CCF.to.consider.val = constants$MIN_CCF_TO_CONSIDER,
+        confidence.interval.threshold = constants$CONF_INT_FOR_CPNX_BAF_VS_EXP
       )
 
       # does only cpnX
@@ -83,9 +83,9 @@ ccf_from_raw_cpn <- function(asas.ph.raw.cpn.lists, sample.vec, seg.name.vec) {
         s.samps.int.ob.xp.cpn.df = s.samps.int.ob.xp.cpn.df,
         seg.cpnX.diff.from.exp.list = seg.cpnX.diff.from.exp.list,
         cpnX = cpnX,
-        min.CCF.to.consider.val = MIN_CCF_TO_CONSIDER,
-        confidence.interval.threshold = CONF_INT_FOR_CPNX_BAF_VS_EXP,
-        min.num.other.chrs = MIN_NUM_CHRS
+        min.CCF.to.consider.val = constants$MIN_CCF_TO_CONSIDER,
+        confidence.interval.threshold = constants$CONF_INT_FOR_CPNX_BAF_VS_EXP,
+        min.num.other.chrs = constants$MIN_NUM_CHRS
       )
 
       # does only cpnX
@@ -95,7 +95,7 @@ ccf_from_raw_cpn <- function(asas.ph.raw.cpn.lists, sample.vec, seg.name.vec) {
         s.samps.int.ob.xp.cpn.df = s.samps.int.ob.xp.cpn.df,
         all.clonal.flag = is.segment.clonal.in.all.samps.flag,
         two.value.diff.flag = is.there.cpnX.difference.greater.than.two.flag,
-        min.CCF.to.consider.val = MIN_CCF_TO_CONSIDER
+        min.CCF.to.consider.val = constants$MIN_CCF_TO_CONSIDER
       )
 
 
@@ -116,7 +116,7 @@ ccf_from_raw_cpn <- function(asas.ph.raw.cpn.lists, sample.vec, seg.name.vec) {
           seg.psc.cpnX.high = seg.psc.cpnX.high,
           seg.use.default.ccf.flag = seg.use.default.ccf,
           all.clonal.flag = is.segment.clonal.in.all.samps.flag,
-          max.cpn.val = MAX_CPN_FOR_SUBCLONALITY
+          max.cpn.val = constants$MAX_CPN_FOR_SUBCLONALITY
         )
 
         all.seg.CCF.list[[cpnX]][[seg.name]][[samp]][[paste0("poss_sc_", cpnX, "_low")]] <- seg.samp.CCF.psc.cpn.df$poss_sc_cpnX_low

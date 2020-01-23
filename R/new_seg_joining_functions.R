@@ -62,7 +62,10 @@ attemptToJoinSegbyPhasedCPN <- function(curr.seg.mat, adj.segs.mat, samp.arm.sit
 
 
 # If join return
-attemptToJoinSegbyTotalCPN <- function(curr.seg.mat, adj.segs.mat, samp.arm.sites.df, arm.idx.vec, curr.gr.idx, sorted.arm.grs, NUM_TOT_CPN) {
+attemptToJoinSegbyTotalCPN <- function(curr.seg.mat, adj.segs.mat,
+                                       samp.arm.sites.df, arm.idx.vec,
+                                       curr.gr.idx, sorted.arm.grs,
+                                       NUM_TOT_CPN, p_value_threshold) {
   new.unsorted.arm.grs <- sorted.arm.grs
 
   for (k in 1:nrow(adj.segs.mat)) {
@@ -80,7 +83,7 @@ attemptToJoinSegbyTotalCPN <- function(curr.seg.mat, adj.segs.mat, samp.arm.site
 
         tot.p.val <- wilcoxTestWithErrorHandling(cur.tot.cpn.vec, adj.tot.cpn.vec)$p.val
 
-        if (tot.p.val > PVAL_THRESH_TO_JOIN_TOT_SEGS) {
+        if (tot.p.val > p_value_threshold) {
           new.unsorted.arm.grs <- joinSegAndReturnNewArmGranges(
             arm.idx.vec = arm.idx.vec,
             curr.gr.idx = curr.gr.idx,
@@ -265,7 +268,7 @@ creatingArmJoiningInfoMatrixAndGranges <- function(arm.grs, samp.arm.sites.df, c
 }
 
 
-attemptToJoinOneSegmentWithinChromArm <- function(current.arm.grs, joining.vals.mat, samp.arm.sites.df, sorted.arm.grs, cpnX.string, MIN_PH_CPN, NUM_TOT_CPN, CPN_AVG_THRESH) {
+attemptToJoinOneSegmentWithinChromArm <- function(current.arm.grs, joining.vals.mat, samp.arm.sites.df, sorted.arm.grs, cpnX.string, MIN_PH_CPN, NUM_TOT_CPN, CPN_AVG_THRESH, PVAL_THRESH_TO_JOIN_TOT_SEGS) {
 
   # Edge case where this only one segment:
   if (length(current.arm.grs) == 1) {
@@ -305,7 +308,8 @@ attemptToJoinOneSegmentWithinChromArm <- function(current.arm.grs, joining.vals.
       arm.idx.vec = arm.idx.vec,
       curr.gr.idx = curr.ord.idx,
       sorted.arm.grs = current.arm.grs,
-      NUM_TOT_CPN = NUM_TOT_CPN
+      NUM_TOT_CPN = NUM_TOT_CPN,
+      p_value_threshold = PVAL_THRESH_TO_JOIN_TOT_SEGS
     )
     if (length(new.unsorted.arm.grs) != length(current.arm.grs)) {
       current.arm.grs <- new.unsorted.arm.grs
@@ -391,9 +395,9 @@ attemptToJoinOneSegmentWithinChromArm <- function(current.arm.grs, joining.vals.
 #
 # Also returns all the metadata in the subject, ie original columns holding non-genomic position information
 # Todo add widths for everything
+#' @import GenomicRanges
+#' @import IRanges
 getOverlapGRanges <- function(query, subject, output = "gr", ...) {
-  require(GenomicRanges)
-  require(IRanges)
   # Input check
   if (!((class(query) == "GRanges" & class(subject) == "GRanges") | (class(query) == "IRanges" & class(subject) == "IRanges"))) {
     stop("Query and subject need to be of same class, either GRanges or IRanges!")
