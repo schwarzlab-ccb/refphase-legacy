@@ -401,7 +401,7 @@ getOverlapGRanges <- function(query, subject, output = "gr", ...) {
       elementMetadata(query) <- cbind(as.data.frame(elementMetadata(query)), oldf, mcols(subject))
     }
     if (class(query) == "IRanges") { # Todo add the metadata in th eiranges
-      query <- GRanges(seqnames = Rle(rep("dummy", length(query))), ranges = IRanges(start = oldf[, "query_start"], end = oldf[, "query_end"]), strand = Rle(strand(rep("+", length(query)))), oldf)
+      query <- GRanges(seqnames = S4Vectors::Rle(rep("dummy", length(query))), ranges = IRanges(start = oldf[, "query_start"], end = oldf[, "query_end"]), strand = S4Vectors::Rle(strand(rep("+", length(query)))), oldf)
     }
     return(query)
   }
@@ -507,6 +507,7 @@ snps_set_logrsegmented <- function(segs, all_snps) {
 
 #' @importFrom foreach foreach %dopar%
 #' @import gdata
+globalVariables(c("it.min.cons.seg.df", "samp.seg.mrc"))
 cleanAndErrorCheckSNPsParallel <- function(all.samp.SNP.list, mcs.seg.to.use.df, samples, allow.logr.only.flag = FALSE, data.type = "MEDICC") {
   logdebug("Clean and error check SNPs (parallel version)")
   # Note error checking of removing NAs from the min.cons.seg.df should already

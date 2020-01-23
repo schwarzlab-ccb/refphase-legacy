@@ -467,7 +467,7 @@ getOverlapGRanges <- function(query, subject, output = "gr", ...) {
     }
     if (class(query) == "IRanges") {
       # Todo add the metadata in th eiranges
-      query <- GRanges(seqnames = Rle(rep("dummy", length(query))), ranges = IRanges(start = oldf[, "query_start"], end = oldf[, "query_end"]), strand = Rle(strand(rep("+", length(query)))), oldf)
+      query <- GRanges(seqnames = S4Vectors::Rle(rep("dummy", length(query))), ranges = IRanges(start = oldf[, "query_start"], end = oldf[, "query_end"]), strand = S4Vectors::Rle(strand(rep("+", length(query)))), oldf)
     }
     return(query)
   }

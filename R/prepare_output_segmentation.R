@@ -315,140 +315,140 @@ addNewRawAndIntCPNCallsToFinalSegmentationParallel <- function(seg.name.vec,
   all.seg.df
 }
 
-
-addNewRawAndIntCPNCallsToFinalSegmentation <- function(seg.name.vec,
-                                                       sample.vec,
-                                                       all.samp.logr.df.list,
-                                                       all.samp.ph.BAF.df.list,
-                                                       asas.lr.baf.lists,
-                                                       all.seg.CCF.vals.list,
-                                                       all.seg.df,
-                                                       cpnX.vec = c("cpnA", "cpnB")) {
-
-  for (samp in sample.vec) {
-    for (seg.name in seg.name.vec) {
-      for (cpnX in cpnX.vec) {
-        if (length(sample.vec) > 1) {
-          samp.seg.name <- paste0(samp, ":", seg.name)
-        } else {
-          samp.seg.name <- seg.name
-        }
-
-        if (!samp.seg.name %in% rownames(all.seg.df)) {
-          logwarn("Seg name not in all.seg.df:")
-          logwarn(samp.seg.name)
-          next
-        }
-        # Fill in flag that shows whether segment has been phasing and CCF valculuation process, ie has greater than min num of hz snp positions
-        if (length(all.seg.CCF.list[[cpnX]][[seg.name]]) == 1) {
-          # Todo remove this NA signalling that a seg has fewer than the minimum number of hz snps, replace with a field that we can check...
-          if (is.na(all.seg.CCF.list[[cpnX]][[seg.name]])) {
-            seg.has.fewer.than.min.hz.flag <- TRUE
-          } else {
-            seg.has.fewer.than.min.hz.flag <- FALSE
-          }
-        } else {
-          seg.has.fewer.than.min.hz.flag <- FALSE
-        }
-
-        chr.start.end.vec <- unlist(strsplit(seg.name, split = ":"))
-        # if the segment passes the minimum number of hz snps it will have more than one sample at  level
-        if (seg.has.fewer.than.min.hz.flag == FALSE) {
-          seg.CCF.val.list <- all.seg.CCF.vals.list[[cpnX]][[seg.name]][[samp]]
-          # These are currently assigned twice... wiping the original.. definitely needs refactoring:
-          ph.cpnA.vec <- seg.CCF.val.list[[paste0(cpnX, "_orig_ph_obs_cpnA_vec")]]
-          ph.cpnB.vec <- seg.CCF.val.list[[paste0(cpnX, "_orig_ph_obs_cpnB_vec")]]
-
-          all.seg.df[samp.seg.name, ]$nBraw <- min(ifelse(median(as.numeric(ph.cpnB.vec)) < 0, 0, median(as.numeric(ph.cpnB.vec))), ifelse(median(as.numeric(ph.cpnA.vec)) < 0, 0, median(as.numeric(ph.cpnA.vec))))
-          all.seg.df[samp.seg.name, ]$nAraw <- max(ifelse(median(as.numeric(ph.cpnB.vec)) < 0, 0, median(as.numeric(ph.cpnB.vec))), ifelse(median(as.numeric(ph.cpnA.vec)) < 0, 0, median(as.numeric(ph.cpnA.vec))))
-          all.seg.df[samp.seg.name, ]$nMinor <- min(round(as.numeric(all.seg.df[samp.seg.name, ]$nBraw)), round(as.numeric(all.seg.df[samp.seg.name, ]$nAraw)))
-          all.seg.df[samp.seg.name, ]$nMajor <- max(round(as.numeric(all.seg.df[samp.seg.name, ]$nBraw)), round(as.numeric(all.seg.df[samp.seg.name, ]$nAraw)))
-          all.seg.df[samp.seg.name, ]$cnTotal <- as.numeric(all.seg.df[samp.seg.name, ]$nMinor) + as.numeric(all.seg.df[samp.seg.name, ]$nMajor)
-          all.seg.df[samp.seg.name, ]$n.het <- length(ph.cpnA.vec)
-          all.seg.df[samp.seg.name, ]$num_ph_hz_sites <- length(ph.cpnA.vec)
-          all.seg.df[samp.seg.name, ]$ph_raw_cpnA <- ifelse(median(as.numeric(ph.cpnA.vec)) < 0, 0, median(as.numeric(ph.cpnA.vec)))
-          all.seg.df[samp.seg.name, ]$ph_raw_cpnB <- ifelse(median(as.numeric(ph.cpnB.vec)) < 0, 0, median(as.numeric(ph.cpnB.vec)))
-          all.seg.df[samp.seg.name, ]$ph_int_cpnA <- round(as.numeric(all.seg.df[samp.seg.name, ]$ph_raw_cpnA))
-          all.seg.df[samp.seg.name, ]$ph_int_cpnB <- round(as.numeric(all.seg.df[samp.seg.name, ]$ph_raw_cpnB))
-          all.seg.df[samp.seg.name, ]$ph_hz_total_raw_cpn <- as.numeric(all.seg.df[samp.seg.name, ]$ph_raw_cpnA) + as.numeric(all.seg.df[samp.seg.name, ]$ph_raw_cpnB)
-          all.seg.df[samp.seg.name, ]$min_int_cpnX <- min(all.seg.df[samp.seg.name, ]$ph_int_cpnA, all.seg.df[samp.seg.name, ]$ph_int_cpnB)
-          all.seg.df[samp.seg.name, ]$max_int_cpnX <- max(all.seg.df[samp.seg.name, ]$ph_int_cpnA, all.seg.df[samp.seg.name, ]$ph_int_cpnB)
-
-          all.seg.df[samp.seg.name, ]$ph_hz_total_cpn <- round(all.seg.df[samp.seg.name, ]$ph_hz_total_raw_cpn)
-          all.seg.df[samp.seg.name, ]$non_hz_total_cpn <- round(all.seg.df[samp.seg.name, ]$non_hz_total_raw_cpn)
-        }
-        # Load in all available BAF and LogR data to fill in the rest of the fields
-        # Todo, not entirely sure how seg.asas.lr.baf.df is contributing here...
-        seg.asas.lr.baf.df <- asas.lr.baf.lists[[samp]][[seg.name]]
-        datapoints.w.BAF.df <- all.samp.ph.BAF.df.list[[samp]]
-        ss.ph.baf.df <- all.samp.ph.BAF.df.list[[samp]]
-        ss.baf.lr.baf.df <- datapoints.w.BAF.df[datapoints.w.BAF.df$chrom == as.numeric(chr.start.end.vec[1]) &
-          datapoints.w.BAF.df$pos >= as.numeric(chr.start.end.vec[2]) &
-          datapoints.w.BAF.df$pos <= as.numeric(chr.start.end.vec[3]), , drop = FALSE]
-        datapoints.w.logr.only.df <- all.samp.logr.df.list[[samp]]
-
-        all.seg.df[samp.seg.name, ]$median_BAF <- ss.baf.lr.baf.df$ph_median_segmented_BAF[1]
-        all.seg.df[samp.seg.name, ]$mean_BAF <- mean(abs(0.5 - ss.baf.lr.baf.df$BAF)) # Todo, check this was the correct change to mirrored
-        all.seg.df[samp.seg.name, ]$stdev_BAF <- sd(abs(0.5 - ss.baf.lr.baf.df$BAF)) # Todo, check this was the correct change to mirrored
-        all.seg.df[samp.seg.name, ]$median_hz_logr <- median(ss.baf.lr.baf.df$logR)
-        all.seg.df[samp.seg.name, ]$mean_hz_logr <- mean(ss.baf.lr.baf.df$logR)
-        all.seg.df[samp.seg.name, ]$stdev_hz_logr <- sd(ss.baf.lr.baf.df$logR)
-
-        if (isTRUE(seg.has.fewer.than.min.hz.flag)) {
-          all.seg.df[samp.seg.name, ]$num_un_ph_hz_sites <- nrow(ss.baf.lr.baf.df)
-        }
-
-        # Fields that only depend on the non_hz_logr data
-        if (nrow(datapoints.w.logr.only.df) > 0) {
-          ss.dp.w.logr.only.df <- datapoints.w.logr.only.df[datapoints.w.logr.only.df$chrom == as.numeric(chr.start.end.vec[1]) &
-            datapoints.w.logr.only.df$pos >= as.numeric(chr.start.end.vec[2]) &
-            datapoints.w.logr.only.df$pos <= as.numeric(chr.start.end.vec[3]), , drop = FALSE]
-
-          all.seg.df[samp.seg.name, ]$num_non_hz_sites <- nrow(ss.dp.w.logr.only.df)
-
-          if (nrow(ss.dp.w.logr.only.df) > 0) {
-            all.seg.df[samp.seg.name, ]$median_non_hz_logr <- median(ss.dp.w.logr.only.df$logR)
-            all.seg.df[samp.seg.name, ]$mean_non_hz_logr <- mean(ss.dp.w.logr.only.df$logR)
-            all.seg.df[samp.seg.name, ]$stdev_non_hz_logr <- sd(ss.dp.w.logr.only.df$logR)
-            # Cmombined logr measures
-            all.seg.df[samp.seg.name, ]$median_comb_logr <- median(c(ss.baf.lr.baf.df$logR, ss.dp.w.logr.only.df$logR))
-            all.seg.df[samp.seg.name, ]$mean_comb_logr <- mean(c(ss.baf.lr.baf.df$logR, ss.dp.w.logr.only.df$logR))
-            all.seg.df[samp.seg.name, ]$stdev_comb_logr <- sd(c(ss.baf.lr.baf.df$logR, ss.dp.w.logr.only.df$logR))
-            all.seg.df[samp.seg.name, ]$non_hz_total_raw_cpn <- median(ss.dp.w.logr.only.df$tot_raw_un_ph_cpn)
-          }
-
-          if (isFALSE(seg.has.fewer.than.min.hz.flag)) {
-            all.seg.df[samp.seg.name, ]$total_raw_cpn <- median(c(ss.dp.w.logr.only.df$tot_raw_un_ph_cpn, (as.numeric(ph.cpnA.vec) + as.numeric(ph.cpnB.vec))))
-            all.seg.df[samp.seg.name, ]$total_int_cpn <- round(median(c(ss.dp.w.logr.only.df$tot_raw_un_ph_cpn, (as.numeric(ph.cpnA.vec) + as.numeric(ph.cpnB.vec)))))
-          } else {
-            # Todo, get the unphased SNP's total cpn here... we don't calculate this currently as it's a heterozygous SNP that falls below the threshold
-            # for ccf calculation.
-            all.seg.df[samp.seg.name, ]$total_raw_cpn <- median(ss.dp.w.logr.only.df$tot_raw_un_ph_cpn)
-            all.seg.df[samp.seg.name, ]$total_int_cpn <- round(median(ss.dp.w.logr.only.df$tot_raw_un_ph_cpn))
-          }
-        } else if (nrow(datapoints.w.logr.only.df) == 0 & isTRUE(seg.has.fewer.than.min.hz.flag)) { # end  if(nrow(datapoints.w.logr.only.df) > 0) {
-
-          # all.seg.df[samp.seg.name,]$total_raw_cpn <- median(as.numeric(ph.cpnA.vec) + median(as.numeric(ph.cpnB.vec)))
-          # all.seg.df[samp.seg.name,]$total_int_cpn <- round(median(as.numeric(ph.cpnA.vec) + as.numeric(ph.cpnB.vec)))
-        } else if (nrow(datapoints.w.logr.only.df) == 0 & isFALSE(seg.has.fewer.than.min.hz.flag)) {
-          all.seg.df[samp.seg.name, ]$total_raw_cpn <- median(as.numeric(ph.cpnA.vec) + median(as.numeric(ph.cpnB.vec)))
-          all.seg.df[samp.seg.name, ]$total_int_cpn <- round(median(as.numeric(ph.cpnA.vec) + as.numeric(ph.cpnB.vec)))
-        }
-
-        # Now let's calculate the int toal copy number that we're going to use:
-        # Let's set the total copy number
-        if (nrow(datapoints.w.logr.only.df) > 0 & seg.has.fewer.than.min.hz.flag == TRUE) {
-          all.seg.df[samp.seg.name, ]$non_hz_total_raw_cpn <- median(ss.dp.w.logr.only.df$tot_raw_un_ph_cpn)
-          all.seg.df[samp.seg.name, ]$cnTotal <- round(median(ss.dp.w.logr.only.df$tot_raw_un_ph_cpn))
-        } else if (nrow(datapoints.w.logr.only.df) == 0 & seg.has.fewer.than.min.hz.flag == FALSE) {
-          all.seg.df[samp.seg.name, ]$total_raw_cpn <- median(c(as.numeric(ph.cpnA.vec) + as.numeric(ph.cpnB.vec)))
-        }
-      }
-    }
-  }
-
-  all.seg.df
-}
+# Only the parallel version is currently used
+# addNewRawAndIntCPNCallsToFinalSegmentation <- function(seg.name.vec,
+#                                                        sample.vec,
+#                                                        all.samp.logr.df.list,
+#                                                        all.samp.ph.BAF.df.list,
+#                                                        asas.lr.baf.lists,
+#                                                        all.seg.CCF.vals.list,
+#                                                        all.seg.df,
+#                                                        cpnX.vec = c("cpnA", "cpnB")) {
+#
+#   for (samp in sample.vec) {
+#     for (seg.name in seg.name.vec) {
+#       for (cpnX in cpnX.vec) {
+#         if (length(sample.vec) > 1) {
+#           samp.seg.name <- paste0(samp, ":", seg.name)
+#         } else {
+#           samp.seg.name <- seg.name
+#         }
+#
+#         if (!samp.seg.name %in% rownames(all.seg.df)) {
+#           logwarn("Seg name not in all.seg.df:")
+#           logwarn(samp.seg.name)
+#           next
+#         }
+#         # Fill in flag that shows whether segment has been phasing and CCF valculuation process, ie has greater than min num of hz snp positions
+#         if (length(all.seg.CCF.list[[cpnX]][[seg.name]]) == 1) {
+#           # Todo remove this NA signalling that a seg has fewer than the minimum number of hz snps, replace with a field that we can check...
+#           if (is.na(all.seg.CCF.list[[cpnX]][[seg.name]])) {
+#             seg.has.fewer.than.min.hz.flag <- TRUE
+#           } else {
+#             seg.has.fewer.than.min.hz.flag <- FALSE
+#           }
+#         } else {
+#           seg.has.fewer.than.min.hz.flag <- FALSE
+#         }
+#
+#         chr.start.end.vec <- unlist(strsplit(seg.name, split = ":"))
+#         # if the segment passes the minimum number of hz snps it will have more than one sample at  level
+#         if (seg.has.fewer.than.min.hz.flag == FALSE) {
+#           seg.CCF.val.list <- all.seg.CCF.vals.list[[cpnX]][[seg.name]][[samp]]
+#           # These are currently assigned twice... wiping the original.. definitely needs refactoring:
+#           ph.cpnA.vec <- seg.CCF.val.list[[paste0(cpnX, "_orig_ph_obs_cpnA_vec")]]
+#           ph.cpnB.vec <- seg.CCF.val.list[[paste0(cpnX, "_orig_ph_obs_cpnB_vec")]]
+#
+#           all.seg.df[samp.seg.name, ]$nBraw <- min(ifelse(median(as.numeric(ph.cpnB.vec)) < 0, 0, median(as.numeric(ph.cpnB.vec))), ifelse(median(as.numeric(ph.cpnA.vec)) < 0, 0, median(as.numeric(ph.cpnA.vec))))
+#           all.seg.df[samp.seg.name, ]$nAraw <- max(ifelse(median(as.numeric(ph.cpnB.vec)) < 0, 0, median(as.numeric(ph.cpnB.vec))), ifelse(median(as.numeric(ph.cpnA.vec)) < 0, 0, median(as.numeric(ph.cpnA.vec))))
+#           all.seg.df[samp.seg.name, ]$nMinor <- min(round(as.numeric(all.seg.df[samp.seg.name, ]$nBraw)), round(as.numeric(all.seg.df[samp.seg.name, ]$nAraw)))
+#           all.seg.df[samp.seg.name, ]$nMajor <- max(round(as.numeric(all.seg.df[samp.seg.name, ]$nBraw)), round(as.numeric(all.seg.df[samp.seg.name, ]$nAraw)))
+#           all.seg.df[samp.seg.name, ]$cnTotal <- as.numeric(all.seg.df[samp.seg.name, ]$nMinor) + as.numeric(all.seg.df[samp.seg.name, ]$nMajor)
+#           all.seg.df[samp.seg.name, ]$n.het <- length(ph.cpnA.vec)
+#           all.seg.df[samp.seg.name, ]$num_ph_hz_sites <- length(ph.cpnA.vec)
+#           all.seg.df[samp.seg.name, ]$ph_raw_cpnA <- ifelse(median(as.numeric(ph.cpnA.vec)) < 0, 0, median(as.numeric(ph.cpnA.vec)))
+#           all.seg.df[samp.seg.name, ]$ph_raw_cpnB <- ifelse(median(as.numeric(ph.cpnB.vec)) < 0, 0, median(as.numeric(ph.cpnB.vec)))
+#           all.seg.df[samp.seg.name, ]$ph_int_cpnA <- round(as.numeric(all.seg.df[samp.seg.name, ]$ph_raw_cpnA))
+#           all.seg.df[samp.seg.name, ]$ph_int_cpnB <- round(as.numeric(all.seg.df[samp.seg.name, ]$ph_raw_cpnB))
+#           all.seg.df[samp.seg.name, ]$ph_hz_total_raw_cpn <- as.numeric(all.seg.df[samp.seg.name, ]$ph_raw_cpnA) + as.numeric(all.seg.df[samp.seg.name, ]$ph_raw_cpnB)
+#           all.seg.df[samp.seg.name, ]$min_int_cpnX <- min(all.seg.df[samp.seg.name, ]$ph_int_cpnA, all.seg.df[samp.seg.name, ]$ph_int_cpnB)
+#           all.seg.df[samp.seg.name, ]$max_int_cpnX <- max(all.seg.df[samp.seg.name, ]$ph_int_cpnA, all.seg.df[samp.seg.name, ]$ph_int_cpnB)
+#
+#           all.seg.df[samp.seg.name, ]$ph_hz_total_cpn <- round(all.seg.df[samp.seg.name, ]$ph_hz_total_raw_cpn)
+#           all.seg.df[samp.seg.name, ]$non_hz_total_cpn <- round(all.seg.df[samp.seg.name, ]$non_hz_total_raw_cpn)
+#         }
+#         # Load in all available BAF and LogR data to fill in the rest of the fields
+#         # Todo, not entirely sure how seg.asas.lr.baf.df is contributing here...
+#         seg.asas.lr.baf.df <- asas.lr.baf.lists[[samp]][[seg.name]]
+#         datapoints.w.BAF.df <- all.samp.ph.BAF.df.list[[samp]]
+#         ss.ph.baf.df <- all.samp.ph.BAF.df.list[[samp]]
+#         ss.baf.lr.baf.df <- datapoints.w.BAF.df[datapoints.w.BAF.df$chrom == as.numeric(chr.start.end.vec[1]) &
+#           datapoints.w.BAF.df$pos >= as.numeric(chr.start.end.vec[2]) &
+#           datapoints.w.BAF.df$pos <= as.numeric(chr.start.end.vec[3]), , drop = FALSE]
+#         datapoints.w.logr.only.df <- all.samp.logr.df.list[[samp]]
+#
+#         all.seg.df[samp.seg.name, ]$median_BAF <- ss.baf.lr.baf.df$ph_median_segmented_BAF[1]
+#         all.seg.df[samp.seg.name, ]$mean_BAF <- mean(abs(0.5 - ss.baf.lr.baf.df$BAF)) # Todo, check this was the correct change to mirrored
+#         all.seg.df[samp.seg.name, ]$stdev_BAF <- sd(abs(0.5 - ss.baf.lr.baf.df$BAF)) # Todo, check this was the correct change to mirrored
+#         all.seg.df[samp.seg.name, ]$median_hz_logr <- median(ss.baf.lr.baf.df$logR)
+#         all.seg.df[samp.seg.name, ]$mean_hz_logr <- mean(ss.baf.lr.baf.df$logR)
+#         all.seg.df[samp.seg.name, ]$stdev_hz_logr <- sd(ss.baf.lr.baf.df$logR)
+#
+#         if (isTRUE(seg.has.fewer.than.min.hz.flag)) {
+#           all.seg.df[samp.seg.name, ]$num_un_ph_hz_sites <- nrow(ss.baf.lr.baf.df)
+#         }
+#
+#         # Fields that only depend on the non_hz_logr data
+#         if (nrow(datapoints.w.logr.only.df) > 0) {
+#           ss.dp.w.logr.only.df <- datapoints.w.logr.only.df[datapoints.w.logr.only.df$chrom == as.numeric(chr.start.end.vec[1]) &
+#             datapoints.w.logr.only.df$pos >= as.numeric(chr.start.end.vec[2]) &
+#             datapoints.w.logr.only.df$pos <= as.numeric(chr.start.end.vec[3]), , drop = FALSE]
+#
+#           all.seg.df[samp.seg.name, ]$num_non_hz_sites <- nrow(ss.dp.w.logr.only.df)
+#
+#           if (nrow(ss.dp.w.logr.only.df) > 0) {
+#             all.seg.df[samp.seg.name, ]$median_non_hz_logr <- median(ss.dp.w.logr.only.df$logR)
+#             all.seg.df[samp.seg.name, ]$mean_non_hz_logr <- mean(ss.dp.w.logr.only.df$logR)
+#             all.seg.df[samp.seg.name, ]$stdev_non_hz_logr <- sd(ss.dp.w.logr.only.df$logR)
+#             # Cmombined logr measures
+#             all.seg.df[samp.seg.name, ]$median_comb_logr <- median(c(ss.baf.lr.baf.df$logR, ss.dp.w.logr.only.df$logR))
+#             all.seg.df[samp.seg.name, ]$mean_comb_logr <- mean(c(ss.baf.lr.baf.df$logR, ss.dp.w.logr.only.df$logR))
+#             all.seg.df[samp.seg.name, ]$stdev_comb_logr <- sd(c(ss.baf.lr.baf.df$logR, ss.dp.w.logr.only.df$logR))
+#             all.seg.df[samp.seg.name, ]$non_hz_total_raw_cpn <- median(ss.dp.w.logr.only.df$tot_raw_un_ph_cpn)
+#           }
+#
+#           if (isFALSE(seg.has.fewer.than.min.hz.flag)) {
+#             all.seg.df[samp.seg.name, ]$total_raw_cpn <- median(c(ss.dp.w.logr.only.df$tot_raw_un_ph_cpn, (as.numeric(ph.cpnA.vec) + as.numeric(ph.cpnB.vec))))
+#             all.seg.df[samp.seg.name, ]$total_int_cpn <- round(median(c(ss.dp.w.logr.only.df$tot_raw_un_ph_cpn, (as.numeric(ph.cpnA.vec) + as.numeric(ph.cpnB.vec)))))
+#           } else {
+#             # Todo, get the unphased SNP's total cpn here... we don't calculate this currently as it's a heterozygous SNP that falls below the threshold
+#             # for ccf calculation.
+#             all.seg.df[samp.seg.name, ]$total_raw_cpn <- median(ss.dp.w.logr.only.df$tot_raw_un_ph_cpn)
+#             all.seg.df[samp.seg.name, ]$total_int_cpn <- round(median(ss.dp.w.logr.only.df$tot_raw_un_ph_cpn))
+#           }
+#         } else if (nrow(datapoints.w.logr.only.df) == 0 & isTRUE(seg.has.fewer.than.min.hz.flag)) { # end  if(nrow(datapoints.w.logr.only.df) > 0) {
+#
+#           # all.seg.df[samp.seg.name,]$total_raw_cpn <- median(as.numeric(ph.cpnA.vec) + median(as.numeric(ph.cpnB.vec)))
+#           # all.seg.df[samp.seg.name,]$total_int_cpn <- round(median(as.numeric(ph.cpnA.vec) + as.numeric(ph.cpnB.vec)))
+#         } else if (nrow(datapoints.w.logr.only.df) == 0 & isFALSE(seg.has.fewer.than.min.hz.flag)) {
+#           all.seg.df[samp.seg.name, ]$total_raw_cpn <- median(as.numeric(ph.cpnA.vec) + median(as.numeric(ph.cpnB.vec)))
+#           all.seg.df[samp.seg.name, ]$total_int_cpn <- round(median(as.numeric(ph.cpnA.vec) + as.numeric(ph.cpnB.vec)))
+#         }
+#
+#         # Now let's calculate the int toal copy number that we're going to use:
+#         # Let's set the total copy number
+#         if (nrow(datapoints.w.logr.only.df) > 0 & seg.has.fewer.than.min.hz.flag == TRUE) {
+#           all.seg.df[samp.seg.name, ]$non_hz_total_raw_cpn <- median(ss.dp.w.logr.only.df$tot_raw_un_ph_cpn)
+#           all.seg.df[samp.seg.name, ]$cnTotal <- round(median(ss.dp.w.logr.only.df$tot_raw_un_ph_cpn))
+#         } else if (nrow(datapoints.w.logr.only.df) == 0 & seg.has.fewer.than.min.hz.flag == FALSE) {
+#           all.seg.df[samp.seg.name, ]$total_raw_cpn <- median(c(as.numeric(ph.cpnA.vec) + as.numeric(ph.cpnB.vec)))
+#         }
+#       }
+#     }
+#   }
+#
+#   all.seg.df
+# }
 
 
 # Not currently being used

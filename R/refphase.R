@@ -629,7 +629,10 @@ refphase <- function(conf) {
     all.seg.CCF.diff.from.exp.list,
     all.seg.phasing.info.list,
     all.seg.MSAI.by.BAF.ltnpd.present.list,
-    constants = constants
+    constants,
+    sorted.all.bp.all.samps.segs.anno.df,
+    sample.vec,
+    seg.name.vec
   )
 
   # Remove segments without any datapoints.

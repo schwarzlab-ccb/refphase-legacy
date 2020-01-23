@@ -1,6 +1,7 @@
 # Another monster function to move code out of the main refphase script.
 # Appends additional columns to the output table that contain useful
 # information.
+
 add_info_to_output_table <- function(asas.ph.raw.cpn.lists, ploidy.est.vec,
                                      purity.est.vec,
                                      all.samp.non.hz.logr.and.tot.cpn.df.list,
@@ -10,7 +11,10 @@ add_info_to_output_table <- function(asas.ph.raw.cpn.lists, ploidy.est.vec,
                                      all.seg.CCF.diff.from.exp.list,
                                      all.seg.phasing.info.list,
                                      all.seg.MSAI.by.BAF.ltnpd.present.list,
-                                     constants) {
+                                     constants,
+                                     sorted.all.bp.all.samps.segs.anno.df,
+                                     sample.vec,
+                                     seg.name.vec) {
 
   # Let's initialise the first joint output:
   logdebug("Initialising minimum consistent segmentation (MCS) output dataframe")
