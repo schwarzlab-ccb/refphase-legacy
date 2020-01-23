@@ -91,7 +91,8 @@ getChromosomeArmsGRangeList <- function(current.chr, chrom.info.df) {
 # the entire genome in copy number segments should be mulled over, currently, as they are
 # are clearly marked and easily dropped I would be in favour of keeping them.
 #' @importFrom foreach foreach %dopar%
-createFullyAnnotatedJointSegmentation <- function(f.joint.segs.df, samples, chrs_to_use) {
+globalVariables("curr.all.bp.chr.df")
+createFullyAnnotatedJointSegmentation <- function(f.joint.segs.df, samples, chrs_to_use, chrom.info.df) {
   all.samp.grs <- makeGRangesFromDataFrame(f.joint.segs.df,
     keep.extra.columns = FALSE,
     ignore.strand = FALSE,

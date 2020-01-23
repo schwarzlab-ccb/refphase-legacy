@@ -408,8 +408,8 @@ getOverlapGRanges <- function(query, subject, output = "gr", ...) {
   # Find overlapping ranges
   if (class(query) == "GRanges") {
     # FIXME: what is this supposed to do?
-    GenomicRanges::seqlengths(query) <- rep(NA, length(GenomicRanges::seqlengths(query)))
-    GenomicRanges::seqlengths(subject) <- rep(NA, length(GenomicRanges::seqlengths(subject)))
+    GenomeInfoDb::seqlengths(query) <- rep(NA, length(GenomeInfoDb::seqlengths(query)))
+    GenomeInfoDb::seqlengths(subject) <- rep(NA, length(GenomeInfoDb::seqlengths(subject)))
   }
   overlap.index.mat <- as.matrix(findOverlaps(query, subject, ...))
 

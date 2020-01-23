@@ -606,7 +606,15 @@ refphase <- function(conf) {
     stop("No shared segments for some reason, go back and check")
   }
 
-  ccf_data <- ccf_from_raw_cpn(asas.ph.raw.cpn.lists, sample.vec, seg.name.vec, constants, conf)
+  ccf_data <- ccf_from_raw_cpn(asas.ph.raw.cpn.lists, sample.vec, seg.name.vec, constants, conf,
+                               samps.int.cpn.raw.cpn.by.chr.list.path,
+                               patient.phased.BAF.df.list,
+                               purity.est.vec,
+                               all.seg.CCF.list.path,
+                               all.seg.int.ob.xp.cpn.df.list.path,
+                               all.seg.CCF.diff.from.exp.list.path,
+                               all.seg.clonal.in.all.samps.list.path,
+                               all.seg.greater.than.two.diff.list.path)
   all.seg.CCF.list <- ccf_data$all.seg.CCF.list
   all.seg.CCF.diff.from.exp.list <- ccf_data$all.seg.CCF.diff.from.exp.list
 

@@ -600,7 +600,7 @@ addOriginalSegmentInfoToFinalSegmentation <- function(seg.name.vec,
         hit.obj <- GenomicRanges::findOverlaps(ref.gen.range, test.gen.range)
         overlaps <- pintersect(ref.gen.range[S4Vectors::queryHits(hit.obj)], test.gen.range[S4Vectors::subjectHits(hit.obj)])
         overlap.df <- as.data.frame(overlaps)
-        percent.overlap.vec <- width(overlaps) / width(test.gen.range[GenomicRanges::subjectHits(hit.obj)])
+        percent.overlap.vec <- width(overlaps) / width(test.gen.range[S4Vectors::subjectHits(hit.obj)])
         overlap.df$percent_overlap <- as.numeric(percent.overlap.vec)
         # Should probably do percent overlaps
 

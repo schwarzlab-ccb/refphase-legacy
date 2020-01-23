@@ -20,6 +20,7 @@ Imports:
     doParallel,
     foreach,
     gdata,
+    GenomeInfoDb,
     GenomicRanges,
     gplots,
     IRanges,

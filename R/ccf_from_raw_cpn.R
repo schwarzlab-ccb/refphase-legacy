@@ -1,4 +1,22 @@
-ccf_from_raw_cpn <- function(asas.ph.raw.cpn.lists, sample.vec, seg.name.vec, constants, conf) {
+#     ‘samps.int.cpn.raw.cpn.by.chr.list.path’
+#       ‘patient.phased.BAF.df.list’
+#         ‘purity.est.vec’
+#           ‘all.seg.CCF.list.path’
+#             ‘all.seg.int.ob.xp.cpn.df.list.path’
+#               ‘all.seg.CCF.diff.from.exp.list.path’
+#                 ‘all.seg.clonal.in.all.samps.list.path’
+#                   ‘all.seg.greater.than.two.diff.list.path’
+
+ccf_from_raw_cpn <- function(asas.ph.raw.cpn.lists, sample.vec, seg.name.vec,
+                             constants, conf,
+                             samps.int.cpn.raw.cpn.by.chr.list.path,
+                             patient.phased.BAF.df.list,
+                             purity.est.vec,
+                             all.seg.CCF.list.path,
+                             all.seg.int.ob.xp.cpn.df.list.path,
+                             all.seg.CCF.diff.from.exp.list.path,
+                             all.seg.clonal.in.all.samps.list.path,
+                             all.seg.greater.than.two.diff.list.path) {
   loginfo("*******************************************************************")
   loginfo("Calculating cancer cell fractions (CCFs) using phased raw cpn")
   loginfo("*******************************************************************")

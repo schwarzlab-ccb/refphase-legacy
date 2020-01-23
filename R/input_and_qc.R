@@ -221,7 +221,7 @@ removeSingleBasePairSegmentsFromIntersectionGranges <- function(all.grs, min.wid
     joined.gr <- joinTwoGrangesIntoOne(nearest.gr, width.one.grs[idx])
     all.idx.vec <- 1:length(working.no.ones.grs)
     hits.obj <- GenomicRanges::findOverlaps(joined.gr, working.no.ones.grs)
-    hit.idx.vec <- GenomicRanges::subjectHits(hits.obj)
+    hit.idx.vec <- S4Vectors::subjectHits(hits.obj)
     non.overlapping.idx.vec <- all.idx.vec[ !all.idx.vec %in% hit.idx.vec]
     non.overlapping.grs <- working.no.ones.grs[non.overlapping.idx.vec]
 

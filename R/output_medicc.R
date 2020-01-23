@@ -3,7 +3,7 @@ makeMEDICCInputListsFromSegmentationDF <- function(segs.to.make.MEDICC.input.df,
 
   # To do this we need to make it match the
   MEDICC.FASTA.file.list <- list()
-  for (chr in CHRS_TO_USE_VEC) {
+  for (chr in chrs.to.use.vec) {
     MEDICC.FASTA.file.list[[chr]] <- list()
     MEDICC.FASTA.file.list[[chr]]$chrom <- chr
     MEDICC.FASTA.file.list[[chr]][["diploid"]]$samp <- ">diploid"
@@ -35,11 +35,11 @@ makeMEDICCInputListsFromSegmentationDF <- function(segs.to.make.MEDICC.input.df,
       MEDICC.FASTA.file.list[[chr]][[samp]]$cpnB_vec <- chr.samp.segs.df[, cpnB.col]
       MEDICC.FASTA.file.list[[chr]][[samp]]$cpnA_string <- paste(string.chr.samp.cpnA.vec, collapse = "")
       MEDICC.FASTA.file.list[[chr]][[samp]]$cpnB_string <- paste(string.chr.samp.cpnB.vec, collapse = "")
-    } # end for (samp in sample.vec) {
-  } # for (chr in CHRS_TO_USE_VEC) {
+    }
+  }
 
   return(MEDICC.FASTA.file.list)
-} # End makeMEDICCInputListsFromSegmentationDF
+}
 
 
 # Create input files in the exact format that MEDICC expects them
