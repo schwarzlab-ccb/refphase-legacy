@@ -24,10 +24,13 @@ The goal of refphase is to ...
 
 ## Installation
 
-You can install the released version of refphase from [CRAN](https://CRAN.R-project.org) with:
+You can install the latest development version of refphase from
+[bitbucket](https://bitbucket.org) using devtools:
 
 ``` r
-install.packages("refphase")
+devtools::install_bitbucket("schwarzlab/refphase@package", auth_user = "your bitbucket username",
+                            password = "your bitbucket password")
+
 ```
 
 ## Example

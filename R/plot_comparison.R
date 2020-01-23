@@ -1,55 +1,55 @@
-#!/usr/bin/env Rscript
-
-library("digest")
-library("optparse")
-
-options(error = traceback)
-
-option_list <- list(
-  make_option("--snps",
-    default = "",
-    help = "SNP data from refphase (rds)"
-  ),
-  make_option(c("-s", "--segmentations"),
-    default = "",
-    help = "Comma-separated segmentations in refphase segmentations.tsv format"
-  ),
-  make_option(c("-n", "--seg-names"),
-    default = "",
-    help = "Comma-separated list of segmentation names that match the files in --segmentations"
-  ),
-  make_option("--sample-info",
-    default = "",
-    help = "Per-sample information including purity and ploidy"
-  ),
-  make_option(c("-p", "--patient-id"),
-    default = "",
-    help = "Patient ID"
-  ),
-  make_option(c("-r", "--raw"),
-    default = FALSE,
-    help = "Plot raw CNs instead of integer CNs"
-  ),
-  make_option("--scale-segs",
-    default = FALSE,
-    help = "Rescale segment lengths to all be equal (for debugging)"
-  ),
-  make_option(c("-o", "--output-dir"),
-    default = "",
-    help = "Input directory containing the output of Mphase"
-  ),
-  make_option(c("-d", "--seed"),
-    default = 531,
-    help = "Set the random seed at the beginning of the script"
-  )
-)
-args <- parse_args(OptionParser(option_list = option_list), convert_hyphens_to_underscores = TRUE)
-conf <- args
-conf$id <- substr(digest(args), 1, 8)
-set.seed(args$seed)
-
-library("GenomicRanges")
-library("gtools")
+##!/usr/bin/env Rscript
+#
+#library("digest")
+#library("optparse")
+#
+#options(error = traceback)
+#
+#option_list <- list(
+#  make_option("--snps",
+#    default = "",
+#    help = "SNP data from refphase (rds)"
+#  ),
+#  make_option(c("-s", "--segmentations"),
+#    default = "",
+#    help = "Comma-separated segmentations in refphase segmentations.tsv format"
+#  ),
+#  make_option(c("-n", "--seg-names"),
+#    default = "",
+#    help = "Comma-separated list of segmentation names that match the files in --segmentations"
+#  ),
+#  make_option("--sample-info",
+#    default = "",
+#    help = "Per-sample information including purity and ploidy"
+#  ),
+#  make_option(c("-p", "--patient-id"),
+#    default = "",
+#    help = "Patient ID"
+#  ),
+#  make_option(c("-r", "--raw"),
+#    default = FALSE,
+#    help = "Plot raw CNs instead of integer CNs"
+#  ),
+#  make_option("--scale-segs",
+#    default = FALSE,
+#    help = "Rescale segment lengths to all be equal (for debugging)"
+#  ),
+#  make_option(c("-o", "--output-dir"),
+#    default = "",
+#    help = "Input directory containing the output of Mphase"
+#  ),
+#  make_option(c("-d", "--seed"),
+#    default = 531,
+#    help = "Set the random seed at the beginning of the script"
+#  )
+#)
+#args <- parse_args(OptionParser(option_list = option_list), convert_hyphens_to_underscores = TRUE)
+#conf <- args
+#conf$id <- substr(digest(args), 1, 8)
+#set.seed(args$seed)
+#
+#library("GenomicRanges")
+#library("gtools")
 
 # ------------------------------------------------------------------------
 # Utility functions for plotting
@@ -381,88 +381,186 @@ plot_track_cn_whole_genome <- function(segs, chrom_info, xlim = c(NA, NA), max_c
 # Start the main script
 # ------------------------------------------------------------------------
 
-if (!dir.exists(conf$output_dir)) {
-  dir.create(conf$output_dir, recursive = TRUE, showWarnings = FALSE)
-}
+#' @export
+plot_comparison <- function(conf) {
 
-# The BAF/LogR data along the genome
-snps <- readRDS(conf$snps)$all.samp.SNP.list
-
-#str(snps)
-
-# A list of copy number segmentations to plot as individual tracks
-seg_input_files <- strsplit(conf$segmentations, ",")[[1]]
-seg_names <- strsplit(conf$seg_names, ",")[[1]]
-
-stopifnot(length(seg_input_files) == length(seg_names))
-
-segs <- list()
-for (seg_idx in seq_along(seg_input_files)) {
-  seg <- read.delim(seg_input_files[[seg_idx]], sep = "\t", stringsAsFactors = FALSE)
-
-  # First we deal with the seg format that is used for refphase
-  if ("nMajor" %in% colnames(seg)) {
-    colnames(seg)[colnames(seg) == "nMajor"] <- "cpn_a"
-    colnames(seg)[colnames(seg) == "nMinor"] <- "cpn_b"
-    seg <- cbind(seg, cpn_total = seg$cpn_a + seg$cpn_b)
-  }
-  if ("cnTotal" %in% colnames(seg)) {
-    colnames(seg)[colnames(seg) == "cnTotal"] <- "cpn_total"
-  }
-  seg$seg_center <- seg$startpos + ((seg$endpos - seg$startpos) / 2)
-  # Make sure we have the data that we need to plot
-  if (seg_idx == 1) {
-    # We need some extra information from the first set of segmentatsions (msai + reference)
-    stopifnot(c("sample", "chr", "startpos", "endpos", "cpn_a", "cpn_b", "is_msai", "is_reference") %in% colnames(seg))
-  } else {
-    stopifnot(c("sample", "chr", "startpos", "endpos", "cpn_a", "cpn_b") %in% colnames(seg))
+  if (!dir.exists(conf$output_dir)) {
+    dir.create(conf$output_dir, recursive = TRUE, showWarnings = FALSE)
   }
 
-  segs[[seg_idx]] <- seg
-}
+  # The BAF/LogR data along the genome
+  snps <- readRDS(conf$snps)$all.samp.SNP.list
 
-sample_info <- read.delim(conf$sample_inf, sep = "\t", stringsAsFactors = FALSE, row.names = "sample")
+  #str(snps)
 
-# We consider the first segmentation that is passed in as the "main"
-# segmentation, the one that matches the BAF/logR values and the one that is
-# marked on the BAF/logR plots (reference + msai events)
-main_seg <- segs[[1]]
-#chroms <- mixedsort(unique(sapply(segs, "[[", "chr")))
+  # A list of copy number segmentations to plot as individual tracks
+  seg_input_files <- strsplit(conf$segmentations, ",")[[1]]
+  seg_names <- strsplit(conf$seg_names, ",")[[1]]
 
-# Assign phasing of regions with MSAI. I should directly carry over the phasing
-# from refphase instead of recalculating this here.
-snps <- phase_regions(snps, main_seg)
+  stopifnot(length(seg_input_files) == length(seg_names))
 
-chroms <- 1:22
-sample_names <- sort(names(snps))
+  segs <- list()
+  for (seg_idx in seq_along(seg_input_files)) {
+    seg <- read.delim(seg_input_files[[seg_idx]], sep = "\t", stringsAsFactors = FALSE)
 
-output_plot <- file.path(conf$output_dir, "all_chromosomes.pdf")
-pdf(output_plot, width = 10, height = 1 + 4 * length(snps))
+    # First we deal with the seg format that is used for refphase
+    if ("nMajor" %in% colnames(seg)) {
+      colnames(seg)[colnames(seg) == "nMajor"] <- "cpn_a"
+      colnames(seg)[colnames(seg) == "nMinor"] <- "cpn_b"
+      seg <- cbind(seg, cpn_total = seg$cpn_a + seg$cpn_b)
+    }
+    if ("cnTotal" %in% colnames(seg)) {
+      colnames(seg)[colnames(seg) == "cnTotal"] <- "cpn_total"
+    }
+    seg$seg_center <- seg$startpos + ((seg$endpos - seg$startpos) / 2)
+    # Make sure we have the data that we need to plot
+    if (seg_idx == 1) {
+      # We need some extra information from the first set of segmentatsions (msai + reference)
+      stopifnot(c("sample", "chr", "startpos", "endpos", "cpn_a", "cpn_b", "is_msai", "is_reference") %in% colnames(seg))
+    } else {
+      stopifnot(c("sample", "chr", "startpos", "endpos", "cpn_a", "cpn_b") %in% colnames(seg))
+    }
 
-for (chrom_to_plot in chroms) {
+    segs[[seg_idx]] <- seg
+  }
+
+  sample_info <- read.delim(conf$sample_inf, sep = "\t", stringsAsFactors = FALSE, row.names = "sample")
+
+  # We consider the first segmentation that is passed in as the "main"
+  # segmentation, the one that matches the BAF/logR values and the one that is
+  # marked on the BAF/logR plots (reference + msai events)
+  main_seg <- segs[[1]]
+  #chroms <- mixedsort(unique(sapply(segs, "[[", "chr")))
+
+  # Assign phasing of regions with MSAI. I should directly carry over the phasing
+  # from refphase instead of recalculating this here.
+  snps <- phase_regions(snps, main_seg)
+
+  chroms <- 1:22
+  sample_names <- sort(names(snps))
+
+  output_plot <- file.path(conf$output_dir, "all_chromosomes.pdf")
+  pdf(output_plot, width = 10, height = 1 + 4 * length(snps))
+
+  for (chrom_to_plot in chroms) {
+    par(cex = 0.8)
+    # Header: Leave space for the chromosome name
+    # coordinates are: left, right, bottom, and top
+    # heading_height_fraction <- 1 / (length(samples) + 0.5)
+    heading_height_fraction <- 1 / (1 + 4 * length(sample_names))
+    # split_coords <- matrix(c(0, 1, 0, 1 - heading_height_fraction, 0, 1, 0, heading_height_fraction), ncol = 4, byrow = TRUE)
+    split_coords <- matrix(c(0, 1, 1 - heading_height_fraction, 1, 0, 1, 0, 1 - heading_height_fraction), ncol = 4, byrow = TRUE)
+    outer_screens <- split.screen(split_coords)
+    screen(outer_screens[[1]])
+    # Plot header
+    plot_chromosome_header(conf$patient_id, paste0("chr", chrom_to_plot))
+    screen(outer_screens[[2]])
+
+    # Split horizontally into figures for each sample
+    sample_screens <- split.screen(c(length(sample_names), 1))
+    for (sample_idx in seq_along(sample_names)) {
+      sample_name <- sample_names[[sample_idx]]
+      message("Sample: ", sample_name, " Chromosome: ", chrom_to_plot)
+      data_sample <- snps[[sample_name]]
+      data_sample <- data_sample[data_sample$chr == chrom_to_plot, ]
+
+      # Split the plotting area vertically (sample name + info on left, plots on right)
+      screen(sample_screens[[sample_idx]])
+      split_coords <- matrix(c(0, 0.1, 0, 1, 0.1, 1, 0, 1), ncol = 4, byrow = TRUE)
+      screen_idxs <- split.screen(split_coords)
+
+      screen(screen_idxs[[1]])
+      plot_sample_info(sample_name, sample_info[sample_name, "ploidy"], sample_info[sample_name, "purity"])
+
+      screen(screen_idxs[[2]])
+
+      # Heights are in arbitrary units, and will be used to calculate fractional
+      # heights of each track. Only the relative difference between heights
+      # matters.
+      track_heights <- c(30,  # logR
+                         30,  # baf
+                         rep(10, length(segs)),  # segmentations
+                         10)  # axis
+
+      track_height_fractions <- rev(cumsum(rev(track_heights) / sum(track_heights)))
+
+      sub_split_coords <- matrix(c(
+        rep(0, length(track_height_fractions)),
+        rep(1, length(track_height_fractions)),
+        c(track_height_fractions[-1], 0),
+        track_height_fractions
+      ), ncol = 4, byrow = FALSE)
+
+      subfigure_idx <- split.screen(sub_split_coords)
+
+      plot_range <- c(min(data_sample$pos), max(data_sample$pos))
+
+      main_seg_sample <- main_seg[main_seg$sample == sample_name & main_seg$chr == chrom_to_plot,]
+
+      # logR track
+      screen(subfigure_idx[[1]])
+      plot_track_logr(data_sample, main_seg_sample)
+
+      # BAF track
+      screen(subfigure_idx[[2]])
+      plot_track_baf(data_sample, main_seg_sample)
+
+      seg_orig <- segs[[2]]
+      for (seg_idx in seq_along(segs)) {
+        seg <- segs[[seg_idx]]
+        seg_chrom <- seg[seg$sample == sample_name & seg$chr == chrom_to_plot, ]
+        seg_orig_chrom <- seg_orig[seg_orig$sample == sample_name & seg_orig$chr == chrom_to_plot, ]
+
+        seg_chrom$is_changed <- rep(FALSE, nrow(seg_chrom))
+        if (seg_idx == 1) {
+          seg_chrom$is_changed <- get_seg_changes(seg_chrom, seg_orig_chrom)
+        }
+
+        # Orig CNs
+        screen(subfigure_idx[[2 + seg_idx]])
+        plot_track_cn(seg_chrom, seg_names[[seg_idx]], xlim = plot_range)
+      }
+
+      # Add an x-axis with genomic co-ordinates
+      screen(subfigure_idx[[3 + length(segs)]])
+      plot_track_axis(plot_range)
+    }
+
+    close.screen(all = TRUE)
+  }
+  dev.off()
+
+  # ------------------------------------------------------------------------
+  # Convert chromosomal positions to absolute positions for plotting the whole genome
+  segs <- main_seg
+  chrom_ends <- cumsum(as.numeric(by(segs$endpos, segs$chr, max)))
+  chrom_starts <- c(0, chrom_ends[-length(chrom_ends)])
+  names(chrom_starts) <- names(chrom_ends)
+  chrom_center <- chrom_starts + (chrom_ends - chrom_starts) / 2
+  segs$chrom_startpos <- chrom_starts[segs$chr]
+
+  # Chromosome start and end positions in genome-wide absolute positions
+  chrom_info <- data.frame(
+    start = chrom_starts,
+    end = chrom_ends,
+    center = chrom_center,
+    label = as.character(unique(segs$chr))
+  )
+
+  # Whole genome plot
+  output_plot <- file.path(conf$output_dir, "whole_genome.pdf")
+  pdf(output_plot, width = 10, height = 4 * length(snps))
   par(cex = 0.8)
-  # Header: Leave space for the chromosome name
-  # coordinates are: left, right, bottom, and top
-  # heading_height_fraction <- 1 / (length(samples) + 0.5)
-  heading_height_fraction <- 1 / (1 + 4 * length(sample_names))
-  # split_coords <- matrix(c(0, 1, 0, 1 - heading_height_fraction, 0, 1, 0, heading_height_fraction), ncol = 4, byrow = TRUE)
-  split_coords <- matrix(c(0, 1, 1 - heading_height_fraction, 1, 0, 1, 0, 1 - heading_height_fraction), ncol = 4, byrow = TRUE)
-  outer_screens <- split.screen(split_coords)
-  screen(outer_screens[[1]])
-  # Plot header
-  plot_chromosome_header(conf$patient_id, paste0("chr", chrom_to_plot))
-  screen(outer_screens[[2]])
+  split.screen(c(length(snps), 1))
+  num_subfigures <- 3
 
-  # Split horizontally into figures for each sample
-  sample_screens <- split.screen(c(length(sample_names), 1))
   for (sample_idx in seq_along(sample_names)) {
     sample_name <- sample_names[[sample_idx]]
-    message("Sample: ", sample_name, " Chromosome: ", chrom_to_plot)
     data_sample <- snps[[sample_name]]
-    data_sample <- data_sample[data_sample$chr == chrom_to_plot, ]
+    segs_sample <- segs[segs$sample == sample_name, ]
 
     # Split the plotting area vertically (sample name + info on left, plots on right)
-    screen(sample_screens[[sample_idx]])
+    screen(sample_idx)
     split_coords <- matrix(c(0, 0.1, 0, 1, 0.1, 1, 0, 1), ncol = 4, byrow = TRUE)
     screen_idxs <- split.screen(split_coords)
 
@@ -470,128 +568,34 @@ for (chrom_to_plot in chroms) {
     plot_sample_info(sample_name, sample_info[sample_name, "ploidy"], sample_info[sample_name, "purity"])
 
     screen(screen_idxs[[2]])
+    split_coords <- matrix(c(0, 1, 0.7, 1,
+                             0, 1, 0.4, 0.7,
+                             0, 1, 0.0, 0.4), ncol = 4, byrow = TRUE)
+    subfigure_idx <- split.screen(split_coords)
 
-    # Heights are in arbitrary units, and will be used to calculate fractional
-    # heights of each track. Only the relative difference between heights
-    # matters.
-    track_heights <- c(30,  # logR
-                       30,  # baf
-                       rep(10, length(segs)),  # segmentations
-                       10)  # axis
+    # Remove the many NA regions
+    segs_sample <- segs_sample[!is.na(segs_sample$cpn_total), ]
 
-    track_height_fractions <- rev(cumsum(rev(track_heights) / sum(track_heights)))
-
-    sub_split_coords <- matrix(c(
-      rep(0, length(track_height_fractions)),
-      rep(1, length(track_height_fractions)),
-      c(track_height_fractions[-1], 0),
-      track_height_fractions
-    ), ncol = 4, byrow = FALSE)
-
-    subfigure_idx <- split.screen(sub_split_coords)
-
-    plot_range <- c(min(data_sample$pos), max(data_sample$pos))
-
-    main_seg_sample <- main_seg[main_seg$sample == sample_name & main_seg$chr == chrom_to_plot,]
+    # Adjust all positions to genome-wide absolute positions
+    data_sample$pos <- data_sample$pos + chrom_starts[data_sample$chrom]
+    segs_sample$startpos <- segs_sample$startpos + segs_sample$chrom_startpos
+    segs_sample$endpos <- segs_sample$endpos + segs_sample$chrom_startpos
+    segs_sample$seg_center <- segs_sample$seg_center + segs_sample$chrom_startpos
 
     # logR track
     screen(subfigure_idx[[1]])
-    plot_track_logr(data_sample, main_seg_sample)
+    plot_track_logr_whole_genome(data_sample, segs_sample, chrom_info)
 
     # BAF track
     screen(subfigure_idx[[2]])
-    plot_track_baf(data_sample, main_seg_sample)
+    plot_track_baf_whole_genome(data_sample, segs_sample, chrom_info)
 
-    seg_orig <- segs[[2]]
-    for (seg_idx in seq_along(segs)) {
-      seg <- segs[[seg_idx]]
-      seg_chrom <- seg[seg$sample == sample_name & seg$chr == chrom_to_plot, ]
-      seg_orig_chrom <- seg_orig[seg_orig$sample == sample_name & seg_orig$chr == chrom_to_plot, ]
-
-      seg_chrom$is_changed <- rep(FALSE, nrow(seg_chrom))
-      if (seg_idx == 1) {
-        seg_chrom$is_changed <- get_seg_changes(seg_chrom, seg_orig_chrom)
-      }
-
-      # Orig CNs
-      screen(subfigure_idx[[2 + seg_idx]])
-      plot_track_cn(seg_chrom, seg_names[[seg_idx]], xlim = plot_range)
-    }
-
-    # Add an x-axis with genomic co-ordinates
-    screen(subfigure_idx[[3 + length(segs)]])
-    plot_track_axis(plot_range)
+    # Copy number track
+    screen(subfigure_idx[[3]])
+    plot_track_cn_whole_genome(segs_sample, chrom_info, xlim = c(min(data_sample$pos), max(data_sample$pos)))
   }
-
   close.screen(all = TRUE)
+  dev.off()
+
+  print(warnings())
 }
-dev.off()
-
-# ------------------------------------------------------------------------
-# Convert chromosomal positions to absolute positions for plotting the whole genome
-segs <- main_seg
-chrom_ends <- cumsum(as.numeric(by(segs$endpos, segs$chr, max)))
-chrom_starts <- c(0, chrom_ends[-length(chrom_ends)])
-names(chrom_starts) <- names(chrom_ends)
-chrom_center <- chrom_starts + (chrom_ends - chrom_starts) / 2
-segs$chrom_startpos <- chrom_starts[segs$chr]
-
-# Chromosome start and end positions in genome-wide absolute positions
-chrom_info <- data.frame(
-  start = chrom_starts,
-  end = chrom_ends,
-  center = chrom_center,
-  label = as.character(unique(segs$chr))
-)
-
-# Whole genome plot
-output_plot <- file.path(conf$output_dir, "whole_genome.pdf")
-pdf(output_plot, width = 10, height = 4 * length(snps))
-par(cex = 0.8)
-split.screen(c(length(snps), 1))
-num_subfigures <- 3
-
-for (sample_idx in seq_along(sample_names)) {
-  sample_name <- sample_names[[sample_idx]]
-  data_sample <- snps[[sample_name]]
-  segs_sample <- segs[segs$sample == sample_name, ]
-
-  # Split the plotting area vertically (sample name + info on left, plots on right)
-  screen(sample_idx)
-  split_coords <- matrix(c(0, 0.1, 0, 1, 0.1, 1, 0, 1), ncol = 4, byrow = TRUE)
-  screen_idxs <- split.screen(split_coords)
-
-  screen(screen_idxs[[1]])
-  plot_sample_info(sample_name, sample_info[sample_name, "ploidy"], sample_info[sample_name, "purity"])
-
-  screen(screen_idxs[[2]])
-  split_coords <- matrix(c(0, 1, 0.7, 1,
-                           0, 1, 0.4, 0.7,
-                           0, 1, 0.0, 0.4), ncol = 4, byrow = TRUE)
-  subfigure_idx <- split.screen(split_coords)
-
-  # Remove the many NA regions
-  segs_sample <- segs_sample[!is.na(segs_sample$cpn_total), ]
-
-  # Adjust all positions to genome-wide absolute positions
-  data_sample$pos <- data_sample$pos + chrom_starts[data_sample$chrom]
-  segs_sample$startpos <- segs_sample$startpos + segs_sample$chrom_startpos
-  segs_sample$endpos <- segs_sample$endpos + segs_sample$chrom_startpos
-  segs_sample$seg_center <- segs_sample$seg_center + segs_sample$chrom_startpos
-
-  # logR track
-  screen(subfigure_idx[[1]])
-  plot_track_logr_whole_genome(data_sample, segs_sample, chrom_info)
-
-  # BAF track
-  screen(subfigure_idx[[2]])
-  plot_track_baf_whole_genome(data_sample, segs_sample, chrom_info)
-
-  # Copy number track
-  screen(subfigure_idx[[3]])
-  plot_track_cn_whole_genome(segs_sample, chrom_info, xlim = c(min(data_sample$pos), max(data_sample$pos)))
-}
-close.screen(all = TRUE)
-dev.off()
-
-print(warnings())
