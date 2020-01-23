@@ -169,7 +169,7 @@ getCombinedBAFDipTestPhasingParallel <- function(asas.lr.baf.lists,
     return(me)
   }
 
-  itx <- iter(seg.name.vec)
+  itx <- iterators::iter(seg.name.vec)
   # sample.to.phase.seg.mrc.list <- foreach(seg.name = itx, .combine = c) %dopar% {
   sample.to.phase.seg.mrc.list <- foreach(seg.name = itx, .combine = c) %do% {
     ret.mrc <- MultiResultClass()

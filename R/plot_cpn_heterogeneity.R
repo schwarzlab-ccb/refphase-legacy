@@ -153,7 +153,7 @@ plotAllSampleBAFsAcrossGenome <- function(sample.vec, patient.phased.BAF.df.list
 
 plotOldNewComparisonOfAllCPN <- function(sample.vec, full.joint.segs.df, plot.output.dir) {
   for (samp in sample.vec) {
-    png(file = paste(plot.output.dir, samp, "_orig_vs_mphase_raw_cpn_comparison", ".png", sep = ""), width = 1200, height = 1400)
+    png(filename = paste(plot.output.dir, samp, "_orig_vs_mphase_raw_cpn_comparison", ".png", sep = ""), width = 1200, height = 1400)
     par(mfrow = c(1, 2))
 
     samp.proc.segs.df <- full.joint.segs.df[full.joint.segs.df$sample %in% samp, , drop = FALSE]
@@ -206,7 +206,7 @@ plotAllSamplePairwiseComparisonSegmentCPN <- function(sample.vec, full.joint.seg
       x.axis.samp <- sample.vec[x]
       y.axis.samp <- sample.vec[y]
 
-      png(file = paste(plot.output.dir, y.axis.samp, "_vs_", x.axis.samp, "_cpnA_cpnB_comparison", ".png", sep = ""), width = 1200, height = 1400)
+      png(filename = paste(plot.output.dir, y.axis.samp, "_vs_", x.axis.samp, "_cpnA_cpnB_comparison", ".png", sep = ""), width = 1200, height = 1400)
       par(mfrow = c(2, 2))
 
       x.axis.samp.proc.segs.df <- full.joint.segs.df[full.joint.segs.df$sample %in% x.axis.samp, , drop = FALSE]
@@ -330,7 +330,7 @@ getCumulativeChromLengthsForPlottingDF <- function(seg, chrom.length, chr.vec) {
       return(seg.tmp)
     }
   } else {
-    seg.tmp <- matrix(NA, nr = 0, nc = ncol(seg))
+    seg.tmp <- matrix(NA, nrow = 0, ncol = ncol(seg))
   }
 
   for (i in 2:length(chr.vec)) {
@@ -832,7 +832,7 @@ plotSampleLogRBAFCPNABsAndMSAIAcrossGenome <- function(samp,
       cpnX <- track.name
       print("Plotting ph cpn")
       # "B_MET004_MT-M1"
-      Colours <- colorpanel(100, "steelblue4", "#deebf7", "steelblue4")
+      Colours <- gplots::colorpanel(100, "steelblue4", "#deebf7", "steelblue4")
 
       # filter out the segments that are unphased
       phased.joint.segs.df <- full.joint.segs.df[full.joint.segs.df$samp_used_to_phase != "too_few_SNPs", ]
@@ -1094,7 +1094,7 @@ plotAllSampleCCFsAcrossGenome <- function(asas.ph.raw.cpn.lists,
                                           use.cpn.or.ccf.thresh = "CCF",
                                           use.pass.column.to.plot = FALSE) {
 
-  Colours <- colorpanel(100, "steelblue4", "#deebf7", "steelblue4")
+  Colours <- gplots::colorpanel(100, "steelblue4", "#deebf7", "steelblue4")
   # First get the consensus segmentation, probably want to filter out the smallest segments:
   # filter out the segments that are unphased
   phased.joint.segs.df <- full.joint.segs.df[full.joint.segs.df$samp_used_to_phase != "too_few_SNPs", ]
@@ -1858,7 +1858,7 @@ plotSampleLogRBAFCPNABsAndMSAIAcrossGenomeFigure <- function(samp,
       cpnX <- track.name
       print("Plotting ph cpn")
       # "B_MET004_MT-M1"
-      Colours <- colorpanel(100, "steelblue4", "#deebf7", "steelblue4")
+      Colours <- gplots::colorpanel(100, "steelblue4", "#deebf7", "steelblue4")
 
       # filter out the segments that are unphased
       phased.joint.segs.df <- full.joint.segs.df[full.joint.segs.df$samp_used_to_phase != "too_few_SNPs", ]

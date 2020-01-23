@@ -493,7 +493,7 @@ refphase <- function(conf) {
 
 
   if (isTRUE(constants$PLOTTING_FLAG)) {
-    png(file = file.path(PLOT_OUTPUT_DIR, "MSAI_detection_BAF_phased.png"), width = 1200, height = 1400)
+    png(filename = file.path(PLOT_OUTPUT_DIR, "MSAI_detection_BAF_phased.png"), width = 1200, height = 1400)
 
     logging::loginfo("Plotting phased BAF across the genome...")
     plotAllSampleBAFsAndMSAIAcrossGenome(
@@ -644,7 +644,7 @@ refphase <- function(conf) {
   if (isTRUE(constants$PLOTTING_FLAG)) {
     logging::loginfo("Plotting CCFs for cpnA and cpnB across the genome using cpn definition of subclonality...")
 
-    png(file = file.path(constants$PLOT_OUTPUT_DIR, "CCF_w_cpn_thresh_cpnA.png"), width = 1200, height = 1400)
+    png(filename = file.path(constants$PLOT_OUTPUT_DIR, "CCF_w_cpn_thresh_cpnA.png"), width = 1200, height = 1400)
     plotAllSampleCCFsAcrossGenome(
       asas.ph.raw.cpn.lists = asas.ph.raw.cpn.lists,
       full.joint.segs.df = full.joint.segs.df,
@@ -656,7 +656,7 @@ refphase <- function(conf) {
     )
     dev.off()
 
-    png(file = file.path(constants$PLOT_OUTPUT_DIR, "CCF_w_cpn_thresh_cpnB.png"), width = 1200, height = 1400)
+    png(filename = file.path(constants$PLOT_OUTPUT_DIR, "CCF_w_cpn_thresh_cpnB.png"), width = 1200, height = 1400)
     plotAllSampleCCFsAcrossGenome(
       asas.ph.raw.cpn.lists = asas.ph.raw.cpn.lists,
       full.joint.segs.df = full.joint.segs.df,

@@ -329,7 +329,7 @@ createFullyAnnotatedJointSegmentation <- function(f.joint.segs.df, samples, chrs
   }
 
   logdebug("Mapping the segments covering all bp of all arms back to input segments where appropriate...")
-  itx <- iter(as.data.frame(all.bp.chr.grs), by = "row")
+  itx <- iterators::iter(as.data.frame(all.bp.chr.grs), by = "row")
   results <- foreach(curr.all.bp.chr.df = itx, .combine = c) %dopar% {
     requireNamespace("GenomicRanges", quietly = TRUE)
     curr.all.bp.chr.gr <- makeGRangesFromDataFrame(curr.all.bp.chr.df,

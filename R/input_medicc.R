@@ -11,7 +11,7 @@ readInMEDICCInputFormatParallel <- function(snp.file.df, processed.orig.cpn.segs
   message("Starting parallel work:")
 
   num.pre.parallel.samps <- length(unique(sample.vec))
-  itx <- iter(sample.vec)
+  itx <- iterators::iter(sample.vec)
   all.samp.SNP.df <- foreach(samp = itx, .combine = rbind) %dopar% {
     ASCAT.summary <- data.frame(
       chr = as.numeric(snp.file.df$Chr),

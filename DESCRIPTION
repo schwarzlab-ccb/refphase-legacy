@@ -23,6 +23,7 @@ Imports:
     GenomicRanges,
     gplots,
     IRanges,
+    iterators,
     logging,
     RColorBrewer,
     readr

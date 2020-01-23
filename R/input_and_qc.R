@@ -206,8 +206,8 @@ removeSingleBasePairSegmentsFromIntersectionGranges <- function(all.grs, min.wid
   }
 
   for (idx in 1:length(width.one.grs)) {
-    gr.ante.idx <- follow(width.one.grs[idx], working.no.ones.grs)
-    gr.post.idx <- precede(width.one.grs[idx], working.no.ones.grs)
+    gr.ante.idx <- GenomicRanges::follow(width.one.grs[idx], working.no.ones.grs)
+    gr.post.idx <- GenomicRanges::precede(width.one.grs[idx], working.no.ones.grs)
     merge.poss.idxs <- c(gr.ante.idx, gr.post.idx)
     non.na.merge.poss.idxs <- merge.poss.idxs[!is.na(merge.poss.idxs)]
 
@@ -220,8 +220,8 @@ removeSingleBasePairSegmentsFromIntersectionGranges <- function(all.grs, min.wid
     nearest.gr <- ante.post.grs[nearest(width.one.grs[idx], ante.post.grs)]
     joined.gr <- joinTwoGrangesIntoOne(nearest.gr, width.one.grs[idx])
     all.idx.vec <- 1:length(working.no.ones.grs)
-    hits.obj <- findOverlaps(joined.gr, working.no.ones.grs)
-    hit.idx.vec <- subjectHits(hits.obj)
+    hits.obj <- GenomicRanges::findOverlaps(joined.gr, working.no.ones.grs)
+    hit.idx.vec <- GenomicRanges::subjectHits(hits.obj)
     non.overlapping.idx.vec <- all.idx.vec[ !all.idx.vec %in% hit.idx.vec]
     non.overlapping.grs <- working.no.ones.grs[non.overlapping.idx.vec]
 
@@ -343,8 +343,8 @@ getOverlapGRanges <- function(query, subject, output = "gr", ...) {
 
   ## Find overlapping ranges
   if (class(query) == "GRanges") {
-    seqlengths(query) <- rep(NA, length(seqlengths(query)))
-    seqlengths(subject) <- rep(NA, length(seqlengths(subject)))
+    GenomicRanges::seqlengths(query) <- rep(NA, length(GenomicRanges::seqlengths(query)))
+    GenomicRanges::seqlengths(subject) <- rep(NA, length(GenomicRanges::seqlengths(subject)))
   }
   overlap.index.mat <- as.matrix(findOverlaps(query, subject, ...))
 
@@ -527,7 +527,7 @@ cleanAndErrorCheckSNPsParallel <- function(all.samp.SNP.list, mcs.seg.to.use.df,
 
   iterable.min.cons.seg.df <- cbind(do.call("rbind", replicate(length(samples), mcs.seg.to.use.df[, c("Chromosome", "Start_Position", "End_Position")], simplify = FALSE)), sample = sample.rep.vec)
   iterable.min.cons.seg.df <- drop.levels(iterable.min.cons.seg.df)
-  itx <- iter(iterable.min.cons.seg.df, by = "row")
+  itx <- iterators::iter(iterable.min.cons.seg.df, by = "row")
   logdebug("Starting parallel assignation of snps to segs:")
   # Create class which holds multiple results for each loop iteration.
   # Each loop iteration populates two properties: $result1 and $result2.
@@ -587,7 +587,7 @@ cleanAndErrorCheckSNPsParallel <- function(all.samp.SNP.list, mcs.seg.to.use.df,
   logdebug(paste0("Number of SNPs with NA BAF = ", length(all.samps.prob.SNPs.vec), ". These will be removed."))
 
   if (length(all.samps.prob.SNPs.vec) > 0) {
-    samp.seg.itx <- iter(sites.in.each.samp.seg.list)
+    samp.seg.itx <- iterators::iter(sites.in.each.samp.seg.list)
 
     clean.sites.in.each.samp.seg.list <- foreach(samp.seg.mrc = samp.seg.itx, .combine = c) %dopar% {
       seg.name <- strsplit(samp.seg.mrc$samp_seg_name, "@")[[1]][2]

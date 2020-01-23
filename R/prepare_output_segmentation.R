@@ -113,7 +113,7 @@ addNewRawAndIntCPNCallsToFinalSegmentationParallel <- function(seg.name.vec,
     sample.rep.vec <- c(sample.rep.vec, rep(samp, (length(seg.name.vec))))
   }
   iterable.samp.seg.df <- cbind(sample = sample.rep.vec, seg_name = all.samp.seg.name.vec, stringsAsFactors = FALSE)
-  itx <- iter(iterable.samp.seg.df, by = "row")
+  itx <- iterators::iter(iterable.samp.seg.df, by = "row")
   logdebug("Starting addNewRawAndIntCPNCallsToFinalSegmentationParallel:")
   # Create class which holds multiple results for each loop iteration.
   # Each loop iteration populates two properties: $result1 and $result2.
@@ -596,10 +596,10 @@ addOriginalSegmentInfoToFinalSegmentation <- function(seg.name.vec,
         #print("test.gen.range")
         #print(test.gen.range)
         # find overlaps:
-        hit.obj <- findOverlaps(ref.gen.range, test.gen.range)
-        overlaps <- pintersect(ref.gen.range[queryHits(hit.obj)], test.gen.range[subjectHits(hit.obj)])
+        hit.obj <- GenomicRanges::findOverlaps(ref.gen.range, test.gen.range)
+        overlaps <- pintersect(ref.gen.range[GenomicRanges::queryHits(hit.obj)], test.gen.range[GenomicRanges::subjectHits(hit.obj)])
         overlap.df <- as.data.frame(overlaps)
-        percent.overlap.vec <- width(overlaps) / width(test.gen.range[subjectHits(hit.obj)])
+        percent.overlap.vec <- width(overlaps) / width(test.gen.range[GenomicRanges::subjectHits(hit.obj)])
         overlap.df$percent_overlap <- as.numeric(percent.overlap.vec)
         # Should probably do percent overlaps
 
@@ -1056,7 +1056,7 @@ addLogrDefinedCPNEventsToOutputSegmentationParallel <- function(sample.vec,
     sample.rep.vec <- c(sample.rep.vec, rep(samp, (length(seg.name.vec))))
   }
   iterable.samp.seg.df <- cbind(sample = sample.rep.vec, seg_name = all.samp.seg.name.vec)
-  itx <- iter(iterable.samp.seg.df, by = "row")
+  itx <- iterators::iter(iterable.samp.seg.df, by = "row")
   logdebug("Starting parallel addLogrDefinedCPNEventsToOutputSegmentation:")
   MultiResultClass <- function() {
     me <- list(

@@ -30,7 +30,7 @@ joinSegAndReturnNewArmGranges <- function(arm.idx.vec, curr.gr.idx, adj.idx, adj
 
 
 # Try to join using phasing
-attemptToJoinSegbyPhasedCPN <- function(curr.seg.mat, adj.segs.mat, samp.arm.sites.df, arm.idx.vec, curr.gr.idx, sorted.arm.grs, cpnX.string, MIN_PH_CPN) {
+attemptToJoinSegbyPhasedCPN <- function(curr.seg.mat, adj.segs.mat, samp.arm.sites.df, arm.idx.vec, curr.gr.idx, sorted.arm.grs, cpnX.string, MIN_PH_CPN, PVAL_THRESH_TO_JOIN_PH_SEGS) {
   new.unsorted.arm.grs <- sorted.arm.grs
 
   for (k in 1:nrow(adj.segs.mat)) {
@@ -65,7 +65,7 @@ attemptToJoinSegbyPhasedCPN <- function(curr.seg.mat, adj.segs.mat, samp.arm.sit
 attemptToJoinSegbyTotalCPN <- function(curr.seg.mat, adj.segs.mat,
                                        samp.arm.sites.df, arm.idx.vec,
                                        curr.gr.idx, sorted.arm.grs,
-                                       NUM_TOT_CPN, p_value_threshold) {
+                                       NUM_TOT_CPN, p_value_threshold, MIN_PH_CPN) {
   new.unsorted.arm.grs <- sorted.arm.grs
 
   for (k in 1:nrow(adj.segs.mat)) {
@@ -268,7 +268,7 @@ creatingArmJoiningInfoMatrixAndGranges <- function(arm.grs, samp.arm.sites.df, c
 }
 
 
-attemptToJoinOneSegmentWithinChromArm <- function(current.arm.grs, joining.vals.mat, samp.arm.sites.df, sorted.arm.grs, cpnX.string, MIN_PH_CPN, NUM_TOT_CPN, CPN_AVG_THRESH, PVAL_THRESH_TO_JOIN_TOT_SEGS) {
+attemptToJoinOneSegmentWithinChromArm <- function(current.arm.grs, joining.vals.mat, samp.arm.sites.df, sorted.arm.grs, cpnX.string, MIN_PH_CPN, NUM_TOT_CPN, CPN_AVG_THRESH, PVAL_THRESH_TO_JOIN_TOT_SEGS, PVAL_THRESH_TO_JOIN_PH_SEGS) {
 
   # Edge case where this only one segment:
   if (length(current.arm.grs) == 1) {
@@ -294,7 +294,8 @@ attemptToJoinOneSegmentWithinChromArm <- function(current.arm.grs, joining.vals.
       curr.gr.idx = curr.ord.idx,
       sorted.arm.grs = current.arm.grs,
       cpnX.string = cpnX.string,
-      MIN_PH_CPN = MIN_PH_CPN
+      MIN_PH_CPN = MIN_PH_CPN,
+      PVAL_THRESH_TO_JOIN_PH_SEGS = PVAL_THRESH_TO_JOIN_PH_SEGS
     )
 
     if (length(new.unsorted.arm.grs) != length(current.arm.grs)) {
@@ -309,7 +310,8 @@ attemptToJoinOneSegmentWithinChromArm <- function(current.arm.grs, joining.vals.
       curr.gr.idx = curr.ord.idx,
       sorted.arm.grs = current.arm.grs,
       NUM_TOT_CPN = NUM_TOT_CPN,
-      p_value_threshold = PVAL_THRESH_TO_JOIN_TOT_SEGS
+      p_value_threshold = PVAL_THRESH_TO_JOIN_TOT_SEGS,
+      MIN_PH_CPN = MIN_PH_CPN
     )
     if (length(new.unsorted.arm.grs) != length(current.arm.grs)) {
       current.arm.grs <- new.unsorted.arm.grs
@@ -405,8 +407,9 @@ getOverlapGRanges <- function(query, subject, output = "gr", ...) {
 
   # Find overlapping ranges
   if (class(query) == "GRanges") {
-    seqlengths(query) <- rep(NA, length(seqlengths(query)))
-    seqlengths(subject) <- rep(NA, length(seqlengths(subject)))
+    # FIXME: what is this supposed to do?
+    GenomicRanges::seqlengths(query) <- rep(NA, length(GenomicRanges::seqlengths(query)))
+    GenomicRanges::seqlengths(subject) <- rep(NA, length(GenomicRanges::seqlengths(subject)))
   }
   overlap.index.mat <- as.matrix(findOverlaps(query, subject, ...))
 

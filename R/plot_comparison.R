@@ -526,7 +526,7 @@ plot_comparison <- function(conf) {
       plot_track_axis(plot_range)
     }
 
-    close.screen(all = TRUE)
+    close.screen(all.screens = TRUE)
   }
   dev.off()
 
@@ -594,7 +594,7 @@ plot_comparison <- function(conf) {
     screen(subfigure_idx[[3]])
     plot_track_cn_whole_genome(segs_sample, chrom_info, xlim = c(min(data_sample$pos), max(data_sample$pos)))
   }
-  close.screen(all = TRUE)
+  close.screen(all.screens = TRUE)
   dev.off()
 
   print(warnings())

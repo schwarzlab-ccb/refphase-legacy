@@ -117,10 +117,16 @@ calculateWGII <- function(seg.df, threshold = 0.6, include.sex.chrom = FALSE) {
 
   if (!all(seg.df[, "nMinor"] <= seg.df[, "nMajor"])) {
     warning("nB not always <= nA! Correcting for internal use (only!)")
-    seg.df <- transform(seg.df,
-      nMinor = ifelse(nMinor > nMajor, nMajor, nMinor),
-      nMajor = ifelse(nMinor > nMajor, nMinor, nMajor)
-    )
+    to_swap <- seg.df$nMinor > seg.df$mMajor
+    minor_tmp <- seg.df$nMinor
+
+    seg.df$nMinor[to_swap] <- seg.df$nMajor[to_swap]
+    seg.df$nMajor[to_swap] <- minor_tmp[to_swap]
+
+    #seg.df <- transform(seg.df,
+    #  nMinor = ifelse(nMinor > nMajor, nMajor, nMinor),
+    #  nMajor = ifelse(nMinor > nMajor, nMinor, nMajor)
+    #)
   }
 
   message("Setting sample ploidy according to major proportion copy number. Ploidy < 2 re-set at 2")
