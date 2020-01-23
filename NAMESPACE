@@ -2,3 +2,11 @@
 
 export(plot_comparison)
 export(refphase)
+import(RColorBrewer)
+import(grDevices)
+import(graphics)
+importFrom(foreach,"%do%")
+importFrom(foreach,"%dopar%")
+importFrom(logging,logdebug)
+importFrom(logging,loginfo)
+importFrom(logging,logwarn)

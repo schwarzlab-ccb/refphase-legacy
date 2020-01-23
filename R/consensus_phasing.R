@@ -142,7 +142,7 @@ getCombinedBAFDipTestPhasing <- function(asas.lr.baf.lists,
   return(sample.to.phase.seg.list)
 }
 
-
+#' @importFrom foreach %do% %dopar%
 getCombinedBAFDipTestPhasingParallel <- function(asas.lr.baf.lists,
                                                  seg.name.vec,
                                                  ploidy.est.vec,

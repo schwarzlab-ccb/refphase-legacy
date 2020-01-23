@@ -17,7 +17,7 @@ read_input <- function(seg_file, snp_file, input_format) {
 
   if (input_format == "ASCAT") {
     # Parse a bunch of rds files containing ascat.bc objects
-    pt.snp.file.paths.df <- read.delim(snp.file.path,
+    pt.snp.file.paths.df <- utils::read.delim(snp.file.path,
       stringsAsFactors = FALSE,
       header = TRUE,
       row.names = "sample"
@@ -47,7 +47,7 @@ read_input <- function(seg_file, snp_file, input_format) {
     # 														,"_"
     # 														,all.samp.SNP.list[[1]]$pos))
   } else if (input_format == "sequenza") {
-    pt.snp.file.paths.df <- read.delim(snp.file.path,
+    pt.snp.file.paths.df <- utils::read.delim(snp.file.path,
       stringsAsFactors = FALSE,
       header = TRUE,
       row.names = "sample"

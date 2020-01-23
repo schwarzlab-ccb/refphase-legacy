@@ -9,7 +9,8 @@ add_info_to_output_table <- function(asas.ph.raw.cpn.lists, ploidy.est.vec,
                                      all.seg.CCF.list,
                                      all.seg.CCF.diff.from.exp.list,
                                      all.seg.phasing.info.list,
-                                     all.seg.MSAI.by.BAF.ltnpd.present.list) {
+                                     all.seg.MSAI.by.BAF.ltnpd.present.list,
+                                     constants) {
 
   # Let's initialise the first joint output:
   logdebug("Initialising minimum consistent segmentation (MCS) output dataframe")
@@ -43,14 +44,14 @@ add_info_to_output_table <- function(asas.ph.raw.cpn.lists, ploidy.est.vec,
     all.seg.CCF.diff.from.exp.list = all.seg.CCF.diff.from.exp.list,
     all.seg.df = full.joint.segs.w.old.cpn.vs.ploidy.df # new.cpn.full.joint.segs.df
     , sample.vec = names(purity.est.vec),
-    clonal.pval = PVAL_THRESH_VS_MIN_CCF,
-    diff.from.oth.p.val = PVAL_THRESH_VS_OTH_CHRS_SAME_CPN,
-    min.CCF.to.consider.val = MIN_CCF_TO_CONSIDER,
-    min.cpn.to.consider.val = MIN_CPN_TO_CONSIDER,
-    min.num.other.chrs = MIN_NUM_CHRS,
-    chrs.to.use.vec = CHRS_TO_USE_VEC,
+    clonal.pval = constants$PVAL_THRESH_VS_MIN_CCF,
+    diff.from.oth.p.val = constants$PVAL_THRESH_VS_OTH_CHRS_SAME_CPN,
+    min.CCF.to.consider.val = constants$MIN_CCF_TO_CONSIDER,
+    min.cpn.to.consider.val = constants$MIN_CPN_TO_CONSIDER,
+    min.num.other.chrs = constants$MIN_NUM_CHRS,
+    chrs.to.use.vec = constants$CHRS_TO_USE_VEC,
     cpnX.vec = c("cpnA", "cpnB"),
-    max.cpn.val = MAX_CPN_FOR_SUBCLONALITY
+    max.cpn.val = constants$MAX_CPN_FOR_SUBCLONALITY
   )
 
   logdebug("Adding total copy number estimates to MCS output for segments with only logr information")
@@ -62,11 +63,11 @@ add_info_to_output_table <- function(asas.ph.raw.cpn.lists, ploidy.est.vec,
     purity.est.vec = purity.est.vec,
     all.samp.logr.df.list = all.samp.non.hz.logr.and.tot.cpn.df.list,
     all.samp.ph.BAF.df.list = patient.phased.BAF.df.list,
-    gain.threshold = GAIN_LOGR_THRESH,
-    loss.threshold = LOSS_LOGR_THRESH,
-    amp.threshold = AMP_LOGR_THRESH,
-    deep.loss.threshold = DEEP_LOSS_LOGR_THRESH,
-    tot.cpn.vs.ploidy.pval.thresh = PVAL_THRESH_VS_LOGR_FOR_CPN_EVENT
+    gain.threshold = constants$GAIN_LOGR_THRESH,
+    loss.threshold = constants$LOSS_LOGR_THRESH,
+    amp.threshold = constants$AMP_LOGR_THRESH,
+    deep.loss.threshold = constants$DEEP_LOSS_LOGR_THRESH,
+    tot.cpn.vs.ploidy.pval.thresh = constants$PVAL_THRESH_VS_LOGR_FOR_CPN_EVENT
   )
 
   logdebug("Adding cpn event vs ploidy by logr measures to MCS output")
@@ -76,11 +77,11 @@ add_info_to_output_table <- function(asas.ph.raw.cpn.lists, ploidy.est.vec,
     all.seg.df = full.joint.segs.df.w.cpn.vs.ploidy.df,
     all.samp.logr.df.list = all.samp.non.hz.logr.and.tot.cpn.df.list,
     all.samp.ph.BAF.df.list = patient.phased.BAF.df.list,
-    gain.threshold = GAIN_LOGR_THRESH,
-    loss.threshold = LOSS_LOGR_THRESH,
-    amp.threshold = AMP_LOGR_THRESH,
-    deep.loss.threshold = DEEP_LOSS_LOGR_THRESH,
-    tot.cpn.vs.ploidy.pval.thresh = PVAL_THRESH_VS_LOGR_FOR_CPN_EVENT
+    gain.threshold = constants$GAIN_LOGR_THRESH,
+    loss.threshold = constants$LOSS_LOGR_THRESH,
+    amp.threshold = constants$AMP_LOGR_THRESH,
+    deep.loss.threshold = constants$DEEP_LOSS_LOGR_THRESH,
+    tot.cpn.vs.ploidy.pval.thresh = constants$PVAL_THRESH_VS_LOGR_FOR_CPN_EVENT
   )
 
   logdebug("Testing whether any gains should be reclassified as amplifications")

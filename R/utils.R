@@ -23,7 +23,7 @@ wilcoxTestWithErrorHandling <- function(x, y = NULL,
                                         conf.level = 0.95, errors.not.permitted = "") {
   test.results <- tryCatch(
     {
-      test.results <- wilcox.test(
+      test.results <- stats::wilcox.test(
         x = x,
         y = y,
         alternative = alternative,

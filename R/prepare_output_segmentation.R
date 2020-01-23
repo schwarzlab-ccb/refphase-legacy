@@ -95,7 +95,7 @@ addPhasingInformationToOutputSegmentation <- function(sample.vec,
   all.segs.df
 }
 
-
+#' @importFrom foreach %dopar%
 addNewRawAndIntCPNCallsToFinalSegmentationParallel <- function(seg.name.vec,
                                                                sample.vec,
                                                                all.samp.logr.df.list,
@@ -944,6 +944,7 @@ addWithinSampleClonalityAndCCFToFinalSegmentation <- function(seg.name.vec,
 }
 
 
+#' @importFrom foreach %dopar%
 addLogrDefinedCPNEventsToOutputSegmentationParallel <- function(sample.vec,
                                                                 seg.name.vec,
                                                                 all.seg.df,

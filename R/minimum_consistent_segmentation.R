@@ -90,6 +90,7 @@ getChromosomeArmsGRangeList <- function(current.chr, chrom.info.df) {
 # And various design decisions regarding whether we should maintain the capability of covering
 # the entire genome in copy number segments should be mulled over, currently, as they are
 # are clearly marked and easily dropped I would be in favour of keeping them.
+#' @importFrom foreach %dopar%
 createFullyAnnotatedJointSegmentation <- function(f.joint.segs.df, samples) {
   all.samp.grs <- makeGRangesFromDataFrame(f.joint.segs.df,
     keep.extra.columns = FALSE,

@@ -10,7 +10,7 @@ Authors@R:
 Description: What the package does (one paragraph).
 License: GPL-3
 Suggests: 
-    testthat
+    testthat (>= 2.1.0)
 Encoding: UTF-8
 LazyData: true
 Roxygen: list(markdown = TRUE)
@@ -18,8 +18,10 @@ RoxygenNote: 7.0.2
 Imports: 
     diptest,
     doParallel,
+    foreach,
     gdata,
     GenomicRanges,
     gplots,
     IRanges,
-    logging
+    logging,
+    RColorBrewer

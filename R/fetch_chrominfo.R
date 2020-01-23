@@ -47,7 +47,7 @@ fetch_chrominfo <- function(genome) {
   read_tsv_url <- function(path, header = FALSE) {
     con <- gzcon(url(path))
     txt <- readLines(con)
-    csv <- read.delim(textConnection(txt), header = header)
+    csv <- utils::read.delim(textConnection(txt), header = header)
     return(csv)
   }
 

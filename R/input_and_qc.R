@@ -214,7 +214,7 @@ removeSingleBasePairSegmentsFromIntersectionGranges <- function(all.grs, min.wid
     # Check thats
     if (length(non.na.merge.poss.idxs) == 0) {
       message("No ante or post segments")
-      next()
+      next
     }
     ante.post.grs <- working.no.ones.grs[non.na.merge.poss.idxs]
     nearest.gr <- ante.post.grs[nearest(width.one.grs[idx], ante.post.grs)]
@@ -505,7 +505,7 @@ snps_set_logrsegmented <- function(segs, all_snps) {
   return(all_snps)
 }
 
-
+#' @importFrom foreach %dopar%
 cleanAndErrorCheckSNPsParallel <- function(all.samp.SNP.list, mcs.seg.to.use.df, samples, allow.logr.only.flag = FALSE, data.type = "MEDICC") {
   logdebug("Clean and error check SNPs (parallel version)")
   # Note error checking of removing NAs from the min.cons.seg.df should already
