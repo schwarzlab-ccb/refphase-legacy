@@ -122,6 +122,9 @@ plot_track_baf <- function(data_sample, segs_sample, msai) {
   plot(data_sample$pos, data_sample$BAF, ylab = "BAF", col = phasing_col, ylim = c(0, 1), pch = 16, cex = 0.75, yaxt = "n", xaxt = "n")
   axis(2, seq(0, 1, by = 0.25))
 
+  message("Most common BAF values (out of ", sum(!is.na(data_sample$BAF)), ")")
+  print(tail(sort(table(data_sample$BAF)), n=20))
+
 #  # Mean segments
   #phasing_col <- ifelse(data_sample$maj_is_cpnB_logic_vec == 1, "blue", "orange")
   #phasing_col[data_sample$sample_phased_by_this_sample == "none_no_allelic_imbalance_called"] <- "grey"
@@ -323,7 +326,7 @@ phase_regions <- function(snps, seg, baf_threshold = 0.5) {
 plot_track_logr_whole_genome <- function(data_sample, segs_sample, chrom_info) {
 
   par(mar = c(1, 5, 1, 0.1), xaxs = "i")
-  plot(data_sample$pos, data_sample$logR, ylab = "logR", xaxt = "n", col = adjustcolor("darkgrey", 0.2), pch = ".", ylim = c(-2, 2))
+  plot(data_sample$pos, data_sample$logR, ylab = "logR", xaxt = "n", col = adjustcolor("darkgrey", 0.2), pch = ".", ylim = c(-3, 3))
 
   fit <- loess(data_sample$logR ~ data_sample$pos, span = 0.001)
   points(x = data_sample$pos, y = predict(fit, data_sample$pos), col = "black", pch = ".")

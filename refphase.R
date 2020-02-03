@@ -89,9 +89,21 @@ if (!interactive()) {
       default = "hg38",
       help = "Human genome version [default = %default] (supports hg19 and hg38)"
     ),
-    make_option("--no-normalize-logr",
+    make_option("--het-only",
       default = FALSE, action = "store_true",
-      help = "Disable normalization of counts before calculating logR (seqz input only) [default = %default]"
+      help = "Only use germline heterozygous positions (seqz input only) [default = %default]"
+    ),
+    make_option("--normalize-logr",
+      default = FALSE, action = "store_true",
+      help = "Normalize counts before calculating logR (seqz input only) [default = %default]"
+    ),
+    make_option("--scale-logr",
+      default = FALSE, action = "store_true",
+      help = "Center and scale all logR values to have a standard deviation = 1.0 (seqz input only) [default = %default]"
+    ),
+    make_option("--correct-reference-bias",
+      default = FALSE, action = "store_true",
+      help = "Scale BAF values to try to correct for reference bias (seqz input only) [default = %default]"
     ),
     make_option(c("--overwrite"),
       default = TRUE, action = "store_true",
@@ -102,8 +114,8 @@ if (!interactive()) {
       help = "Do not overwrite previous output"
     ),
     make_option("--reestimate-purity-ploidy",
-      default = FALSE, action = "store_true",
-      help = "Re-estimate purity and ploidy of each sample using ASCAT [default = %default]"
+      default = "no",
+      help = "Re-estimate purity and ploidy of each sample using ASCAT. 'no' = use exact purity and ploidy passed in. 'nearby' = allow slight changes to the passed in values. 'full' = ignore passed in values and let ASCAT choose the optimal value within it's default range of possible purity and ploidy values [default = %default]"
     ),
     make_option("--cached-dir",
       default = NA,
@@ -308,7 +320,7 @@ if (!is.na(conf$debug_dir)) {
 
 use_cached_input <- FALSE
 if (!use_cached_input) {
-  input_data <- read_input(seg.file.path, snp.file.path, conf$input_format)
+  input_data <- read_input(seg.file.path, snp.file.path, conf$input_format, conf)
   saveRDS(input_data, file = file.path(PLOT_OUTPUT_DIR, "input_data.rds"))
 } else {
   loginfo("Loading cached input (may take a minute)")
@@ -454,6 +466,8 @@ for (samp in sample.vec) {
     phased_baf_info = phased.baf.info.df
   )
 
+  #ascat.bc.phased
+
   # OK so now let's do the fixed solution run...
   samp.ploidy <- ploidy.est.vec[samp]
   samp.purity <- purity.est.vec[samp]
@@ -465,12 +479,23 @@ for (samp in sample.vec) {
 
   setwd(qc.choice.dir)
   ascat.plotSegmentedData(ascat.bc.phased)
-  if (isTRUE(conf$reestimate_purity_ploidy)) {
-    purity_range <- 0.2
-    ploidy_range <- 1
+  if (conf$reestimate_purity_ploidy == "no") {
+    # use the exact values that we have already set above
+  } else if (conf$reestimate_purity_ploidy == "nearby") {
+    purity_range <- 0.2  # Allow ASCAT to choose a purity value that is orignal purity +/- this value
+    ploidy_range <- 1    #
     loginfo("Allowing re-estimation of purity and ploidy.")
     samp.purity <- c(samp.purity - purity_range, samp.purity + purity_range)
     samp.ploidy <- c(samp.ploidy - ploidy_range, samp.ploidy + ploidy_range)
+  } else if (conf$reestimate_purity_ploidy == "full") {
+    # Setting these to NA signals ASCAT to reestimate the purity and ploidy
+    # from scratch, with no regard for the purity and ploidy that we passed
+    # in to refphase
+    samp.purity <- NA
+    samp.ploidy <- NA
+  } else {
+    logerror(paste0("The value of --reestimate-purity-ploidy that you provided is not valid:", conf$reestimate_purity_ploidy))
+    q(save = "no", status = 1)
   }
   ascat.output <- ascat.runAscat(ascat.bc.phased, gamma = 1, rho_manual = samp.purity, psi_manual = samp.ploidy)
   setwd(base.dir)

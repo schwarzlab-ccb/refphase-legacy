@@ -40,8 +40,12 @@
 #   ..$ logR         : num [1:938946] -0.049 -0.161 -0.161 -0.542 -0.46 -0.46 -0.46 -0.166 -0.047 -0.013 ...
 #   ..$ BAFsegmented : num [1:938946] 0.231 0.231 0.231 0.231 0.231 ...
 #   ..$ logRsegmented: num [1:938946] -0.327 -0.327 -0.327 -0.327 -0.327 ...
-read_snps_sequenza <- function(input_files, segs, samples, het_only = TRUE, normalize_logr = TRUE, correct_reference_bias = FALSE) {
+read_snps_sequenza <- function(input_files, segs, samples, het_only = TRUE, normalize_logr = TRUE, scale_logr = FALSE, correct_reference_bias = FALSE) {
   library(readr)
+
+  logdebug(paste0("scale_logr = ", scale_logr))
+  logdebug(paste0("normalize_logr = ", normalize_logr))
+  logdebug(paste0("correct_reference_bias = ", correct_reference_bias))
 
   all_snps <- list()
 
@@ -83,10 +87,13 @@ read_snps_sequenza <- function(input_files, segs, samples, het_only = TRUE, norm
     baf[flip_baf] <- seqz_data$Af[flip_baf]
 
     if (isTRUE(correct_reference_bias)) {
-      baf_bias <- median(baf, na.rm = TRUE)
+      baf_bias <- median(baf[seqz_data$zygosity.normal == "het"], na.rm = TRUE)
       logdebug(paste0("Adjusting values to try to correct for reference bias. Median BAF = ", baf_bias))
-      baf <- baf * (0.5 / biaf_bias)
+      baf <- baf * (0.5 / baf_bias)
       baf[baf > 1.0] <- 1.0
+      baf_bias <- median(baf[seqz_data$zygosity.normal == "het"], na.rm = TRUE)
+      logdebug(paste0("Corrected values to try to correct for reference bias. Median BAF post correction = ", baf_bias))
+
     }
 
     all_snps[[samp]] <- data.frame(
@@ -108,6 +115,13 @@ read_snps_sequenza <- function(input_files, segs, samples, het_only = TRUE, norm
       norm_normal <- seqz_data$depth.normal / sum_normal
       norm_tumor <- seqz_data$depth.tumor / sum_tumor
       all_snps[[samp]]$logR <- log2(norm_tumor) - log2(norm_normal)
+    }
+
+    # Possibly useful for extreme cases where two different batches are present
+    # for a single patient. Scales all values to have the same standard
+    # deviation (= 1).
+    if (isTRUE(scale_logr)) {
+      all_snps[[samp]]$logR <- scale(all_snps[[samp]]$logR)[,1]
     }
 
     # Mask non-hz SNPs with NA

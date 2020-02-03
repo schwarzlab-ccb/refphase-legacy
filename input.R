@@ -1,5 +1,5 @@
 # Read input data: segmentation and snps with associated BAF/logR and more
-read_input <- function(seg_file, snp_file, input_format) {
+read_input <- function(seg_file, snp_file, input_format, conf) {
   init.f.joint.segs.df <- read.table(seg.file.path, stringsAsFactors = FALSE, sep = "\t", header = TRUE)
 
   # This function will stop the script if the input is not valid
@@ -66,8 +66,10 @@ read_input <- function(seg_file, snp_file, input_format) {
       input_files = input_files,
       segs = f.joint.segs.df,
       samples = sample.vec,
-      het_only = FALSE,
-      normalize_logr = !isTRUE(conf$no_normalize_logr)
+      het_only = conf$het_only,
+      normalize_logr = !isTRUE(conf$no_normalize_logr),
+      scale_logr = conf$scale_logr,
+      correct_reference_bias = conf$correct_reference_bias
     )
 
     logdebug("Finished parsing sequenza input.")
