@@ -109,29 +109,41 @@ plot_track_logr <- function(data_sample, segs_sample, max_values = 6000) {
   # Fit a loess regression line
   fit <- loess(data_sample$logR ~ data_sample$pos, span = 0.05)
   points(x = data_sample$pos, y = predict(fit, data_sample$pos), col = "black", pch = ".")
+
+  # Plot per-segment loess smoothed lines
+  min_points <- 1
+  for (seg_idx in seq_len(nrow(segs_sample))) {
+    message("------------ segments -----------------", seg_idx)
+    seg <- segs_sample[seg_idx,]
+    data_seg <- data_sample[data_sample$pos >= seg$startpos & data_sample$pos <= seg$endpos,]
+
+    if (nrow(data_seg) < min_points)
+      next
+
+    segments(
+      x0 = seg$startpos, y0 = mean(data_seg$logR),
+      x1 = seg$endpos, col = "black", lwd = 1, lend = 1
+    )
+  }
 }
 
 plot_track_baf <- function(data_sample, segs_sample, msai) {
   par(mar = c(0.1, 5, 0.1, 1))
 
+  # Remove NA's
+  data_sample <- data_sample[!is.na(data_sample$BAF),]
+
   phasing_col <- data_sample$phasing
   phasing_col[phasing_col == "a"] <- "orange"
   phasing_col[phasing_col == "b"] <- "blue"
   phasing_col[phasing_col == "none"] <- "grey"
+  data_sample$phasing_col <- phasing_col
   phasing_col <- adjustcolor(phasing_col, 0.6)
   plot(data_sample$pos, data_sample$BAF, ylab = "BAF", col = phasing_col, ylim = c(0, 1), pch = 16, cex = 0.75, yaxt = "n", xaxt = "n")
   axis(2, seq(0, 1, by = 0.25))
 
   message("Most common BAF values (out of ", sum(!is.na(data_sample$BAF)), ")")
   print(tail(sort(table(data_sample$BAF)), n=20))
-
-#  # Mean segments
-  #phasing_col <- ifelse(data_sample$maj_is_cpnB_logic_vec == 1, "blue", "orange")
-  #phasing_col[data_sample$sample_phased_by_this_sample == "none_no_allelic_imbalance_called"] <- "grey"
-  #phasing_col <- adjustcolor(phasing_col, 0.6)
-#  mean_col <- ifelse(segs_sample$orig_nMajor != segs_sample$orig_nMinor, "black", NA)
-#  segments(x0 = segs_sample$startpos, y0 = segs_sample$mean_BAF + 0.5, x1 = segs_sample$endpos, col = mean_col)
-#  segments(x0 = segs_sample$startpos, y0 = -1 * segs_sample$mean_BAF + 0.5, x1 = segs_sample$endpos, col = mean_col)
 #
   # Segment boundaries
   abline(v = unique(c(segs_sample$startpos, segs_sample$endpos)), lty = 2, col = "black")
@@ -151,6 +163,28 @@ plot_track_baf <- function(data_sample, segs_sample, msai) {
       x0 = segs_sample$startpos[segs_sample$is_reference], y0 = -0.02,
       x1 = segs_sample$endpos[segs_sample$is_reference], col = "red", lwd = 4, lend = 1
     )
+  }
+
+  # Plot per-segment loess smoothed lines
+  min_points <- 10
+  for (seg_idx in seq_len(nrow(segs_sample))) {
+    seg <- segs_sample[seg_idx,]
+    data_seg <- data_sample[data_sample$pos >= seg$startpos & data_sample$pos <= seg$endpos,]
+
+    if (nrow(data_seg) < min_points)
+      next
+
+    if (data_seg$phasing[[1]] == "none")
+      next
+
+    for (hap in unique(data_seg$phasing)) {
+      data_hap <- data_seg[data_seg$phasing == hap,]
+
+      segments(
+        x0 = seg$startpos, y0 = mean(data_hap$BAF),
+        x1 = seg$endpos, col = data_hap$phasing_col[[1]], lwd = 1, lend = 1
+      )
+    }
   }
 }
 
