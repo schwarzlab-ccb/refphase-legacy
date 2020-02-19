@@ -122,6 +122,9 @@ read_snps_sequenza <- function(input_files, segs, samples, het_only = TRUE, norm
     # deviation (= 1).
     if (isTRUE(scale_logr)) {
       all_snps[[samp]]$logR <- scale(all_snps[[samp]]$logR)[,1]
+      # re-center the logR at 0, since the most common copy number should be 2
+      # (this might be wrong!)
+      all_snps[[samp]]$logR <- all_snps[[samp]]$logR - median(all_snps[[samp]]$logR)
     }
 
     # Mask non-hz SNPs with NA
