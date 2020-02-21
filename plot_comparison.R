@@ -99,11 +99,11 @@ plot_track_cn <- function(segs, track_name, xlim) {
   }
 }
 
-plot_track_logr <- function(data_sample, segs_sample, max_values = 6000) {
+plot_track_logr <- function(data_sample, segs_sample, max_values = 6000, xlim) {
   par(mar = c(0.1, 5, 0.1, 1))
   # Downsample logR values to keep file sizes reasonable
   data_sample <- data_sample[sample.int(nrow(data_sample), min(max_values, nrow(data_sample))),]
-  plot(data_sample$pos, data_sample$logR, ylab = "logR", xaxt = "n", col = adjustcolor("darkgrey", 0.2), pch = 16, cex = 0.75, ylim = c(min(c(-2, data_sample$logR)), max(c(2, data_sample$logR))))
+  plot(data_sample$pos, data_sample$logR, ylab = "logR", xaxt = "n", col = adjustcolor("darkgrey", 0.2), pch = 16, cex = 0.75, ylim = c(min(c(-2, data_sample$logR)), max(c(2, data_sample$logR))), xlim = xlim)
   abline(v = unique(c(segs_sample$startpos, segs_sample$endpos)), lty = 2, col = "black")
 
   # Fit a loess regression line
@@ -127,7 +127,7 @@ plot_track_logr <- function(data_sample, segs_sample, max_values = 6000) {
   }
 }
 
-plot_track_baf <- function(data_sample, segs_sample, msai) {
+plot_track_baf <- function(data_sample, segs_sample, msai, xlim) {
   par(mar = c(0.1, 5, 0.1, 1))
 
   # Remove NA's
@@ -139,7 +139,7 @@ plot_track_baf <- function(data_sample, segs_sample, msai) {
   phasing_col[phasing_col == "none"] <- "grey"
   data_sample$phasing_col <- phasing_col
   phasing_col <- adjustcolor(phasing_col, 0.6)
-  plot(data_sample$pos, data_sample$BAF, ylab = "BAF", col = phasing_col, ylim = c(0, 1), pch = 16, cex = 0.75, yaxt = "n", xaxt = "n")
+  plot(data_sample$pos, data_sample$BAF, ylab = "BAF", col = phasing_col, ylim = c(0, 1), pch = 16, cex = 0.75, yaxt = "n", xaxt = "n", xlim = xlim)
   axis(2, seq(0, 1, by = 0.25))
 
   message("Most common BAF values (out of ", sum(!is.na(data_sample$BAF)), ")")
@@ -533,11 +533,11 @@ for (chrom_to_plot in chroms) {
 
     # logR track
     screen(subfigure_idx[[1]])
-    plot_track_logr(data_sample, main_seg_sample)
+    plot_track_logr(data_sample, main_seg_sample, xlim = plot_range)
 
     # BAF track
     screen(subfigure_idx[[2]])
-    plot_track_baf(data_sample, main_seg_sample)
+    plot_track_baf(data_sample, main_seg_sample, xlim = plot_range)
 
     seg_orig <- segs[[2]]
     for (seg_idx in seq_along(segs)) {
