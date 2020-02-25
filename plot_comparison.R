@@ -18,6 +18,10 @@ option_list <- list(
     default = "",
     help = "Comma-separated list of segmentation names that match the files in --segmentations"
   ),
+  make_option("--changed-reference",
+    default = "",
+    help = "Name of the segmentation that should be used as the reference when deciding if a segment is changed or not"
+  ),
   make_option("--sample-info",
     default = "",
     help = "Per-sample information including purity and ploidy"
@@ -71,12 +75,14 @@ plot_track_cn <- function(segs, track_name, xlim) {
     xlim <- c(min(segs$startpos), max(segs$endpos))
   }
 
-  par(mar = c(0.1, 5, 0.1, 1))
+  par(mar = c(0.1, 5, 0.1, 1), las = 1)
   num_segs <- nrow(segs)
   # We don't have much space for track names so let's just display the first
   # few characters
-  short_track_name <- substring(track_name, 1, 5)
-  plot(1, ylim = c(-1, 1), xlim = xlim, col = "white", ylab = paste0(short_track_name, "\n(", num_segs, ")"), xaxt = "n", yaxt = "n")
+  #short_track_name <- substring(track_name, 1, 5)
+  plot(1, ylim = c(-1, 1), xlim = xlim, ylab = "", col = "white", xaxt = "n", yaxt = "n", cex.lab = 0.7)
+  mtext(paste0(track_name, "\n(", num_segs, ")"), side = 2, las = 2, cex = 0.6, line = 2, adj = 0.5)
+  #plot(1, ylim = c(-1, 1), xlim = xlim, col = "white", ylab = paste0(short_track_name, "\n(", num_segs, ")"), xaxt = "n", yaxt = "n", cex.lab = 0.7)
 
   # Color the background of each segment to make it clear where there are
   # missing segments
@@ -431,6 +437,11 @@ snps <- readRDS(conf$snps)$all.samp.SNP.list
 seg_input_files <- strsplit(conf$segmentations, ",")[[1]]
 seg_names <- strsplit(conf$seg_names, ",")[[1]]
 
+# Set a reference for indicating changes if there is not one defined
+# Default to the last segmentation
+if (nchar(conf$changed_reference) == 0 || conf$changed_reference %in% conf$seg_names)
+  conf$changed_reference <- conf$seg_names[[length(conf$seg_names)]]
+
 stopifnot(length(seg_input_files) == length(seg_names))
 
 segs <- list()
@@ -457,6 +468,8 @@ for (seg_idx in seq_along(seg_input_files)) {
 
   segs[[seg_idx]] <- seg
 }
+
+names(segs) <- seg_names
 
 sample_info <- read.delim(conf$sample_inf, sep = "\t", stringsAsFactors = FALSE, row.names = "sample")
 
@@ -539,7 +552,9 @@ for (chrom_to_plot in chroms) {
     screen(subfigure_idx[[2]])
     plot_track_baf(data_sample, main_seg_sample, xlim = plot_range)
 
-    seg_orig <- segs[[2]]
+    seg_orig <- segs[[conf$changed_reference]]
+    str(segs)
+    str(seg_orig)
     for (seg_idx in seq_along(segs)) {
       seg <- segs[[seg_idx]]
       seg_chrom <- seg[seg$sample == sample_name & seg$chr == chrom_to_plot, ]
@@ -552,7 +567,7 @@ for (chrom_to_plot in chroms) {
 
       # Orig CNs
       screen(subfigure_idx[[2 + seg_idx]])
-      plot_track_cn(seg_chrom, seg_names[[seg_idx]], xlim = plot_range)
+      plot_track_cn(seg_chrom, paste0(ifelse(seg_names[[seg_idx]] == conf$changed_reference, "* ", ""), seg_names[[seg_idx]]), xlim = plot_range)
     }
 
     # Add an x-axis with genomic co-ordinates
