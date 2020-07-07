@@ -1,5 +1,13 @@
 # MultiRegionCopyNum
 
+**This code base is unmaintained and as presented in Watkins et al. 2020, Nature.**
+
+**Collaboration between McGranahan (UCL London) and Schwarz (MDC Berlin) labs.**  
+**Contact:**
+**- Nicholas McGranahan: nicholas.mcgranahan.10@ucl.ac.uk**
+**- Roland Schwarz: roland.schwarz@mdc-berlin.de**
+**- Tom Watkins: tom.watkins@crick.ac.uk**
+
 Aneuploidy and chromosomal instability are a hallmark of cancer and result in
 somatic copy number alteration (SCNAs). Many bioinformatics tools have been
 written to analyse single tumour regions to estimate the aneuploid state of the
