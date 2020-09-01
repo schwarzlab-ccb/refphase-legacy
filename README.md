@@ -1,4 +1,4 @@
-# MultiRegionCopyNum
+# RefPhase [LEGACY - please use current version linked below]
 
 **This code base is unmaintained and as presented in Watkins et al. 2020, Nature.**
 
