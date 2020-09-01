@@ -4,7 +4,7 @@ source("/camp/lab/swantonc/working/watkint/scripts/TRACERx_421/SCNA_utility_func
 full.pt.vec <- getReleasePatientVec(shorten=FALSE, release.path=TX_421_DIR, pattern="LTX")
 all.pts.mph.df <- checkMPhaseOutput(full.patient.vec = full.pt.vec, release.path = TX_421_DIR)
 
-#full.pt.vec <- "A_LTX210"
+
 
 for (full.patient in full.pt.vec) {
 
